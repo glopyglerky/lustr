@@ -22,7 +22,7 @@ use crate::diag::{Diag, Span};
 use crate::driver::graph::{BindingRes, Namespace};
 use crate::intern::{FxMap, Interner, Sym};
 use crate::ty::defs::ModuleId;
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 
 /// `ResolvedTables::glob_src`, keyed by (module, namespace, name): one map
 /// per module, so the writes of a glob copy stay in its importer's map. One
@@ -265,6 +265,8 @@ pub struct ResolvedTables {
     /// part of any answer.
     pub ambiguous_keys: FxMap<(ModuleId, u8, Sym), ()>,
     pub externs: Vec<ExternInfo>,
+    /// Resolved extern reads of module-level imports for public Cargo executables.
+    pub(crate) executable_import_uses: Option<BTreeSet<crate::def::CrateId>>,
     /// Adt def -> associated fn name -> (vis, defining module).
     pub assoc_vis: FxMap<DefId, FxMap<Sym, (VisKind, ModuleId)>>,
     /// Adt def -> (field name -> vis) plus the defining module, for the
@@ -411,6 +413,10 @@ pub struct ResolvedTables {
     /// only there (and in shipped std source) does `alloc` name the
     /// alloc crate, as in rustc edition 2024 (`extern_in_scope`).
     pub alloc_roots: Vec<ModuleId>,
+    /// A crate with its original `#![no_std]` root policy uses core's prelude.
+    pub core_prelude_roots: Vec<ModuleId>,
+    /// Explicit root std imports can restore the crate name under that policy.
+    pub explicit_std_roots: Vec<ModuleId>,
     /// The file each `mod name;` without `#[path]` did not take:
     /// `name/mod.rs` beside the `name.rs` it loaded, or the reverse. Once
     /// one appears a cold resolve rejects that module (L0502); the body
@@ -495,6 +501,7 @@ impl ResolvedTables {
             glob_log: Vec::new(),
             ambiguous_keys: FxMap::default(),
             externs: Vec::new(),
+            executable_import_uses: None,
             assoc_vis: FxMap::default(),
             field_vis: FxMap::default(),
             tuple_field_vis: FxMap::default(),
@@ -525,6 +532,8 @@ impl ResolvedTables {
             std_splice_lo: None,
             std_ranges: Vec::new(),
             alloc_roots: Vec::new(),
+            core_prelude_roots: Vec::new(),
+            explicit_std_roots: Vec::new(),
             module_alts: Vec::new(),
             module_index: std::sync::OnceLock::new(),
         }
@@ -795,7 +804,7 @@ impl ResolvedTables {
 
     /// True when the region of `vis` (at `def_module`) is inside the
     /// region of `outer` (at `outer_module`).
-    pub(super) fn vis_within(&self, vis: &VisKind, def_module: ModuleId, outer: &VisKind, outer_module: ModuleId, interner: &Interner) -> bool {
+    pub fn vis_within(&self, vis: &VisKind, def_module: ModuleId, outer: &VisKind, outer_module: ModuleId, interner: &Interner) -> bool {
         let (ra, ma) = self.vis_region(vis, def_module, interner);
         let (rb, mb) = self.vis_region(outer, outer_module, interner);
         if rb == 2 {
@@ -1472,6 +1481,12 @@ impl ResolvedTables {
         for m in &self.alloc_roots {
             fold!(0x49, |h: &mut crate::intern::FxHasher| h.write_u64(m.0 as u64));
         }
+        for m in &self.core_prelude_roots {
+            fold!(0x68, |h: &mut crate::intern::FxHasher| h.write_u64(m.0 as u64));
+        }
+        for m in &self.explicit_std_roots {
+            fold!(0x69, |h: &mut crate::intern::FxHasher| h.write_u64(m.0 as u64));
+        }
         for (name, m) in &self.std_modules {
             fold!(0x48, |h: &mut crate::intern::FxHasher| {
                 h.write_u64(name.0 as u64);
@@ -1720,6 +1735,19 @@ pub fn in_std_prelude(name: &str, ns: Namespace) -> bool {
     }
 }
 
+/// Supported type and value names from the pinned core 2024 prelude.
+fn in_core_prelude(name: &str, ns: Namespace) -> bool {
+    match ns {
+        Namespace::Type => matches!(name,
+            "Option" | "Result" | "Copy" | "Clone" | "Default" | "Eq" | "PartialEq" | "Ord" | "PartialOrd"
+            | "Iterator" | "IntoIterator" | "From" | "Into" | "Send" | "Sync" | "Sized" | "Drop" | "Unpin"
+            | "Fn" | "FnMut" | "FnOnce" | "AsRef" | "AsMut" | "TryFrom" | "TryInto" | "FromIterator"
+            | "DoubleEndedIterator" | "ExactSizeIterator" | "Extend" | "Future" | "IntoFuture"),
+        Namespace::Value => STD_PRELUDE_VALUES.contains(&name),
+        Namespace::Macro => false,
+    }
+}
+
 /// The canonical path (after the crate root) of one std prelude name:
 /// what `std::prelude` re-exports it from. Import resolution reads
 /// it to tell a glob-brought re-export of the prelude item itself
@@ -1815,6 +1843,9 @@ impl ResolvedTables {
     /// modules of the splice (rustc E0433 otherwise).
     fn extern_in_scope(&self, from: ModuleId, name: &str) -> Option<u32> {
         let i = self.extern_by_name(from, name)?;
+        if name == "std" && self.externs[i as usize].is_std_lib && self.std_out_of_scope(from) {
+            return None;
+        }
         if name != "alloc" || !self.externs[i as usize].is_std_lib {
             return Some(i);
         }
@@ -1830,6 +1861,24 @@ impl ResolvedTables {
             m = self.modules[cur.0 as usize].parent;
         }
         None
+    }
+
+    pub(crate) fn uses_core_prelude(&self, from: ModuleId) -> bool {
+        !self.core_prelude_roots.is_empty() && from != crate::ty::defs::STD_MODULE
+            && self.core_prelude_roots.contains(&self.root_of(from))
+    }
+
+    pub(crate) fn std_out_of_scope(&self, from: ModuleId) -> bool {
+        self.uses_core_prelude(from) && !self.explicit_std_roots.contains(&self.root_of(from))
+    }
+
+    pub(crate) fn outside_core_prelude(&self, from: ModuleId, name: &str) -> bool {
+        self.uses_core_prelude(from) && in_std_prelude(name, Namespace::Type) && !in_core_prelude(name, Namespace::Type)
+    }
+
+    fn in_prelude(&self, from: ModuleId, name: &str, ns: Namespace) -> bool {
+        !self.modules[from.0 as usize].no_prelude
+            && if self.uses_core_prelude(from) { in_core_prelude(name, ns) } else { in_std_prelude(name, ns) }
     }
 
     /// True when `alloc` is a std extern of `from`'s crate that paths
@@ -1993,6 +2042,18 @@ impl ResolvedTables {
         }
     }
 
+    pub(crate) fn record_executable_import(&mut self, target: Target) {
+        if self.executable_import_uses.is_none() {
+            return;
+        }
+        let krate = match target {
+            Target::Def(def) | Target::Variant(def, _) => def.krate,
+            Target::Module(module) => self.module_def(module).krate,
+            Target::Extern(index) => self.externs[index as usize].def.krate,
+        };
+        self.executable_import_uses.as_mut().unwrap().insert(krate);
+    }
+
     /// Looks up one first segment and checks visibility from `from`.
     /// Checks `from` itself, then the extern prelude, then the std
     /// prelude. Both modes read only `from`: as in rustc, items of a
@@ -2012,7 +2073,7 @@ impl ResolvedTables {
         if let Some(i) = self.extern_in_scope(from, name_str) {
             return PathRes::Done(self.extern_target(i));
         }
-        if !self.modules[from.0 as usize].no_prelude && in_std_prelude(name_str, ns) {
+        if self.in_prelude(from, name_str, ns) {
             return PathRes::Prelude;
         }
         PathRes::Absent
@@ -2046,7 +2107,7 @@ impl ResolvedTables {
         // different item is ambiguous with either.
         let outer: Option<SegBind> = if let Some(i) = self.extern_in_scope(from, name_str) {
             Some(SegBind::Extern(i))
-        } else if !self.modules[from.0 as usize].no_prelude && in_std_prelude(name_str, ns) {
+        } else if self.in_prelude(from, name_str, ns) {
             Some(SegBind::Prelude(name))
         } else {
             None
@@ -2382,7 +2443,10 @@ pub fn flatten_use(tree: &ast::UseTree, module: ModuleId, vis: VisKind, out: &mu
 /// rewrite pass leaves those paths to the std compat layer, and binding
 /// queries for them answer through the extern flat record the worklist
 /// adds.
-pub fn run_imports(tables: &mut ResolvedTables, imports: &[Import], interner: &Interner) -> Result<Vec<Diag>, String> {
+pub fn run_imports(
+    tables: &mut ResolvedTables, imports: &[Import], interner: &Interner,
+    procedural_macros: Option<&dyn crate::expand::ProceduralMacros>,
+) -> Result<Vec<Diag>, String> {
     let self_sym = interner.intern("self");
     let mut diags = Vec::new();
     let mut pending: Vec<(usize, &Import)> = imports.iter().enumerate().collect();
@@ -2495,6 +2559,17 @@ pub fn run_imports(tables: &mut ResolvedTables, imports: &[Import], interner: &I
         if resolved[*i] {
             continue;
         }
+        if let ImportKind::Single { path, .. } = &imp.kind
+            && let [alias, name] = path.as_slice()
+            && let Some(provider) = procedural_macros
+            && provider.exports_attribute(interner.get(*alias), interner.get(*name))
+            && matches!(tables.resolve_path(imp.module, &path[..1], Namespace::Type, PathMode::Use,
+                imp.leading_colon, interner), PathRes::Absent)
+        {
+            diags.push(Diag::new("L0809", imp.span, "Rust procedural attribute import requires macro resolution", "")
+                .requiring_rust_complement());
+            continue;
+        }
         let (path, glob) = match &imp.kind {
             ImportKind::Single { path, .. } | ImportKind::CheckPath { path } | ImportKind::BadLeading { path } => (path, false),
             ImportKind::Glob { path } => (path, true),
@@ -2529,14 +2604,18 @@ pub fn run_imports(tables: &mut ResolvedTables, imports: &[Import], interner: &I
     {
         let mut seen: FxMap<(crate::diag::Span, Sym), ()> = FxMap::default();
         for imp in imports {
-            if imp.leading_colon {
-                continue;
-            }
             let path = match &imp.kind {
                 ImportKind::Single { path, .. } | ImportKind::CheckPath { path } | ImportKind::Glob { path } => path,
                 ImportKind::BadLeading { .. } => continue,
             };
             let Some(&first) = path.first() else { continue };
+            if imp.leading_colon {
+                if tables.executable_import_uses.is_some()
+                    && let Some(index) = tables.extern_in_scope(imp.module, interner.get(first)) {
+                    tables.record_executable_import(Target::Extern(index));
+                }
+                continue;
+            }
             if matches!(interner.get(first), "crate" | "self" | "super" | "Self") || tables.crate_magic.contains_key(&first) {
                 continue;
             }
@@ -2552,6 +2631,13 @@ pub fn run_imports(tables: &mut ResolvedTables, imports: &[Import], interner: &I
                 // the import binds or stays unresolved.
                 if info.glob && matches!(info.bind, SegBind::Ambiguous) && seen.insert((imp.span, first), ()).is_none() {
                     diags.push(ambiguous_diag(interner.get(first), imp.span));
+                }
+                if tables.executable_import_uses.is_some() {
+                    match info.bind {
+                        SegBind::Extern(index) => tables.record_executable_import(Target::Extern(index)),
+                        SegBind::Target(target) => tables.record_executable_import(target),
+                        _ => {}
+                    }
                 }
             }
         }

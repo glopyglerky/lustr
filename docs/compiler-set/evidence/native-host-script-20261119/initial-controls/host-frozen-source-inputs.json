@@ -1,0 +1,7 @@
+{
+  "compiler/native/src/driver/buildscript.rs": "25d718ce233542d2ad73616404aedc32f4134d5e2671e205ee785b30594e267e",
+  "compiler/native/src/driver/buildscript/native.rs": "293267428fafc2a227a1d471921974f7e51ad0927830b012ef17eb886599aaf1",
+  "compiler/native/src/driver/compile.rs": "07b5f75a8aa7b712d166c2dee832fdddf01493796d946df4e55ef197739a43cb",
+  "compiler/native/src/daemon.rs": "beb8dc2d2105f19e5a3fb425f6c6d03b111a35d38ba4f0cd1282cbb10c9dc1dd",
+  "compiler/native/src/resolve/cfg.rs": "365c30bf756fdc3971ac0cc16451e569a278af75d8b69d8950464b40b7aff701"
+}

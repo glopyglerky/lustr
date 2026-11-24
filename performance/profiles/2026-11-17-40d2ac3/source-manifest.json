@@ -1,0 +1,78 @@
+{
+  "schema": "lustr.profile-repair-source-v1",
+  "before_commit": "40d2ac3f0b71abaa1e73cd366d8c43f8eb4d4581",
+  "fixed_authoring_commit": "a1414d51dd725863eb0c1c8162e415a0408f3030",
+  "applied_fix_commit": "de5635e2c00a6d5c1c88de4baab4817cd446bf56",
+  "applied_files_byte_identical": true,
+  "files": [
+    {
+      "path": "source/trace-before.rs",
+      "repository_path": "crates/lustr-semantic/src/mixed_main.rs",
+      "commit": "40d2ac3f0b71abaa1e73cd366d8c43f8eb4d4581",
+      "git_blob": "50784576fed1a9170b6d38458cef378395c1a161",
+      "repository_file_sha256": "5eedd86172eafa11a3f7ff2d8dfa0acccef64927ab71f151796f122f70d8acf0",
+      "retained_sha256": "5266a1205577b76641bfa531624b3ee62d2f0cbc6769c0345f300b64e8443789",
+      "retained_bytes": 268,
+      "extraction": {
+        "start_byte": 6110,
+        "end_byte_exclusive": 6378,
+        "kind": "exact contiguous function including final newline"
+      }
+    },
+    {
+      "path": "source/trace-after.rs",
+      "repository_path": "crates/lustr-semantic/src/mixed_main.rs",
+      "commit": "a1414d51dd725863eb0c1c8162e415a0408f3030",
+      "git_blob": "b8c720506311d33b353070198ea8a41ae5507439",
+      "repository_file_sha256": "a59faa06346efa90ac64f49d4dce1b54ee177067ee49ebfd7e0cdd76f80f1306",
+      "retained_sha256": "0dcbbb59d066a2d5f0454d3c59a190c3d3731e7678c18be4b2a45dd6c8f3d156",
+      "retained_bytes": 605,
+      "extraction": {
+        "start_byte": 6110,
+        "end_byte_exclusive": 6715,
+        "kind": "exact contiguous function including final newline"
+      }
+    },
+    {
+      "path": "source/test-mixed-trace.py",
+      "repository_path": "tools/test-mixed-trace.py",
+      "commit": "a1414d51dd725863eb0c1c8162e415a0408f3030",
+      "git_blob": "cd62bd2440a6036f455a6bcd3760bfa9a90ae513",
+      "repository_file_sha256": "2a9ee1170cc00173878ddefbee751bbd7d3a57ae4b27b5a30f6c4551b2443145",
+      "retained_sha256": "2a9ee1170cc00173878ddefbee751bbd7d3a57ae4b27b5a30f6c4551b2443145",
+      "retained_bytes": 7085,
+      "extraction": null
+    },
+    {
+      "path": "source/test-mixed-profile.py",
+      "repository_path": "tools/test-mixed-profile.py",
+      "commit": "a1414d51dd725863eb0c1c8162e415a0408f3030",
+      "git_blob": "db26a3113e9915e778bbc6664bf2e9af419008eb",
+      "repository_file_sha256": "85b27eb75c6acaf42bc13c6e6f1532e6b38046c1744937bd73e16bc64e4bf903",
+      "retained_sha256": "85b27eb75c6acaf42bc13c6e6f1532e6b38046c1744937bd73e16bc64e4bf903",
+      "retained_bytes": 15793,
+      "extraction": null
+    },
+    {
+      "path": "source/profile-mixed-compiler.py",
+      "repository_path": "tools/profile-mixed-compiler.py",
+      "commit": "a1414d51dd725863eb0c1c8162e415a0408f3030",
+      "git_blob": "07091765816c5181d998ff4bff4750312e8e8ee7",
+      "repository_file_sha256": "c0c0b78ae4111d985f5437c272653d16f8006c3a1d97cf54cb8750a15c2c40bb",
+      "retained_sha256": "c0c0b78ae4111d985f5437c272653d16f8006c3a1d97cf54cb8750a15c2c40bb",
+      "retained_bytes": 21933,
+      "extraction": null
+    },
+    {
+      "path": "source/replay-before-explicit-checks.py",
+      "repository_path": "performance/profiles/2026-11-17-40d2ac3/replay.py",
+      "commit": "ebbcf8036a336d5024c49ae5e4af89630e3bfc05",
+      "git_blob": "112d379f489844030e89bc5370e89696f01f6d69",
+      "repository_file_sha256": "6976f2406c193fc08f0ead15718e13d3d10bfa5c22e4b1c9ebc05cdd7a0c5322",
+      "retained_sha256": "6976f2406c193fc08f0ead15718e13d3d10bfa5c22e4b1c9ebc05cdd7a0c5322",
+      "retained_bytes": 4773,
+      "extraction": null,
+      "role": "superseded replay implementation; retained only for the optimized-mode regression"
+    }
+  ]
+}

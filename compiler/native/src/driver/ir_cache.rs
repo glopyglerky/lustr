@@ -265,6 +265,11 @@ fn hash_rvalue(h: &mut FxHasher, p: &Program, tys: &impl TyIntern, r: &Rvalue, s
             hash_def(h, p, p.def_id(*f));
             ty(h, *t, seen);
         }
+        Rvalue::NativeFnValue(def, t) => {
+            51u8.hash(h);
+            hash_def(h, p, *def);
+            ty(h, *t, seen);
+        }
         Rvalue::ItemShim(item, t) => {
             50u8.hash(h);
             ty(h, *item, seen);
@@ -417,6 +422,7 @@ pub(crate) fn ir_fingerprint(p: &Program, body: &Body, map: &SourceMap, base_lin
                     CallTarget::Intrinsic(i) => (2u8, i).hash(&mut h),
                     CallTarget::Indirect(l) => (3u8, l).hash(&mut h),
                     CallTarget::Dyn(k) => (4u8, k).hash(&mut h),
+                    CallTarget::NativeFn(def) => { 5u8.hash(&mut h); hash_def(&mut h, p, *def); }
                 }
                 (args.len() as u64).hash(&mut h);
                 for a in args {
@@ -499,9 +505,11 @@ pub(crate) struct CachedBody {
     pub used_at_gen: Vec<(DiskDefId, u32)>,
     /// `ir_fingerprint` of the source body; a rebuild must match it.
     pub ir_fp: u64,
+    /// This checked body was saved when a cached executable was republished.
+    pub pending_codegen: bool,
     arg_count: usize,
     tys: Vec<TyTree>,
-    locals: Vec<(u32, bool, Option<String>)>,
+    locals: Vec<(u32, bool, Option<String>, Option<Span>)>,
     blocks: Vec<CachedBlock>,
     stmt_unwind: Vec<(Bb, u32, Bb)>,
     promoted: Vec<Local>,
@@ -584,6 +592,7 @@ enum CachedRvalue {
     StaticLoad(DefId),
     StaticRef(DefId),
     FnValue(DiskDefId, u32),
+    NativeUnsupported,
     ItemShim(u32, u32),
     MakeDyn(CachedOperand, u32, u32),
     DynUpcast(CachedOperand, Vec<u32>),
@@ -608,10 +617,13 @@ enum CachedTerm {
 #[derive(Clone, Debug)]
 enum CachedTarget {
     Fn(DiskDefId),
+    NativeFn(DiskDefId),
     Builtin(Builtin),
     Intrinsic(u32),
     Indirect(Local),
     Dyn(u32),
+    /// Independent native inputs do not yet have a retained-cache contract.
+    NativeUnsupported,
 }
 
 /// Builds `TyTree`s from one body's type store, memoized per `Ty`.
@@ -914,6 +926,7 @@ fn cache_rvalue(b: &mut TreeBuilder, p: &Program, r: &Rvalue) -> CachedRvalue {
         Rvalue::StaticLoad(i) => CachedRvalue::StaticLoad(p.static_defs[*i as usize]),
         Rvalue::StaticRef(i) => CachedRvalue::StaticRef(p.static_defs[*i as usize]),
         Rvalue::FnValue(f, t) => CachedRvalue::FnValue(p.disk_id(*f), b.ty(*t)),
+        Rvalue::NativeFnValue(..) => CachedRvalue::NativeUnsupported,
         Rvalue::ItemShim(item, t) => CachedRvalue::ItemShim(b.ty(*item), b.ty(*t)),
         Rvalue::MakeDyn { ptr, src, dyn_ty } => CachedRvalue::MakeDyn(cache_operand(b, p, ptr), b.ty(*src), b.ty(*dyn_ty)),
         Rvalue::DynUpcast { ptr, path } => CachedRvalue::DynUpcast(cache_operand(b, p, ptr), path.clone()),
@@ -928,7 +941,7 @@ fn cache_rvalue(b: &mut TreeBuilder, p: &Program, r: &Rvalue) -> CachedRvalue {
 /// pairs each slot its C prints (`FnOut::used`) with that slot's fn.
 pub(crate) fn cache_body(p: &Program, body: &Body, file_hash: u64, slot: u32, used_at_gen: Vec<(DiskDefId, u32)>, ir_fp: u64) -> CachedBody {
     let mut b = TreeBuilder { tys: &body.tys, memo: FxMap::default(), out: Vec::new() };
-    let locals = body.locals.iter().map(|l| (b.ty(l.ty), l.mutable, l.name.clone())).collect();
+    let locals = body.locals.iter().map(|l| (b.ty(l.ty), l.mutable, l.name.clone(), l.binding_span)).collect();
     let blocks = body
         .blocks
         .iter()
@@ -960,6 +973,8 @@ pub(crate) fn cache_body(p: &Program, body: &Body, file_hash: u64, slot: u32, us
                         CallTarget::Intrinsic(i) => CachedTarget::Intrinsic(*i),
                         CallTarget::Indirect(l) => CachedTarget::Indirect(*l),
                         CallTarget::Dyn(k) => CachedTarget::Dyn(*k),
+                        CallTarget::NativeFn(def) => p.native_fn(*def)
+                            .map_or(CachedTarget::NativeUnsupported, |(_, _, link)| CachedTarget::NativeFn(link.id)),
                     },
                     args: args.iter().map(|a| cache_operand(&mut b, p, a)).collect(),
                     dest: dest.clone(),
@@ -976,7 +991,8 @@ pub(crate) fn cache_body(p: &Program, body: &Body, file_hash: u64, slot: u32, us
         .collect();
     let stmt_unwind = body.stmt_unwind.clone();
     let promoted = body.promoted.clone();
-    CachedBody { file_hash, slot_at_gen: slot, used_at_gen, ir_fp, arg_count: body.arg_count, tys: b.out, locals, blocks, stmt_unwind, promoted }
+    CachedBody { file_hash, slot_at_gen: slot, used_at_gen, ir_fp, pending_codegen: false,
+        arg_count: body.arg_count, tys: b.out, locals, blocks, stmt_unwind, promoted }
 }
 
 /// Rebuilds one cached body against today's program. None when any
@@ -987,8 +1003,8 @@ pub(crate) fn rebuild<'p>(p: &'p Program, cached: &CachedBody, fn_id: LocalDefId
     let mut tys = Tys::new(&p.tys);
     let mut intern = TreeIntern { trees: &cached.tys, memo: vec![None; cached.tys.len()] };
     let mut locals = Vec::with_capacity(cached.locals.len());
-    for (ty, mutable, name) in &cached.locals {
-        locals.push(LocalDecl { ty: intern.ty(&mut tys, *ty)?, mutable: *mutable, name: name.clone() });
+    for (ty, mutable, name, binding_span) in &cached.locals {
+        locals.push(LocalDecl { ty: intern.ty(&mut tys, *ty)?, mutable: *mutable, name: name.clone(), binding_span: *binding_span });
     }
     let mut strings: FxMap<&str, u32> = FxMap::default();
     for (i, s) in p.ast.strings.iter().enumerate() {
@@ -1107,6 +1123,7 @@ pub(crate) fn rebuild<'p>(p: &'p Program, cached: &CachedBody, fn_id: LocalDefId
             CachedRvalue::StaticLoad(def) => Rvalue::StaticLoad(p.static_by_def(*def)?),
             CachedRvalue::StaticRef(def) => Rvalue::StaticRef(p.static_by_def(*def)?),
             CachedRvalue::FnValue(disk, t) => Rvalue::FnValue(local_of(disk)?, intern.ty(tys, *t)?),
+            CachedRvalue::NativeUnsupported => return None,
             CachedRvalue::ItemShim(item, t) => Rvalue::ItemShim(intern.ty(tys, *item)?, intern.ty(tys, *t)?),
             CachedRvalue::MakeDyn(o, src, dyn_ty) => {
                 Rvalue::MakeDyn { ptr: operand(intern, tys, strings, o)?, src: intern.ty(tys, *src)?, dyn_ty: intern.ty(tys, *dyn_ty)? }
@@ -1152,6 +1169,14 @@ pub(crate) fn rebuild<'p>(p: &'p Program, cached: &CachedBody, fn_id: LocalDefId
                     CachedTarget::Intrinsic(i) => CallTarget::Intrinsic(*i),
                     CachedTarget::Indirect(l) => CallTarget::Indirect(*l),
                     CachedTarget::Dyn(k) => CallTarget::Dyn(*k),
+                    CachedTarget::NativeFn(id) => {
+                        let (&krate, _) = p.imported_crates.iter().find(|(_, stable)| **stable == id.krate)?;
+                        let def = DefId { krate, hash: id.hash };
+                        let (_, _, linkage) = p.native_fn(def)?;
+                        if linkage.id != *id { return None; }
+                        CallTarget::NativeFn(def)
+                    }
+                    CachedTarget::NativeUnsupported => return None,
                 },
                 args: args.iter().map(|a| operand(&mut intern, &mut tys, &strings, a)).collect::<Option<Vec<_>>>()?,
                 dest: dest.clone(),
@@ -1414,6 +1439,7 @@ fn main() {
             max_errors: 20,
             run_args: None,
             harness: false, cc: false,
+            library_options: Default::default(),
             client: Default::default(),
         };
         let mut s = Session::new(dir.join("obj"), false, key);

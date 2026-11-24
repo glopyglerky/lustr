@@ -494,15 +494,19 @@ impl Reads {
 
 /// The stable crate half a def hashes under in a fingerprint. Local-crate
 /// defs use the program's stable crate hash and builtin defs use theirs, so
-/// fingerprints match across sessions. A foreign session crate cannot occur
-/// today (one crate per session); when W-RESOLVE loads more crates it gives
-/// `Program` a crate table and this fallback goes away.
+/// fingerprints match across sessions. Imported definitions use the upstream
+/// stable crate identity installed before native checking, including nominal
+/// types with no function linkage of their own.
 pub(crate) fn def_crate_hash(p: &Program, def: DefId) -> u64 {
     if def.krate == p.krate {
         p.stable_crate.0
     } else if def.krate == BUILTIN_CRATE {
         static BUILTIN: std::sync::OnceLock<u64> = std::sync::OnceLock::new();
         *BUILTIN.get_or_init(|| crate::def::stable_crate_hash("lust-builtin-v1", "lib", "builtin", false).0)
+    } else if let Some(stable) = p.imported_crates.get(&def.krate) {
+        stable.0
+    } else if let Some((_, _, link)) = p.native_fn(def) {
+        link.id.krate.0
     } else {
         def.krate.0 as u64
     }
@@ -1401,6 +1405,22 @@ pub(crate) fn resolved_traits_hash(p: &Program) -> u64 {
                 hash_ty(&mut h, p, &p.tys, t);
                 has_default.hash(&mut h);
             }
+            if let Some(item) = p.gx.trait_assoc_generics.get(&d) {
+                hash_def_pub(&mut h, p, item.parent);
+                hash_generics(&mut h, p, &item.generics);
+                item.lifetimes.len().hash(&mut h);
+                item.arguments.len().hash(&mut h);
+                for argument in &item.arguments { hash_arg(&mut h, p, &p.tys, argument); }
+                item.region_facts.hash(&mut h);
+                item.region_predicates.len().hash(&mut h);
+                for predicate in &item.region_predicates {
+                    hash_predicate(&mut h, p, &p.tys, predicate);
+                }
+                item.bounds.len().hash(&mut h);
+                for predicate in &item.bounds { hash_predicate(&mut h, p, &p.tys, predicate); }
+                item.declared_bounds.len().hash(&mut h);
+                for predicate in &item.declared_bounds { hash_predicate(&mut h, p, &p.tys, predicate); }
+            }
         }
         (r.methods.len() as u64).hash(&mut h);
         for &(d, n) in &r.methods {
@@ -1424,6 +1444,7 @@ fn lang_impl_shape(p: &Program, rec: &crate::traits::index::ImplRecord) -> u64 {
     "lang-impl-shape-v1".hash(&mut h);
     hash_trait_ref(&mut h, p, tys, &rec.trait_ref);
     hash_generics(&mut h, p, &rec.generics);
+    hash_impl_associated_items(&mut h, p, rec);
     (rec.assoc_tys.len() as u64).hash(&mut h);
     for (d, t) in &rec.assoc_tys {
         hash_def_pub(&mut h, p, *d);
@@ -2036,6 +2057,7 @@ fn impl_content(p: &Program, def: DefId) -> u64 {
         }
     }
     hash_generics(&mut h, p, &rec.generics);
+    hash_impl_associated_items(&mut h, p, rec);
     (rec.assoc_tys.len() as u64).hash(&mut h);
     for (d, t) in &rec.assoc_tys {
         hash_def_pub(&mut h, p, *d);
@@ -2052,6 +2074,26 @@ fn impl_content(p: &Program, def: DefId) -> u64 {
         sig_fingerprint(p, *d).0.hash(&mut h);
     }
     h.finish()
+}
+
+/// Associated conditions do not participate in impl selection, but a reader
+/// of the selected impl's associated value must observe their exact generation.
+fn hash_impl_associated_items(h: &mut FxHasher, p: &Program, rec: &crate::traits::index::ImplRecord) {
+    rec.assoc_tys.len().hash(h);
+    for &(assoc, _) in &rec.assoc_tys {
+        hash_def_pub(h, p, assoc);
+        if let Some(item) = p.gx.impl_assoc_generics.get(&(rec.def, assoc)) {
+            1u8.hash(h);
+            hash_generics(h, p, &item.declaration.generics);
+            item.declaration.lifetimes.len().hash(h);
+            item.declaration.arguments.len().hash(h);
+            for argument in &item.declaration.arguments { hash_arg(h, p, &p.tys, argument); }
+            item.declaration.region_facts.hash(h);
+            item.declaration.region_predicates.len().hash(h);
+            for predicate in &item.declaration.region_predicates { hash_predicate(h, p, &p.tys, predicate); }
+            hash_ty(h, p, &p.tys, item.value);
+        } else { 0u8.hash(h); }
+    }
 }
 
 /// Folds one visibility into `h`: its form, and for `pub(in path)` the
@@ -2344,7 +2386,14 @@ fn sig_fingerprint(p: &Program, def: DefId) -> Fingerprint {
         2u8.hash(&mut h);
         // Const and static payloads are found by def; aliases by flat
         // name, which the def record carries.
-        if let Some(item) = p.const_by_def(def).map(|i| &p.consts[i as usize]) {
+        if let Some((params, ret, link)) = p.native_fn(def) {
+            3u8.hash(&mut h);
+            link.id.krate.0.hash(&mut h);
+            link.symbol.hash(&mut h);
+            (params.len() as u64).hash(&mut h);
+            for &t in params { hash_ty(&mut h, p, &p.tys, t); }
+            hash_ty(&mut h, p, &p.tys, ret);
+        } else if let Some(item) = p.const_by_def(def).map(|i| &p.consts[i as usize]) {
             0u8.hash(&mut h);
             hash_ty_deep(&mut h, p, &p.tys, item.ty, &mut seen);
             value_fp(p, &item.value, &item.value_fp).hash(&mut h);
@@ -4121,6 +4170,39 @@ fn main() {}
         assert_ne!(a, changed, "a parameter type edit does");
     }
 
+    #[test]
+    fn resolved_traits_hash_tracks_associated_item_where_predicates() {
+        let hash = |bound: &str| {
+            let source = format!("trait Family {{ type View where Self: {bound}; }} fn main() {{}}");
+            let mut hash = 0;
+            with_program(&source, |_, program| hash = resolved_traits_hash(program));
+            hash
+        };
+        assert_eq!(hash("Copy"), hash("Copy"));
+        assert_ne!(hash("Copy"), hash("Clone"));
+    }
+
+    #[test]
+    fn impl_associated_environment_enters_dependency_fingerprints() {
+        let source = "trait Family { type View where Self: Copy; } impl<T> Family for T { type View where T: Copy = u32; } fn spare(x: u32) -> u32 { x ^ 7 } fn main() {}";
+        let fingerprint = |source: &str| {
+            let mut result = None;
+            with_program(source, |interner, program| {
+                let family = program.gx.trait_names[&interner.intern("Family")];
+                let record = program.gx.index.all_impls().map(|(_, record)|record).find(|record|record.trait_def == family).unwrap();
+                let spare = program.def_id(program.fn_names[&interner.intern("spare")]);
+                result = Some((impl_content(program, record.def), lang_impl_shape(program, record), sig_fingerprint(program, spare)));
+            });
+            result.unwrap()
+        };
+        let original = fingerprint(source);
+        assert_eq!(fingerprint(&source.replace("x ^ 7", "x ^ 15")), original);
+        let changed = fingerprint(&source.replace("where T: Copy =", "where T: Copy + Clone ="));
+        assert_ne!(changed.0, original.0);
+        assert_ne!(changed.1, original.1);
+        assert_eq!(changed.2, original.2, "an unrelated signature is not the selected impl's item environment");
+    }
+
     /// Non-generic instance keys hash exactly like today's disk-def slot
     /// keys, and lifetime args never enter the hash (section 4.2).
     #[test]
@@ -4187,7 +4269,7 @@ fn main() {}
                 if let Terminator::Call { target, unwind, .. } = &b.term {
                     assert!(unwind.is_some(), "every call carries a cleanup edge (W-CORELANG)");
                     match target {
-                        CallTarget::Fn(_) | CallTarget::Indirect(_) | CallTarget::Dyn(_) => fn_calls += 1,
+                        CallTarget::Fn(_) | CallTarget::NativeFn(_) | CallTarget::Indirect(_) | CallTarget::Dyn(_) => fn_calls += 1,
                         CallTarget::Builtin(_) | CallTarget::Intrinsic(_) => builtin_calls += 1,
                     }
                 }

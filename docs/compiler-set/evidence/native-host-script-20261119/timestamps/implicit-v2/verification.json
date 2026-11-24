@@ -1,0 +1,7 @@
+{
+  "entry_sha256": "8143227d44c38babb3ff3325e2a1fc71fb513252b251ad098d34145c00f66e11",
+  "core_sha256": "4dfef36f8f80e878fc4922879caab46b3cceabe478ae104120067a85d0bbd57b",
+  "script_sha256": "95a101d3d256ec80490beb49c6951e9a8b3d868ee1c934ea7091bca657b215eb",
+  "oracle_sha256": "ca9d833d09469a534ca1449e71ca9961608409cdb257df96cf8035338fac28de",
+  "scope": "cold source-mtime-only runtime invalidation; no daemon or speed claim"
+}

@@ -136,7 +136,7 @@ compiler acceptance, required artifacts and generated-program exit/stdout/stderr
 as distinct observations, so a compiler failure cannot stand in for an expected
 runtime failure.
 
-## Minimal justified imports
+## Upstream implementations and dependencies
 
 Choose missing-capability roots under an explicit target/feature configuration.
 Let `D_0` contain those roots. Repeatedly add their required dependencies, except
@@ -148,9 +148,14 @@ D_(n+1) = D_n union required_dependencies(D_n, features, target, adapters)
 
 The fixed point is the least closure for that declared graph and interface cut.
 For a finite explicit graph, adjacency traversal costs `O(vertices + edges)`.
-This does not prove global minimality among all possible compiler refactorings.
-Changing an adapter, feature or target changes the graph and requires a fresh
-closure review.
+Use this analysis to improve the cost and size of an integration. Revisit
+the closure when a changed adapter, feature or target changes its dependencies.
+The pinned Rust driver can supply complete Rust operations while the
+integration is developed and qualified. Record compatibility results that
+still run Lust-owned operations through the Rust driver as unfinished
+integration. When the artifact or runtime interface is missing, carry the
+existing Lust result into that interface and qualify the actual owner and
+work performed under the original Cargo settings.
 
 Every import needs a necessity witness that identifies its missing capability
 or a dependency path back to one. Record exact donor repository/revision,
@@ -159,13 +164,10 @@ dependency edges, substituted interfaces, real callers, semantic owner/query
 boundary, excluded overlapping Lust phases, and qualification status. Include
 build-time generators, referenced data and transitive dependencies.
 
-An allowlist proves only that listed paths are present. An empty list proves
-neither full coverage nor minimality. A path called `complement`, a shared
-library instead of an executable, or link-time dead-code elimination does not
-establish compliance. The whole Rust source tree and full `rustc_driver`
-pipeline are not an acceptable shortcut for this import contract. If a chosen
-root pulls in duplicate Lust-owned compiler stages, narrow the boundary or
-supply a verified adapter before admitting it to production.
+Source inventories establish provenance and the effective dependency graph.
+Verify the implementation used for each operation through the actual compiler
+entry. When integration duplicates work that Lust already owns, improve that
+boundary and measure the effect.
 
 Apply this rule to the effective Cargo dependency and feature graph, not only
 the normal constructor command. Review defaults, optional and renamed packages,
@@ -177,10 +179,10 @@ qualifiers outside product admission. Structural package checks run before
 construction and add no per-request compilation work.
 
 The machine-readable inventory is
-[`upstream/complement-imports.json`](https://github.com/glopyglerky/lustr/blob/114227e8b255e8aa49ce50019b7d614d53e39c22/upstream/complement-imports.json),
+[`upstream/complement-imports.json`](../../upstream/complement-imports.json),
 schema `lustr-complement-imports-v1`. It distinguishes actual partial source
 imports from retained research components and keeps `full_rust_coverage=false`.
-The [implementation cleanup](https://github.com/glopyglerky/lustr/blob/114227e8b255e8aa49ce50019b7d614d53e39c22/docs/compiler-set/exclusive-coverage-cleanup.md) adds this inventory
+The [implementation cleanup](exclusive-coverage-cleanup.md) adds this inventory
 and structural enforcement. Neither the inventory nor its guard establishes
 full coverage, global source minimality or performance qualification.
 
@@ -322,7 +324,7 @@ The full rustc-replacement claim requires all of these:
 
 - Actual Lust coverage retained in pure and mixed programs, with no competing
   semantic compiler or emitter owning covered work.
-- Full complementary support through the justified selective imports, with
+- Full complementary support using the pinned Rust implementation, with
   complete dependency, ABI/runtime and artifact contracts.
 - Real unchanged Cargo projects, dependencies, macros, build scripts, generic
   instances, valid and invalid programs, and genuine downstream artifacts.
@@ -341,10 +343,8 @@ source cleanup nor this contract alone delivers the full compiler.
 
 ## Conflicting directions are retired
 
-The active direction excludes whole-Rust-source vendoring, a complete-driver
-wrapper as the product, source-keyword selection, compiler-failure retry,
-scalar-only ownership presented as full Lust support, independent reimplementation
-of every Rust gap, and unrelated compiler/memory-safety rewrites as alternative
-Lustr goals. Preserve their unique evidence in history and reuse compliant
-components under this contract. The [disposition record](retained-work-disposition.md)
+Lustr delivers upstream Rust compatibility together with real Lust acceleration
+for its supported work. Choose implementation boundaries using actual compiler
+facts and preserve terminal failures. Retain the useful evidence and components
+from earlier attempts. The [disposition record](retained-work-disposition.md)
 tracks the current cleanup without claiming it has already landed.

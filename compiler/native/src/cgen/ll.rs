@@ -19,6 +19,7 @@
 // value by pointer to a copy the callee owns; an aggregate result goes through a leading
 // sret pointer. C callers (glue, vtable shims, trampolines, helpers) keep calling
 // `f_<id>` with the C signature: a C wrapper in the unit forwards to `fl_<id>`.
+use super::ll_debug::{self, DebugFn};
 use super::unwind::{is_ident, skip_lit};
 use super::*;
 
@@ -81,6 +82,15 @@ pub(super) fn pass_of(p: &Program, t: &CTy) -> Pass {
             Some(l) if l.size == 16 && bits_on() && pair_on() => Pass::Pair,
             _ => Pass::Mem,
         },
+    }
+}
+
+fn scalar_library_pass(p: &Program, ty: &CTy, scalar_library: bool) -> Pass {
+    match pass_of(p, ty) {
+        // rustc_target::callconv::FnAbi::adjust_for_rust_abi leaves integers
+        // unextended on x86-64. This export contract contains only integers.
+        Pass::Scalar(llvm, _) if scalar_library => Pass::Scalar(llvm, ""),
+        pass => pass,
     }
 }
 
@@ -246,6 +256,7 @@ pub struct LlFn {
 /// The per-fn state of LLVM emission.
 struct Ll {
     tag: String,
+    scalar_export: bool,
     /// Helper definitions (C), in order.
     helpers: String,
     n_helpers: usize,
@@ -253,6 +264,7 @@ struct Ll {
     statics: Vec<bool>,
     /// The cleanup blocks each landing pad enters.
     pads: BTreeSet<u32>,
+    resumes: bool,
     decls: BTreeSet<String>,
     body: String,
     /// The number of continuation blocks made so far.
@@ -459,11 +471,16 @@ impl FnGen<'_, '_> {
     /// Generates fn `fl_<id>` and its C side (helpers, the C ABI wrapper `f_<id>`, the
     /// trampoline) into `self.out`. Returns the LLVM definition and declarations, or an
     /// internal error.
-    pub(super) fn function_ll(&mut self) -> Result<LlFn, String> {
+    pub(super) fn function_ll(&mut self, debug_optimized: Option<bool>, scalar_export: bool) -> Result<LlFn, String> {
         let p = self.p;
         let fid = self.body.fn_id;
         let slot = self.slots.of(fid);
         let tag = names::fn_tag(slot);
+        let linkage = body_symbol(&tag, scalar_export);
+        // Archive publication can rename the scalar object symbol. Its source
+        // subprogram must not advertise the pre-publication linkage name.
+        let mut debug = debug_optimized.map(|optimized|
+            DebugFn::new(self, (!scalar_export).then_some(linkage.as_str()), optimized)).transpose()?;
         let n = self.body.blocks.len();
         let mut reachable = vec![false; n];
         let mut stack = vec![0usize];
@@ -471,8 +488,14 @@ impl FnGen<'_, '_> {
             if std::mem::replace(&mut reachable[b], true) {
                 continue;
             }
-            stack.extend(succ(&self.body.blocks[b].term).into_iter().map(|s| s.0 as usize));
-            stack.extend(self.body.stmt_unwind.iter().filter(|e| e.0.0 as usize == b).map(|e| e.2.0 as usize));
+            if self.nounwind && let Terminator::Call { next, .. } = &self.body.blocks[b].term {
+                stack.push(next.0 as usize);
+            } else {
+                stack.extend(succ(&self.body.blocks[b].term).into_iter().map(|s| s.0 as usize));
+            }
+            if self.unwind {
+                stack.extend(self.body.stmt_unwind.iter().filter(|e| e.0.0 as usize == b).map(|e| e.2.0 as usize));
+            }
         }
         let order: Vec<usize> = (0..n).filter(|&b| reachable[b]).collect();
         let cost = order
@@ -486,10 +509,12 @@ impl FnGen<'_, '_> {
             .collect();
         let mut ll = Ll {
             tag: tag.clone(),
+            scalar_export,
             helpers: String::new(),
             n_helpers: 0,
             statics,
             pads: BTreeSet::new(),
+            resumes: false,
             decls: BTreeSet::new(),
             body: String::new(),
             conts: 0,
@@ -508,27 +533,46 @@ impl FnGen<'_, '_> {
             let block = self.body.block(Bb(bi as u32));
             let cleanup = self.cleanup.get(bi).copied().unwrap_or(false);
             let _ = writeln!(ll.body, "bb{bi}:");
+            if let Some(debug) = &mut debug {
+                debug.enter_block(&mut ll.body, bi, cleanup);
+            }
             for (si, s) in block.stmts.iter().enumerate() {
                 if matches!(s.kind, StmtKind::StorageDead(_) | StmtKind::FakeRead(_)) {
+                    if !cleanup && let (Some(debug), StmtKind::StorageDead(local)) = (&mut debug, &s.kind) {
+                        debug.dead(&mut ll.body, *local);
+                    }
                     continue;
                 }
-                let unwind = if cleanup || !p.unwind { None } else { self.stmt_unw.get(&(bi as u32, si as u32)).copied() };
+                let unwind = if cleanup || !self.unwind { None } else { self.stmt_unw.get(&(bi as u32, si as u32)).copied() };
                 self.at = (bi as u32, si as u32);
                 (ll.span, ll.unwind) = (s.span, unwind);
-                if native_on() && self.ll_native_stmt(&mut ll, s, unwind) {
-                    continue;
+                let start = ll.body.len();
+                if !(native_on() && self.ll_native_stmt(&mut ll, s, unwind)) {
+                    let text = self.stmt_text(bi, si, s);
+                    if !text.trim().is_empty() {
+                        let h = self.ll_helper(&mut ll, &text, None);
+                        self.ll_call(&mut ll, &h, unwind);
+                    }
                 }
-                let text = self.stmt_text(bi, si, s);
-                if text.trim().is_empty() {
-                    continue;
+                if !cleanup && let Some(debug) = &mut debug {
+                    debug.mark(self, &mut ll.body, start, s.span);
+                    if let StmtKind::Assign(place, _) = &s.kind
+                        && place.proj.is_empty() && place.local as usize > self.body.arg_count {
+                        if debug.has_binding(place.local) && ll.statics[place.local as usize] {
+                            return Err("Rust debug storage for a promoted binding is not represented".into());
+                        }
+                        debug.declare(&mut ll.body, place.local, false);
+                    }
                 }
-                let h = self.ll_helper(&mut ll, &text, None);
-                self.ll_call(&mut ll, &h, unwind);
             }
             let term_unwind = if cleanup { None } else { self.stmt_unw.get(&(bi as u32, block.stmts.len() as u32)).copied() };
             self.at = (bi as u32, block.stmts.len() as u32);
-            (ll.span, ll.unwind) = (block.term_span, term_unwind.filter(|_| p.unwind));
-            self.ll_term(&mut ll, bi, cleanup, term_unwind.filter(|_| p.unwind));
+            (ll.span, ll.unwind) = (block.term_span, term_unwind.filter(|_| self.unwind));
+            let start = ll.body.len();
+            self.ll_term(&mut ll, bi, cleanup, term_unwind.filter(|_| self.unwind));
+            if !cleanup && let Some(debug) = &mut debug {
+                debug.mark(self, &mut ll.body, start, block.term_span);
+            }
         }
         if let Some(e) = ll.error.take() {
             return Err(e);
@@ -544,7 +588,10 @@ impl FnGen<'_, '_> {
         // that holds strs adds literals and an entry write to the entry helper.
         let kdecls: Vec<Option<String>> = (0..self.local_cty.len()).map(|i| if ll.statics[i] { self.kstatic_decl(i) } else { None }).collect();
         let kstr_init = self.ll_kstr_init(&mut ll);
-        let def = self.ll_define(&mut ll, kstr_init.as_deref());
+        let mut def = self.ll_define(&mut ll, kstr_init.as_deref(), debug.as_mut());
+        if let Some(debug) = debug {
+            debug.finish(&mut def);
+        }
         // The C sides: the helpers with the macros and statics they read; then the C ABI
         // wrapper and the trampoline, which stay in the unit's plain C. A fn with no helpers
         // (and no literal or constant prologue) has no helper side: nothing in C reads its
@@ -562,8 +609,10 @@ impl FnGen<'_, '_> {
             self.kstrs.clear();
             String::new()
         };
-        let wrapper = self.ll_wrapper(slot);
-        let _ = writeln!(self.out, "/* {} */\n{wrapper}{}", p.display_path(p.fn_info(fid).name), trampoline(p, fid, slot));
+        if !scalar_export {
+            let wrapper = self.ll_wrapper(slot);
+            let _ = writeln!(self.out, "/* {} */\n{wrapper}{}", p.display_path(p.fn_info(fid).name), trampoline(p, fid, slot));
+        }
         ll.decls.insert("declare i32 @__gcc_personality_v0(...)".into());
         // The inline cost on a comment line above the fn, for reading the IR.
         let def = format!("; cost {cost}\n{def}");
@@ -604,8 +653,15 @@ impl FnGen<'_, '_> {
                 if native_on() && {
                     let dest_clear = !ll.flags_at_term[bi][dest.local as usize];
                     let span = self.body.blocks[bi].term_span;
-                    self.ll_native_call(ll, *f, args, dest, dest_clear, span, if cleanup || !self.p.unwind { None } else { call_unwind.map(|u| u.0) })
+                    self.ll_native_call(ll, *f, args, dest, dest_clear, span, if cleanup || !self.unwind { None } else { call_unwind.map(|u| u.0) })
                 } =>
+            {
+                let _ = writeln!(ll.body, "  br label %bb{}", next.0);
+            }
+            #[cfg(feature = "exclusive-native")]
+            Terminator::Call { target: CallTarget::NativeFn(def), args, dest, next, unwind: call_unwind }
+                if native_on() && self.ll_imported_scalar_call(ll, *def, args, dest,
+                    if cleanup || !self.unwind { None } else { call_unwind.map(|u| u.0) }) =>
             {
                 let _ = writeln!(ll.body, "  br label %bb{}", next.0);
             }
@@ -620,7 +676,7 @@ impl FnGen<'_, '_> {
                 self.unw = None;
                 let text = std::mem::replace(&mut self.out, saved);
                 let h = self.ll_helper(ll, &text, None);
-                let u = if cleanup || !self.p.unwind { None } else { call_unwind.map(|u| u.0) };
+                let u = if cleanup || !self.unwind { None } else { call_unwind.map(|u| u.0) };
                 self.ll_call(ll, &h, u);
                 let _ = writeln!(ll.body, "  br label %bb{}", next.0);
             }
@@ -644,7 +700,8 @@ impl FnGen<'_, '_> {
                 }
                 _ => ll.body.push_str("  ret void\n"),
             },
-            Terminator::Unreachable | Terminator::MatchExhausted if cleanup && self.p.unwind => {
+            Terminator::Unreachable | Terminator::MatchExhausted if cleanup && self.unwind => {
+                ll.resumes = true;
                 ll.conts += 1;
                 let _ = writeln!(ll.body, "  %v{0} = load {{ ptr, i32 }}, ptr %exn\n  resume {{ ptr, i32 }} %v{0}", ll.conts);
             }
@@ -686,14 +743,14 @@ impl FnGen<'_, '_> {
     }
 
     /// The LLVM definition of `fl_<id>`.
-    fn ll_define(&mut self, ll: &mut Ll, kstr_init: Option<&str>) -> String {
+    fn ll_define(&mut self, ll: &mut Ll, kstr_init: Option<&str>, mut debug: Option<&mut DebugFn>) -> String {
         let p = self.p;
         let fid = self.body.fn_id;
         let info = p.fn_info(fid);
         let mut params: Vec<String> = Vec::new();
         let mut entry = String::new();
         let mut is_param = vec![false; self.local_cty.len()];
-        let ret_pass = pass_of(p, &self.local_cty[0]);
+        let ret_pass = scalar_library_pass(p, &self.local_cty[0], ll.scalar_export);
         let (ret_size, ret_align) = c_size_align(p, &self.local_cty[0]);
         let ret_ll = match ret_pass {
             Pass::Scalar("ptr", _) => {
@@ -720,7 +777,7 @@ impl FnGen<'_, '_> {
         for i in 1..=self.body.arg_count.min(self.local_cty.len() - 1) {
             let t = &self.local_cty[i];
             let (size, align) = c_size_align(p, t);
-            match pass_of(p, t) {
+            match scalar_library_pass(p, t, ll.scalar_export) {
                 Pass::Skip => {}
                 Pass::Scalar(ty, ext) => {
                     let mut ext = if ext.is_empty() { String::new() } else { format!("{ext} ") };
@@ -731,7 +788,11 @@ impl FnGen<'_, '_> {
                         }
                     }
                     params.push(format!("{ty} {ext}noundef %p{i}"));
-                    let _ = writeln!(entry, "  %l{i} = alloca {ty}, align {align}\n  store {ty} %p{i}, ptr %l{i}");
+                    if let Some(debug) = debug.as_deref_mut() {
+                        debug.scalar_argument(&mut entry, i as Local, ty, align);
+                    } else {
+                        let _ = writeln!(entry, "  %l{i} = alloca {ty}, align {align}\n  store {ty} %p{i}, ptr %l{i}");
+                    }
                     is_param[i] = true;
                 }
                 // No `noundef`: an aggregate's bits may hold padding or an inactive variant's
@@ -811,9 +872,10 @@ impl FnGen<'_, '_> {
                 }
             }
         }
-        // The exception slot: landing pads store it, ladder ends load it (a cleanup block
-        // whose every entry became native code stays, unreachable, and still names it).
-        if !ll.pads.is_empty() || self.cleanup.iter().any(|&c| c) {
+        // A retained cleanup block can resume even if native lowering eliminated
+        // all landing pads that used to reach it. LLVM still requires a personality.
+        let exception_cleanup = !ll.pads.is_empty() || ll.resumes;
+        if exception_cleanup {
             allocas.push_str("  %exn = alloca { ptr, i32 }\n");
         }
         allocas.push_str(&ll.allocas);
@@ -831,20 +893,29 @@ impl FnGen<'_, '_> {
         } else {
             attrs.push_str(&source_fn_attrs(p, fid));
         }
+        if !self.unwind {
+            attrs.push_str(" nounwind");
+        }
         if p.unwind {
             attrs.push_str(" uwtable");
             // The C personality, as the helpers' cleanup guards have it: every landing pad
             // here only cleans up, and LLVM inlines no fn of another personality.
-            if !ll.pads.is_empty() {
+            if exception_cleanup {
                 attrs.push_str(" personality ptr @__gcc_personality_v0");
             }
-        } else {
-            attrs.push_str(" nounwind");
         }
-        let id = names::fn_tag(self.slots.of(fid));
+        if let Some(debug) = debug {
+            attrs.push_str(&debug.attribute());
+            for i in 1..=self.body.arg_count {
+                if !matches!(pass_of(p, &self.local_cty[i]), Pass::Scalar(..)) {
+                    debug.declare(&mut entry, i as Local, true);
+                }
+            }
+        }
+        let symbol = body_symbol(&names::fn_tag(self.slots.of(fid)), ll.scalar_export);
         let mut d = String::new();
         let _ = writeln!(d, "; {}", p.display_path(info.name).replace('\n', " "));
-        let _ = writeln!(d, "define {ret_ll} @fl_{id}({}){attrs} {{\nentry:", params.join(", "));
+        let _ = writeln!(d, "define {ret_ll} @{symbol}({}){attrs} {{\nentry:", params.join(", "));
         d.push_str(&allocas);
         d.push_str(&entry);
         d.push_str(&flags);
@@ -1722,7 +1793,8 @@ impl FnGen<'_, '_> {
         self.note_callee(f);
         let id = names::fn_tag(self.slots.of(f));
         self.ll_note_proto(f, &id);
-        ll.decls.insert(ll_decl(p, f, &id));
+        let symbol = body_symbol(&id, ll.scalar_export);
+        ll.decls.insert(ll_decl(p, f, &symbol, ll.scalar_export));
         ll.conts += 1;
         let k = ll.conts;
         let mut vals: Vec<String> = Vec::new();
@@ -1731,7 +1803,7 @@ impl FnGen<'_, '_> {
         let mut temps: Vec<(String, u64)> = Vec::new();
         ll.decls.insert("declare void @llvm.lifetime.start.p0(i64, ptr)".into());
         ll.decls.insert("declare void @llvm.lifetime.end.p0(i64, ptr)".into());
-        let rp = pass_of(p, &rt);
+        let rp = scalar_library_pass(p, &rt, ll.scalar_export);
         // A moved whole local passed by pointer goes as itself: the caller never reads it
         // again (its flag is clear), so the callee may own that memory, as rustc does.
         let direct: Vec<bool> = args
@@ -1765,7 +1837,7 @@ impl FnGen<'_, '_> {
             }
         }
         for (j, (a, pt)) in args.iter().zip(&pts).enumerate() {
-            match pass_of(p, pt) {
+            match scalar_library_pass(p, pt, ll.scalar_export) {
                 Pass::Skip => {}
                 Pass::Scalar(t, ext) => {
                     let v = self.ll_scalar_operand_value(ll, a);
@@ -1830,7 +1902,7 @@ impl FnGen<'_, '_> {
             _ => "void".into(),
         };
         let assign = if ret_ty == "void" { String::new() } else { format!("%v{k} = ") };
-        let call = format!("{ret_ty} @fl_{id}({})", vals.join(", "));
+        let call = format!("{ret_ty} @{symbol}({})", vals.join(", "));
         match unwind {
             Some(u) => {
                 ll.pads.insert(u);
@@ -1906,6 +1978,45 @@ impl FnGen<'_, '_> {
                 let _ = writeln!(ll.body, "  store i8 1, ptr %m{dl}_{k}");
             }
         }
+        true
+    }
+
+    /// An independently checked Rust scalar signature has the already
+    /// qualified direct integer ABI. The symbol comes from its actual
+    /// imported definition, and lands in a normal LLVM relocation.
+    #[cfg(feature = "exclusive-native")]
+    fn ll_imported_scalar_call(
+        &mut self, ll: &mut Ll, def: crate::def::DefId, args: &[Operand], dest: &Place, unwind: Option<u32>,
+    ) -> bool {
+        let program = self.p;
+        let Some((parameters, result, link)) = program.native_fn(def) else { return false; };
+        let scalar = |ty| {
+            let crate::ty::TyKind::Int(kind) = program.tys.kind(ty) else { return None; };
+            if !crate::driver::library::completion::has_direct_integer_abi(kind) { return None; }
+            let native = cty(&program.tys, ty);
+            match pass_of(program, &native) {
+                Pass::Scalar(llvm, "") => Some((native, llvm)),
+                _ => None,
+            }
+        };
+        let Some((result_ty, ret)) = scalar(result) else { return false; };
+        let Some(dp) = self.ll_plan(ll, dest) else { return false; };
+        if dp.ty != result_ty || args.len() != parameters.len() { return false; }
+        let Some(parameters) = parameters.iter().copied().map(scalar).collect::<Option<Vec<_>>>() else { return false; };
+        if args.iter().zip(&parameters).any(|(argument, (expected, _))| {
+            self.ll_scalar_ok(ll, argument).is_none_or(|(actual, _)| actual != *expected)
+        }) {
+            return false;
+        }
+        let proto = parameters.iter().map(|&(_, llvm)| llvm).collect::<Vec<_>>().join(", ");
+        let values = args.iter().zip(&parameters).map(|(argument, (_, llvm))| {
+            format!("{llvm} {}", self.ll_scalar_operand_value(ll, argument))
+        }).collect::<Vec<_>>().join(", ");
+        ll.decls.insert(format!("declare {ret} @{}({proto})", link.symbol));
+        let value = self.ll_call(ll, &(link.symbol.clone(), ret.into(), values), unwind)
+            .expect("direct integer return has a value");
+        let (address, alignment) = self.ll_addr(ll, &dp);
+        let _ = writeln!(ll.body, "  store {ret} {value}, ptr {address}, align {alignment}");
         true
     }
 
@@ -2620,9 +2731,8 @@ impl FnGen<'_, '_> {
         true
     }
 
-    /// A call of a builtin that only reads its argument's fields (a length, a capacity,
-    /// emptiness, `String::as_str`, `Cell::get`), lowered natively as cgen's builtin forms
-    /// write it. False (nothing emitted) for any other builtin or shape.
+    /// Field reads and wrapping integer operations lowered with the same semantics as
+    /// cgen's builtin forms. False (nothing emitted) for any other builtin or shape.
     fn ll_native_builtin(&mut self, ll: &mut Ll, b: Builtin, args: &[Operand], dest: &Place) -> bool {
         use Builtin as B;
         let p = self.p;
@@ -2630,10 +2740,34 @@ impl FnGen<'_, '_> {
             return false;
         }
         let Some(dp) = self.ll_plan(ll, dest) else { return false };
-        let [a] = args else { return false };
         if needs_drop_c(p, &dp.ty) {
             return false;
         }
+        let wrapping_opcode = match b {
+            B::WrappingAdd => Some("add"),
+            B::WrappingSub => Some("sub"),
+            B::WrappingMul => Some("mul"),
+            _ => None,
+        };
+        if let Some(opcode) = wrapping_opcode {
+            let [left, right] = args else { return false };
+            let CTy::Int(int) = dp.ty else { return false };
+            if is128(int)
+                || !self.ll_scalar_ok(ll, left).is_some_and(|(ty, _)| ty == dp.ty)
+                || !self.ll_scalar_ok(ll, right).is_some_and(|(ty, _)| ty == dp.ty)
+            {
+                return false;
+            }
+            let Pass::Scalar(ty, _) = pass_of(p, &dp.ty) else { return false };
+            let left = self.ll_scalar(ll, left);
+            let right = self.ll_scalar(ll, right);
+            let (addr, align) = self.ll_addr(ll, &dp);
+            ll.conts += 1;
+            let value = ll.conts;
+            let _ = writeln!(ll.body, "  %bw{value} = {opcode} {ty} {left}, {right}\n  store {ty} %bw{value}, ptr {addr}, align {align}");
+            return true;
+        }
+        let [a] = args else { return false };
         let usize_dest = dp.ty == CTy::Int(IntTy::Usize);
         let bool_dest = dp.ty == CTy::Bool;
         // The value: `Word(i64 value)` or `Str(ptr, len)`.
@@ -2939,7 +3073,7 @@ fn source_fn_attrs(p: &Program, f: LocalDefId) -> String {
                 if let crate::ast::AttrInput::List(_, trees) = &a.input {
                     for t in trees {
                         if let TokenTree::Token(t) = t
-                            && let Tok::Ident(n) = t.tok
+                            && let Tok::Ident(n, _) = t.tok
                         {
                             match p.name(n) {
                                 "always" => how = " alwaysinline",
@@ -3066,11 +3200,16 @@ fn ll_proto(p: &Program, f: LocalDefId, id: &str) -> String {
 
 /// The LLVM declaration of written fn `f`'s internal ABI entry `fl_<id>`: the types and
 /// extension attributes of its definition (`FnGen::ll_define`).
-fn ll_decl(p: &Program, f: LocalDefId, id: &str) -> String {
+fn body_symbol(tag: &str, scalar_export: bool) -> String {
+    let prefix = if scalar_export { "f" } else { "fl" };
+    format!("{prefix}_{tag}")
+}
+
+fn ll_decl(p: &Program, f: LocalDefId, symbol: &str, scalar_library: bool) -> String {
     let info = p.fn_info(f);
     let rt = cty(&p.tys, info.ret);
     let mut params: Vec<String> = Vec::new();
-    let ret = match pass_of(p, &rt) {
+    let ret = match scalar_library_pass(p, &rt, scalar_library) {
         Pass::Scalar(t, ext) => {
             if ext.is_empty() {
                 t.to_string()
@@ -3087,7 +3226,7 @@ fn ll_decl(p: &Program, f: LocalDefId, id: &str) -> String {
         Pass::Skip => "void".into(),
     };
     for &t in &info.params {
-        match pass_of(p, &cty(&p.tys, t)) {
+        match scalar_library_pass(p, &cty(&p.tys, t), scalar_library) {
             Pass::Skip => {}
             Pass::Scalar(t, ext) => params.push(if ext.is_empty() { t.to_string() } else { format!("{t} {ext}") }),
             Pass::Bits(n) => params.push(bits_types(n).0.into()),
@@ -3098,7 +3237,7 @@ fn ll_decl(p: &Program, f: LocalDefId, id: &str) -> String {
     if crate::check::caller::is_track_caller(p, f) {
         params.push("ptr, i64".into());
     }
-    format!("declare {ret} @fl_{id}({})", params.join(", "))
+    format!("declare {ret} @{symbol}({})", params.join(", "))
 }
 
 /// The line that ends an LLVM unit's plain C prelude (only its wrappers' types): what
@@ -3351,6 +3490,11 @@ impl Adapters {
 /// The `.ll` text of one release fn unit: the declarations its fns name (each once) and
 /// their definitions, then an `available_externally` copy of each fn in `inl`
 /// (`ll_inline_set`). Empty when no fn of the unit has LLVM IR.
+fn llvm_symbol(declaration: &str) -> Option<&str> {
+    let (_, suffix) = declaration.split_once(" @")?;
+    suffix.split_once('(').map(|(name, _)| name)
+}
+
 pub fn ll_unit(fns: &[FnOut], slots: &[usize], inl: &[usize], triple: &str) -> String {
     if slots.iter().all(|&s| fns[s].ll.is_empty()) {
         return String::new();
@@ -3371,24 +3515,37 @@ pub fn ll_unit(fns: &[FnOut], slots: &[usize], inl: &[usize], triple: &str) -> S
         .iter()
         .chain(inl)
         .filter_map(|&s| {
-            let d = &fns[s].ll;
-            let at = d.find(" @fl_")? + 2;
-            d.get(at..at + 19)
+            let definition = fns[s].ll.lines().find(|line| line.starts_with("define "))?;
+            llvm_symbol(definition)
         })
         .collect();
     for d in decls {
-        if d.starts_with("declare ")
-            && let Some(at) = d.find(" @fl_")
-            && d.get(at + 2..at + 21).is_some_and(|n| defined.contains(n))
-        {
+        if d.starts_with("declare ") && llvm_symbol(d).is_some_and(|name| defined.contains(name)) {
             continue;
         }
         out.push_str(d);
         out.push('\n');
     }
     out.push('\n');
+    let mut metadata = 0;
+    let mut compile_units = Vec::new();
     for &s in slots {
-        out.push_str(&fns[s].ll);
+        let function = &fns[s];
+        if function.rust_debug_source.is_some() {
+            ll_debug::append(&mut out, &function.ll, &mut metadata, &mut compile_units);
+        } else {
+            out.push_str(&function.ll);
+        }
+    }
+    if !compile_units.is_empty() {
+        assert!(inl.is_empty(), "Rust debug units are emitted without cross-unit copies");
+        out.push_str("declare void @llvm.dbg.declare(metadata, metadata, metadata)\n");
+        out.push_str("declare void @llvm.dbg.value(metadata, metadata, metadata)\n");
+        let units = compile_units.iter().map(|id| format!("!{id}")).collect::<Vec<_>>().join(", ");
+        let _ = writeln!(out, "!llvm.dbg.cu = !{{{units}}}");
+        let _ = writeln!(out, "!llvm.module.flags = !{{!{metadata}, !{}}}", metadata + 1);
+        let _ = writeln!(out, "!{metadata} = !{{i32 2, !\"Dwarf Version\", i32 4}}");
+        let _ = writeln!(out, "!{} = !{{i32 2, !\"Debug Info Version\", i32 3}}", metadata + 1);
     }
     // `LUST_LL_COPY=internal` (measurement): copies are the unit's own internal fns instead,
     // as release C's static copies are, so a training build counts each unit's copy in its

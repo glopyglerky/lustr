@@ -1,0 +1,773 @@
+{
+  "schema": "lustr-executable-unwind-semantic-review-v1",
+  "passed": true,
+  "source": {
+    "head": "930b384ad03a26fe141d10be4e261bd82a60be76",
+    "tree": "0de8622237295e2607b7ffed22359749c2e4bc1a",
+    "native_tree": "8b535898c1a1df6d4c046b75289702c8bd7f6265",
+    "review_base": "bc8a7adb36fcae44f0bca686d503714646f21b5d",
+    "source_manifest_sha256": "a5777b9a4263f5ecc68f4970b92004faed78d20dc672f331338d629aa6db8768"
+  },
+  "reference": {
+    "rust_source": "5b7b37aefcb5b2fba3c2392bc9065b9e4602d494",
+    "target": "x86_64-unknown-linux-gnu",
+    "rustc_sha256": "ca9d833d09469a534ca1449e71ca9961608409cdb257df96cf8035338fac28de",
+    "cargo_sha256": "da29c2a9ff7f85bda5587e9c974e05c9e2a7196377e54466f6e9d6f9e00b2530"
+  },
+  "package": {
+    "entry_sha256": "f3a001e7a04cd2a74cd6f2bca06210969a6e07a8d064d1d340a27c0c9e59f7f9",
+    "lust_sha256": "4e496ce61cbc678b37ce990fc8dcd292ee2fc9f41b109a9b005fd60a8595722c",
+    "lust_core_sha256": "d6c756ae6cd109a8aba7f7b81cbfd58a5018350a2f157373133c60bcb8f44c16",
+    "cargo_sha256": "da29c2a9ff7f85bda5587e9c974e05c9e2a7196377e54466f6e9d6f9e00b2530",
+    "native_build_id": "3d7505a806f65914",
+    "native_build_receipt_sha256": "985c6cf509dca2a0b6ad312d8d6084bc8eeb0aac624abe459c191abbba88210a",
+    "tinycc_sha256": "c0c166f091cd00be52091dd88422409104f2408c08100e067c674d1b5286bf79"
+  },
+  "evidence": {
+    "raw_report_sha256": "8546c867f36c0afc684037b52402b2edc885cf73144d41ee34d202fc4bd0f63c",
+    "raw_sidecar_sha256": "c51ac1ecc4c4d7567f26dc806c1860be27ba95109c6c051405341cb02f08ff02",
+    "harness_sha256": "d9983c990931b8f898b36620a0bdf0f0473b19a95568df93cf04ec7e9890d666",
+    "trace_decoder_path": "tools/test-rustc-profile-defaults.py",
+    "trace_decoder_sha256": "2e8af2810be7213d6ff215a6bdd006a71a9903cd40260544cde12d373f33dd60",
+    "public_harness_is_byte_identical_to_executed_harness": true,
+    "all_recorded_inputs_unchanged_after_execution": true,
+    "recorded_command_streams": true
+  },
+  "reproduction": {
+    "argv": [
+      "python3",
+      "runtime-review.py",
+      "--package",
+      "PACKAGE",
+      "--sdk",
+      "SDK",
+      "--source",
+      "SOURCE",
+      "--output",
+      "NEW_OUTPUT",
+      "--strace",
+      "STRACE"
+    ],
+    "argument_placeholders": true,
+    "source_requirement": "SOURCE is the reviewed Lustr checkout and supplies the recorded exec-trace decoder; SDK and PACKAGE must match the recorded identities for this result.",
+    "output_requirement": "NEW_OUTPUT must not exist."
+  },
+  "scope": {
+    "language_profile": "edition 2024, Linux GNU x86-64, opt-level=0, debug=0, incremental=false, no Cargo dependencies",
+    "candidate_owner": "one isolated retained native daemon",
+    "panic_mechanism": "existing native explicit propagation and cleanup",
+    "predeclared_runtime_expectations": true,
+    "reference_checked_independently": true,
+    "no_unexpected_successful_candidate_executable_observed": true,
+    "compiler_failure_never_counted_as_runtime_panic": true,
+    "full_rust_coverage": false,
+    "performance_qualified": false,
+    "external_crate_unwind_qualified": false,
+    "source_debug_information_qualified": false,
+    "executable_dwarf_walk_qualified_by_this_probe": false
+  },
+  "totals": {
+    "paired_cases": 14,
+    "compilations": 28,
+    "program_executions": 26,
+    "successful_program_executions": 20,
+    "expected_sigabrt_executions": 6,
+    "expected_type_rejections": 2
+  },
+  "plan": [
+    {
+      "name": "profile_cold",
+      "panic_override": null,
+      "runtime_status": 0,
+      "stdout": "hook\ndrop:guard:true\ncaught:true:false\n",
+      "stderr": "",
+      "source_sha256": "d68a4afb765700be7fd4f8cea1132bc403d3f84d7bfe025a02dbb254349db941"
+    },
+    {
+      "name": "profile_noop",
+      "panic_override": null,
+      "runtime_status": 0,
+      "stdout": "hook\ndrop:guard:true\ncaught:true:false\n",
+      "stderr": "",
+      "source_sha256": "d68a4afb765700be7fd4f8cea1132bc403d3f84d7bfe025a02dbb254349db941"
+    },
+    {
+      "name": "profile_abort",
+      "panic_override": "abort",
+      "runtime_status": -6,
+      "stdout": "hook\n",
+      "stderr": "",
+      "source_sha256": "d68a4afb765700be7fd4f8cea1132bc403d3f84d7bfe025a02dbb254349db941"
+    },
+    {
+      "name": "profile_abort_noop",
+      "panic_override": "abort",
+      "runtime_status": -6,
+      "stdout": "hook\n",
+      "stderr": "",
+      "source_sha256": "d68a4afb765700be7fd4f8cea1132bc403d3f84d7bfe025a02dbb254349db941"
+    },
+    {
+      "name": "profile_restore",
+      "panic_override": null,
+      "runtime_status": 0,
+      "stdout": "hook\ndrop:guard:true\ncaught:true:false\n",
+      "stderr": "",
+      "source_sha256": "d68a4afb765700be7fd4f8cea1132bc403d3f84d7bfe025a02dbb254349db941"
+    },
+    {
+      "name": "profile_edit",
+      "panic_override": null,
+      "runtime_status": 0,
+      "stdout": "hook\ndrop:edited:true\ncaught:true:false\n",
+      "stderr": "",
+      "source_sha256": "7e7692298d7b0fb541d9963a7419a83ad2f2dcad376ab511bb979d7d4a9e2618"
+    },
+    {
+      "name": "profile_invalid",
+      "panic_override": null,
+      "runtime_status": null,
+      "stdout": "",
+      "stderr": "",
+      "source_sha256": "7a6b78e158e92df926abe71beddf032fa6704d8bb33549952b79e1b431aaf79f"
+    },
+    {
+      "name": "profile_repair",
+      "panic_override": null,
+      "runtime_status": 0,
+      "stdout": "hook\ndrop:edited:true\ncaught:true:false\n",
+      "stderr": "",
+      "source_sha256": "7e7692298d7b0fb541d9963a7419a83ad2f2dcad376ab511bb979d7d4a9e2618"
+    },
+    {
+      "name": "resume_payload",
+      "panic_override": null,
+      "runtime_status": 0,
+      "stdout": "hook\nresuming\nguard:true\ncaught:false\npayload\n",
+      "stderr": "",
+      "source_sha256": "78c9fc449a1e8f9eadc98becf719afbc141c0731d504124c86097cb70b4218ba"
+    },
+    {
+      "name": "catch_in_drop",
+      "panic_override": null,
+      "runtime_status": 0,
+      "stdout": "before:true\ninner:true after:true\nafter:true:false\n",
+      "stderr": "",
+      "source_sha256": "2af38a63fe7b6f63f130f3ff749bb4e8188c4d36135c7f528ac30e6ad84f245f"
+    },
+    {
+      "name": "partial_init",
+      "panic_override": null,
+      "runtime_status": 0,
+      "stdout": "drop:2\ndrop:1\ndrop:0\ncaught:true\n",
+      "stderr": "",
+      "source_sha256": "47dbe092e26c8045756f80514871c29e0cf65b10e4aa0f673dfd5875139adf08"
+    },
+    {
+      "name": "partial_move",
+      "panic_override": null,
+      "runtime_status": 0,
+      "stdout": "drop:2\ndrop:1\ndrop:3\ndrop:0\ncaught:true\n",
+      "stderr": "",
+      "source_sha256": "cc6cb7cc79a85cc3ea97549b14bc23c62c75feeeb4d819940032611b95b5dd67"
+    },
+    {
+      "name": "double_panic",
+      "panic_override": null,
+      "runtime_status": -6,
+      "stdout": "hook\ndrop\nhook\nhook\n",
+      "stderr": "thread caused non-unwinding panic. aborting.\n",
+      "source_sha256": "969c912248f859de9770e1018755488fc660457015508887863bd850f9253be2"
+    },
+    {
+      "name": "thread_isolation",
+      "panic_override": null,
+      "runtime_status": 0,
+      "stdout": "caught:30 died:1 drops:40 main:false\n",
+      "stderr": "",
+      "source_sha256": "7f8b126fbcbbb19f0b6828e31f6917b55ce2aea0ac0d7b32c13149e3ae89fdf8"
+    }
+  ],
+  "cases": [
+    {
+      "name": "profile_cold",
+      "passed": true,
+      "source_sha256": "d68a4afb765700be7fd4f8cea1132bc403d3f84d7bfe025a02dbb254349db941",
+      "manifest_sha256": "19768cc7f75e8b1722f878c401537b32e33bf9f99fec33ad088c31fa2a18ece5",
+      "engines": {
+        "reference": {
+          "compile_status": 0,
+          "compile_stdout_sha256": "16bf9a2c72291588c878dcd4b353e0a1e07e2f9234693270fe1c16945db160fd",
+          "compile_stderr_sha256": "c4d7072cc280c5af83b5158bd1d0aea37ecc90dd9645ff9f678f125186b66774",
+          "runtime_executed": true,
+          "passed": true,
+          "binary_sha256": "d02c3dbdc67303ed7a89bb5e52c4dc761aa9ed57df7468199386448382c62501",
+          "runtime": {
+            "status": 0,
+            "stdout": "hook\ndrop:guard:true\ncaught:true:false\n",
+            "stderr": "",
+            "stdout_sha256": "369ffcda4f0505e59a30bed0dad180411444359a354ac3578dcf3e8e1101cb22",
+            "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          }
+        },
+        "candidate": {
+          "compile_status": 0,
+          "compile_stdout_sha256": "7bddbb0dd0b1a74ff9c7f047eb38076816332b81f9f8f7b2b5f44766145552c0",
+          "compile_stderr_sha256": "8ace2e2180e81d11cf3098f5dbb3a655ccbe7609aa35a19e988ec5a22214ac91",
+          "runtime_executed": true,
+          "passed": true,
+          "binary_sha256": "e5860c2468344320edbd269d13b61dba1a24ccfeb19d85a41e7aff98ef9ccfa9",
+          "actual_compiler_argv_json_sha256": "75a60cda5847cacf44ec577a1f1aca85d45972270061fcf39bcb52fc46350a3d",
+          "checked_bodies": [
+            16
+          ],
+          "runtime": {
+            "status": 0,
+            "stdout": "hook\ndrop:guard:true\ncaught:true:false\n",
+            "stderr": "",
+            "stdout_sha256": "369ffcda4f0505e59a30bed0dad180411444359a354ac3578dcf3e8e1101cb22",
+            "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          }
+        }
+      }
+    },
+    {
+      "name": "profile_noop",
+      "passed": true,
+      "source_sha256": "d68a4afb765700be7fd4f8cea1132bc403d3f84d7bfe025a02dbb254349db941",
+      "manifest_sha256": "19768cc7f75e8b1722f878c401537b32e33bf9f99fec33ad088c31fa2a18ece5",
+      "engines": {
+        "reference": {
+          "compile_status": 0,
+          "compile_stdout_sha256": "16bf9a2c72291588c878dcd4b353e0a1e07e2f9234693270fe1c16945db160fd",
+          "compile_stderr_sha256": "3d418067cc5ed074029b47cabb79202d4c163718d6e105850802249f1d41c131",
+          "runtime_executed": true,
+          "passed": true,
+          "binary_sha256": "d02c3dbdc67303ed7a89bb5e52c4dc761aa9ed57df7468199386448382c62501",
+          "runtime": {
+            "status": 0,
+            "stdout": "hook\ndrop:guard:true\ncaught:true:false\n",
+            "stderr": "",
+            "stdout_sha256": "369ffcda4f0505e59a30bed0dad180411444359a354ac3578dcf3e8e1101cb22",
+            "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          }
+        },
+        "candidate": {
+          "compile_status": 0,
+          "compile_stdout_sha256": "7bddbb0dd0b1a74ff9c7f047eb38076816332b81f9f8f7b2b5f44766145552c0",
+          "compile_stderr_sha256": "8a975b638b1fc73c6bfde5e8f3e07b196bc92fc98cd9f2ef74a6551cc161b987",
+          "runtime_executed": true,
+          "passed": true,
+          "binary_sha256": "e5860c2468344320edbd269d13b61dba1a24ccfeb19d85a41e7aff98ef9ccfa9",
+          "actual_compiler_argv_json_sha256": "75a60cda5847cacf44ec577a1f1aca85d45972270061fcf39bcb52fc46350a3d",
+          "checked_bodies": [
+            0
+          ],
+          "runtime": {
+            "status": 0,
+            "stdout": "hook\ndrop:guard:true\ncaught:true:false\n",
+            "stderr": "",
+            "stdout_sha256": "369ffcda4f0505e59a30bed0dad180411444359a354ac3578dcf3e8e1101cb22",
+            "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          }
+        }
+      }
+    },
+    {
+      "name": "profile_abort",
+      "passed": true,
+      "source_sha256": "d68a4afb765700be7fd4f8cea1132bc403d3f84d7bfe025a02dbb254349db941",
+      "manifest_sha256": "697109c5f0f944d0fabd24451e0a8eb5840808b27b737dbd9f570c00c7a11b94",
+      "engines": {
+        "reference": {
+          "compile_status": 0,
+          "compile_stdout_sha256": "16bf9a2c72291588c878dcd4b353e0a1e07e2f9234693270fe1c16945db160fd",
+          "compile_stderr_sha256": "3d418067cc5ed074029b47cabb79202d4c163718d6e105850802249f1d41c131",
+          "runtime_executed": true,
+          "passed": true,
+          "binary_sha256": "114bc34d98f05036e06290a090c17db1cd19249286cff8d15ae9b955b2be0ee4",
+          "runtime": {
+            "status": -6,
+            "stdout": "hook\n",
+            "stderr": "",
+            "stdout_sha256": "d534e9c03c43262c82e6b8ac9b4eac7005b00f56af34d8a4a9ff072bdb322928",
+            "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          }
+        },
+        "candidate": {
+          "compile_status": 0,
+          "compile_stdout_sha256": "7bddbb0dd0b1a74ff9c7f047eb38076816332b81f9f8f7b2b5f44766145552c0",
+          "compile_stderr_sha256": "85e967e1db8bcf1cc776bc13602e1a096c99b1e3df4d583b9c4101cd4c38ce1e",
+          "runtime_executed": true,
+          "passed": true,
+          "binary_sha256": "a565ff1083d897c2e09f129552883c6cad06ee1acac504cf0fb85bccc0ce9697",
+          "actual_compiler_argv_json_sha256": "78e47327e91cda9f9fbba5f202f1776e90ed0a43fad113f921960846a0874002",
+          "checked_bodies": [
+            16
+          ],
+          "runtime": {
+            "status": -6,
+            "stdout": "hook\n",
+            "stderr": "",
+            "stdout_sha256": "d534e9c03c43262c82e6b8ac9b4eac7005b00f56af34d8a4a9ff072bdb322928",
+            "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          }
+        }
+      }
+    },
+    {
+      "name": "profile_abort_noop",
+      "passed": true,
+      "source_sha256": "d68a4afb765700be7fd4f8cea1132bc403d3f84d7bfe025a02dbb254349db941",
+      "manifest_sha256": "697109c5f0f944d0fabd24451e0a8eb5840808b27b737dbd9f570c00c7a11b94",
+      "engines": {
+        "reference": {
+          "compile_status": 0,
+          "compile_stdout_sha256": "16bf9a2c72291588c878dcd4b353e0a1e07e2f9234693270fe1c16945db160fd",
+          "compile_stderr_sha256": "3d418067cc5ed074029b47cabb79202d4c163718d6e105850802249f1d41c131",
+          "runtime_executed": true,
+          "passed": true,
+          "binary_sha256": "114bc34d98f05036e06290a090c17db1cd19249286cff8d15ae9b955b2be0ee4",
+          "runtime": {
+            "status": -6,
+            "stdout": "hook\n",
+            "stderr": "",
+            "stdout_sha256": "d534e9c03c43262c82e6b8ac9b4eac7005b00f56af34d8a4a9ff072bdb322928",
+            "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          }
+        },
+        "candidate": {
+          "compile_status": 0,
+          "compile_stdout_sha256": "7bddbb0dd0b1a74ff9c7f047eb38076816332b81f9f8f7b2b5f44766145552c0",
+          "compile_stderr_sha256": "8a975b638b1fc73c6bfde5e8f3e07b196bc92fc98cd9f2ef74a6551cc161b987",
+          "runtime_executed": true,
+          "passed": true,
+          "binary_sha256": "a565ff1083d897c2e09f129552883c6cad06ee1acac504cf0fb85bccc0ce9697",
+          "actual_compiler_argv_json_sha256": "78e47327e91cda9f9fbba5f202f1776e90ed0a43fad113f921960846a0874002",
+          "checked_bodies": [
+            0
+          ],
+          "runtime": {
+            "status": -6,
+            "stdout": "hook\n",
+            "stderr": "",
+            "stdout_sha256": "d534e9c03c43262c82e6b8ac9b4eac7005b00f56af34d8a4a9ff072bdb322928",
+            "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          }
+        }
+      }
+    },
+    {
+      "name": "profile_restore",
+      "passed": true,
+      "source_sha256": "d68a4afb765700be7fd4f8cea1132bc403d3f84d7bfe025a02dbb254349db941",
+      "manifest_sha256": "19768cc7f75e8b1722f878c401537b32e33bf9f99fec33ad088c31fa2a18ece5",
+      "engines": {
+        "reference": {
+          "compile_status": 0,
+          "compile_stdout_sha256": "16bf9a2c72291588c878dcd4b353e0a1e07e2f9234693270fe1c16945db160fd",
+          "compile_stderr_sha256": "3d418067cc5ed074029b47cabb79202d4c163718d6e105850802249f1d41c131",
+          "runtime_executed": true,
+          "passed": true,
+          "binary_sha256": "d02c3dbdc67303ed7a89bb5e52c4dc761aa9ed57df7468199386448382c62501",
+          "runtime": {
+            "status": 0,
+            "stdout": "hook\ndrop:guard:true\ncaught:true:false\n",
+            "stderr": "",
+            "stdout_sha256": "369ffcda4f0505e59a30bed0dad180411444359a354ac3578dcf3e8e1101cb22",
+            "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          }
+        },
+        "candidate": {
+          "compile_status": 0,
+          "compile_stdout_sha256": "7bddbb0dd0b1a74ff9c7f047eb38076816332b81f9f8f7b2b5f44766145552c0",
+          "compile_stderr_sha256": "8a975b638b1fc73c6bfde5e8f3e07b196bc92fc98cd9f2ef74a6551cc161b987",
+          "runtime_executed": true,
+          "passed": true,
+          "binary_sha256": "e5860c2468344320edbd269d13b61dba1a24ccfeb19d85a41e7aff98ef9ccfa9",
+          "actual_compiler_argv_json_sha256": "75a60cda5847cacf44ec577a1f1aca85d45972270061fcf39bcb52fc46350a3d",
+          "checked_bodies": [
+            0
+          ],
+          "runtime": {
+            "status": 0,
+            "stdout": "hook\ndrop:guard:true\ncaught:true:false\n",
+            "stderr": "",
+            "stdout_sha256": "369ffcda4f0505e59a30bed0dad180411444359a354ac3578dcf3e8e1101cb22",
+            "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          }
+        }
+      }
+    },
+    {
+      "name": "profile_edit",
+      "passed": true,
+      "source_sha256": "7e7692298d7b0fb541d9963a7419a83ad2f2dcad376ab511bb979d7d4a9e2618",
+      "manifest_sha256": "19768cc7f75e8b1722f878c401537b32e33bf9f99fec33ad088c31fa2a18ece5",
+      "engines": {
+        "reference": {
+          "compile_status": 0,
+          "compile_stdout_sha256": "16bf9a2c72291588c878dcd4b353e0a1e07e2f9234693270fe1c16945db160fd",
+          "compile_stderr_sha256": "3d418067cc5ed074029b47cabb79202d4c163718d6e105850802249f1d41c131",
+          "runtime_executed": true,
+          "passed": true,
+          "binary_sha256": "f7ab6ab3a50ade4fff948a88fcaeaa6419346889dfb18fd98be38a3cd3a1d217",
+          "runtime": {
+            "status": 0,
+            "stdout": "hook\ndrop:edited:true\ncaught:true:false\n",
+            "stderr": "",
+            "stdout_sha256": "9dec2aa713a5e17aa1fd8b7c70ba341460c6791729bc4e017ddce0b7fe43b9c7",
+            "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          }
+        },
+        "candidate": {
+          "compile_status": 0,
+          "compile_stdout_sha256": "7bddbb0dd0b1a74ff9c7f047eb38076816332b81f9f8f7b2b5f44766145552c0",
+          "compile_stderr_sha256": "049fffcb64c75cca943437c8008f4bd154a1edb697a07072ac53b31d05aecd16",
+          "runtime_executed": true,
+          "passed": true,
+          "binary_sha256": "2de1522ba1e4a786861657f8017036bd2191a72eb7cfe56f6cfbd2cbbc25883e",
+          "actual_compiler_argv_json_sha256": "75a60cda5847cacf44ec577a1f1aca85d45972270061fcf39bcb52fc46350a3d",
+          "checked_bodies": [
+            1
+          ],
+          "runtime": {
+            "status": 0,
+            "stdout": "hook\ndrop:edited:true\ncaught:true:false\n",
+            "stderr": "",
+            "stdout_sha256": "9dec2aa713a5e17aa1fd8b7c70ba341460c6791729bc4e017ddce0b7fe43b9c7",
+            "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          }
+        }
+      }
+    },
+    {
+      "name": "profile_invalid",
+      "passed": true,
+      "source_sha256": "7a6b78e158e92df926abe71beddf032fa6704d8bb33549952b79e1b431aaf79f",
+      "manifest_sha256": "19768cc7f75e8b1722f878c401537b32e33bf9f99fec33ad088c31fa2a18ece5",
+      "engines": {
+        "reference": {
+          "compile_status": 101,
+          "compile_stdout_sha256": "d265487f38d15107114399ccf6b8398fcf62e39c187eddfb33f67538081c569a",
+          "compile_stderr_sha256": "4fbf700f686cc82a285fa7c266ebf8cb8cae2e78ee4756f71d1401b41016b355",
+          "runtime_executed": false,
+          "passed": true,
+          "binary_sha256": null
+        },
+        "candidate": {
+          "compile_status": 101,
+          "compile_stdout_sha256": "78abd7c2a6f892fea31588cfba442ef631ea19a6c5574866548b1ddbd8b82926",
+          "compile_stderr_sha256": "4fbf700f686cc82a285fa7c266ebf8cb8cae2e78ee4756f71d1401b41016b355",
+          "runtime_executed": false,
+          "passed": true,
+          "binary_sha256": null,
+          "actual_compiler_argv_json_sha256": "75a60cda5847cacf44ec577a1f1aca85d45972270061fcf39bcb52fc46350a3d",
+          "checked_bodies": []
+        }
+      }
+    },
+    {
+      "name": "profile_repair",
+      "passed": true,
+      "source_sha256": "7e7692298d7b0fb541d9963a7419a83ad2f2dcad376ab511bb979d7d4a9e2618",
+      "manifest_sha256": "19768cc7f75e8b1722f878c401537b32e33bf9f99fec33ad088c31fa2a18ece5",
+      "engines": {
+        "reference": {
+          "compile_status": 0,
+          "compile_stdout_sha256": "16bf9a2c72291588c878dcd4b353e0a1e07e2f9234693270fe1c16945db160fd",
+          "compile_stderr_sha256": "3d418067cc5ed074029b47cabb79202d4c163718d6e105850802249f1d41c131",
+          "runtime_executed": true,
+          "passed": true,
+          "binary_sha256": "f7ab6ab3a50ade4fff948a88fcaeaa6419346889dfb18fd98be38a3cd3a1d217",
+          "runtime": {
+            "status": 0,
+            "stdout": "hook\ndrop:edited:true\ncaught:true:false\n",
+            "stderr": "",
+            "stdout_sha256": "9dec2aa713a5e17aa1fd8b7c70ba341460c6791729bc4e017ddce0b7fe43b9c7",
+            "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          }
+        },
+        "candidate": {
+          "compile_status": 0,
+          "compile_stdout_sha256": "7bddbb0dd0b1a74ff9c7f047eb38076816332b81f9f8f7b2b5f44766145552c0",
+          "compile_stderr_sha256": "8a975b638b1fc73c6bfde5e8f3e07b196bc92fc98cd9f2ef74a6551cc161b987",
+          "runtime_executed": true,
+          "passed": true,
+          "binary_sha256": "2de1522ba1e4a786861657f8017036bd2191a72eb7cfe56f6cfbd2cbbc25883e",
+          "actual_compiler_argv_json_sha256": "75a60cda5847cacf44ec577a1f1aca85d45972270061fcf39bcb52fc46350a3d",
+          "checked_bodies": [
+            1
+          ],
+          "runtime": {
+            "status": 0,
+            "stdout": "hook\ndrop:edited:true\ncaught:true:false\n",
+            "stderr": "",
+            "stdout_sha256": "9dec2aa713a5e17aa1fd8b7c70ba341460c6791729bc4e017ddce0b7fe43b9c7",
+            "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          }
+        }
+      }
+    },
+    {
+      "name": "resume_payload",
+      "passed": true,
+      "source_sha256": "78c9fc449a1e8f9eadc98becf719afbc141c0731d504124c86097cb70b4218ba",
+      "manifest_sha256": "19768cc7f75e8b1722f878c401537b32e33bf9f99fec33ad088c31fa2a18ece5",
+      "engines": {
+        "reference": {
+          "compile_status": 0,
+          "compile_stdout_sha256": "ebb0977d2f58c4c79e5ecf279922840505b77864b449222f6f3d14545fe23bdb",
+          "compile_stderr_sha256": "07400c8340b949c77546856dbe14be46ce78d656500992130570eb373007ba37",
+          "runtime_executed": true,
+          "passed": true,
+          "binary_sha256": "b4f1d7c293de5e11667b528a20b256f97cdc7be13714635c44f952b0e86847e9",
+          "runtime": {
+            "status": 0,
+            "stdout": "hook\nresuming\nguard:true\ncaught:false\npayload\n",
+            "stderr": "",
+            "stdout_sha256": "33ff47c65fe4df8348649450dd8ae48e14e27e42d9547d3c73bcf694f8abe85e",
+            "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          }
+        },
+        "candidate": {
+          "compile_status": 0,
+          "compile_stdout_sha256": "077f7541175d433dce2a22e760067ab25e0d62aa602f61d6b98400b3dc51d81f",
+          "compile_stderr_sha256": "8f46a0dc05bfbbf48b77561684b29c8e2fb5ca08bfc0ea2be355e1e918fb2917",
+          "runtime_executed": true,
+          "passed": true,
+          "binary_sha256": "59d7081604353d44047a983b5a5559d65ce41ba43db4c2863eac02a882ede0d9",
+          "actual_compiler_argv_json_sha256": "1d7d84b053a7aefa893967990ebf2ae7f3dc2d55b25eff20a711c3bf3d6d40d5",
+          "checked_bodies": [
+            18
+          ],
+          "runtime": {
+            "status": 0,
+            "stdout": "hook\nresuming\nguard:true\ncaught:false\npayload\n",
+            "stderr": "",
+            "stdout_sha256": "33ff47c65fe4df8348649450dd8ae48e14e27e42d9547d3c73bcf694f8abe85e",
+            "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          }
+        }
+      }
+    },
+    {
+      "name": "catch_in_drop",
+      "passed": true,
+      "source_sha256": "2af38a63fe7b6f63f130f3ff749bb4e8188c4d36135c7f528ac30e6ad84f245f",
+      "manifest_sha256": "19768cc7f75e8b1722f878c401537b32e33bf9f99fec33ad088c31fa2a18ece5",
+      "engines": {
+        "reference": {
+          "compile_status": 0,
+          "compile_stdout_sha256": "ef41ee72a0e3974fee5b8e5ec79ffb888e5a227a3f3a08dd2c86bdbeee8ce4bc",
+          "compile_stderr_sha256": "de8ff41659f5af6f80ad91c0da8df16c2051b5b69f0ab95f2563713756ee39ff",
+          "runtime_executed": true,
+          "passed": true,
+          "binary_sha256": "0d16ca531760846a0960dcff2031756e4c07d26ee1fb57294992a7358d9c4a47",
+          "runtime": {
+            "status": 0,
+            "stdout": "before:true\ninner:true after:true\nafter:true:false\n",
+            "stderr": "",
+            "stdout_sha256": "8f448cdacfbda2577dc38c589ca43f4d7606005a08c2331582168cc898f2d2e5",
+            "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          }
+        },
+        "candidate": {
+          "compile_status": 0,
+          "compile_stdout_sha256": "c90855f99bc12f29580883291c411d2098d301b341c2f5b77d5b42b03da538dd",
+          "compile_stderr_sha256": "4320c9b5e38bd95b1fc80df8f77af65bd3319ed3c43490d9112a171db498513d",
+          "runtime_executed": true,
+          "passed": true,
+          "binary_sha256": "d2930dcbe5e4ec06f0e0c5f7f32aa9316b2d38680c1c4eadf29bc9f53c923103",
+          "actual_compiler_argv_json_sha256": "beb59b6a4aba7b64211247aa2f481e358e27a3fc52f64285758adc4884de2288",
+          "checked_bodies": [
+            17
+          ],
+          "runtime": {
+            "status": 0,
+            "stdout": "before:true\ninner:true after:true\nafter:true:false\n",
+            "stderr": "",
+            "stdout_sha256": "8f448cdacfbda2577dc38c589ca43f4d7606005a08c2331582168cc898f2d2e5",
+            "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          }
+        }
+      }
+    },
+    {
+      "name": "partial_init",
+      "passed": true,
+      "source_sha256": "47dbe092e26c8045756f80514871c29e0cf65b10e4aa0f673dfd5875139adf08",
+      "manifest_sha256": "19768cc7f75e8b1722f878c401537b32e33bf9f99fec33ad088c31fa2a18ece5",
+      "engines": {
+        "reference": {
+          "compile_status": 0,
+          "compile_stdout_sha256": "f8a4520bd6d86a2cb83c77c9bed974ed92415a0b2e2773f1492d605d08adf6fa",
+          "compile_stderr_sha256": "c56c0b357e2f60c28adb846fbc05a53bc27e58a0ab50a0a66533482a74332401",
+          "runtime_executed": true,
+          "passed": true,
+          "binary_sha256": "93f19e1869638f970d6254300f1ef0512a28f2eb0d1395553dd7223cad690233",
+          "runtime": {
+            "status": 0,
+            "stdout": "drop:2\ndrop:1\ndrop:0\ncaught:true\n",
+            "stderr": "",
+            "stdout_sha256": "3c8b54a72e98e0bf857dedb25c4e8e14cfc1b5741378a40550aefdc3746ab3be",
+            "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          }
+        },
+        "candidate": {
+          "compile_status": 0,
+          "compile_stdout_sha256": "57ef81e150f0c44749da16450a546d48b12ade1625c3d0df67db0f8971fdcebe",
+          "compile_stderr_sha256": "b64f2a383658e79344857522a0ea0bac10781abd01d0ae00e360c07b7704819d",
+          "runtime_executed": true,
+          "passed": true,
+          "binary_sha256": "0ee0c77e15f1beae6376eaa160331d97ccc2b70086d6b73e399122978242baa8",
+          "actual_compiler_argv_json_sha256": "6ce5d65bc389c472cb9f4ca3bef6fc408b003f6ba09935496697e0fcf88fd834",
+          "checked_bodies": [
+            17
+          ],
+          "runtime": {
+            "status": 0,
+            "stdout": "drop:2\ndrop:1\ndrop:0\ncaught:true\n",
+            "stderr": "",
+            "stdout_sha256": "3c8b54a72e98e0bf857dedb25c4e8e14cfc1b5741378a40550aefdc3746ab3be",
+            "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          }
+        }
+      }
+    },
+    {
+      "name": "partial_move",
+      "passed": true,
+      "source_sha256": "cc6cb7cc79a85cc3ea97549b14bc23c62c75feeeb4d819940032611b95b5dd67",
+      "manifest_sha256": "19768cc7f75e8b1722f878c401537b32e33bf9f99fec33ad088c31fa2a18ece5",
+      "engines": {
+        "reference": {
+          "compile_status": 0,
+          "compile_stdout_sha256": "cfe6545f7d97cd0a02ea4262efe017172009378ea53b004f6cf6418f516f0a24",
+          "compile_stderr_sha256": "b7efc005575e30e009c81fb27551cef32fc312768486b939851d656b94339633",
+          "runtime_executed": true,
+          "passed": true,
+          "binary_sha256": "f28b3c88efbdb99f231f24feb33080e77d83dbd15f383cf093da7b76c44a4156",
+          "runtime": {
+            "status": 0,
+            "stdout": "drop:2\ndrop:1\ndrop:3\ndrop:0\ncaught:true\n",
+            "stderr": "",
+            "stdout_sha256": "ad53e7aa0ca9f5d172c8d5ce7e9f64e176ce2f766b2a85734078cb7708bf00b9",
+            "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          }
+        },
+        "candidate": {
+          "compile_status": 0,
+          "compile_stdout_sha256": "a503d4e139586294677db450676aad02a626154a26d78d39b4ddb431a53a2355",
+          "compile_stderr_sha256": "f949a9f6d3fae3fe0d152f5fcd1ffd06563959d1449e598f0615ebc63aa1b4a9",
+          "runtime_executed": true,
+          "passed": true,
+          "binary_sha256": "76d011026fa5a920552fa5e5b8ffbf18d29b95a03c14f88a26cda784f52e8ec4",
+          "actual_compiler_argv_json_sha256": "fa6ff9d9de1fc2a3d7dfd9292c805309b69f869b158ca0602fcf984988585ef5",
+          "checked_bodies": [
+            16
+          ],
+          "runtime": {
+            "status": 0,
+            "stdout": "drop:2\ndrop:1\ndrop:3\ndrop:0\ncaught:true\n",
+            "stderr": "",
+            "stdout_sha256": "ad53e7aa0ca9f5d172c8d5ce7e9f64e176ce2f766b2a85734078cb7708bf00b9",
+            "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          }
+        }
+      }
+    },
+    {
+      "name": "double_panic",
+      "passed": true,
+      "source_sha256": "969c912248f859de9770e1018755488fc660457015508887863bd850f9253be2",
+      "manifest_sha256": "19768cc7f75e8b1722f878c401537b32e33bf9f99fec33ad088c31fa2a18ece5",
+      "engines": {
+        "reference": {
+          "compile_status": 0,
+          "compile_stdout_sha256": "f40ffe971178c2f6663f85984e39ea8b84d41ed30c819b5243edcd738b44fbfd",
+          "compile_stderr_sha256": "66814b51c3c688d98aee9ee5e0ba18e5e1ad99c834d14a50e7fb8712655f81c6",
+          "runtime_executed": true,
+          "passed": true,
+          "binary_sha256": "fa5ea6bd21f7a8a77804496e1b0a7441f1d339e3dc4a3b8c725fff2ab18d5175",
+          "runtime": {
+            "status": -6,
+            "stdout": "hook\ndrop\nhook\nhook\n",
+            "stderr": "thread caused non-unwinding panic. aborting.\n",
+            "stdout_sha256": "413b004bd4a382fe834795451c472ca9944917f5830d5da4ee2b13245a58244a",
+            "stderr_sha256": "ab4de3a389a983476432233bf9910470269945691f7851d05fbb083f8c36da33"
+          }
+        },
+        "candidate": {
+          "compile_status": 0,
+          "compile_stdout_sha256": "5633ec5f8305120e9a8ccc621bac05d7fd3bdce9d0f44ad2ca4b34ef38808228",
+          "compile_stderr_sha256": "9beb65d671b10eb121a748a74c6e760d0468a5745027bd4de8c8884337664ce4",
+          "runtime_executed": true,
+          "passed": true,
+          "binary_sha256": "161d414a247a11a2c4d320e7bf422cd594a368a867420a7ba857e6ef50a5727d",
+          "actual_compiler_argv_json_sha256": "8dd40b16ddd4633b4dfd57a403cf1a6622a9947a1b1acfb6aaa3f5400bcee14e",
+          "checked_bodies": [
+            14
+          ],
+          "runtime": {
+            "status": -6,
+            "stdout": "hook\ndrop\nhook\nhook\n",
+            "stderr": "thread caused non-unwinding panic. aborting.\n",
+            "stdout_sha256": "413b004bd4a382fe834795451c472ca9944917f5830d5da4ee2b13245a58244a",
+            "stderr_sha256": "ab4de3a389a983476432233bf9910470269945691f7851d05fbb083f8c36da33"
+          }
+        }
+      }
+    },
+    {
+      "name": "thread_isolation",
+      "passed": true,
+      "source_sha256": "7f8b126fbcbbb19f0b6828e31f6917b55ce2aea0ac0d7b32c13149e3ae89fdf8",
+      "manifest_sha256": "19768cc7f75e8b1722f878c401537b32e33bf9f99fec33ad088c31fa2a18ece5",
+      "engines": {
+        "reference": {
+          "compile_status": 0,
+          "compile_stdout_sha256": "d715c84e31acfbabf4c526c7e59319d602878709a451d34db14b6182ee6daa27",
+          "compile_stderr_sha256": "343aef3413b26b3a73c5ba79870bb29df17c6b6b1b268b8f467903cf37d8bfad",
+          "runtime_executed": true,
+          "passed": true,
+          "binary_sha256": "c1f11118d8baeedd122609c71a11216ddce1df1bd6e79c036afd10f5ce9b449b",
+          "runtime": {
+            "status": 0,
+            "stdout": "caught:30 died:1 drops:40 main:false\n",
+            "stderr": "",
+            "stdout_sha256": "0a899daa5425a76f4d456f3bc1d927201bf2cb130548c1795ebcbaeda901c25b",
+            "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          }
+        },
+        "candidate": {
+          "compile_status": 0,
+          "compile_stdout_sha256": "8e9d88725f18fa6d779bb50f8588fcce0f6abf37b824360dd77bec400ac71b70",
+          "compile_stderr_sha256": "fea4385817f6d0c3d4ecc9b9df43cdc9496e8ab1f5d6a22a0f9d8f5bf9b3574c",
+          "runtime_executed": true,
+          "passed": true,
+          "binary_sha256": "0cb4bf9dd11d5bf793bee67edd2f4147bcdb184612e952838a7bf9cc6493fbca",
+          "actual_compiler_argv_json_sha256": "615e2b7b497dba12f1a46ef259a2cf6fa689c186ebfb1c17ce2b0d482d96a69a",
+          "checked_bodies": [
+            17
+          ],
+          "runtime": {
+            "status": 0,
+            "stdout": "caught:30 died:1 drops:40 main:false\n",
+            "stderr": "",
+            "stdout_sha256": "0a899daa5425a76f4d456f3bc1d927201bf2cb130548c1795ebcbaeda901c25b",
+            "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          }
+        }
+      }
+    }
+  ],
+  "retained_binary_comparisons": {
+    "unwind_noop_reuses_cold": true,
+    "abort_noop_reuses_abort": true,
+    "restored_unwind_reuses_original_unwind": true,
+    "body_edit_changes_binary": true,
+    "repair_restores_edited_binary": true,
+    "invalid_previous_binary_bytes_checked_in_this_probe": false
+  }
+}

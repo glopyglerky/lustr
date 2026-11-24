@@ -1,0 +1,52 @@
+{
+  "passed": true,
+  "scope": "cold-only partial-package timestamp control; no daemon or speed claim",
+  "source_origin": "/tmp/lustr-host-source-mtime-review-v2/project",
+  "source_hashes": {
+    "Cargo.toml": "fbbfcd03176f295242bc707ef953fd24ab6dafaf4082b08c80dbb781fc36d432",
+    "build.rs": "95a101d3d256ec80490beb49c6951e9a8b3d868ee1c934ea7091bca657b215eb",
+    "src/main.rs": "4eaa30bbe86e224aa921789ceee9eb4838301a8d3d3ca438c8821b590d51e8b9"
+  },
+  "unchanged_source_bytes": true,
+  "watched": "build.rs",
+  "commands": 8,
+  "compiled_host_reused": true,
+  "observed": [
+    {
+      "phase": "before",
+      "watched_mtime_ns": 1795098488000000000,
+      "expected_stdout": "1795098488\n",
+      "native_stdout": "1795098488\n",
+      "oracle_stdout": "1795098488\n",
+      "host_binary": {
+        "path": "/tmp/lustr-host-timestamp-review-v3/implicit-source/native-cache/native-buildscript-0a9347da4ced76d5/build-script",
+        "sha256": "666791175f6e6cb3ed029a156d0f2cb2a080884778d238e2a66c0c4dfb328f01",
+        "mtime_ns": 1795098499525038065,
+        "inode": 591678,
+        "size": 1543004
+      },
+      "native_artifact_sha256": "3297eb9be6ad84e5bd68c94031c5faadf04ce1020a2c43545b5999173c532cf1",
+      "records": {
+        "before-buildscript-native-0a9347da4ced76d5.txt": "191f287889f5c771952d17d807e3455337cb0b649492c2f9ed1eec31d954acc9"
+      }
+    },
+    {
+      "phase": "after",
+      "watched_mtime_ns": 1795098618000000000,
+      "expected_stdout": "1795098618\n",
+      "native_stdout": "1795098618\n",
+      "oracle_stdout": "1795098618\n",
+      "host_binary": {
+        "path": "/tmp/lustr-host-timestamp-review-v3/implicit-source/native-cache/native-buildscript-0a9347da4ced76d5/build-script",
+        "sha256": "666791175f6e6cb3ed029a156d0f2cb2a080884778d238e2a66c0c4dfb328f01",
+        "mtime_ns": 1795098499525038065,
+        "inode": 591678,
+        "size": 1543004
+      },
+      "native_artifact_sha256": "667eb800095709d71eb02f24041eeac6312efd082490d63610d20b7f908fec6d",
+      "records": {
+        "after-buildscript-native-0a9347da4ced76d5.txt": "fcb6a092a91feb5e442677f24963eb4585a76b0e9e835f9774f2db8ea9ee31ff"
+      }
+    }
+  ]
+}

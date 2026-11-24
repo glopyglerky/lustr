@@ -1,0 +1,112 @@
+{
+  "baseline_revision": "28a2842635ee994db492b43f8c956eddce57a803",
+  "corrected_assertions": 250,
+  "corrected_invocations": 132,
+  "corrected_product_sources_sha256": {
+    "src/full.rs": "e002ef19ed459dffc721f2fdef6312b46841e89c58103e6583a6dad5d8fd57c5",
+    "src/selection_cache.rs": "81ffa68fb52cea1a9bf8fb91524c71611e1f6b9f2203511ca6f65b407c0f779a",
+    "tools/selection-toolchain-receipt.rs": "b412fd43bcdcd31e4756d2467a3854640a85f9e7489b07eb85a647c8c59b5d05",
+    "tools/test-native-selection-cache.py": "636c1f7d2407427b5640c46b126a550a089f4b29e4e6bffeed7c3f6122ea5c32"
+  },
+  "corrected_profiler_sha256": "24d5fd47e2a96ff40ffed39ddd649475be78fd203cfbfa5f8443a37dbb3ebf68",
+  "first_elf_source_sha256": "88993ba73386cac9cf6a39a8bef20aeb4e5c4461b104fd63d3c929b68623e3c8",
+  "first_elf_wrapper_sha256": "dc229c58f91225afd3911ecd8bdfad421b99f3dbba74fd7eb5475983abebca54",
+  "first_failure_source_identity": {
+    "Cargo.lock": {
+      "mtime_ns": 1795000256369995312,
+      "sha256": "05496afc02d0612368e7b10322998df841230e3877714608b77e2dc84d2f3164"
+    },
+    "Cargo.toml": {
+      "mtime_ns": 1795000164407927666,
+      "sha256": "cc187d3f8396349cf4cb3a155d45d897a21bc8d927758df9f08b4a5be41e90ec"
+    },
+    "base_revision": "28a2842635ee994db492b43f8c956eddce57a803",
+    "build_env": {
+      "LUST_BUILD_HASH": "dc82dab611c87e7e",
+      "profile": "release",
+      "rust_toolchain": "nightly-2026-11-09"
+    },
+    "compiler/native/src/protocol.rs": {
+      "mtime_ns": 1794999810871256019,
+      "sha256": "4da4c32fb16b62f3819a3d774ef63b76e201e2414c3b4540b4a6ccb27133fe1c"
+    },
+    "profiler": {
+      "mtime_ns": 1795000438736291068,
+      "sha256": "5f6e75807e6b8a1686d4058a2f1719112056cc977547720b4f9570b654bd0e39"
+    },
+    "src/full.rs": {
+      "mtime_ns": 1795000165119938707,
+      "sha256": "e002ef19ed459dffc721f2fdef6312b46841e89c58103e6583a6dad5d8fd57c5"
+    },
+    "src/host_runtime.rs": {
+      "mtime_ns": 1795000336686639990,
+      "sha256": "8ebc63c1ac92252816cd2dd092c5b0fad528c1d3a0f479b3889a6b7204f0c223"
+    },
+    "src/owned_child.rs": {
+      "mtime_ns": 1794999811486741149,
+      "sha256": "5c890f584d281e984405fce5a9810b8f5d2461e2dfedea173613c5813c4f5d20"
+    },
+    "src/selection_cache.rs": {
+      "mtime_ns": 1795000395139589147,
+      "sha256": "b02a9e883a1f5817e1df2af0719980a28129f10a1628dd267802aca36f80dbde"
+    },
+    "tools/profile-native-preflight.rs": {
+      "mtime_ns": 1795000278789507679,
+      "sha256": "2d4442a7a2267b6e3e064acbb6fe00c3e3aafde325e2516f265425958cc3e1a6"
+    }
+  },
+  "identical_tree": "b568e8bf4d9970418b7c1f4ef2984ce391ffa5f5",
+  "local_tested_revision": "53057e72f1853bf2ec005e5a798975b4f951044f",
+  "native_protocol_build_identity": "dc82dab611c87e7e",
+  "preserved_predecessors": [
+    {
+      "invocations": 90,
+      "name": "candidate-transitions-1",
+      "results_sha256": "6e027368ee24db3c5ce24a9779641202acb36fb45ac9f391a8e3d5590b8a7bcf"
+    },
+    {
+      "invocations": 124,
+      "name": "candidate-transitions-2",
+      "results_sha256": "2f199a959eb1d47d894938e51876bcda62baee441b5f315aefd026cc2b05e04e"
+    },
+    {
+      "invocations": 132,
+      "name": "candidate-transitions-3",
+      "results_sha256": "5e1ba9c584e1ec43522f7cecf5ebfbcee9f045b356b9c5062f75d7d4cadb06b2"
+    }
+  ],
+  "public_result_sets": [
+    {
+      "name": "corrected-source",
+      "original_results_sha256": "ef6dc5ffc922b675a774c8dc70c8c0fab8df0c2936240f39aee00a8b948fe17b",
+      "public_results_sha256": "adfe32f64b67fb5f8597f7e93e7b2f39b787db80ee353e9f1de3bca6a2ec1158"
+    },
+    {
+      "name": "reporting-fix",
+      "original_results_sha256": "2b73f2784dcf165d7c2dd4d9a1ee0f83980b2a4bb653a9f2f1e28ea3000c1271",
+      "public_results_sha256": "707301939d9c756e4e10e778a598dbd77e1e17b9fdbfab6ea0119a48a00ba034"
+    },
+    {
+      "name": "reporting-negative-control",
+      "original_results_sha256": "5ec7cd562c6139edbf55bb323a154456d3af8f124ee4c58579c449e50014bd99",
+      "public_results_sha256": "0b4e8ac2008b17ffd9e9fe622f79602b3db571d32ec609752cc467afe58f6ba9"
+    },
+    {
+      "name": "workflow-replay",
+      "original_results_sha256": "0ec8147bc8c70bb388964a9e2f3fb0f6ce5f0a50560691ecc00a14f73352239a",
+      "public_results_sha256": "355b8d8c94d0c9ab5bcf5fa9fe9cc6908a2fc232a17b4937cb40a46aab8bc78c"
+    }
+  ],
+  "publication_verification": "GitHub GET /repos/glopyglerky/lustr/commits/18fe returned this exact tree; local git rev-parse confirmed equality",
+  "published_revision": "18fe6c3408e6d581961bcf7f2721f72ca74cfbfa",
+  "reference_package_binary_sha256": {
+    "bin/cargo": "da29c2a9ff7f85bda5587e9c974e05c9e2a7196377e54466f6e9d6f9e00b2530",
+    "bin/rustc-full": "4fdde6c5f0fdb5e34ba00fc9da514592d50f5958a7b764c470affd49af3048d0",
+    "bin/rustc-reference": "ca9d833d09469a534ca1449e71ca9961608409cdb257df96cf8035338fac28de",
+    "bin/rustdoc": "631825ada1565bad37c9ccab5cc9a339dbfb4b132697cc8ebd7ad336be638644"
+  },
+  "reporting_fix_local_revision": "6ac30dd13f1ce9cb1f6b34feacc0ff9f30951637",
+  "reporting_fix_source_sha256": "152c66023e265dcff6c7b7377b9236bd6ecbd0f22e7903ec018fb3da83dd2d77",
+  "schema": "lustr-selection-review-evidence-v1",
+  "scope": "Cargo target selection correctness only; no native runtime qualification or performance parity claim"
+}

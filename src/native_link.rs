@@ -2,11 +2,17 @@ use std::ffi::{CString, c_char, c_void};
 use std::os::unix::ffi::OsStrExt;
 use std::path::Path;
 
+#[path = "host_runtime.rs"]
+mod host_runtime;
+#[allow(unused_imports)]
+pub use host_runtime::NATIVE_LIBRARY;
+
 unsafe extern "C" {
     fn dlopen(path: *const c_char, flags: i32) -> *mut c_void;
     fn dlsym(handle: *mut c_void, name: *const c_char) -> *mut c_void;
     fn getrlimit(resource: i32, limit: *mut Limit) -> i32;
     fn setrlimit(resource: i32, limit: *const Limit) -> i32;
+    #[cfg(target_os = "linux")]
     fn prctl(option: i32, ...) -> i32;
 }
 #[repr(C)]
@@ -28,14 +34,26 @@ unsafe extern "C" fn receive(context: *mut c_void, stream: i32, bytes: *const u8
     }
 }
 
+pub fn process_compatible() -> bool {
+    // PR_GET_THP_DISABLE reads the current policy without changing it.
+    #[cfg(target_os = "linux")]
+    {
+        unsafe { prctl(42, 0u64, 0u64, 0u64, 0u64) == 0 }
+    }
+    #[cfg(not(target_os = "linux"))]
+    {
+        true
+    }
+}
+
 pub fn compile(library: &Path, args: &[String]) -> Option<Result<(i32, Vec<u8>, Vec<u8>), &'static str>> {
     if args.len() > 4096 || !library.is_file() {
         return None;
     }
     // The upstream one-shot pipeline returns THP to its normal enabled state.
-    // Keep nondefault caller policies in a child, where they cannot leak into
-    // a subsequent full-core exec.
-    if unsafe { prctl(42, 0u64, 0u64, 0u64, 0u64) } != 0 {
+    // Keep nondefault caller policies in a child so native setup cannot change
+    // the calling process's policy.
+    if !process_compatible() {
         return None;
     }
     Some((|| {
@@ -51,9 +69,9 @@ pub fn compile(library: &Path, args: &[String]) -> Option<Result<(i32, Vec<u8>, 
         }
         let namespace = CString::new(namespace).unwrap();
         let mut output = (Vec::new(), Vec::new());
-        // Linux x86_64 is a build constraint. RTLD_NOW|RTLD_LOCAL keeps the
-        // unchanged compiler's Rust allocator and internals out of the client ABI.
-        let handle = unsafe { dlopen(path.as_ptr(), 2) };
+        // RTLD_NOW|RTLD_LOCAL keeps the compiler's Rust allocator and internals
+        // out of the client ABI. Darwin's RTLD_LOCAL has a distinct value.
+        let handle = unsafe { dlopen(path.as_ptr(), host_runtime::RTLD_NOW_LOCAL) };
         if handle.is_null() {
             return Err("cannot load the matched native compiler library");
         }
@@ -61,13 +79,14 @@ pub fn compile(library: &Path, args: &[String]) -> Option<Result<(i32, Vec<u8>, 
         if entry.is_null() {
             return Err("native compiler library has no matching entry point");
         }
-        let compile: Compile = unsafe { std::mem::transmute(entry) };
         let mut stack = Limit { current: 0, maximum: 0 };
         let restore_stack = unsafe { getrlimit(3, &mut stack) } == 0;
         // The library remains loaded until exit/exec. Its leaked one-shot
         // session follows upstream's process-lifetime allocation strategy.
         let code = unsafe {
-            compile(pointers.len(), pointers.as_ptr(), namespace.as_ptr(), receive, (&mut output as *mut (Vec<u8>, Vec<u8>)).cast())
+            let context = (&mut output as *mut (Vec<u8>, Vec<u8>)).cast();
+            let compile: Compile = std::mem::transmute(entry);
+            compile(pointers.len(), pointers.as_ptr(), namespace.as_ptr(), receive, context)
         };
         if restore_stack {
             let mut current = Limit { current: 0, maximum: 0 };

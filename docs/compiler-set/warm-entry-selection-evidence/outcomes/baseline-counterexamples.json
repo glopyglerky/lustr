@@ -1,0 +1,51 @@
+[
+  {
+    "exit": 0,
+    "expected": 0,
+    "label": "one-canonical-target",
+    "stderr": "",
+    "stdout": "{\"elapsed_ns\":309089267,\"manifest\":\"<REVIEW_WORKSPACE>/warm-review/baseline-counterexamples/project/Cargo.toml\",\"phase\":\"selection\",\"success\":true,\"target\":\"first\"}\n"
+  },
+  {
+    "exit": 2,
+    "expected": 2,
+    "label": "second-target-symlink-makes-ambiguous",
+    "stderr": "",
+    "stdout": "{\"elapsed_ns\":57454692,\"error\":\"package, target name, kind and source do not identify exactly one Cargo target\",\"phase\":\"selection\",\"success\":false}\n"
+  },
+  {
+    "exit": 0,
+    "expected": 0,
+    "label": "explicit-bin-disambiguates",
+    "stderr": "",
+    "stdout": "{\"elapsed_ns\":62250458,\"manifest\":\"<REVIEW_WORKSPACE>/warm-review/baseline-counterexamples/project/Cargo.toml\",\"phase\":\"selection\",\"success\":true,\"target\":\"first\"}\n"
+  },
+  {
+    "exit": 0,
+    "expected": 0,
+    "label": "symlink-restore",
+    "stderr": "",
+    "stdout": "{\"elapsed_ns\":54291970,\"manifest\":\"<REVIEW_WORKSPACE>/warm-review/baseline-counterexamples/project/Cargo.toml\",\"phase\":\"selection\",\"success\":true,\"target\":\"first\"}\n"
+  },
+  {
+    "exit": 0,
+    "expected": 0,
+    "label": "alternate-caller-no-config",
+    "stderr": "",
+    "stdout": "{\"elapsed_ns\":69264272,\"manifest\":\"<REVIEW_WORKSPACE>/warm-review/baseline-counterexamples/project/Cargo.toml\",\"phase\":\"selection\",\"success\":true,\"target\":\"first\"}\n"
+  },
+  {
+    "exit": 2,
+    "expected": 2,
+    "label": "new-caller-config-rejects",
+    "stderr": "error: could not load Cargo configuration\n\nCaused by:\n  could not parse TOML configuration in `<REVIEW_WORKSPACE>/warm-review/baseline-counterexamples/caller/.cargo/config.toml`\n\nCaused by:\n  TOML parse error at line 1, column 6\n    |\n  1 | this is malformed [\n    |      ^\n  key with no value, expected `=`\n",
+    "stdout": "{\"elapsed_ns\":3974173,\"error\":\"Cargo rejected the package or manifest selection\",\"phase\":\"selection\",\"success\":false}\n"
+  },
+  {
+    "exit": 0,
+    "expected": 0,
+    "label": "manifest-cwd-still-accepted",
+    "stderr": "",
+    "stdout": "{\"elapsed_ns\":62686552,\"manifest\":\"<REVIEW_WORKSPACE>/warm-review/baseline-counterexamples/project/Cargo.toml\",\"phase\":\"selection\",\"success\":true,\"target\":\"first\"}\n"
+  }
+]

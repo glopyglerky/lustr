@@ -1,0 +1,30 @@
+{
+  "source_receipt": {
+    "schema": 1,
+    "repository": "glopyglerky/lustr",
+    "run_id": "44546561737",
+    "run_attempt": 1,
+    "event_name": "pull_request",
+    "sha": "5c733f1468b576432f57d48b69590a6982032fc9",
+    "ref": "refs/pull/33/merge",
+    "workflow_sha": "5c733f1468b576432f57d48b69590a6982032fc9",
+    "workflow_ref": "glopyglerky/lustr/.github/workflows/ci.yml@refs/pull/33/merge",
+    "pull_request": {
+      "number": 33,
+      "head_sha": "fb2b24802180321d3bbc534dee7083fb2a385d6b",
+      "base_sha": "d135be016fab5db2ba026f1229d4d77681d9b0a2",
+      "head_repository_id": "1450430441",
+      "base_repository_id": "1450430441"
+    }
+  },
+  "omitted_fields": [
+    "actor",
+    "triggering_actor"
+  ],
+  "original_receipt_sha256": "e8f148720062d69c53af0faba8ee52bc56c0d2b5b6dcce083090dff6ba0c75ac",
+  "artifact_id": 14540433343,
+  "original_zip_sha256": "c2c420754e5ce92b5bb02a1eb74b0433355f92e9a8794f5c6a4cb35dd9318724",
+  "original_zip_locally_verified": true,
+  "published_tree": "afcc2cc8a565a8058c91f428e81e465d82896f0f",
+  "merge_tree": "afcc2cc8a565a8058c91f428e81e465d82896f0f"
+}

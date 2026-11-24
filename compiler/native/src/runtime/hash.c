@@ -1,6 +1,6 @@
 /* Erased hash table core: see hash.h for the contract. This file is a
-   scalar port of hashbrown 0.17.1 raw.rs (Rust 1.99 vendored std
-   sources, library/vendor/hashbrown-0.17.1). Function and variable
+   scalar port of hashbrown 0.17.1 raw.rs (the declared Rust std
+   dependency). Function and variable
    comments name the hashbrown counterpart where the match is not
    obvious. Internal helpers are static so this fragment can be
    amalgamated into the runtime unit without symbol clashes. */
@@ -12,7 +12,9 @@
 
 static void lust_hash_capacity_overflow(void) {
     static const char msg[] = "Hash table capacity overflow";
-    lust_panic_at((const uint8_t *)msg, sizeof msg - 1, "/rust/deps/hashbrown-0.17.1/src/raw.rs", 36, 40);
+    /* The declared Rust SDK uses Cargo's registry-source trim-paths
+       mapping; this virtual path is independent of the build host. */
+    lust_panic_at((const uint8_t *)msg, sizeof msg - 1, "/cargo/registry/25cdd57fae9f0462/hashbrown-0.17.1/src/raw.rs", 36, 40);
 }
 
 /* Tag::is_full / special_is_empty for one control byte. */

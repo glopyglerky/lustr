@@ -111,7 +111,7 @@ impl<'a> Cur<'a> {
         self.depth < 160
     }
     /// The text of the current token when it is one written word.
-    /// Reserved words count (`box` heads a pattern).
+    /// Reserved words count when inspecting grammar tokens.
     fn word(&self) -> Option<String> {
         match self.tok() {
             Some(Tok::Reserved(s)) => Some(self.interner.get(s).to_string()),
@@ -190,7 +190,7 @@ fn generic_args(c: &mut Cur) -> bool {
             return false;
         }
         match c.tok() {
-            Some(Tok::Lifetime(_)) => c.bump(),
+            Some(Tok::Lifetime(_, _)) => c.bump(),
             _ if matches!(c.tree(), Some(Tt::Delim(Delim::Brace, _, _))) => {
                 let Some(inner) = c.group(Delim::Brace) else { return false };
                 if !block_inner(&mut c.child(inner)) {
@@ -265,7 +265,7 @@ fn generic_params(c: &mut Cur) -> bool {
     loop {
         c.attrs();
         match c.tok() {
-            Some(Tok::Lifetime(_)) => {
+            Some(Tok::Lifetime(_, _)) => {
                 c.bump();
                 if c.eat(Tok::Colon) && !parse_bounds(c) {
                     return false;
@@ -424,7 +424,7 @@ fn bound_start(c: &Cur) -> bool {
             is_seg(t.tok)
                 || matches!(
                     t.tok,
-                    Tok::PathSep | Tok::Lt | Tok::Shl | Tok::Lifetime(_) | Tok::Question | Tok::Bang | Tok::For | Tok::Const | Tok::Async | Tok::Use
+                    Tok::PathSep | Tok::Lt | Tok::Shl | Tok::Lifetime(_, _) | Tok::Question | Tok::Bang | Tok::For | Tok::Const | Tok::Async | Tok::Use
                 )
         }
         _ => false,
@@ -446,7 +446,7 @@ fn parse_bounds(c: &mut Cur) -> bool {
 /// Parses one trait bound.
 fn parse_bound(c: &mut Cur) -> bool {
     c.eat(Tok::Question); // `?Sized`
-    if matches!(c.tok(), Some(Tok::Lifetime(_))) {
+    if matches!(c.tok(), Some(Tok::Lifetime(_, _))) {
         c.bump();
         return true;
     }
@@ -517,7 +517,7 @@ fn parse_ty(c: &mut Cur) -> bool {
         }
         Some(Tok::Amp) => {
             c.bump();
-            if matches!(c.tok(), Some(Tok::Lifetime(_))) {
+            if matches!(c.tok(), Some(Tok::Lifetime(_, _))) {
                 c.bump();
             }
             c.eat(Tok::Mut);
@@ -525,7 +525,7 @@ fn parse_ty(c: &mut Cur) -> bool {
         }
         Some(Tok::AndAnd) => {
             c.bump();
-            if matches!(c.tok(), Some(Tok::Lifetime(_))) {
+            if matches!(c.tok(), Some(Tok::Lifetime(_, _))) {
                 c.bump();
             }
             c.eat(Tok::Mut);
@@ -794,23 +794,7 @@ fn parse_pat_one(c: &mut Cur) -> bool {
             c.bump();
             parse_pat_binding(c)
         }
-        _ if c.word().as_deref() == Some("box") && box_arg_follows(c) => {
-            c.bump();
-            parse_pat_one(c)
-        }
         _ => parse_pat_path_pat(c),
-    }
-}
-
-/// True when `box` here is the box pattern head, not a binding.
-fn box_arg_follows(c: &Cur) -> bool {
-    match c.ts.get(c.i + 1) {
-        Some(Tt::Delim(_, _, _)) | Some(Tt::Frag(_, _, _)) => true,
-        Some(Tt::Tok(t)) => {
-            matches!(t.tok, Tok::Ident(_) | Tok::SelfUpper | Tok::Underscore | Tok::Amp | Tok::Ref | Tok::Mut | Tok::Minus | Tok::PathSep)
-                || is_literal(t.tok)
-        }
-        None => false,
     }
 }
 
@@ -847,7 +831,7 @@ fn parse_pat_path_pat(c: &mut Cur) -> bool {
                 _ => None,
             };
             if tok(1) == Some(Tok::Colon) {
-                return matches!(tok(0), Some(Tok::Ident(_) | Tok::Int(_, None, _))) && is_pat(&p[2..], c.interner, true);
+                return matches!(tok(0), Some(Tok::Ident(_, _) | Tok::Int(_, None, _))) && is_pat(&p[2..], c.interner, true);
             }
             let mut i = 0;
             if tok(i) == Some(Tok::Ref) {
@@ -856,7 +840,7 @@ fn parse_pat_path_pat(c: &mut Cur) -> bool {
             if tok(i) == Some(Tok::Mut) {
                 i += 1;
             }
-            i + 1 == p.len() && matches!(tok(i), Some(Tok::Ident(_)))
+            i + 1 == p.len() && matches!(tok(i), Some(Tok::Ident(_, _)))
         });
     }
     // A tuple struct pattern: `Path(pat, ..)`.
@@ -921,7 +905,7 @@ fn operand_start(c: &Cur) -> bool {
     matches!(
         c.tok(),
         Some(
-            Tok::Ident(_)
+            Tok::Ident(_, _)
                 | Tok::Reserved(_)
                 | Tok::SelfUpper
                 | Tok::SelfLower
@@ -948,7 +932,7 @@ fn operand_start(c: &Cur) -> bool {
                 | Tok::Underscore
                 | Tok::Lt
                 | Tok::Pound
-                | Tok::Lifetime(_)
+                | Tok::Lifetime(_, _)
                 | Tok::If
                 | Tok::Match
                 | Tok::Loop
@@ -1050,7 +1034,7 @@ fn parse_unary(c: &mut Cur) -> bool {
     }
     // A label on a loop or block (written: rustc rejects a forwarded
     // `block` after a label).
-    if matches!(c.tok(), Some(Tok::Lifetime(_))) && tok_at(c.ts, c.i + 1).map(|t| t.tok) == Some(Tok::Colon) {
+    if matches!(c.tok(), Some(Tok::Lifetime(_, _))) && tok_at(c.ts, c.i + 1).map(|t| t.tok) == Some(Tok::Colon) {
         c.bump();
         c.bump();
         if matches!(c.tree(), Some(Tt::Frag(..))) {
@@ -1117,14 +1101,14 @@ fn parse_unary(c: &mut Cur) -> bool {
         }
         Some(Tok::Break) => {
             c.bump();
-            if matches!(c.tok(), Some(Tok::Lifetime(_))) {
+            if matches!(c.tok(), Some(Tok::Lifetime(_, _))) {
                 c.bump();
             }
             !operand_start(c) || parse_expr_bp(c, 0)
         }
         Some(Tok::Continue) => {
             c.bump();
-            if matches!(c.tok(), Some(Tok::Lifetime(_))) {
+            if matches!(c.tok(), Some(Tok::Lifetime(_, _))) {
                 c.bump();
             }
             true
@@ -1526,11 +1510,11 @@ fn struct_fields(inner: &[Tt], interner: &Interner, ed2024: bool) -> bool {
         // `name`; rustc rejects keywords and numbers as a shorthand.
         match p.iter().position(|t| matches!(t, Tt::Tok(x) if x.tok == Tok::Colon)) {
             Some(1) => {
-                matches!(p.first(), Some(Tt::Tok(t)) if matches!(t.tok, Tok::Ident(_) | Tok::Int(_, None, _)))
+                matches!(p.first(), Some(Tt::Tok(t)) if matches!(t.tok, Tok::Ident(_, _) | Tok::Int(_, None, _)))
                     && is_expr(&p[2..], interner, ed2024)
             }
             Some(_) => false,
-            None => matches!(p, [Tt::Tok(t)] if matches!(t.tok, Tok::Ident(_))),
+            None => matches!(p, [Tt::Tok(t)] if matches!(t.tok, Tok::Ident(_, _))),
         }
     })
 }
@@ -1627,7 +1611,7 @@ fn starts_item_at(c: &Cur) -> bool {
             }
             Some(Tok::Const) => {
                 // `const NAME` is the item; `const fn` a qualifier.
-                if matches!(tok_at(c.ts, j + 1).map(|t| t.tok), Some(Tok::Ident(_) | Tok::Underscore)) {
+                if matches!(tok_at(c.ts, j + 1).map(|t| t.tok), Some(Tok::Ident(_, _) | Tok::Underscore)) {
                     return true;
                 }
                 j += 1;
@@ -1685,7 +1669,7 @@ fn fn_params(inner: &[Tt], interner: &Interner, allow_bare: bool) -> bool {
         let self_at = p.iter().position(|t| matches!(t, Tt::Tok(x) if x.tok == Tok::SelfLower));
         if let Some(s) = self_at {
             let head_ok =
-                p[..s].iter().all(|t| matches!(t, Tt::Tok(x) if matches!(x.tok, Tok::Amp | Tok::AndAnd | Tok::Mut | Tok::Lifetime(_))));
+                p[..s].iter().all(|t| matches!(t, Tt::Tok(x) if matches!(x.tok, Tok::Amp | Tok::AndAnd | Tok::Mut | Tok::Lifetime(_, _))));
             let tail_ok = match p.get(s + 1) {
                 None => true,
                 Some(Tt::Tok(x)) if x.tok == Tok::Colon => is_ty(&p[s + 2..], interner),
@@ -1732,7 +1716,7 @@ fn named_fields(inner: &[Tt], interner: &Interner) -> bool {
                 s += 1;
             }
         }
-        matches!(p.get(s), Some(Tt::Tok(t)) if matches!(t.tok, Tok::Ident(_)))
+        matches!(p.get(s), Some(Tt::Tok(t)) if matches!(t.tok, Tok::Ident(_, _)))
             && matches!(p.get(s + 1), Some(Tt::Tok(t)) if t.tok == Tok::Colon)
             && is_ty(&p[s + 2..], interner)
     })
@@ -1795,7 +1779,7 @@ fn parse_item(c: &mut Cur) -> bool {
     loop {
         match c.tok() {
             Some(Tok::Async | Tok::Unsafe) => c.bump(),
-            Some(Tok::Const) if !matches!(tok_at(c.ts, c.i + 1).map(|t| t.tok), Some(Tok::Ident(_) | Tok::Underscore)) => c.bump(),
+            Some(Tok::Const) if !matches!(tok_at(c.ts, c.i + 1).map(|t| t.tok), Some(Tok::Ident(_, _) | Tok::Underscore)) => c.bump(),
             Some(Tok::Extern) => {
                 // `extern crate` and an extern block are items of
                 // their own, not fn qualifiers.

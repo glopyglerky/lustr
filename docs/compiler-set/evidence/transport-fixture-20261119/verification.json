@@ -1,0 +1,81 @@
+{
+  "schema": "lustr-transport-fixture-repair-v1",
+  "published_head": "fb2b24802180321d3bbc534dee7083fb2a385d6b",
+  "published_tree": "afcc2cc8a565a8058c91f428e81e465d82896f0f",
+  "hosted_run": 44546561681,
+  "hosted_job": 135638575172,
+  "hosted_step": 16,
+  "hosted_status_at_diagnosis": "failure; final job logs not yet available while retained campaign continues",
+  "local_reproduction": {
+    "name": "transport_peer_consumes_and_validates_the_actual_encoded_request",
+    "exit": 101,
+    "passed": 0,
+    "failed": 1,
+    "left": 260,
+    "right": 262,
+    "assertion": "peer must consume every environment and source field"
+  },
+  "cause": "Independent test transport reader still consumed ten base fields after the production wire added the explicit-target fact. The complete frame now has ten fixed fields plus the displayed source path, before environment pairs.",
+  "correction": "Consume eleven base fields and assert the expected explicit-target bytes. The existing control exercises both false and true plus opposite-state rejection, while retaining exact cursor exhaustion, source/output/build identity and truncation checks. The real socket fixture expects false for its unchanged direct-source requests.",
+  "after": {
+    "exit": 0,
+    "passed": 1,
+    "failed": 0,
+    "ignored": 0,
+    "filtered_out": 28
+  },
+  "scope": "Test-fixture source only; production protocol and native compiler bytes unchanged. No local socket rerun or hosted ignored-contract pass is claimed.",
+  "source_files": {
+    "before_test_sha256": "8426cb1f623005ecbfa02e5c897ee5365e0e02ba0f0ccbdef45014cd0a77c496",
+    "after_test_sha256": "71d77887dd7f084fcf83f01b59827e62412188dea6f359332cfbfe6bad285dcb",
+    "unchanged_protocol_sha256": "87facaddc94fb88f56db20c115bef881ea95f28607b6d02c4d7f1a20004b962a"
+  },
+  "archive_sha256": "a972e707875a1624299b06c8917934946f15d460c28dec37ea3e75f54c7c61b5",
+  "members": [
+    {
+      "path": "after-command.json",
+      "sha256": "da60e66aa30a53c82df33597e9e9436c56b4d9913823e5427d6ac8978dd37689",
+      "bytes": 1864
+    },
+    {
+      "path": "after.stderr",
+      "sha256": "6f4bf7d2fc6bd2dc14ce3ffba453dd77bbaff846837de4aca05ca8506ebb644d",
+      "bytes": 298
+    },
+    {
+      "path": "after.stdout",
+      "sha256": "c435aad1a8925d696c40f05ef9f1fbfc97d7036eb86fe1145156c7310b78ac27",
+      "bytes": 190
+    },
+    {
+      "path": "after/tests/compiler_contract.rs",
+      "sha256": "71d77887dd7f084fcf83f01b59827e62412188dea6f359332cfbfe6bad285dcb",
+      "bytes": 20984
+    },
+    {
+      "path": "before-command.json",
+      "sha256": "03adcf889c67656108d6b9842324e713258752187de0f1d1ef738f345bcf1790",
+      "bytes": 1823
+    },
+    {
+      "path": "before.stderr",
+      "sha256": "01aeb358b9f6ff85bb39e1e124fda04c94862d7bd9fba3c52d34a8fefcfcae4a",
+      "bytes": 674
+    },
+    {
+      "path": "before.stdout",
+      "sha256": "dfbdc28a6bd874cd899e263a36d995ba245a2c5c12709556c16318d1cc674478",
+      "bytes": 289
+    },
+    {
+      "path": "before/compiler/native/src/protocol.rs",
+      "sha256": "87facaddc94fb88f56db20c115bef881ea95f28607b6d02c4d7f1a20004b962a",
+      "bytes": 98113
+    },
+    {
+      "path": "before/tests/compiler_contract.rs",
+      "sha256": "8426cb1f623005ecbfa02e5c897ee5365e0e02ba0f0ccbdef45014cd0a77c496",
+      "bytes": 20400
+    }
+  ]
+}

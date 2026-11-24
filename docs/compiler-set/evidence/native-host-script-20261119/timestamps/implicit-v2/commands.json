@@ -1,0 +1,94 @@
+[
+  {
+    "label": "before-native-build",
+    "argv": [
+      "/tmp/lustr-cargo-plan-build/package-v2/bin/lustr",
+      "build",
+      "src/main.rs",
+      "--manifest-path",
+      "Cargo.toml",
+      "--offline",
+      "-o",
+      "/tmp/lustr-host-source-mtime-review-v2/native-out"
+    ],
+    "exit": 0,
+    "stdout_file": "before-native-build.stdout",
+    "stderr_file": "before-native-build.stderr"
+  },
+  {
+    "label": "before-native-run",
+    "argv": [
+      "/tmp/lustr-host-source-mtime-review-v2/native-out"
+    ],
+    "exit": 0,
+    "stdout_file": "before-native-run.stdout",
+    "stderr_file": "before-native-run.stderr"
+  },
+  {
+    "label": "before-oracle-build",
+    "argv": [
+      "/workspace/scratch/bf3e8280f86b/tooling/rustup/toolchains/nightly-2026-11-09-x86_64-unknown-linux-gnu/bin/cargo",
+      "build",
+      "--offline",
+      "-q"
+    ],
+    "exit": 0,
+    "stdout_file": "before-oracle-build.stdout",
+    "stderr_file": "before-oracle-build.stderr"
+  },
+  {
+    "label": "before-oracle-run",
+    "argv": [
+      "/tmp/lustr-host-source-mtime-review-v2/oracle-target/debug/source-mtime-control"
+    ],
+    "exit": 0,
+    "stdout_file": "before-oracle-run.stdout",
+    "stderr_file": "before-oracle-run.stderr"
+  },
+  {
+    "label": "after-native-build",
+    "argv": [
+      "/tmp/lustr-cargo-plan-build/package-v2/bin/lustr",
+      "build",
+      "src/main.rs",
+      "--manifest-path",
+      "Cargo.toml",
+      "--offline",
+      "-o",
+      "/tmp/lustr-host-source-mtime-review-v2/native-out"
+    ],
+    "exit": 0,
+    "stdout_file": "after-native-build.stdout",
+    "stderr_file": "after-native-build.stderr"
+  },
+  {
+    "label": "after-native-run",
+    "argv": [
+      "/tmp/lustr-host-source-mtime-review-v2/native-out"
+    ],
+    "exit": 0,
+    "stdout_file": "after-native-run.stdout",
+    "stderr_file": "after-native-run.stderr"
+  },
+  {
+    "label": "after-oracle-build",
+    "argv": [
+      "/workspace/scratch/bf3e8280f86b/tooling/rustup/toolchains/nightly-2026-11-09-x86_64-unknown-linux-gnu/bin/cargo",
+      "build",
+      "--offline",
+      "-q"
+    ],
+    "exit": 0,
+    "stdout_file": "after-oracle-build.stdout",
+    "stderr_file": "after-oracle-build.stderr"
+  },
+  {
+    "label": "after-oracle-run",
+    "argv": [
+      "/tmp/lustr-host-source-mtime-review-v2/oracle-target/debug/source-mtime-control"
+    ],
+    "exit": 0,
+    "stdout_file": "after-oracle-run.stdout",
+    "stderr_file": "after-oracle-run.stderr"
+  }
+]

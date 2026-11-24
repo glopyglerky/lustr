@@ -1,0 +1,68 @@
+--- a/tccmacho.c
++++ b/tccmacho.c
+@@ -16,6 +16,47 @@
+  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+  */
+ #include "tcc.h"
++
++#ifdef CONFIG_CODESIGN
++#include <spawn.h>
++#include <sys/wait.h>
++#ifdef __APPLE__
++#include <crt_externs.h>
++#else
++extern char **environ;
++#endif
++
++/* Lustr integration: pass the unchanged output path as one argument. */
++static int tcc_codesign_file(TCCState *s1, const char *filename)
++{
++    pid_t pid, waited;
++    int error, status;
++    char *const argv[] = { "codesign", "-f", "-s", "-", "--", (char *)filename, NULL };
++#ifdef __APPLE__
++    char **environment = *_NSGetEnviron();
++#else
++    char **environment = environ;
++#endif
++
++    error = posix_spawnp(&pid, argv[0], NULL, NULL, argv, environment);
++    if (error)
++        return tcc_error_noabort("cannot start codesign for '%s': %s", filename, strerror(error));
++    do {
++        waited = waitpid(pid, &status, 0);
++    } while (waited == -1 && errno == EINTR);
++    if (waited < 0)
++        return tcc_error_noabort("cannot wait for codesign for '%s': %s", filename, strerror(errno));
++    if (waited != pid)
++        return tcc_error_noabort("unexpected codesign wait result for '%s'", filename);
++    if (WIFEXITED(status) && WEXITSTATUS(status) == 0)
++        return 0;
++    if (WIFEXITED(status))
++        return tcc_error_noabort("codesign failed for '%s' (exit status %d)", filename, WEXITSTATUS(status));
++    if (WIFSIGNALED(status))
++        return tcc_error_noabort("codesign failed for '%s' (signal %d)", filename, WTERMSIG(status));
++    return tcc_error_noabort("codesign failed for '%s' (unrecognized wait status)", filename);
++}
++#endif
+ 
+ /* In order to make life easy for us we are generating Mach-O files which
+    don't make use of some modern features, but which aren't entirely classic
+@@ -2235,15 +2276,8 @@
+ 
+     fclose(fp);
+ #ifdef CONFIG_CODESIGN
+-    if (!ret) {
+-	char command[1024];
+-	int retval;
+-
+-	snprintf(command, sizeof(command), "codesign -f -s - %s", filename);
+-	retval = system (command);
+-	if (retval == -1 || !(WIFEXITED(retval) && WEXITSTATUS(retval) == 0))
+-	    tcc_error ("command failed '%s'", command);
+-    }
++    if (!ret)
++        ret = tcc_codesign_file(s1, filename);
+ #endif
+     return ret;
+ }

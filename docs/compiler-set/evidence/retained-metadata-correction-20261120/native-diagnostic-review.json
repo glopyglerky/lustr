@@ -1,0 +1,33 @@
+{
+  "additional_simple_convention_mismatch_found": false,
+  "existing_error_code_source_span_and_phase_controls_preserved": true,
+  "finding": "The normal non-JSON error path renders the type diagnostic and then appends the exact root-source path and diagnostic count summary. The original failed attempt matches both; the authored matcher omitted the summary.",
+  "function": "errors",
+  "function_sha256": "3331a09fcf37ee6a7095c737261510366e30c28b3cee4f6e4b4eff398c6b3fb6",
+  "history_and_consumer_denominators_unchanged": true,
+  "new_negative_subcases": [
+    "missing terminal summary",
+    "wrong diagnostic count",
+    "wrong terminal-summary source path",
+    "extra diagnostic text"
+  ],
+  "remaining_source_conventions_checked": [
+    "check and prepared-drop phases",
+    "native completion and emission phases",
+    "staging and publication failure phases",
+    "object serial consumed before object write",
+    "non-u64 completion refusal",
+    "two SDK receipt and artifact refusal strings"
+  ],
+  "reviewed_files_sha256": {
+    "tools/test-retained-metadata-controls.py": "87470fa1e4821ec1d9273209468bd28db25ee1e97d20338f59e2ada85bec94f7",
+    "tools/test-retained-native-metadata.py": "2e42059f07f019f2020a55937ba4a7dd8a95159090b6505e5b83d1d3115b5583"
+  },
+  "schema": "focused-native-diagnostic-source-review-v1",
+  "scope": "Focused source and original-record review; no full correctness, performance, all-history or full-source qualification is asserted. Remaining histories require the corrected candidate campaign.",
+  "strict_equality_preserved": true,
+  "tests_or_candidate_executions_by_reviewer": false,
+  "upstream_commit": "240e08d91d4aed0299639f6f11fd522912b248f9",
+  "upstream_path": "src/driver/compile.rs",
+  "whole_function_byte_identical_in_candidate": true
+}

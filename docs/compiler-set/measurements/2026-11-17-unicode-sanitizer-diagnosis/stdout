@@ -1,0 +1,3 @@
+FAIL unicode_props_hash: sanitized build: sanitizer: ==5771==LeakSanitizer has encountered a fatal error.
+==5771==HINT: LeakSanitizer does not work under ptrace (strace, gdb, etc)
+difftest: 0 passed, 1 failed

@@ -1,0 +1,104 @@
+{
+  "schema": "lustr-combined-native-cargo-candidate-v1",
+  "source_commit": "795daf25e94b18cea874b11e2daff2a132a6bf29",
+  "native_tree": "bf933c382fd99e52dd2586ebc46f0d0aceaa71a8",
+  "patch_blob": "d3777126382c8c592e4130cdc67abf9efe6b2bb8",
+  "qualification_blob": "8ad6230f7f533320100f63331279848be6f455c7",
+  "candidate_identity_passed": true,
+  "native_inputs_matching_frozen_v3": {
+    "compiler/native/src/resolve/cargo.rs": "60aa54180883fe69523cbfe96d038ed69794046cf44b73ef2acf3c8d4a7d5af6",
+    "compiler/native/src/resolve/cargo_plan.rs": "b69c2fa4bbffe4b3a8d00f5a82d3d0b698542f03fc039f6ca6828addc76f041d",
+    "compiler/native/src/resolve/worklist.rs": "1517c0916b4b6056e88a0c1db4b0584b11e4788d1a1106202bb9f44da8115a8f",
+    "compiler/native/src/protocol.rs": "87facaddc94fb88f56db20c115bef881ea95f28607b6d02c4d7f1a20004b962a",
+    "compiler/native/src/resolve/cfg.rs": "365c30bf756fdc3971ac0cc16451e569a278af75d8b69d8950464b40b7aff701",
+    "compiler/native/src/driver/buildscript.rs": "25d718ce233542d2ad73616404aedc32f4134d5e2671e205ee785b30594e267e",
+    "compiler/native/src/driver/buildscript/native.rs": "bd6109f50094e4f51045f08bfb0973f08678e5f602b596b669d17134dbd931ca",
+    "compiler/native/src/driver/compile.rs": "07b5f75a8aa7b712d166c2dee832fdddf01493796d946df4e55ef197739a43cb",
+    "compiler/native/src/daemon.rs": "beb8dc2d2105f19e5a3fb425f6c6d03b111a35d38ba4f0cd1282cbb10c9dc1dd"
+  },
+  "public_inputs_matching_final_entry": {
+    "build.rs": "6d0ef1c6a25169f7fdeac41307367b0054397d9b5c012c9e2b2b0ed0ded50a1c",
+    "compiler/native/src/client.rs": "3d40b5098ca671e4b25d7a7a6a694e6876a7e7241a4989fe5715ac7bd2c0776c",
+    "compiler/native/src/protocol.rs": "87facaddc94fb88f56db20c115bef881ea95f28607b6d02c4d7f1a20004b962a",
+    "src/cargo_selection.rs": "f8ff29d93b11cd21e204d41068e107fb7fd635bf1443a2a62413e6c1df3520de",
+    "src/host_runtime.rs": "8ebc63c1ac92252816cd2dd092c5b0fad528c1d3a0f479b3889a6b7204f0c223",
+    "src/lib.rs": "bce8a5629beea2074da04f257c937c3548f62496f958e3c20ab2d6821b6a9bff",
+    "src/main.rs": "c3feee5e1366290284f48d54d74e3fb7e015d9ef006aa59155bf752528ab5c50",
+    "src/native_link.rs": "97fbd9000fe21425c2b4b7495b6fe2766666ef8ec8957018b512d4291437398e",
+    "src/native_queries.rs": "8f549d84bd6a563b20d177c38b11c97174e05379ceaf1ecc85f743fe151f2581",
+    "src/owned_child.rs": "5c890f584d281e984405fce5a9810b8f5d2461e2dfedea173613c5813c4f5d20",
+    "src/selection_cache.rs": "61c707dfa3cf01b6e26959d7521cd67e187c7abed43f2579f5f4339fb2654618",
+    "tools/host-sdk.rs": "5cb7549649c94c66c1063bbb459bf283ff8d5d0a796009711190519712a1c7e5",
+    "upstream/bluefe-core.pin": "ae93e7fb837097658ddda8881795aec4c6abe474b00f133806079a044c7dec2b",
+    "Cargo.toml": "3cbe194c029ff28d35f7ae2d5c8ad9a5406c50a36101757637e0d0d5d33ce547",
+    "Cargo.lock": "ad33e3260c84791c32381d5d42f710457dcb4f0241d0b167f3659baf78b6fac0"
+  },
+  "structural_guard": {
+    "schema": "lustr-exclusive-coverage-guard-v1",
+    "structural_checks_passed": true,
+    "full_rust_coverage": false,
+    "release_status": "unavailable",
+    "scope": "structural source and public entry constraints only; source inventories do not prove minimal dependency closure or semantic exclusivity",
+    "failures": []
+  },
+  "independent_workflow_review": {
+    "source_commit": "795daf25e94b18cea874b11e2daff2a132a6bf29",
+    "files": {
+      ".github/workflows/compiler-set.yml": "fe450b021f2ed2d3cd751c4f441aec8783ff000f49d89b82c450bbcd47aed91d",
+      ".github/workflows/ci.yml": "e7153ed63717f940650dc1febfc29302425fb373ab964d68ca2eb0d160c41f95"
+    },
+    "result": "No concrete missing wiring or acceptance bypass; not hosted execution."
+  },
+  "coordinator_evidence_integrity": {
+    "native_host_raw_members_verified": 459,
+    "native_host_published_files_verified": 134,
+    "independent_host_members_verified": 239,
+    "final_planner_members_verified": 554
+  },
+  "files": [
+    {
+      "path": "regeneration.json",
+      "sha256": "d4acd582b056e2669646845d9c07d7b0d781166a75993f51b4dae393eaf01a39",
+      "bytes": 1676
+    },
+    {
+      "path": "candidate-commands.json",
+      "sha256": "c2cc7ed1ba1fa795f0840568257ea9ece1231cb5970e52b18422a3ab770bb0a6",
+      "bytes": 635
+    },
+    {
+      "path": "candidate-0.stdout",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": "candidate-0.stderr",
+      "sha256": "458d2d4d5476f5a641d970700fd345d3bc91fa610de721ba46b648fc359b4f96",
+      "bytes": 316
+    },
+    {
+      "path": "candidate-1.stdout",
+      "sha256": "512142bdecd4b541b254a930fa4126ea515b8d435ad825158f923252d2c605f3",
+      "bytes": 246
+    },
+    {
+      "path": "candidate-1.stderr",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": "structural-guard.stdout",
+      "sha256": "29e8b9779114dec7438f6aaf42b4fb57b351c9c122aeb0dcd5e1368f12b1c69e",
+      "bytes": 322
+    },
+    {
+      "path": "structural-guard.stderr",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    }
+  ],
+  "guarded_constructor": false,
+  "retained_campaign": false,
+  "matched_performance": false,
+  "release_admission": false
+}

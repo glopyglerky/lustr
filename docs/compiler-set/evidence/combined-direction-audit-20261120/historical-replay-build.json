@@ -1,0 +1,35 @@
+{
+  "command": [
+    "<PINNED_SDK>/bin/cargo",
+    "build",
+    "--manifest-path",
+    "crates/lustr-bench/Cargo.toml",
+    "--locked",
+    "--offline",
+    "--example",
+    "replay"
+  ],
+  "cwd": "<CHECKOUT>",
+  "explicit_environment": {
+    "CARGO_HOME": "<CARGO_CACHE>",
+    "RUSTC": "<PINNED_SDK>/bin/rustc",
+    "CARGO_TARGET_DIR": "<BENCH_TARGET>",
+    "CARGO_BUILD_BUILD_DIR": "<BENCH_BUILD>",
+    "CARGO_BUILD_JOBS": "2",
+    "CARGO_INCREMENTAL": "0"
+  },
+  "expected_exit": 0,
+  "exit_code": 0,
+  "duration_seconds": 0.8936505317687988,
+  "expected_result_observed": true,
+  "stdout": {
+    "path": "historical-replay-build.stdout",
+    "bytes": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "stderr": {
+    "path": "historical-replay-build.stderr",
+    "bytes": 181,
+    "sha256": "eb3deb8d587d235c6c8d4872ee26566f803470d99888fb97a160ce745c8a084d"
+  }
+}

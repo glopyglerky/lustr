@@ -1,0 +1,3 @@
+   Compiling lustr-metadata-encoder v0.1.0 (<CHECKOUT>/crates/lustr-metadata-encoder)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.71s
+     Running unittests src/lib.rs (<BUILD_DIR>/debug/build/lustr-metadata-encoder/d3083a5fd05fcccd/out/lustr_metadata_encoder-d3083a5fd05fcccd)

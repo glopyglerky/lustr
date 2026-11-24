@@ -1,0 +1,67 @@
+{
+  "schema": 1,
+  "test": "driver::buildscript::tests::script_reruns_when_what_it_read_changes",
+  "profile": "dev",
+  "jobs": null,
+  "runs": [
+    {
+      "name": "cargo",
+      "command": [
+        "cargo",
+        "-Vv"
+      ],
+      "status": 0,
+      "stdout_sha256": "1d68d4e6a9cdd2f9ffd2bc4febf5015bcdd4b8b49145b5ae94f374d95249d152",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "name": "test-artifact",
+      "command": [
+        "cargo",
+        "test",
+        "--locked",
+        "--offline",
+        "--bin",
+        "lust-core",
+        "--profile",
+        "dev",
+        "--no-run",
+        "--message-format=json"
+      ],
+      "status": 0,
+      "stdout_sha256": "91c3387dd2ff8b63565d4cd6e82e24bbcd2108ece6cfc7e9b03a0dd8921b0e44",
+      "stderr_sha256": "a13905646e2aed93ec6ea9ed6ac91490a4e01f91af0215c3965279a910612149"
+    },
+    {
+      "name": "default-layout",
+      "command": [
+        "/home/runner/work/lustr/lustr/compiler/native/target/debug/build/lust/e6c7e5145eb214c5/out/lust_core-e6c7e5145eb214c5",
+        "driver::buildscript::tests::script_reruns_when_what_it_read_changes",
+        "--exact",
+        "--nocapture",
+        "--test-threads=1"
+      ],
+      "status": 0,
+      "stdout_sha256": "e1cdda1b00be8fa0f3090de5b4f02770bfb59befed9042a893edf4772cdd657c",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "layout_setting": null
+    },
+    {
+      "name": "compatibility-layout",
+      "command": [
+        "/home/runner/work/lustr/lustr/compiler/native/target/debug/build/lust/e6c7e5145eb214c5/out/lust_core-e6c7e5145eb214c5",
+        "driver::buildscript::tests::script_reruns_when_what_it_read_changes",
+        "--exact",
+        "--nocapture",
+        "--test-threads=1"
+      ],
+      "status": 0,
+      "stdout_sha256": "9303d6c5f5420a8e4f3a66f4cc3e120694efaeb26c0f6291f540a25e638e660f",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "layout_setting": "1"
+    }
+  ],
+  "passed": true,
+  "cargo": "cargo 1.102.0-nightly (c07ac2c4d 2026-11-06)\nrelease: 1.102.0-nightly\ncommit-hash: c07ac2c4d12237effc4b94f4543769b421790045\ncommit-date: 2026-11-06\nhost: x86_64-unknown-linux-gnu\nlibgit2: 1.9.6 (sys:0.21.0 vendored)\nlibcurl: 8.21.0-DEV (sys:0.4.90+curl-8.21.0 vendored ssl:OpenSSL/3.6.3)\nssl: OpenSSL 3.6.3 9 Jun 2026\nos: Ubuntu 24.4.0 (noble) [64-bit]\n",
+  "test_binary_sha256": "e625987b4adde8835bcdfe1f62daadbd67de209dfbbbfe63a77ddbaa3f688334"
+}

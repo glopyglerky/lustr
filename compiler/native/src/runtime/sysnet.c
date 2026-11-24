@@ -11,6 +11,7 @@
 #include <netdb.h>
 #include <netinet/in.h>
 #include <netinet/tcp.h>
+#include <sys/ioctl.h>
 #include <sys/socket.h>
 #include <sys/un.h>
 #include <unistd.h>
@@ -435,17 +436,23 @@ int64_t lust_sys_net_recvfrom(int32_t fd, uint64_t max, int32_t flags, lust_Vec 
 /* ---- Unix domain sockets (sysnet.h has the record forms) ---- */
 
 /* One sockaddr_un and its length from path bytes + abstract flag.
-   The Rust side checked the SUN_LEN limits. */
+   Independently enforce the actual C target's capacity before copying;
+   source-library validation must never be the only memory-safety boundary.
+   Zero signals EINVAL and is never a valid address length. */
 static socklen_t lust_sysnet_unix_addr(const uint8_t *p, uint64_t len, int32_t abstract, struct sockaddr_un *un) {
+    if (len >= sizeof un->sun_path) {
+        errno = EINVAL;
+        return 0;
+    }
     memset(un, 0, sizeof *un);
     un->sun_family = AF_UNIX;
     socklen_t sl;
     if (abstract) {
-        memcpy(un->sun_path + 1, p, (size_t)len);
+        if (len != 0) memcpy(un->sun_path + 1, p, (size_t)len);
         sl = (socklen_t)(offsetof(struct sockaddr_un, sun_path) + 1 + len);
     } else {
-        memcpy(un->sun_path, p, (size_t)len);
-        sl = (socklen_t)(offsetof(struct sockaddr_un, sun_path) + len + 1);
+        if (len != 0) memcpy(un->sun_path, p, (size_t)len);
+        sl = (socklen_t)(offsetof(struct sockaddr_un, sun_path) + len + (len != 0));
     }
 #ifdef __APPLE__
     /* Darwin's sockaddr_un carries its length in sun_len (its first
@@ -464,13 +471,18 @@ static void lust_sysnet_push_unix_addr(lust_Vec *out, const struct sockaddr_un *
         return;
     }
     uint64_t n = ll - off;
+    if (n > sizeof un->sun_path) n = sizeof un->sun_path;
     if (un->sun_path[0] == 0) {
-        if (n <= 1) {
-            lust_sysnet_put64(out, 0);
-            return;
-        }
+#ifdef __APPLE__
+        /* Darwin returns a padded address for unnamed socket pairs. It
+           has no Linux abstract namespace, regardless of the byte count. */
+        lust_sysnet_put64(out, 0);
+#else
+        /* A leading NUL with length offset + 1 is an empty abstract
+           name on Linux. Only a length at or below offset is unnamed. */
         lust_sysnet_put64(out, 2);
         lust_sysnet_push(out, un->sun_path + 1, n - 1);
+#endif
         return;
     }
     uint64_t sl = 0;
@@ -488,14 +500,47 @@ int32_t lust_sys_net_unix_pair(lust_Vec *out) {
     return fds[0];
 }
 
-int32_t lust_sys_net_unix_bind(const uint8_t *p, uint64_t len, int32_t abstract) {
+int32_t lust_sys_net_unix_socket(void) {
     int fd = socket(AF_UNIX, SOCK_STREAM | SOCK_CLOEXEC, 0);
     if (fd < 0) return -errno;
-    lust_sock_after_create(fd, 0);
+#ifdef __APPLE__
+    /* Match the declared Rust Socket::new: creation, checked CLOEXEC,
+       then checked SIGPIPE suppression, before any user pathname code. */
+    if (ioctl(fd, FIOCLEX) < 0) {
+        int e = errno;
+        close(fd);
+        return -e;
+    }
+    int enabled = 1;
+    if (setsockopt(fd, SOL_SOCKET, SO_NOSIGPIPE, &enabled, sizeof enabled) < 0) {
+        int e = errno;
+        close(fd);
+        return -e;
+    }
+#endif
+    return fd;
+}
+
+int32_t lust_sys_net_unix_bind_fd(int32_t fd, const uint8_t *p, uint64_t len, int32_t abstract, int32_t backlog) {
     struct sockaddr_un un;
     socklen_t sl = lust_sysnet_unix_addr(p, len, abstract, &un);
-    if (bind(fd, (struct sockaddr *)&un, sl) != 0 || listen(fd, 128) != 0) {
-        int e = errno;
+    if (sl == 0) return errno;
+    if (bind(fd, (struct sockaddr *)&un, sl) != 0 || listen(fd, backlog) != 0) return errno;
+    return 0;
+}
+
+int32_t lust_sys_net_unix_connect_fd(int32_t fd, const uint8_t *p, uint64_t len, int32_t abstract) {
+    struct sockaddr_un un;
+    socklen_t sl = lust_sysnet_unix_addr(p, len, abstract, &un);
+    if (sl == 0) return errno;
+    return connect(fd, (struct sockaddr *)&un, sl) != 0 ? errno : 0;
+}
+
+int32_t lust_sys_net_unix_bind(const uint8_t *p, uint64_t len, int32_t abstract) {
+    int fd = lust_sys_net_unix_socket();
+    if (fd < 0) return fd;
+    int e = lust_sys_net_unix_bind_fd(fd, p, len, abstract, 128);
+    if (e != 0) {
         close(fd);
         return -e;
     }
@@ -503,13 +548,10 @@ int32_t lust_sys_net_unix_bind(const uint8_t *p, uint64_t len, int32_t abstract)
 }
 
 int32_t lust_sys_net_unix_connect(const uint8_t *p, uint64_t len, int32_t abstract) {
-    int fd = socket(AF_UNIX, SOCK_STREAM | SOCK_CLOEXEC, 0);
-    if (fd < 0) return -errno;
-    lust_sock_after_create(fd, 0);
-    struct sockaddr_un un;
-    socklen_t sl = lust_sysnet_unix_addr(p, len, abstract, &un);
-    if (connect(fd, (struct sockaddr *)&un, sl) != 0) {
-        int e = errno;
+    int fd = lust_sys_net_unix_socket();
+    if (fd < 0) return fd;
+    int e = lust_sys_net_unix_connect_fd(fd, p, len, abstract);
+    if (e != 0) {
         close(fd);
         return -e;
     }
@@ -517,7 +559,7 @@ int32_t lust_sys_net_unix_connect(const uint8_t *p, uint64_t len, int32_t abstra
 }
 
 int32_t lust_sys_net_unix_accept(int32_t fd, lust_Vec *out) {
-    struct sockaddr_un un;
+    struct sockaddr_un un = {0};
     socklen_t ll = sizeof un;
     int n = lust_accept_cloexec(fd, (struct sockaddr *)&un, &ll);
     if (n < 0) return -errno;
@@ -526,7 +568,7 @@ int32_t lust_sys_net_unix_accept(int32_t fd, lust_Vec *out) {
 }
 
 int32_t lust_sys_net_unix_addr(int32_t fd, int32_t peer, lust_Vec *out) {
-    struct sockaddr_un un;
+    struct sockaddr_un un = {0};
     socklen_t ll = sizeof un;
     int rc = peer ? getpeername(fd, (struct sockaddr *)&un, &ll) : getsockname(fd, (struct sockaddr *)&un, &ll);
     if (rc != 0) return errno;

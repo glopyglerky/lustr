@@ -1,0 +1,1656 @@
+{
+  "schema": "lustr-review-profile-summary-v1",
+  "kind": "summary of retained original report; not original report bytes",
+  "original_report_sha256": "80106528f178cd95529f63e1d22ad20e8424c5654179a95ff2e61631bd109fb3",
+  "source": {
+    "head": "0cc0149f4b29e65fe40adcf9f59e42b7b11f23dd",
+    "tree": "af1ffe2bcb1d67c6288ad2fddf87238271af5b7a",
+    "native_tree": "296c3bb8d62d0b383e37f5e84416b9398af58c2e"
+  },
+  "scope": "cold semantic comparisons through direct Rust requests and real Cargo binaries; fresh source identities",
+  "profile": "opt-level=0, panic=abort, debuginfo=0; only debug-assertions and overflow-checks vary",
+  "retained_edit_qualified": false,
+  "performance_qualified": false,
+  "full_rust_qualified": false,
+  "passed": true,
+  "expected_case_count": 24,
+  "passed_case_count": 24,
+  "reference_pass_count": 24,
+  "candidate_pass_count": 24,
+  "no_fallback_observed": true,
+  "unexpected_candidate_executions": [],
+  "errors": [],
+  "tools": [
+    {
+      "name": "rustc",
+      "sha256": "164e73a0f6142d39e98d8784f92c5259a8f4bee101b549c3de3c22232bf5ab07",
+      "bytes": 16600896
+    },
+    {
+      "name": "lust",
+      "sha256": "882f313ac1f26c9088f48b1332046d76536ab395212d365fb728f6ca41299a18",
+      "bytes": 7372592
+    },
+    {
+      "name": "lust-core",
+      "sha256": "37c07636abac30a2f63f0ff8fd824287cceff4b7598a7ae0ac7fa230d4c68173",
+      "bytes": 360157504
+    },
+    {
+      "name": "cargo",
+      "sha256": "da29c2a9ff7f85bda5587e9c974e05c9e2a7196377e54466f6e9d6f9e00b2530",
+      "bytes": 36722856
+    },
+    {
+      "name": "rustc",
+      "sha256": "ca9d833d09469a534ca1449e71ca9961608409cdb257df96cf8035338fac28de",
+      "bytes": 646208
+    },
+    {
+      "name": "cargo",
+      "sha256": "da29c2a9ff7f85bda5587e9c974e05c9e2a7196377e54466f6e9d6f9e00b2530",
+      "bytes": 36722856
+    },
+    {
+      "name": "test-rustc-profile-defaults.py",
+      "sha256": "2e8af2810be7213d6ff215a6bdd006a71a9903cd40260544cde12d373f33dd60",
+      "bytes": 22939
+    },
+    {
+      "name": "strace",
+      "sha256": "4789be1c58263dabcb175da22990396733bffcd2444975e30a830d1ce2edd139",
+      "bytes": 4694784
+    }
+  ],
+  "cases": [
+    {
+      "name": "direct-defaults-overflow",
+      "mode": "direct",
+      "fixture": "overflow",
+      "explicit_codegen": [],
+      "expected_debug_assertions": true,
+      "expected_overflow_checks": true,
+      "expected_panic": true,
+      "passed": true,
+      "source_sha256": "194134f2a695c459e9585ccfb48f66262ab89446be9aee5b8d11efbc0e88dba5",
+      "engines": {
+        "candidate": {
+          "passed": true,
+          "compile_status": 0,
+          "runtime_executed": true,
+          "runtime_status": -6,
+          "actual_codegen": {
+            "debuginfo": [
+              "0"
+            ],
+            "opt-level": [
+              "0"
+            ],
+            "panic": [
+              "abort"
+            ]
+          },
+          "binary_sha256": "735a15c63ef3d2b3e6b34e8828ca40fc1c922ca479dea62a815840c50a84f0f8",
+          "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stderr_sha256": "f7e4a13d9bef69b5f184c40ed64728a73a94b0eac6120a3934e9f4e3d0b2df52"
+        },
+        "reference": {
+          "passed": true,
+          "compile_status": 0,
+          "runtime_executed": true,
+          "runtime_status": -6,
+          "actual_codegen": {
+            "debuginfo": [
+              "0"
+            ],
+            "opt-level": [
+              "0"
+            ],
+            "panic": [
+              "abort"
+            ]
+          },
+          "binary_sha256": "c5de26a10f2954ea53cc4eb39d9c335d7aad7ab792220da59574a20628a1d04a",
+          "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stderr_sha256": "fc5689c0a3f6f8853d9ea66223640d6cf46ec6683db8a026387d056b83a35520"
+        }
+      }
+    },
+    {
+      "name": "direct-defaults-debug-assert",
+      "mode": "direct",
+      "fixture": "debug-assert",
+      "explicit_codegen": [],
+      "expected_debug_assertions": true,
+      "expected_overflow_checks": true,
+      "expected_panic": true,
+      "passed": true,
+      "source_sha256": "16b16eea872db1bb81e02b175a66ab9489dfba6065972aa2b97f0b5f2992cd30",
+      "engines": {
+        "candidate": {
+          "passed": true,
+          "compile_status": 0,
+          "runtime_executed": true,
+          "runtime_status": -6,
+          "actual_codegen": {
+            "debuginfo": [
+              "0"
+            ],
+            "opt-level": [
+              "0"
+            ],
+            "panic": [
+              "abort"
+            ]
+          },
+          "binary_sha256": "75e7865216536baf2db18094d17f7469a0793be07cf6dfa46e86f45ac7287e10",
+          "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stderr_sha256": "e2cb37251451983ca33b44af7461e5f32ea910a9735281a4ab793b8316caf565"
+        },
+        "reference": {
+          "passed": true,
+          "compile_status": 0,
+          "runtime_executed": true,
+          "runtime_status": -6,
+          "actual_codegen": {
+            "debuginfo": [
+              "0"
+            ],
+            "opt-level": [
+              "0"
+            ],
+            "panic": [
+              "abort"
+            ]
+          },
+          "binary_sha256": "87bb17c4db6743cf5f855be935c3869076a5b4ee6416c9d1f1ad9775f45e9114",
+          "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stderr_sha256": "41ae043368550da10a12a2e7981c69934f625654d25c7d853110ea0fceb31534"
+        }
+      }
+    },
+    {
+      "name": "direct-debug-off-implicit-overflow-overflow",
+      "mode": "direct",
+      "fixture": "overflow",
+      "explicit_codegen": [
+        "debug-assertions=off"
+      ],
+      "expected_debug_assertions": false,
+      "expected_overflow_checks": false,
+      "expected_panic": false,
+      "passed": true,
+      "source_sha256": "194134f2a695c459e9585ccfb48f66262ab89446be9aee5b8d11efbc0e88dba5",
+      "engines": {
+        "candidate": {
+          "passed": true,
+          "compile_status": 0,
+          "runtime_executed": true,
+          "runtime_status": 0,
+          "actual_codegen": {
+            "debug-assertions": [
+              "off"
+            ],
+            "debuginfo": [
+              "0"
+            ],
+            "opt-level": [
+              "0"
+            ],
+            "panic": [
+              "abort"
+            ]
+          },
+          "binary_sha256": "c63c6d5d5055b6d81f276bb6243db8358ebb02418d2521482913b3c91389eaa3",
+          "stdout_sha256": "c8efe2a1119da88163f4c48c1ba0cf7f5ebd6bf5d8ae830bbbfa2f4e52d0a8d5",
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "reference": {
+          "passed": true,
+          "compile_status": 0,
+          "runtime_executed": true,
+          "runtime_status": 0,
+          "actual_codegen": {
+            "debug-assertions": [
+              "off"
+            ],
+            "debuginfo": [
+              "0"
+            ],
+            "opt-level": [
+              "0"
+            ],
+            "panic": [
+              "abort"
+            ]
+          },
+          "binary_sha256": "cac995e76b6517e5f9c0f573a918267355848f13c2139a52d1c9d769475687fe",
+          "stdout_sha256": "c8efe2a1119da88163f4c48c1ba0cf7f5ebd6bf5d8ae830bbbfa2f4e52d0a8d5",
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        }
+      }
+    },
+    {
+      "name": "direct-debug-off-implicit-overflow-debug-assert",
+      "mode": "direct",
+      "fixture": "debug-assert",
+      "explicit_codegen": [
+        "debug-assertions=off"
+      ],
+      "expected_debug_assertions": false,
+      "expected_overflow_checks": false,
+      "expected_panic": false,
+      "passed": true,
+      "source_sha256": "16b16eea872db1bb81e02b175a66ab9489dfba6065972aa2b97f0b5f2992cd30",
+      "engines": {
+        "candidate": {
+          "passed": true,
+          "compile_status": 0,
+          "runtime_executed": true,
+          "runtime_status": 0,
+          "actual_codegen": {
+            "debug-assertions": [
+              "off"
+            ],
+            "debuginfo": [
+              "0"
+            ],
+            "opt-level": [
+              "0"
+            ],
+            "panic": [
+              "abort"
+            ]
+          },
+          "binary_sha256": "2c7a00762cdf3512753fff1e008d2364cea5b8a20ab7d20ea17e8b92aa10acb4",
+          "stdout_sha256": "96cf768fbcd0774cf8e52caf7e8f130de7fcf81cf80a3d73b7b072e52e712593",
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "reference": {
+          "passed": true,
+          "compile_status": 0,
+          "runtime_executed": true,
+          "runtime_status": 0,
+          "actual_codegen": {
+            "debug-assertions": [
+              "off"
+            ],
+            "debuginfo": [
+              "0"
+            ],
+            "opt-level": [
+              "0"
+            ],
+            "panic": [
+              "abort"
+            ]
+          },
+          "binary_sha256": "dad3de94ecaf467ec46e09767910cd9702e886546da7e7a449197f03aefd204e",
+          "stdout_sha256": "96cf768fbcd0774cf8e52caf7e8f130de7fcf81cf80a3d73b7b072e52e712593",
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        }
+      }
+    },
+    {
+      "name": "direct-debug-off-explicit-overflow-on-overflow",
+      "mode": "direct",
+      "fixture": "overflow",
+      "explicit_codegen": [
+        "debug-assertions=off",
+        "overflow-checks=on"
+      ],
+      "expected_debug_assertions": false,
+      "expected_overflow_checks": true,
+      "expected_panic": true,
+      "passed": true,
+      "source_sha256": "194134f2a695c459e9585ccfb48f66262ab89446be9aee5b8d11efbc0e88dba5",
+      "engines": {
+        "candidate": {
+          "passed": true,
+          "compile_status": 0,
+          "runtime_executed": true,
+          "runtime_status": -6,
+          "actual_codegen": {
+            "debug-assertions": [
+              "off"
+            ],
+            "debuginfo": [
+              "0"
+            ],
+            "opt-level": [
+              "0"
+            ],
+            "overflow-checks": [
+              "on"
+            ],
+            "panic": [
+              "abort"
+            ]
+          },
+          "binary_sha256": "931d24a7101f4e27f10710f9503fea14ba439b7aa450731b88dcd5b334452734",
+          "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stderr_sha256": "01c4bb366e0458579708de7609296feba1a860af42836d5265a691fc5e01d027"
+        },
+        "reference": {
+          "passed": true,
+          "compile_status": 0,
+          "runtime_executed": true,
+          "runtime_status": -6,
+          "actual_codegen": {
+            "debug-assertions": [
+              "off"
+            ],
+            "debuginfo": [
+              "0"
+            ],
+            "opt-level": [
+              "0"
+            ],
+            "overflow-checks": [
+              "on"
+            ],
+            "panic": [
+              "abort"
+            ]
+          },
+          "binary_sha256": "1f8b0bec2789d15a45c69fdf56cb8bf8d5f70dc4f94dec5b1286be7c3a1e4fc2",
+          "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stderr_sha256": "28b68f0e7bd226a322f5e47c0cba743039a9778ae9ec832c0724838cf2d94240"
+        }
+      }
+    },
+    {
+      "name": "direct-debug-off-explicit-overflow-on-debug-assert",
+      "mode": "direct",
+      "fixture": "debug-assert",
+      "explicit_codegen": [
+        "debug-assertions=off",
+        "overflow-checks=on"
+      ],
+      "expected_debug_assertions": false,
+      "expected_overflow_checks": true,
+      "expected_panic": false,
+      "passed": true,
+      "source_sha256": "16b16eea872db1bb81e02b175a66ab9489dfba6065972aa2b97f0b5f2992cd30",
+      "engines": {
+        "candidate": {
+          "passed": true,
+          "compile_status": 0,
+          "runtime_executed": true,
+          "runtime_status": 0,
+          "actual_codegen": {
+            "debug-assertions": [
+              "off"
+            ],
+            "debuginfo": [
+              "0"
+            ],
+            "opt-level": [
+              "0"
+            ],
+            "overflow-checks": [
+              "on"
+            ],
+            "panic": [
+              "abort"
+            ]
+          },
+          "binary_sha256": "d705774dd783ac4114f4fe6e46c35bf71a513c1b988c369add22b1fd85165e6f",
+          "stdout_sha256": "96cf768fbcd0774cf8e52caf7e8f130de7fcf81cf80a3d73b7b072e52e712593",
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "reference": {
+          "passed": true,
+          "compile_status": 0,
+          "runtime_executed": true,
+          "runtime_status": 0,
+          "actual_codegen": {
+            "debug-assertions": [
+              "off"
+            ],
+            "debuginfo": [
+              "0"
+            ],
+            "opt-level": [
+              "0"
+            ],
+            "overflow-checks": [
+              "on"
+            ],
+            "panic": [
+              "abort"
+            ]
+          },
+          "binary_sha256": "dad3de94ecaf467ec46e09767910cd9702e886546da7e7a449197f03aefd204e",
+          "stdout_sha256": "96cf768fbcd0774cf8e52caf7e8f130de7fcf81cf80a3d73b7b072e52e712593",
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        }
+      }
+    },
+    {
+      "name": "direct-debug-on-explicit-overflow-off-overflow",
+      "mode": "direct",
+      "fixture": "overflow",
+      "explicit_codegen": [
+        "debug-assertions=on",
+        "overflow-checks=off"
+      ],
+      "expected_debug_assertions": true,
+      "expected_overflow_checks": false,
+      "expected_panic": false,
+      "passed": true,
+      "source_sha256": "194134f2a695c459e9585ccfb48f66262ab89446be9aee5b8d11efbc0e88dba5",
+      "engines": {
+        "candidate": {
+          "passed": true,
+          "compile_status": 0,
+          "runtime_executed": true,
+          "runtime_status": 0,
+          "actual_codegen": {
+            "debug-assertions": [
+              "on"
+            ],
+            "debuginfo": [
+              "0"
+            ],
+            "opt-level": [
+              "0"
+            ],
+            "overflow-checks": [
+              "off"
+            ],
+            "panic": [
+              "abort"
+            ]
+          },
+          "binary_sha256": "eb74af938ded3fb398de615f5f042074959694ee2e3483a52694c4543d5e4e72",
+          "stdout_sha256": "c8efe2a1119da88163f4c48c1ba0cf7f5ebd6bf5d8ae830bbbfa2f4e52d0a8d5",
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "reference": {
+          "passed": true,
+          "compile_status": 0,
+          "runtime_executed": true,
+          "runtime_status": 0,
+          "actual_codegen": {
+            "debug-assertions": [
+              "on"
+            ],
+            "debuginfo": [
+              "0"
+            ],
+            "opt-level": [
+              "0"
+            ],
+            "overflow-checks": [
+              "off"
+            ],
+            "panic": [
+              "abort"
+            ]
+          },
+          "binary_sha256": "cac995e76b6517e5f9c0f573a918267355848f13c2139a52d1c9d769475687fe",
+          "stdout_sha256": "c8efe2a1119da88163f4c48c1ba0cf7f5ebd6bf5d8ae830bbbfa2f4e52d0a8d5",
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        }
+      }
+    },
+    {
+      "name": "direct-debug-on-explicit-overflow-off-debug-assert",
+      "mode": "direct",
+      "fixture": "debug-assert",
+      "explicit_codegen": [
+        "debug-assertions=on",
+        "overflow-checks=off"
+      ],
+      "expected_debug_assertions": true,
+      "expected_overflow_checks": false,
+      "expected_panic": true,
+      "passed": true,
+      "source_sha256": "16b16eea872db1bb81e02b175a66ab9489dfba6065972aa2b97f0b5f2992cd30",
+      "engines": {
+        "candidate": {
+          "passed": true,
+          "compile_status": 0,
+          "runtime_executed": true,
+          "runtime_status": -6,
+          "actual_codegen": {
+            "debug-assertions": [
+              "on"
+            ],
+            "debuginfo": [
+              "0"
+            ],
+            "opt-level": [
+              "0"
+            ],
+            "overflow-checks": [
+              "off"
+            ],
+            "panic": [
+              "abort"
+            ]
+          },
+          "binary_sha256": "057798fb5e9cce25c8a0451b60b009a2b987fbd5ddb99f0503907c5c6155ece3",
+          "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stderr_sha256": "e6b87405410835660b888756912c8aa584cd03d9a5785c48cb6bbf5e1ab4e92c"
+        },
+        "reference": {
+          "passed": true,
+          "compile_status": 0,
+          "runtime_executed": true,
+          "runtime_status": -6,
+          "actual_codegen": {
+            "debug-assertions": [
+              "on"
+            ],
+            "debuginfo": [
+              "0"
+            ],
+            "opt-level": [
+              "0"
+            ],
+            "overflow-checks": [
+              "off"
+            ],
+            "panic": [
+              "abort"
+            ]
+          },
+          "binary_sha256": "a2c5191d8e5fa8c9351ad64423923d85ffa5e189d09656f05f7aaadc5094cea7",
+          "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stderr_sha256": "7b0aa8506731bcb37cd187782a8c3c54462bf680eba73065443a9667f17c9253"
+        }
+      }
+    },
+    {
+      "name": "direct-debug-last-off-overflow",
+      "mode": "direct",
+      "fixture": "overflow",
+      "explicit_codegen": [
+        "debug-assertions=on",
+        "debug-assertions=off"
+      ],
+      "expected_debug_assertions": false,
+      "expected_overflow_checks": false,
+      "expected_panic": false,
+      "passed": true,
+      "source_sha256": "194134f2a695c459e9585ccfb48f66262ab89446be9aee5b8d11efbc0e88dba5",
+      "engines": {
+        "candidate": {
+          "passed": true,
+          "compile_status": 0,
+          "runtime_executed": true,
+          "runtime_status": 0,
+          "actual_codegen": {
+            "debug-assertions": [
+              "on",
+              "off"
+            ],
+            "debuginfo": [
+              "0"
+            ],
+            "opt-level": [
+              "0"
+            ],
+            "panic": [
+              "abort"
+            ]
+          },
+          "binary_sha256": "ce944536e78499e816e083715a9a67fb9c4f477e35da1a0c8bb3f7b5bed5f6c7",
+          "stdout_sha256": "c8efe2a1119da88163f4c48c1ba0cf7f5ebd6bf5d8ae830bbbfa2f4e52d0a8d5",
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "reference": {
+          "passed": true,
+          "compile_status": 0,
+          "runtime_executed": true,
+          "runtime_status": 0,
+          "actual_codegen": {
+            "debug-assertions": [
+              "on",
+              "off"
+            ],
+            "debuginfo": [
+              "0"
+            ],
+            "opt-level": [
+              "0"
+            ],
+            "panic": [
+              "abort"
+            ]
+          },
+          "binary_sha256": "cac995e76b6517e5f9c0f573a918267355848f13c2139a52d1c9d769475687fe",
+          "stdout_sha256": "c8efe2a1119da88163f4c48c1ba0cf7f5ebd6bf5d8ae830bbbfa2f4e52d0a8d5",
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        }
+      }
+    },
+    {
+      "name": "direct-debug-last-off-debug-assert",
+      "mode": "direct",
+      "fixture": "debug-assert",
+      "explicit_codegen": [
+        "debug-assertions=on",
+        "debug-assertions=off"
+      ],
+      "expected_debug_assertions": false,
+      "expected_overflow_checks": false,
+      "expected_panic": false,
+      "passed": true,
+      "source_sha256": "16b16eea872db1bb81e02b175a66ab9489dfba6065972aa2b97f0b5f2992cd30",
+      "engines": {
+        "candidate": {
+          "passed": true,
+          "compile_status": 0,
+          "runtime_executed": true,
+          "runtime_status": 0,
+          "actual_codegen": {
+            "debug-assertions": [
+              "on",
+              "off"
+            ],
+            "debuginfo": [
+              "0"
+            ],
+            "opt-level": [
+              "0"
+            ],
+            "panic": [
+              "abort"
+            ]
+          },
+          "binary_sha256": "c320f74c88c7a7a382182aef56fd816bc675291a584eb8210b898476ad274746",
+          "stdout_sha256": "96cf768fbcd0774cf8e52caf7e8f130de7fcf81cf80a3d73b7b072e52e712593",
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "reference": {
+          "passed": true,
+          "compile_status": 0,
+          "runtime_executed": true,
+          "runtime_status": 0,
+          "actual_codegen": {
+            "debug-assertions": [
+              "on",
+              "off"
+            ],
+            "debuginfo": [
+              "0"
+            ],
+            "opt-level": [
+              "0"
+            ],
+            "panic": [
+              "abort"
+            ]
+          },
+          "binary_sha256": "dad3de94ecaf467ec46e09767910cd9702e886546da7e7a449197f03aefd204e",
+          "stdout_sha256": "96cf768fbcd0774cf8e52caf7e8f130de7fcf81cf80a3d73b7b072e52e712593",
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        }
+      }
+    },
+    {
+      "name": "direct-debug-last-on-overflow",
+      "mode": "direct",
+      "fixture": "overflow",
+      "explicit_codegen": [
+        "debug-assertions=off",
+        "debug-assertions=on"
+      ],
+      "expected_debug_assertions": true,
+      "expected_overflow_checks": true,
+      "expected_panic": true,
+      "passed": true,
+      "source_sha256": "194134f2a695c459e9585ccfb48f66262ab89446be9aee5b8d11efbc0e88dba5",
+      "engines": {
+        "candidate": {
+          "passed": true,
+          "compile_status": 0,
+          "runtime_executed": true,
+          "runtime_status": -6,
+          "actual_codegen": {
+            "debug-assertions": [
+              "off",
+              "on"
+            ],
+            "debuginfo": [
+              "0"
+            ],
+            "opt-level": [
+              "0"
+            ],
+            "panic": [
+              "abort"
+            ]
+          },
+          "binary_sha256": "c3be999fc9ee2dbafd02fd2a1c8ee6b6f059d916a712266d27669bf37cfc64c0",
+          "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stderr_sha256": "6d11c87e8992afff6fede047b9f60b62b53b72583e18d983b06e49da86da3f39"
+        },
+        "reference": {
+          "passed": true,
+          "compile_status": 0,
+          "runtime_executed": true,
+          "runtime_status": -6,
+          "actual_codegen": {
+            "debug-assertions": [
+              "off",
+              "on"
+            ],
+            "debuginfo": [
+              "0"
+            ],
+            "opt-level": [
+              "0"
+            ],
+            "panic": [
+              "abort"
+            ]
+          },
+          "binary_sha256": "605c583aa50665ce058c11435bac84becf8f8f77c2253aed99a72a72c63bbee3",
+          "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stderr_sha256": "a53c51fad09f8b286f6e6204beee61e710ac90bce16831f2355eadcc9dee8968"
+        }
+      }
+    },
+    {
+      "name": "direct-debug-last-on-debug-assert",
+      "mode": "direct",
+      "fixture": "debug-assert",
+      "explicit_codegen": [
+        "debug-assertions=off",
+        "debug-assertions=on"
+      ],
+      "expected_debug_assertions": true,
+      "expected_overflow_checks": true,
+      "expected_panic": true,
+      "passed": true,
+      "source_sha256": "16b16eea872db1bb81e02b175a66ab9489dfba6065972aa2b97f0b5f2992cd30",
+      "engines": {
+        "candidate": {
+          "passed": true,
+          "compile_status": 0,
+          "runtime_executed": true,
+          "runtime_status": -6,
+          "actual_codegen": {
+            "debug-assertions": [
+              "off",
+              "on"
+            ],
+            "debuginfo": [
+              "0"
+            ],
+            "opt-level": [
+              "0"
+            ],
+            "panic": [
+              "abort"
+            ]
+          },
+          "binary_sha256": "fc861ffc7ab420bb6284e14f59f3b55bc07ff451f5382af49daf8e0340965ff2",
+          "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stderr_sha256": "c9f130e214aeabba2ae715efb21e890268ec4057d0471e07eaeb77797835ba68"
+        },
+        "reference": {
+          "passed": true,
+          "compile_status": 0,
+          "runtime_executed": true,
+          "runtime_status": -6,
+          "actual_codegen": {
+            "debug-assertions": [
+              "off",
+              "on"
+            ],
+            "debuginfo": [
+              "0"
+            ],
+            "opt-level": [
+              "0"
+            ],
+            "panic": [
+              "abort"
+            ]
+          },
+          "binary_sha256": "9643d583733158181ab65297d3b94190b45fda3674a2df3bf42a19264686cf50",
+          "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stderr_sha256": "013b3c405122cdf8256a61f1493d62247c65e54d1c49ebb5751c43b7cfd74edd"
+        }
+      }
+    },
+    {
+      "name": "direct-overflow-last-off-overflow",
+      "mode": "direct",
+      "fixture": "overflow",
+      "explicit_codegen": [
+        "debug-assertions=off",
+        "overflow-checks=on",
+        "overflow-checks=off"
+      ],
+      "expected_debug_assertions": false,
+      "expected_overflow_checks": false,
+      "expected_panic": false,
+      "passed": true,
+      "source_sha256": "194134f2a695c459e9585ccfb48f66262ab89446be9aee5b8d11efbc0e88dba5",
+      "engines": {
+        "candidate": {
+          "passed": true,
+          "compile_status": 0,
+          "runtime_executed": true,
+          "runtime_status": 0,
+          "actual_codegen": {
+            "debug-assertions": [
+              "off"
+            ],
+            "debuginfo": [
+              "0"
+            ],
+            "opt-level": [
+              "0"
+            ],
+            "overflow-checks": [
+              "on",
+              "off"
+            ],
+            "panic": [
+              "abort"
+            ]
+          },
+          "binary_sha256": "775378776fe89b27387e845116fbc810444faebb7c1ce66561b490bd39b3e50e",
+          "stdout_sha256": "c8efe2a1119da88163f4c48c1ba0cf7f5ebd6bf5d8ae830bbbfa2f4e52d0a8d5",
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "reference": {
+          "passed": true,
+          "compile_status": 0,
+          "runtime_executed": true,
+          "runtime_status": 0,
+          "actual_codegen": {
+            "debug-assertions": [
+              "off"
+            ],
+            "debuginfo": [
+              "0"
+            ],
+            "opt-level": [
+              "0"
+            ],
+            "overflow-checks": [
+              "on",
+              "off"
+            ],
+            "panic": [
+              "abort"
+            ]
+          },
+          "binary_sha256": "cac995e76b6517e5f9c0f573a918267355848f13c2139a52d1c9d769475687fe",
+          "stdout_sha256": "c8efe2a1119da88163f4c48c1ba0cf7f5ebd6bf5d8ae830bbbfa2f4e52d0a8d5",
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        }
+      }
+    },
+    {
+      "name": "direct-overflow-last-off-debug-assert",
+      "mode": "direct",
+      "fixture": "debug-assert",
+      "explicit_codegen": [
+        "debug-assertions=off",
+        "overflow-checks=on",
+        "overflow-checks=off"
+      ],
+      "expected_debug_assertions": false,
+      "expected_overflow_checks": false,
+      "expected_panic": false,
+      "passed": true,
+      "source_sha256": "16b16eea872db1bb81e02b175a66ab9489dfba6065972aa2b97f0b5f2992cd30",
+      "engines": {
+        "candidate": {
+          "passed": true,
+          "compile_status": 0,
+          "runtime_executed": true,
+          "runtime_status": 0,
+          "actual_codegen": {
+            "debug-assertions": [
+              "off"
+            ],
+            "debuginfo": [
+              "0"
+            ],
+            "opt-level": [
+              "0"
+            ],
+            "overflow-checks": [
+              "on",
+              "off"
+            ],
+            "panic": [
+              "abort"
+            ]
+          },
+          "binary_sha256": "817c99666df809c0ffc711b8d39cb54f5560f388e23c9da50c18eba12d83a5a9",
+          "stdout_sha256": "96cf768fbcd0774cf8e52caf7e8f130de7fcf81cf80a3d73b7b072e52e712593",
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "reference": {
+          "passed": true,
+          "compile_status": 0,
+          "runtime_executed": true,
+          "runtime_status": 0,
+          "actual_codegen": {
+            "debug-assertions": [
+              "off"
+            ],
+            "debuginfo": [
+              "0"
+            ],
+            "opt-level": [
+              "0"
+            ],
+            "overflow-checks": [
+              "on",
+              "off"
+            ],
+            "panic": [
+              "abort"
+            ]
+          },
+          "binary_sha256": "dad3de94ecaf467ec46e09767910cd9702e886546da7e7a449197f03aefd204e",
+          "stdout_sha256": "96cf768fbcd0774cf8e52caf7e8f130de7fcf81cf80a3d73b7b072e52e712593",
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        }
+      }
+    },
+    {
+      "name": "direct-overflow-last-on-overflow",
+      "mode": "direct",
+      "fixture": "overflow",
+      "explicit_codegen": [
+        "debug-assertions=off",
+        "overflow-checks=off",
+        "overflow-checks=on"
+      ],
+      "expected_debug_assertions": false,
+      "expected_overflow_checks": true,
+      "expected_panic": true,
+      "passed": true,
+      "source_sha256": "194134f2a695c459e9585ccfb48f66262ab89446be9aee5b8d11efbc0e88dba5",
+      "engines": {
+        "candidate": {
+          "passed": true,
+          "compile_status": 0,
+          "runtime_executed": true,
+          "runtime_status": -6,
+          "actual_codegen": {
+            "debug-assertions": [
+              "off"
+            ],
+            "debuginfo": [
+              "0"
+            ],
+            "opt-level": [
+              "0"
+            ],
+            "overflow-checks": [
+              "off",
+              "on"
+            ],
+            "panic": [
+              "abort"
+            ]
+          },
+          "binary_sha256": "a98b760313c081963363ed8742a1a20e6a84d6e3a0cd7dd7787b1f5bf0f0c4d4",
+          "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stderr_sha256": "73d0def0f562551275732605f550164fbb576df7a40b34fc3100b515ef9ca32c"
+        },
+        "reference": {
+          "passed": true,
+          "compile_status": 0,
+          "runtime_executed": true,
+          "runtime_status": -6,
+          "actual_codegen": {
+            "debug-assertions": [
+              "off"
+            ],
+            "debuginfo": [
+              "0"
+            ],
+            "opt-level": [
+              "0"
+            ],
+            "overflow-checks": [
+              "off",
+              "on"
+            ],
+            "panic": [
+              "abort"
+            ]
+          },
+          "binary_sha256": "2c3ba957fbbbc6181de8dff2b2d524c27930ae9a0e0f95f78b8f8c41b07d16b8",
+          "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stderr_sha256": "c5ae83e6ee8938485ddd5a73cff80a97100b5e0edebb093d7c372ec1a5880944"
+        }
+      }
+    },
+    {
+      "name": "direct-overflow-last-on-debug-assert",
+      "mode": "direct",
+      "fixture": "debug-assert",
+      "explicit_codegen": [
+        "debug-assertions=off",
+        "overflow-checks=off",
+        "overflow-checks=on"
+      ],
+      "expected_debug_assertions": false,
+      "expected_overflow_checks": true,
+      "expected_panic": false,
+      "passed": true,
+      "source_sha256": "16b16eea872db1bb81e02b175a66ab9489dfba6065972aa2b97f0b5f2992cd30",
+      "engines": {
+        "candidate": {
+          "passed": true,
+          "compile_status": 0,
+          "runtime_executed": true,
+          "runtime_status": 0,
+          "actual_codegen": {
+            "debug-assertions": [
+              "off"
+            ],
+            "debuginfo": [
+              "0"
+            ],
+            "opt-level": [
+              "0"
+            ],
+            "overflow-checks": [
+              "off",
+              "on"
+            ],
+            "panic": [
+              "abort"
+            ]
+          },
+          "binary_sha256": "e728927bc02378e734afe26eeaad263d16d1c3c2ae9a668cd00f2b7202210442",
+          "stdout_sha256": "96cf768fbcd0774cf8e52caf7e8f130de7fcf81cf80a3d73b7b072e52e712593",
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "reference": {
+          "passed": true,
+          "compile_status": 0,
+          "runtime_executed": true,
+          "runtime_status": 0,
+          "actual_codegen": {
+            "debug-assertions": [
+              "off"
+            ],
+            "debuginfo": [
+              "0"
+            ],
+            "opt-level": [
+              "0"
+            ],
+            "overflow-checks": [
+              "off",
+              "on"
+            ],
+            "panic": [
+              "abort"
+            ]
+          },
+          "binary_sha256": "dad3de94ecaf467ec46e09767910cd9702e886546da7e7a449197f03aefd204e",
+          "stdout_sha256": "96cf768fbcd0774cf8e52caf7e8f130de7fcf81cf80a3d73b7b072e52e712593",
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        }
+      }
+    },
+    {
+      "name": "cargo-defaults-overflow",
+      "mode": "cargo",
+      "fixture": "overflow",
+      "explicit_codegen": [],
+      "expected_debug_assertions": true,
+      "expected_overflow_checks": true,
+      "expected_panic": true,
+      "passed": true,
+      "source_sha256": "194134f2a695c459e9585ccfb48f66262ab89446be9aee5b8d11efbc0e88dba5",
+      "engines": {
+        "candidate": {
+          "passed": true,
+          "compile_status": 0,
+          "runtime_executed": true,
+          "runtime_status": -6,
+          "actual_codegen": {
+            "embed-bitcode": [
+              "no"
+            ],
+            "metadata": [
+              "8d70fe96575e43e2"
+            ],
+            "panic": [
+              "abort"
+            ],
+            "strip": [
+              "debuginfo"
+            ]
+          },
+          "binary_sha256": "6c8f690ed7ece23ec6920dce9c732cc8e16ae4e9e7f32acfdd1db29459fe5f77",
+          "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stderr_sha256": "658ab59d0dbe4bbdb17978ef7d2644979c87da15acb984519d80be34bc196331"
+        },
+        "reference": {
+          "passed": true,
+          "compile_status": 0,
+          "runtime_executed": true,
+          "runtime_status": -6,
+          "actual_codegen": {
+            "embed-bitcode": [
+              "no"
+            ],
+            "metadata": [
+              "8d70fe96575e43e2"
+            ],
+            "panic": [
+              "abort"
+            ],
+            "strip": [
+              "debuginfo"
+            ]
+          },
+          "binary_sha256": "45f110fb697b9a354473dd2b4e7a381ade3b467eab18c1ec28f13e55311077e9",
+          "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stderr_sha256": "be5b37cf55151d2b48d1191d19ce610d97cc7743c8da8c38d55d061095e9fd18"
+        }
+      }
+    },
+    {
+      "name": "cargo-defaults-debug-assert",
+      "mode": "cargo",
+      "fixture": "debug-assert",
+      "explicit_codegen": [],
+      "expected_debug_assertions": true,
+      "expected_overflow_checks": true,
+      "expected_panic": true,
+      "passed": true,
+      "source_sha256": "16b16eea872db1bb81e02b175a66ab9489dfba6065972aa2b97f0b5f2992cd30",
+      "engines": {
+        "candidate": {
+          "passed": true,
+          "compile_status": 0,
+          "runtime_executed": true,
+          "runtime_status": -6,
+          "actual_codegen": {
+            "embed-bitcode": [
+              "no"
+            ],
+            "metadata": [
+              "8d70fe96575e43e2"
+            ],
+            "panic": [
+              "abort"
+            ],
+            "strip": [
+              "debuginfo"
+            ]
+          },
+          "binary_sha256": "d9e2f7af2622c0035ab7f4099994b329d781e64707870c8cd969f8bfcb2c6675",
+          "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stderr_sha256": "e5f9265ce24f030e065fce7ed1bda45091c9ac0b719ae6bced578418e9e11895"
+        },
+        "reference": {
+          "passed": true,
+          "compile_status": 0,
+          "runtime_executed": true,
+          "runtime_status": -6,
+          "actual_codegen": {
+            "embed-bitcode": [
+              "no"
+            ],
+            "metadata": [
+              "8d70fe96575e43e2"
+            ],
+            "panic": [
+              "abort"
+            ],
+            "strip": [
+              "debuginfo"
+            ]
+          },
+          "binary_sha256": "3ad3a24682c7064d188a41d9719a17c7f11271dbb35af12624c05c6c958e9256",
+          "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stderr_sha256": "464ec2e324a45685cb64d6bf094f619ff3fc172077768f3631258d3682b2e24a"
+        }
+      }
+    },
+    {
+      "name": "cargo-debug-off-implicit-overflow-overflow",
+      "mode": "cargo",
+      "fixture": "overflow",
+      "explicit_codegen": [
+        "debug-assertions=off"
+      ],
+      "expected_debug_assertions": false,
+      "expected_overflow_checks": false,
+      "expected_panic": false,
+      "passed": true,
+      "source_sha256": "194134f2a695c459e9585ccfb48f66262ab89446be9aee5b8d11efbc0e88dba5",
+      "engines": {
+        "candidate": {
+          "passed": true,
+          "compile_status": 0,
+          "runtime_executed": true,
+          "runtime_status": 0,
+          "actual_codegen": {
+            "debug-assertions": [
+              "off"
+            ],
+            "embed-bitcode": [
+              "no"
+            ],
+            "metadata": [
+              "8d70fe96575e43e2"
+            ],
+            "panic": [
+              "abort"
+            ],
+            "strip": [
+              "debuginfo"
+            ]
+          },
+          "binary_sha256": "d067093f3c77292b07f21e3dd870b7eb322e70b6d942b6fc738670b5994309c3",
+          "stdout_sha256": "c8efe2a1119da88163f4c48c1ba0cf7f5ebd6bf5d8ae830bbbfa2f4e52d0a8d5",
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "reference": {
+          "passed": true,
+          "compile_status": 0,
+          "runtime_executed": true,
+          "runtime_status": 0,
+          "actual_codegen": {
+            "debug-assertions": [
+              "off"
+            ],
+            "embed-bitcode": [
+              "no"
+            ],
+            "metadata": [
+              "8d70fe96575e43e2"
+            ],
+            "panic": [
+              "abort"
+            ],
+            "strip": [
+              "debuginfo"
+            ]
+          },
+          "binary_sha256": "a46a06a6b58a758caafccfecd59e3f06a2abe2b3caf53882cb9f916495c12496",
+          "stdout_sha256": "c8efe2a1119da88163f4c48c1ba0cf7f5ebd6bf5d8ae830bbbfa2f4e52d0a8d5",
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        }
+      }
+    },
+    {
+      "name": "cargo-debug-off-implicit-overflow-debug-assert",
+      "mode": "cargo",
+      "fixture": "debug-assert",
+      "explicit_codegen": [
+        "debug-assertions=off"
+      ],
+      "expected_debug_assertions": false,
+      "expected_overflow_checks": false,
+      "expected_panic": false,
+      "passed": true,
+      "source_sha256": "16b16eea872db1bb81e02b175a66ab9489dfba6065972aa2b97f0b5f2992cd30",
+      "engines": {
+        "candidate": {
+          "passed": true,
+          "compile_status": 0,
+          "runtime_executed": true,
+          "runtime_status": 0,
+          "actual_codegen": {
+            "debug-assertions": [
+              "off"
+            ],
+            "embed-bitcode": [
+              "no"
+            ],
+            "metadata": [
+              "8d70fe96575e43e2"
+            ],
+            "panic": [
+              "abort"
+            ],
+            "strip": [
+              "debuginfo"
+            ]
+          },
+          "binary_sha256": "df0e8b3bca9d1706c264fd3050890143f7121e67b948a906307c6dd8e8f085f5",
+          "stdout_sha256": "96cf768fbcd0774cf8e52caf7e8f130de7fcf81cf80a3d73b7b072e52e712593",
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "reference": {
+          "passed": true,
+          "compile_status": 0,
+          "runtime_executed": true,
+          "runtime_status": 0,
+          "actual_codegen": {
+            "debug-assertions": [
+              "off"
+            ],
+            "embed-bitcode": [
+              "no"
+            ],
+            "metadata": [
+              "8d70fe96575e43e2"
+            ],
+            "panic": [
+              "abort"
+            ],
+            "strip": [
+              "debuginfo"
+            ]
+          },
+          "binary_sha256": "0afe2b54ccbe8ffbc46e8bb41b013e4c57763d72944ef48128b737c27edac643",
+          "stdout_sha256": "96cf768fbcd0774cf8e52caf7e8f130de7fcf81cf80a3d73b7b072e52e712593",
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        }
+      }
+    },
+    {
+      "name": "cargo-debug-off-explicit-overflow-on-overflow",
+      "mode": "cargo",
+      "fixture": "overflow",
+      "explicit_codegen": [
+        "debug-assertions=off",
+        "overflow-checks=on"
+      ],
+      "expected_debug_assertions": false,
+      "expected_overflow_checks": true,
+      "expected_panic": true,
+      "passed": true,
+      "source_sha256": "194134f2a695c459e9585ccfb48f66262ab89446be9aee5b8d11efbc0e88dba5",
+      "engines": {
+        "candidate": {
+          "passed": true,
+          "compile_status": 0,
+          "runtime_executed": true,
+          "runtime_status": -6,
+          "actual_codegen": {
+            "debug-assertions": [
+              "off"
+            ],
+            "embed-bitcode": [
+              "no"
+            ],
+            "metadata": [
+              "8d70fe96575e43e2"
+            ],
+            "overflow-checks": [
+              "on"
+            ],
+            "panic": [
+              "abort"
+            ],
+            "strip": [
+              "debuginfo"
+            ]
+          },
+          "binary_sha256": "6c8f690ed7ece23ec6920dce9c732cc8e16ae4e9e7f32acfdd1db29459fe5f77",
+          "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stderr_sha256": "6418f3c422130a70c16db25e112b8d74587ea825a1731c230b0964f0a84a7559"
+        },
+        "reference": {
+          "passed": true,
+          "compile_status": 0,
+          "runtime_executed": true,
+          "runtime_status": -6,
+          "actual_codegen": {
+            "debug-assertions": [
+              "off"
+            ],
+            "embed-bitcode": [
+              "no"
+            ],
+            "metadata": [
+              "8d70fe96575e43e2"
+            ],
+            "overflow-checks": [
+              "on"
+            ],
+            "panic": [
+              "abort"
+            ],
+            "strip": [
+              "debuginfo"
+            ]
+          },
+          "binary_sha256": "45f110fb697b9a354473dd2b4e7a381ade3b467eab18c1ec28f13e55311077e9",
+          "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stderr_sha256": "75219e42bf3ebe77c6db123db8e1f282e77d927842790438bf71dd3525a6db27"
+        }
+      }
+    },
+    {
+      "name": "cargo-debug-off-explicit-overflow-on-debug-assert",
+      "mode": "cargo",
+      "fixture": "debug-assert",
+      "explicit_codegen": [
+        "debug-assertions=off",
+        "overflow-checks=on"
+      ],
+      "expected_debug_assertions": false,
+      "expected_overflow_checks": true,
+      "expected_panic": false,
+      "passed": true,
+      "source_sha256": "16b16eea872db1bb81e02b175a66ab9489dfba6065972aa2b97f0b5f2992cd30",
+      "engines": {
+        "candidate": {
+          "passed": true,
+          "compile_status": 0,
+          "runtime_executed": true,
+          "runtime_status": 0,
+          "actual_codegen": {
+            "debug-assertions": [
+              "off"
+            ],
+            "embed-bitcode": [
+              "no"
+            ],
+            "metadata": [
+              "8d70fe96575e43e2"
+            ],
+            "overflow-checks": [
+              "on"
+            ],
+            "panic": [
+              "abort"
+            ],
+            "strip": [
+              "debuginfo"
+            ]
+          },
+          "binary_sha256": "df0e8b3bca9d1706c264fd3050890143f7121e67b948a906307c6dd8e8f085f5",
+          "stdout_sha256": "96cf768fbcd0774cf8e52caf7e8f130de7fcf81cf80a3d73b7b072e52e712593",
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "reference": {
+          "passed": true,
+          "compile_status": 0,
+          "runtime_executed": true,
+          "runtime_status": 0,
+          "actual_codegen": {
+            "debug-assertions": [
+              "off"
+            ],
+            "embed-bitcode": [
+              "no"
+            ],
+            "metadata": [
+              "8d70fe96575e43e2"
+            ],
+            "overflow-checks": [
+              "on"
+            ],
+            "panic": [
+              "abort"
+            ],
+            "strip": [
+              "debuginfo"
+            ]
+          },
+          "binary_sha256": "0afe2b54ccbe8ffbc46e8bb41b013e4c57763d72944ef48128b737c27edac643",
+          "stdout_sha256": "96cf768fbcd0774cf8e52caf7e8f130de7fcf81cf80a3d73b7b072e52e712593",
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        }
+      }
+    },
+    {
+      "name": "cargo-debug-on-explicit-overflow-off-overflow",
+      "mode": "cargo",
+      "fixture": "overflow",
+      "explicit_codegen": [
+        "debug-assertions=on",
+        "overflow-checks=off"
+      ],
+      "expected_debug_assertions": true,
+      "expected_overflow_checks": false,
+      "expected_panic": false,
+      "passed": true,
+      "source_sha256": "194134f2a695c459e9585ccfb48f66262ab89446be9aee5b8d11efbc0e88dba5",
+      "engines": {
+        "candidate": {
+          "passed": true,
+          "compile_status": 0,
+          "runtime_executed": true,
+          "runtime_status": 0,
+          "actual_codegen": {
+            "debug-assertions": [
+              "on"
+            ],
+            "embed-bitcode": [
+              "no"
+            ],
+            "metadata": [
+              "8d70fe96575e43e2"
+            ],
+            "overflow-checks": [
+              "off"
+            ],
+            "panic": [
+              "abort"
+            ],
+            "strip": [
+              "debuginfo"
+            ]
+          },
+          "binary_sha256": "d067093f3c77292b07f21e3dd870b7eb322e70b6d942b6fc738670b5994309c3",
+          "stdout_sha256": "c8efe2a1119da88163f4c48c1ba0cf7f5ebd6bf5d8ae830bbbfa2f4e52d0a8d5",
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "reference": {
+          "passed": true,
+          "compile_status": 0,
+          "runtime_executed": true,
+          "runtime_status": 0,
+          "actual_codegen": {
+            "debug-assertions": [
+              "on"
+            ],
+            "embed-bitcode": [
+              "no"
+            ],
+            "metadata": [
+              "8d70fe96575e43e2"
+            ],
+            "overflow-checks": [
+              "off"
+            ],
+            "panic": [
+              "abort"
+            ],
+            "strip": [
+              "debuginfo"
+            ]
+          },
+          "binary_sha256": "a46a06a6b58a758caafccfecd59e3f06a2abe2b3caf53882cb9f916495c12496",
+          "stdout_sha256": "c8efe2a1119da88163f4c48c1ba0cf7f5ebd6bf5d8ae830bbbfa2f4e52d0a8d5",
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        }
+      }
+    },
+    {
+      "name": "cargo-debug-on-explicit-overflow-off-debug-assert",
+      "mode": "cargo",
+      "fixture": "debug-assert",
+      "explicit_codegen": [
+        "debug-assertions=on",
+        "overflow-checks=off"
+      ],
+      "expected_debug_assertions": true,
+      "expected_overflow_checks": false,
+      "expected_panic": true,
+      "passed": true,
+      "source_sha256": "16b16eea872db1bb81e02b175a66ab9489dfba6065972aa2b97f0b5f2992cd30",
+      "engines": {
+        "candidate": {
+          "passed": true,
+          "compile_status": 0,
+          "runtime_executed": true,
+          "runtime_status": -6,
+          "actual_codegen": {
+            "debug-assertions": [
+              "on"
+            ],
+            "embed-bitcode": [
+              "no"
+            ],
+            "metadata": [
+              "8d70fe96575e43e2"
+            ],
+            "overflow-checks": [
+              "off"
+            ],
+            "panic": [
+              "abort"
+            ],
+            "strip": [
+              "debuginfo"
+            ]
+          },
+          "binary_sha256": "d9e2f7af2622c0035ab7f4099994b329d781e64707870c8cd969f8bfcb2c6675",
+          "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stderr_sha256": "9484e6c0e441edc3cb5930be56a943ade7f8a9cdb2ad15f4fbfcebf7df9be6e3"
+        },
+        "reference": {
+          "passed": true,
+          "compile_status": 0,
+          "runtime_executed": true,
+          "runtime_status": -6,
+          "actual_codegen": {
+            "debug-assertions": [
+              "on"
+            ],
+            "embed-bitcode": [
+              "no"
+            ],
+            "metadata": [
+              "8d70fe96575e43e2"
+            ],
+            "overflow-checks": [
+              "off"
+            ],
+            "panic": [
+              "abort"
+            ],
+            "strip": [
+              "debuginfo"
+            ]
+          },
+          "binary_sha256": "3ad3a24682c7064d188a41d9719a17c7f11271dbb35af12624c05c6c958e9256",
+          "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stderr_sha256": "a67c82610fc983181a718ce3b50262bd1acb447bbee0f2ee799a98e973fde7be"
+        }
+      }
+    }
+  ],
+  "published_same_tree_commit": "9185df0d2d284d08db4fb015f40c67667a6e398c"
+}

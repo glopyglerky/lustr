@@ -1,0 +1,155 @@
+name: Native probe regression tests
+
+on:
+  pull_request:
+    paths:
+      - 'crates/lustr-bench/**'
+      - '.cargo/**'
+      - '.gitmodules'
+      - 'rust-toolchain'
+      - 'rust-toolchain.toml'
+      - 'Cargo.toml'
+      - 'Cargo.lock'
+      - 'tools/test-retired-acquisition.py'
+      - 'tools/test-workflow-inputs.py'
+      - 'tools/*warm*'
+      - 'tools/*upstream-slice*'
+      - 'tools/*coordinator*'
+      - 'tools/*evidence*'
+      - 'tools/assess-current-performance.py'
+      - 'tools/test-assess-current-performance.py'
+      - 'tools/qualify-retained-results.py'
+      - 'tools/test-retained-results.py'
+      - 'upstream/retained-scenario-results.json'
+      - 'upstream/lust.pin'
+      - 'compiler/native/tests/daemon/**'
+      - 'compiler/native/scripts/test-daemon-scenarios.py'
+      - 'performance/projects/**'
+      - 'crates/lustr-semantic/src/mixed_link_input.rs'
+      - 'crates/lustr-semantic/src/mixed_objects.rs'
+      - 'tools/measure-mixed-link-input.rs'
+      - '.github/workflows/native-probe-tests.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  runner-source:
+    name: Runner source provenance
+    runs-on: ${{ ((github.event_name != 'pull_request' && github.event_name != 'pull_request_target') || github.event.pull_request.head.repo.full_name == github.repository) && fromJSON(vars.CI_RUNNER_ROUTES || '{}')['ubuntu-24.04'] || 'ubuntu-24.04' }}
+    timeout-minutes: 5
+    steps:
+      - name: Record original workflow and source
+        uses: actions/github-script@v7
+        env:
+          WORKFLOW_SHA: ${{ github.workflow_sha }}
+          WORKFLOW_REF: ${{ github.workflow_ref }}
+          TRIGGERING_ACTOR: ${{ github.triggering_actor }}
+        with:
+          script: |
+            const fs = require('fs');
+            const pr = context.payload.pull_request;
+            const receipt = {
+              schema: 1,
+              repository: context.repo.owner + '/' + context.repo.repo,
+              run_id: String(context.runId),
+              run_attempt: Number(process.env.GITHUB_RUN_ATTEMPT),
+              event_name: context.eventName,
+              sha: context.sha,
+              ref: context.ref,
+              workflow_sha: process.env.WORKFLOW_SHA,
+              workflow_ref: process.env.WORKFLOW_REF,
+              actor: context.actor,
+              triggering_actor: process.env.TRIGGERING_ACTOR,
+              pull_request: pr ? {
+                number: pr.number,
+                head_sha: pr.head.sha,
+                base_sha: pr.base.sha,
+                head_repository_id: String(pr.head.repo.id),
+                base_repository_id: String(pr.base.repo.id),
+              } : null,
+            };
+            const encoded = JSON.stringify(receipt);
+            fs.writeFileSync(process.env.RUNNER_TEMP + '/runner-source.json', encoded);
+            core.notice(encoded, {title: 'runner-source-v1'});
+      - name: Retain original source receipt
+        uses: actions/upload-artifact@v4
+        with:
+          name: runner-source-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/runner-source.json
+          if-no-files-found: error
+          retention-days: 14
+
+  evidence:
+    runs-on: ${{ ((github.event_name != 'pull_request' && github.event_name != 'pull_request_target') || github.event.pull_request.head.repo.full_name == github.repository) && fromJSON(vars.CI_RUNNER_ROUTES || '{}')['ubuntu-24.04'] || 'ubuntu-24.04' }}
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install the pinned focused-test compiler
+        run: rustup toolchain install 1.99.1 --profile minimal
+      - name: Reject retired compiler acquisition and missing workflow triggers
+        run: |
+          python3 tools/test-retired-acquisition.py -v
+          python3 tools/test-workflow-inputs.py -v
+      - name: Reject false Cargo test summaries and retired engine selectors
+        run: |
+          set -euo pipefail
+          {
+            git rev-parse HEAD HEAD^{tree}
+            rustc +1.99.1 -vV
+            cargo +1.99.1 --version
+            sha256sum .github/workflows/native-probe-tests.yml crates/lustr-bench/Cargo.toml crates/lustr-bench/Cargo.lock crates/lustr-bench/src/bin/lustr-bench-gate.rs crates/lustr-bench/src/main.rs crates/lustr-bench/tests/routed.rs
+            cargo +1.99.1 test --manifest-path crates/lustr-bench/Cargo.toml --locked --bin lustr-bench-gate --test routed
+          } 2>&1 | tee "$RUNNER_TEMP/cargo-gate-controls.log"
+      - name: Reject invalid current performance and release assessments
+        run: python3 tools/test-assess-current-performance.py -v
+      - name: Reject false success in retained-history results
+        run: python3 tools/test-retained-results.py -v
+      - name: Reject missing, conflicting and nonzero-work retention evidence
+        env:
+          RUSTUP_TOOLCHAIN: '1.99.1'
+        run: cargo +1.99.1 test --manifest-path crates/lustr-bench/Cargo.toml --locked --bin lustr-mixed-bench
+      - name: Verify owned daemon exit and cold-state lifecycle
+        run: cargo +1.99.1 test --manifest-path crates/lustr-bench/Cargo.toml --locked --bin lustr-bench --test native_state -- --test-threads=1
+      - name: Replay strict public project projections and reject private-field leakage
+        run: |
+          cargo +1.99.1 build --manifest-path crates/lustr-bench/Cargo.toml --locked --example replay
+          python3 tools/test-coordinator-campaign.py --replay crates/lustr-bench/target/debug/examples/replay
+      - name: Recover encrypted originals and reject corrupt or misdirected evidence
+        run: python3 tools/test-encrypted-evidence.py
+      - name: Reconcile relocated originals with their recorded Git source
+        run: python3 tools/test-reconciled-evidence.py --replay crates/lustr-bench/target/debug/examples/replay
+      - name: Verify retained public and encrypted project archives and timing replay
+        run: |
+          set -o pipefail
+          python3 tools/check-coordinator-performance-archives.py --replay crates/lustr-bench/target/debug/examples/replay 2>&1 | tee "$RUNNER_TEMP/project-evidence-replay.log"
+      - name: Test actual transient input isolation and failure recovery
+        run: |
+          set -euo pipefail
+          rustc +1.99.1 --edition=2024 --test crates/lustr-semantic/src/mixed_link_input.rs -o "$RUNNER_TEMP/link-input-tests"
+          "$RUNNER_TEMP/link-input-tests" 2>&1 | tee "$RUNNER_TEMP/link-input-tests.log"
+      - name: Measure only the changed copy policy (not compiler speed)
+        run: |
+          set -euo pipefail
+          rustc +1.99.1 --edition=2024 -C opt-level=3 tools/measure-mixed-link-input.rs -o "$RUNNER_TEMP/link-input-probe"
+          {
+            git rev-parse HEAD HEAD^{tree}
+            rustc +1.99.1 -vV
+            uname -srm
+            lscpu
+            sha256sum crates/lustr-semantic/src/mixed_link_input.rs crates/lustr-semantic/src/mixed_objects.rs tools/measure-mixed-link-input.rs "$RUNNER_TEMP/link-input-probe"
+          } > "$RUNNER_TEMP/link-input-identity.txt"
+          "$RUNNER_TEMP/link-input-probe" "$RUNNER_TEMP/link-input-measurements" | tee "$RUNNER_TEMP/link-input-pairs.jsonl"
+      - name: Preserve focused results including failed attempts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: link-input-evidence-${{ github.sha }}-${{ github.run_attempt }}
+          if-no-files-found: error
+          path: |
+            ${{ runner.temp }}/cargo-gate-controls.log
+            ${{ runner.temp }}/link-input-tests.log
+            ${{ runner.temp }}/project-evidence-replay.log
+            ${{ runner.temp }}/link-input-identity.txt
+            ${{ runner.temp }}/link-input-pairs.jsonl

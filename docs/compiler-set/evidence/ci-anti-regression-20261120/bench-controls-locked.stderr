@@ -1,0 +1,72 @@
+   Compiling proc-macro2 v1.0.107
+   Compiling quote v1.0.47
+   Compiling typenum v1.20.1
+   Compiling unicode-ident v1.0.27
+   Compiling serde_core v1.0.229
+   Compiling hybrid-array v0.4.15
+   Compiling zmij v1.0.23
+   Compiling libc v0.2.191
+   Compiling cfg_aliases v0.2.2
+   Compiling nix v0.31.3
+   Compiling crypto-common v0.2.2
+   Compiling block-buffer v0.12.1
+   Compiling syn v3.0.10
+   Compiling const-oid v0.10.2
+   Compiling serde_json v1.0.154
+   Compiling cfg-if v1.0.5
+   Compiling serde v1.0.229
+   Compiling digest v0.11.3
+   Compiling serde_derive v1.0.229
+   Compiling memchr v2.8.3
+   Compiling bitflags v2.10.0
+   Compiling cpufeatures v0.3.1
+   Compiling itoa v1.0.19
+   Compiling sha2 v0.11.1
+   Compiling lustr-bench v0.1.0 (<CHECKOUT>/crates/lustr-bench)
+warning: constant `METHOD` is never used
+ --> src/bin/../order.rs:3:11
+  |
+3 | pub const METHOD: &str = "randomized-cyclic-blocks-v1";
+  |           ^^^^^^
+  |
+  = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: `lustr-bench` (bin "lustr-mixed-bench" test) generated 1 warning
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 16.60s
+     Running unittests src/main.rs (<OUTPUT>/ci-audit-intermediates/debug/build/lustr-bench/cf64e0b07313df4a/out/lustr_bench-cf64e0b07313df4a)
+     Running unittests src/bin/lustr-bench-gate.rs (<OUTPUT>/ci-audit-intermediates/debug/build/lustr-bench/0d317bf79800e762/out/lustr_bench_gate-0d317bf79800e762)
+     Running unittests src/bin/lustr-bench-resource-fixture.rs (<OUTPUT>/ci-audit-intermediates/debug/build/lustr-bench/5c1eb81f58ea57da/out/lustr_bench_resource_fixture-5c1eb81f58ea57da)
+     Running unittests src/bin/lustr-mixed-bench.rs (<OUTPUT>/ci-audit-intermediates/debug/build/lustr-bench/0ebbe496b7b6815f/out/lustr_mixed_bench-0ebbe496b7b6815f)
+error[E0277]: no implementation for `u64 ^ bool`
+   --> /tmp/lustr-rustc-reference-1606-1795144328315360672/tests.rs:1:25
+    |
+  1 | fn kernel(x:u64)->u64{x ^ true}
+    |                         ^ no implementation for `u64 ^ bool`
+    |
+    = help: the trait `BitXor<bool>` is not implemented for `u64`
+help: the following other types implement trait `BitXor<Rhs>`
+   --> <PINNED_SDK>/lib/rustlib/src/rust/library/core/src/internal_macros.rs:22:9
+    |
+ 22 |         const impl $imp<$u> for &$t {
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^ `&u64` implements `BitXor<u64>`
+...
+ 33 |         const impl $imp<&$u> for $t {
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^ `u64` implements `BitXor<&u64>`
+...
+ 44 |         const impl $imp<&$u> for &$t {
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^ `&u64` implements `BitXor`
+    |
+   ::: <PINNED_SDK>/lib/rustlib/src/rust/library/core/src/ops/bit.rs:391:9
+    |
+391 |         const impl BitXor for $t {
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^ `u64` implements `BitXor`
+...
+404 | bitxor_impl! { bool usize u8 u16 u32 u64 u128 isize i8 i16 i32 i64 i128 }
+    | ------------------------------------------------------------------------- in this macro invocation
+    = note: this error originates in the macro `forward_ref_binop` which comes from the expansion of the macro `bitxor_impl` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error: aborting due to 1 previous error
+
+For more information about this error, try `rustc --explain E0277`.
+     Running tests/native_state.rs (<OUTPUT>/ci-audit-intermediates/debug/build/lustr-bench/bef8b83bdaaab16b/out/native_state-bef8b83bdaaab16b)
+     Running tests/routed.rs (<OUTPUT>/ci-audit-intermediates/debug/build/lustr-bench/fe02930a51fc5516/out/routed-fe02930a51fc5516)

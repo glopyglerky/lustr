@@ -1,0 +1,24 @@
+{
+  "verified": true,
+  "archive_sha256": "0637da848d00d543946df7f6a8283b82913cfafafe6a419a7ce7c7714873b1e0",
+  "files": 131,
+  "commands": 14,
+  "initial_tests": {
+    "passed": 1,
+    "failed": 1,
+    "filtered": 387
+  },
+  "corrected_tests_per_mode": {
+    "passed": 2,
+    "failed": 0,
+    "filtered": 387
+  },
+  "oracle_observations": {
+    "resolve": 3,
+    "reuse": 7,
+    "patch": 10
+  },
+  "native_tree": "e6eea62c77095e60eaa7b1baf77055f0708ad54e",
+  "full_native_admission": false,
+  "performance_evidence": false
+}

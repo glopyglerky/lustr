@@ -6,22 +6,38 @@ on:
     paths:
       - 'Cargo.toml'
       - 'Cargo.lock'
+      - 'build.rs'
+      - '.cargo/**'
+      - '.gitmodules'
+      - 'rust-toolchain'
+      - 'rust-toolchain.toml'
+      - 'examples/**'
+      - 'library/**'
+      - 'src/**'
+      - 'tests/**'
       - 'compiler/native/**'
-      - 'crates/lustr/**'
-      - 'crates/lustr-semantic/**'
-      - 'upstream/lust.pin'
-      - 'tools/lust-upstream-check.rs'
-      - '.github/workflows/compiler-set.yml'
+      - 'crates/**'
+      - 'upstream/**'
+      - 'tools/**'
+      - '.github/workflows/**'
   pull_request:
     paths:
       - 'Cargo.toml'
       - 'Cargo.lock'
+      - 'build.rs'
+      - '.cargo/**'
+      - '.gitmodules'
+      - 'rust-toolchain'
+      - 'rust-toolchain.toml'
+      - 'examples/**'
+      - 'library/**'
+      - 'src/**'
+      - 'tests/**'
       - 'compiler/native/**'
-      - 'crates/lustr/**'
-      - 'crates/lustr-semantic/**'
-      - 'upstream/lust.pin'
-      - 'tools/lust-upstream-check.rs'
-      - '.github/workflows/compiler-set.yml'
+      - 'crates/**'
+      - 'upstream/**'
+      - 'tools/**'
+      - '.github/workflows/**'
   workflow_dispatch:
 
 permissions:
@@ -32,25 +48,216 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  runner-source:
+    name: Runner source provenance
+    runs-on: ${{ ((github.event_name != 'pull_request' && github.event_name != 'pull_request_target') || github.event.pull_request.head.repo.full_name == github.repository) && fromJSON(vars.CI_RUNNER_ROUTES || '{}')['ubuntu-24.04'] || 'ubuntu-24.04' }}
+    timeout-minutes: 5
+    steps:
+      - name: Record original workflow and source
+        uses: actions/github-script@v7
+        env:
+          WORKFLOW_SHA: ${{ github.workflow_sha }}
+          WORKFLOW_REF: ${{ github.workflow_ref }}
+          TRIGGERING_ACTOR: ${{ github.triggering_actor }}
+        with:
+          script: |
+            const fs = require('fs');
+            const pr = context.payload.pull_request;
+            const receipt = {
+              schema: 1,
+              repository: context.repo.owner + '/' + context.repo.repo,
+              run_id: String(context.runId),
+              run_attempt: Number(process.env.GITHUB_RUN_ATTEMPT),
+              event_name: context.eventName,
+              sha: context.sha,
+              ref: context.ref,
+              workflow_sha: process.env.WORKFLOW_SHA,
+              workflow_ref: process.env.WORKFLOW_REF,
+              actor: context.actor,
+              triggering_actor: process.env.TRIGGERING_ACTOR,
+              pull_request: pr ? {
+                number: pr.number,
+                head_sha: pr.head.sha,
+                base_sha: pr.base.sha,
+                head_repository_id: String(pr.head.repo.id),
+                base_repository_id: String(pr.base.repo.id),
+              } : null,
+            };
+            const encoded = JSON.stringify(receipt);
+            fs.writeFileSync(process.env.RUNNER_TEMP + '/runner-source.json', encoded);
+            core.notice(encoded, {title: 'runner-source-v1'});
+      - name: Retain original source receipt
+        uses: actions/upload-artifact@v4
+        with:
+          name: runner-source-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/runner-source.json
+          if-no-files-found: error
+          retention-days: 14
+
   upstream-lust:
-    name: Unchanged upstream Lust source
-    runs-on: ubuntu-24.04
+    name: Pinned Lust reference and declared integration
+    runs-on: ${{ ((github.event_name != 'pull_request' && github.event_name != 'pull_request_target') || github.event.pull_request.head.repo.full_name == github.repository) && fromJSON(vars.CI_RUNNER_ROUTES || '{}')['ubuntu-24.04'] || 'ubuntu-24.04' }}
     steps:
       - uses: actions/checkout@v4
+      - name: Obtain the exact pristine reference objects
+        uses: actions/checkout@v4
+        with:
+          repository: t3dotgg/lust-lang
+          ref: 240e08d91d4aed0299639f6f11fd522912b248f9
+          path: .lust-pristine-reference
+          persist-credentials: false
       - name: Install Rust
         run: rustup toolchain install 1.99.1 --profile minimal
-      - name: Check upstream source identity
+      - name: Check exact candidate source identity (release admission is separate)
+        env:
+          GIT_ALTERNATE_OBJECT_DIRECTORIES: ${{ github.workspace }}/.lust-pristine-reference/.git/objects
         run: |
           rustc +1.99.1 --edition=2024 tools/lust-upstream-check.rs -o "$RUNNER_TEMP/lust-upstream-check"
-          "$RUNNER_TEMP/lust-upstream-check"
-      - name: Verify the source guard rejects drift
+          "$RUNNER_TEMP/lust-upstream-check" --candidate
+      - name: Verify exact integration and reject unexpected drift
         run: |
           rustc +1.99.1 --edition=2024 --test tools/lust-upstream-check.rs -o "$RUNNER_TEMP/lust-upstream-check-tests"
           "$RUNNER_TEMP/lust-upstream-check-tests"
 
+  selective-metadata-research:
+    name: Selective metadata research and core dependency cut
+    runs-on: ${{ ((github.event_name != 'pull_request' && github.event_name != 'pull_request_target') || github.event.pull_request.head.repo.full_name == github.repository) && fromJSON(vars.CI_RUNNER_ROUTES || '{}')['ubuntu-24.04'] || 'ubuntu-24.04' }}
+    timeout-minutes: 15
+    env:
+      RUSTUP_TOOLCHAIN: nightly-2026-11-09
+      CARGO_BUILD_JOBS: '2'
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set the output directory on the assigned runner
+        run: printf 'CARGO_TARGET_DIR=%s\n' "$RUNNER_TEMP/metadata-research-target" >> "$GITHUB_ENV"
+      - name: Record source and enforce the research-only import boundary
+        run: |
+          mkdir -p "$RUNNER_TEMP/metadata-research-evidence"
+          git rev-parse HEAD HEAD^{tree} > "$RUNNER_TEMP/metadata-research-evidence/source.txt"
+          python3 tools/check-exclusive-coverage.py
+          python3 tools/test-exclusive-coverage-guard.py
+          python3 tools/test-workflow-inputs.py -v
+          python3 tools/test-retired-acquisition.py -v
+      - name: Install the declared SDK and a target without std
+        run: rustup toolchain install nightly-2026-11-09 --profile minimal --target x86_64-unknown-none
+      - name: Verify original encoding and hashing controls
+        run: |
+          set -o pipefail
+          rustc -vV > "$RUNNER_TEMP/metadata-research-evidence/compiler.txt"
+          cargo test --manifest-path crates/lustr-metadata-encoder/Cargo.toml --package lustr-metadata-encoder --lib --locked 2>&1 | tee "$RUNNER_TEMP/metadata-research-evidence/core-oracles.log"
+      - name: Require the serializer dependency graph to build without std
+        run: |
+          set -o pipefail
+          cargo check --manifest-path crates/lustr-metadata-encoder/Cargo.toml --package lustr-metadata-encoder --lib --all-features --target x86_64-unknown-none --locked 2>&1 | tee "$RUNNER_TEMP/metadata-research-evidence/core-no-std.log"
+          cargo tree --manifest-path crates/lustr-metadata-encoder/Cargo.toml --package lustr-metadata-encoder --edges normal --locked > "$RUNNER_TEMP/metadata-research-evidence/core-dependencies.txt"
+      - name: Check the separate host adapter and SDK receipt refusals
+        run: |
+          set -o pipefail
+          cargo check --manifest-path crates/lustr-metadata-sdk/Cargo.toml --package lustr-metadata-sdk --lib --locked 2>&1 | tee "$RUNNER_TEMP/metadata-research-evidence/host-adapter.log"
+          python3 tools/test-metadata-sdk-receipt.py -v 2>&1 | tee "$RUNNER_TEMP/metadata-research-evidence/receipt-controls.log"
+          cargo tree --manifest-path crates/lustr-metadata-sdk/Cargo.toml --package lustr-metadata-sdk --edges normal --locked > "$RUNNER_TEMP/metadata-research-evidence/host-dependencies.txt"
+      - name: Retain bounded research evidence including failed attempts
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: selective-metadata-research-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/metadata-research-evidence
+          if-no-files-found: error
+          retention-days: 14
+
+  native-metadata-join:
+    name: Native metadata join and original Rust consumers
+    runs-on: ${{ ((github.event_name != 'pull_request' && github.event_name != 'pull_request_target') || github.event.pull_request.head.repo.full_name == github.repository) && fromJSON(vars.CI_RUNNER_ROUTES || '{}')['ubuntu-24.04'] || 'ubuntu-24.04' }}
+    timeout-minutes: 35
+    env:
+      RUSTUP_TOOLCHAIN: nightly-2026-11-09
+      CARGO_BUILD_JOBS: '2'
+      RUST_MIN_STACK: '268435456'
+    steps:
+      - uses: actions/checkout@v4
+      - name: Record exact source and research admission
+        run: |
+          set -euo pipefail
+          records="$RUNNER_TEMP/native-metadata-join"
+          mkdir -p "$records"
+          git rev-parse HEAD HEAD^{tree} HEAD:compiler/native > "$records/source.txt"
+          python3 tools/native-metadata-source-manifest.py record "$records/source-inputs.json" 2>&1 | tee "$records/source-capture.log"
+          python3 tools/check-exclusive-coverage.py 2>&1 | tee "$records/source-admission.log"
+          python3 tools/test-native-metadata-trace.py -v 2>&1 | tee "$records/evaluator-controls.log"
+      - name: Install the pinned construction compiler and independent consumer
+        run: rustup toolchain install nightly-2026-11-09 --profile minimal --component llvm-tools
+      - name: Require actual native process tracing and emitter
+        run: |
+          set -euo pipefail
+          if ! command -v strace >/dev/null || ! command -v clang >/dev/null; then
+            sudo apt-get update
+            sudo apt-get install -y strace clang
+          fi
+          command -v strace
+          command -v clang
+      - name: Obtain the pinned TinyCC native dependency
+        uses: actions/checkout@v4
+        with:
+          repository: TinyCC/tinycc
+          ref: 43c7708b85681a2fd4451c8a541af4494a8919b2
+          path: .metadata-tinycc-reference
+          persist-credentials: false
+      - name: Construct the native dependency
+        run: |
+          set -euo pipefail
+          records="$RUNNER_TEMP/native-metadata-join"
+          rustc -vV > "$records/compiler.txt"
+          rustc --edition=2024 tools/build-tinycc-pic.rs -o "$RUNNER_TEMP/build-metadata-tinycc" 2>&1 | tee "$records/dependency-constructor.log"
+          "$RUNNER_TEMP/build-metadata-tinycc" "$GITHUB_WORKSPACE/.metadata-tinycc-reference" "$RUNNER_TEMP/metadata-tinycc" 2>&1 | tee "$records/dependency-build.log"
+      - name: Build the separate native metadata research caller
+        env:
+          LUST_TCC_HOME: ${{ runner.temp }}/metadata-tinycc/install
+        run: |
+          set -euo pipefail
+          records="$RUNNER_TEMP/native-metadata-join"
+          export RUSTC="$(rustup which rustc)"
+          cargo fetch --manifest-path crates/lustr-native-metadata-qualification/Cargo.toml --locked 2>&1 | tee "$records/dependency-fetch.log"
+          cargo build --manifest-path crates/lustr-native-metadata-qualification/Cargo.toml --package lustr-native-metadata-qualification --bin lustr-native-metadata-qualification --features native-qualification --locked --offline --jobs 2 --target-dir "$RUNNER_TEMP/native-metadata-target" --config "build.build-dir=\"$RUNNER_TEMP/native-metadata-intermediates\"" 2>&1 | tee "$records/build.log"
+          sha256sum "$RUNNER_TEMP/native-metadata-target/debug/lustr-native-metadata-qualification" "$RUSTC" "$LUST_TCC_HOME/lib/libtcc.a" > "$records/built-tools.sha256"
+      - name: Require joined metadata, ordinary Rust results and terminal failures
+        run: |
+          set -euo pipefail
+          records="$RUNNER_TEMP/native-metadata-join"
+          python3 tools/test-native-consumer-metadata.py \
+            --candidate "$RUNNER_TEMP/native-metadata-target/debug/lustr-native-metadata-qualification" \
+            --sdk "$(rustc --print sysroot)" \
+            --clang "$(readlink -f "$(command -v clang)")" \
+            --output "$records/campaign" 2>&1 | tee "$records/campaign.log"
+          python3 -c 'import json,sys; r=json.load(open(sys.argv[1])); assert r["passed"] is True and r["functional_passed"] is True and r["exec_trace_qualified"] is True and r["checked_runtime_results"] == 262152 and not r["full_compiler_qualification"] and not r["retained_public_integration"]' "$records/campaign/report.json"
+          python3 tools/native-metadata-source-manifest.py verify "$records/source-inputs.json" 2>&1 | tee "$records/source-verify.log"
+          sha256sum --check "$records/built-tools.sha256"
+      - name: Require retained native edits, narrow objects and independent Rust consumers
+        run: |
+          set -euo pipefail
+          records="$RUNNER_TEMP/native-metadata-join"
+          python3 tools/test-retained-metadata-controls.py -v 2>&1 | tee "$records/retained-evaluator-controls.log"
+          python3 tools/test-retained-native-metadata.py \
+            --candidate "$RUNNER_TEMP/native-metadata-target/debug/lustr-native-metadata-qualification" \
+            --sdk "$(rustc --print sysroot)" \
+            --output "$records/retained-campaign" 2>&1 | tee "$records/retained-campaign.log"
+          python3 -c 'import json,sys; r=json.load(open(sys.argv[1])); assert r["passed"] is True and r["functional_passed"] is True and r["exec_trace_qualified"] is True and r["socket_transport_qualified"] is True and len(r["observed_history"]) == 29 and len(r["sessions"]) == 3 and len(r["setup_refusals"]) == 2 and len(r["original_consumers"]) == 25 and r["checked_runtime_results"] == 6815952 and not r["full_compiler_qualification"] and not r["retained_public_integration"] and not r["performance_qualified"]' "$records/retained-campaign/report.json"
+          python3 tools/native-metadata-source-manifest.py verify "$records/source-inputs.json" 2>&1 | tee "$records/retained-source-verify.log"
+          sha256sum --check "$records/built-tools.sha256"
+      - name: Retain exact joined evidence and every failed attempt
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: native-metadata-join-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            ${{ runner.temp }}/native-metadata-join
+            ${{ runner.temp }}/native-metadata-target/debug/lustr-native-metadata-qualification
+          if-no-files-found: error
+          include-hidden-files: true
+          retention-days: 14
+
   semantic:
     name: Checked rustc semantic inspection
-    runs-on: ubuntu-24.04
+    runs-on: ${{ ((github.event_name != 'pull_request' && github.event_name != 'pull_request_target') || github.event.pull_request.head.repo.full_name == github.repository) && fromJSON(vars.CI_RUNNER_ROUTES || '{}')['ubuntu-24.04'] || 'ubuntu-24.04' }}
     steps:
       - uses: actions/checkout@v4
       - name: Install pinned compiler development libraries
@@ -62,13 +269,350 @@ jobs:
       - name: Verify actual compiler semantics and artifact interoperability
         run: python3 crates/lustr-semantic/tests/test_probe.py -v
 
+  native-entry-and-services:
+    name: Exclusive native entry and shared-service research
+    runs-on: ${{ ((github.event_name != 'pull_request' && github.event_name != 'pull_request_target') || github.event.pull_request.head.repo.full_name == github.repository) && fromJSON(vars.CI_RUNNER_ROUTES || '{}')['ubuntu-24.04'] || 'ubuntu-24.04' }}
+    timeout-minutes: 60
+    env:
+      RUSTUP_TOOLCHAIN: nightly-2026-11-09
+      CARGO_BUILD_JOBS: '2'
+    steps:
+      - uses: actions/checkout@v4
+      - name: Enforce structural ownership and declared partial imports
+        run: |
+          python3 tools/check-exclusive-coverage.py
+          python3 tools/test-exclusive-coverage-guard.py
+          python3 tools/test-workflow-inputs.py -v
+          python3 tools/test-retired-acquisition.py -v
+      - name: Require complete-replacement release refusal
+        run: |
+          set +e
+          python3 tools/check-exclusive-coverage.py --release > "$RUNNER_TEMP/release-refusal.json"
+          status=$?
+          set -e
+          test "$status" -eq 1
+          python3 -c 'import json,sys; r=json.load(open(sys.argv[1])); assert not r["full_rust_coverage"] and r["release_status"] == "unavailable"' "$RUNNER_TEMP/release-refusal.json"
+      - name: Obtain the exact pristine reference objects
+        uses: actions/checkout@v4
+        with:
+          repository: t3dotgg/lust-lang
+          ref: 240e08d91d4aed0299639f6f11fd522912b248f9
+          path: .lust-pristine-reference
+          persist-credentials: false
+      - name: Install the declared build SDK and research oracle
+        run: rustup toolchain install nightly-2026-11-09 --profile minimal --component rustc-dev --component llvm-tools
+      - name: Install process and native frame observers
+        run: |
+          if ! command -v strace >/dev/null || ! command -v gdb >/dev/null; then
+            sudo apt-get update
+            sudo apt-get install -y strace gdb
+          fi
+      - name: Reject product and research feature unification before compiler work
+        run: python3 tools/test-native-build-policy.py --rustc "$(rustup which rustc)" --output "$RUNNER_TEMP/native-build-policy.json"
+      - name: Obtain the pinned TinyCC source
+        uses: actions/checkout@v4
+        with:
+          repository: TinyCC/tinycc
+          ref: 43c7708b85681a2fd4451c8a541af4494a8919b2
+          path: .tinycc-pristine-reference
+          persist-credentials: false
+      - name: Build the native TinyCC dependency
+        run: |
+          rustc --edition=2024 tools/build-tinycc-pic.rs -o "$RUNNER_TEMP/build-tinycc-pic"
+          "$RUNNER_TEMP/build-tinycc-pic" "$GITHUB_WORKSPACE/.tinycc-pristine-reference" "$RUNNER_TEMP/lustr-tinycc"
+      - name: Qualify TinyCC signing arguments and native publication
+        run: |
+          python3 tools/test-tinycc-signing.py \
+            --source "$RUNNER_TEMP/lustr-tinycc/source" \
+            --tcc "$RUNNER_TEMP/lustr-tinycc/install" \
+            --output "$RUNNER_TEMP/tinycc-signing-qualification"
+      - name: Prepare the declared locked dependencies
+        run: |
+          cargo fetch --manifest-path compiler/native/Cargo.toml --locked
+          cargo fetch --manifest-path crates/lustr-native-core/Cargo.toml --locked
+          cargo fetch --manifest-path Cargo.toml --locked
+      - name: Build the partial debug native compiler without a packaged Rust compiler
+        id: native_build
+        env:
+          GIT_ALTERNATE_OBJECT_DIRECTORIES: ${{ github.workspace }}/.lust-pristine-reference/.git/objects
+        run: |
+          rustc --edition=2024 tools/build-native-toolchain.rs -o "$RUNNER_TEMP/build-native-toolchain"
+          "$RUNNER_TEMP/build-native-toolchain" "$GITHUB_WORKSPACE" --current-sdk "$RUNNER_TEMP/lustr-tinycc/install" "$RUNNER_TEMP/lustr-native-built" --debug
+      - name: Qualify real Cargo scalar libraries through the installed retained compiler
+        id: public_library
+        if: ${{ !cancelled() && steps.native_build.outcome == 'success' }}
+        run: |
+          set -euo pipefail
+          records="$RUNNER_TEMP/public-native-library"
+          mkdir -p "$records"
+          git rev-parse HEAD HEAD^{tree} HEAD:compiler/native > "$records/source.txt"
+          python3 tools/native-metadata-source-manifest.py record "$records/source-inputs.json"
+          sha256sum tools/test-public-native-library.py tools/test-public-native-library-controls.py tools/test-retained-native-metadata.py tools/test-native-consumer-metadata.py tools/build-metadata-sdk-receipt.py tools/test-rustc-profile-defaults.py tools/test-native-unwind-frames.py tools/test-native-unwind-frames-controls.py > "$records/evaluator-inputs.sha256"
+          python3 tools/test-public-native-library-controls.py -v 2>&1 | tee "$records/evaluator-controls.log"
+          python3 tools/test-rustc-profile-defaults.py --self-test 2>&1 | tee "$records/profile-evaluator-controls.log"
+          python3 tools/test-native-unwind-frames-controls.py -v 2>&1 | tee "$records/unwind-evaluator-controls.log"
+          python3 tools/test-public-native-library.py \
+            --package "$RUNNER_TEMP/lustr-native-built/toolchain" \
+            --sdk "$(rustc --print sysroot)" \
+            --output "$records/campaign" 2>&1 | tee "$records/campaign.log"
+          python3 -c 'import json,sys; r=json.load(open(sys.argv[1])); assert r["passed"] is True and r["functional_passed"] is True and r["exec_trace_qualified"] is True and r["retained_public_integration"] is True and r["raw_public_json"]["passed"] is True and len(r["observed_history"]) == 9 and len(r["raw_public_history"]) == 3 and len(r["original_consumers"]) == 8 and r["checked_runtime_results"] == 2097216 and not r["full_compiler_qualification"] and not r["full_rust_coverage"] and not r["performance_qualified"]' "$records/campaign/report.json"
+          python3 -c 'import json,sys; r=json.load(open(sys.argv[1])); e=r["eviction"]; assert e["passed"] is True and len(e["observed_history"]) == 4 and len(e["original_consumers"]) == 4 and e["checked_runtime_results"] == 1048608 and r["version_refusal"]["passed"] is True and r["version_refusal"]["owner_request_observed"] is True and r["baseline_original_consumers"] == 12 and r["baseline_checked_runtime_results"] == 3145824' "$records/campaign/report.json"
+          python3 -c 'import json,sys; r=json.load(open(sys.argv[1])); t=r["metadata_transitions"]; assert t["passed"] is True and len(t["observed_history"]) == 4 and len(t["original_consumers"]) == 4 and t["checked_runtime_results"] == 1048608 and [x["library_options"]["embed_metadata"] for x in t["observed_history"]] == [False,None,True,False] and len(t["malformed_option_refusals"]) == 1 and t["malformed_option_refusals"][0]["status"] == 2 and t["malformed_option_refusals"][0]["owner_request_observed"] is False and t["malformed_option_refusals"][0]["outputs_unchanged"] is True and r["total_original_consumers"] == 16 and r["total_checked_runtime_results"] == 4194432' "$records/campaign/report.json"
+          python3 -c 'import json,sys; c=json.load(open(sys.argv[1]))["metadata_only"]; assert c["passed"] is True and [x["case"] for x in c["observed_history"]] == ["metadata-check-" + x for x in ("cold","noop","edit","invalid","repair")] and [x["status"] for x in c["observed_history"]] == [0,0,0,1,0] and len(c["original_consumers"]) == 4' "$records/campaign/report.json"
+          python3 -c 'import json,sys; c=json.load(open(sys.argv[1]))["dependency_checks"]; assert c["passed"] is True and [x["case"] for x in c["history"]] == ["cold","noop","consumer-edit","provider-body","provider-signature","repair","unused"] and [x["status"] for x in c["history"]] == [0,0,0,0,101,0,0]' "$records/campaign/report.json"
+          python3 -c 'import json,sys; c=json.load(open(sys.argv[1]))["dependency_links"]; assert c["passed"] is True and c["runtime_assertions"] == 131080 and [x["case"] for x in c["history"]] == ["cold","noop","provider-edit"]' "$records/campaign/report.json"
+          python3 -c 'import json,sys; c=json.load(open(sys.argv[1]))["cargo_executable"]; assert c["passed"] is True and [x["case"] for x in c["history"]] == ["cold","noop","edit","invalid","repair","provider-edit"] and [x["runtime_value"] for x in c["history"]] == [31,31,17,None,17,49] and [x["status"] for x in c["history"]] == [0,0,0,101,0,0]' "$records/campaign/report.json"
+          python3 -c 'import json,sys; c=json.load(open(sys.argv[1]))["cargo_executable_check"]; assert c["passed"] is True and [x["case"] for x in c["history"]] == ["cold","noop","edit","invalid","repair","provider-edit"] and [x["status"] for x in c["history"]] == [0,0,0,101,0,0] and all(x["runtime_value"] is None and x["tinycc_processes"] == 0 and x["changed_native_objects"] == [] for x in c["history"])' "$records/campaign/report.json"
+          python3 -c 'import json,sys; r=json.load(open(sys.argv[1])); keys=("cargo_executable_module","cargo_executable_check_module"); assert all(r[k]["passed"] and [x["status"] for x in r[k]["history"]] == [0,0,0,101,0,0] for k in keys) and [x["runtime_value"] for x in r[keys[0]]["history"]] == [31,31,17,None,17,49]' "$records/campaign/report.json"
+          python3 -c 'import json,sys; r=json.load(open(sys.argv[1])); build=r["cargo_executable_expansion_inputs"]; check=r["cargo_executable_expansion_inputs_check"]; assert all(g["passed"] and [x["case"] for x in g["history"]] == ["cold","include-edit","env-edit","missing-include","repair"] and [x["status"] for x in g["history"]] == [0,0,0,101,0] for g in (build,check)) and [x["runtime_value"] for x in build["history"]] == ["63:blue:first","63:red:first","63:red:second=value",None,"63:blue:third"] and all(x["runtime_value"] is None for x in check["history"])' "$records/campaign/report.json"
+          python3 -c 'import json,sys; r=json.load(open(sys.argv[1]))["cargo_executable_extern_uses"]; assert r["passed"] and [x["case"] for x in r["history"]] == ["direct-import","remove-import","glob-import","absolute-import","extern-item","local-shadow"] and [x["unused_extern_names"] for x in r["history"]] == [[],["provider"],[],[],[],["provider"]]' "$records/campaign/report.json"
+          python3 -c 'import json,sys; r=json.load(open(sys.argv[1]))["cargo_integer_signatures"]; assert r["passed"] and r["type_count"] == 6' "$records/campaign/report.json"
+          python3 -c 'import json,sys; r=json.load(open(sys.argv[1]))["cargo_unwind_library"]; assert r["passed"] and [x["status"] for x in r["history"]] == [0,0,0,101,0] and [x["compiled_objects"] for x in r["history"]] == [3,0,1,0,0]' "$records/campaign/report.json"
+          python3 -c 'import json,sys; r=json.load(open(sys.argv[1]))["cargo_unwind_executable"]; assert r["passed"] and [x["case"] for x in r["history"]] == ["cold","noop","edit","invalid","repair"] and [x["status"] for x in r["history"]] == [0,0,0,101,0] and r["history"][1]["checked_bodies"] == 0' "$records/campaign/report.json"
+          python3 -c 'import json,sys; r=json.load(open(sys.argv[1]))["cargo_default_executable_check"]; assert r["passed"] and [x["case"] for x in r["history"]] == ["cold","noop","invalid","repair"] and [x["status"] for x in r["history"]] == [0,0,101,0]' "$records/campaign/report.json"
+          python3 tools/test-rustc-profile-defaults.py \
+            --package "$RUNNER_TEMP/lustr-native-built/toolchain" \
+            --sdk "$(rustc --print sysroot)" \
+            --source-evidence "$records/source-inputs.json" \
+            --output "$records/profile-defaults" 2>&1 | tee "$records/profile-defaults.log"
+          python3 tools/test-native-unwind-frames.py \
+            --artifact-dir "$records/campaign" \
+            --gdb "$(command -v gdb)" \
+            --output "$records/unwind-frames" 2>&1 | tee "$records/unwind-frames.log"
+          python3 tools/native-metadata-source-manifest.py verify "$records/source-inputs.json"
+          sha256sum --check "$records/evaluator-inputs.sha256"
+      - name: Retain public library diagnostics immediately
+        if: ${{ always() && steps.public_library.outcome != 'skipped' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: public-native-library-${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/public-native-library
+          if-no-files-found: error
+          include-hidden-files: true
+          retention-days: 14
+      - name: Require product bridge ownership and one retained compilation attempt
+        if: ${{ !cancelled() && steps.native_build.outcome == 'success' }}
+        env:
+          LUST_TCC_HOME: ${{ runner.temp }}/lustr-tinycc/install
+          RUST_MIN_STACK: '268435456'
+        run: |
+          set -o pipefail
+          export RUSTC="$(rustup which rustc)"
+          native_work="$RUNNER_TEMP/lustr-native-built/work"
+          for test_filter in mixed_admission product_daemon product_cargo_plan cargo_target_selector_fact driver::buildscript::native::tests resolve::cfg::tests; do
+            log_name="${test_filter//:/_}"
+            env -u LD_LIBRARY_PATH "$(rustup which cargo)" test --manifest-path compiler/native/Cargo.toml --locked --offline --jobs 2 --features exclusive-native --bin lust-core --target-dir "$native_work/native-target" --config "build.build-dir=\"$native_work/native-intermediates\"" "$test_filter" -- --test-threads=1 2>&1 | tee "$RUNNER_TEMP/lustr-native-built/logs/$log_name-tests.log"
+          done
+      - name: Require native execution, exclusive routing and terminal failures
+        if: ${{ !cancelled() && steps.native_build.outcome == 'success' }}
+        run: |
+          python3 tools/test-exclusive-entry.py --entry "$RUNNER_TEMP/lustr-native-built/toolchain/bin/lustr" --native-runtime "$RUNNER_TEMP/lustr-native-built/toolchain" --require-daemon --output "$RUNNER_TEMP/exclusive-entry.json"
+          test -f "$RUNNER_TEMP/lustr-native-built/toolchain/PARTIAL-NATIVE-COMPILER"
+          test ! -e "$RUNNER_TEMP/lustr-native-built/toolchain/bin/rustc-full"
+          test ! -e "$RUNNER_TEMP/lustr-native-built/toolchain/bin/rustc-reference"
+      - name: Run all public crate targets and real-package contracts
+        if: ${{ !cancelled() && steps.native_build.outcome == 'success' }}
+        env:
+          LUSTR_LUST_ROOT: ${{ runner.temp }}/lustr-native-built/toolchain
+          LUSTR_NATIVE_BUILD_OUTPUT: ${{ runner.temp }}/lustr-native-built/NATIVE-BUILD-RECEIPT.txt
+          LUSTR_TEST_PACKAGE: ${{ runner.temp }}/lustr-native-built/toolchain
+          LUSTR_TEST_OUTPUT: ${{ runner.temp }}/lustr-root-package-controls
+          RUST_MIN_STACK: '268435456'
+        run: |
+          set -euo pipefail
+          export RUSTC="$(rustup which rustc)"
+          export LUSTR_CORE_ROOT="$(rustc --print sysroot)"
+          export LUSTR_TEST_ORACLE="$RUSTC"
+          native_work="$RUNNER_TEMP/lustr-native-built/work"
+          cargo test --manifest-path Cargo.toml --features source-native-runtime --all-targets --locked --offline --jobs 2 --target-dir "$native_work/entry-target" --config "build.build-dir=\"$native_work/entry-intermediates\"" -- --test-threads=1 2>&1 | tee "$RUNNER_TEMP/lustr-native-built/logs/root-all-target-tests.log"
+          # The five installed-package controls are intentionally ignored by
+          # ordinary unit runs. Execute them explicitly on this socket host.
+          # Do not include the unit-test process used as a signal fixture.
+          cargo test --manifest-path Cargo.toml --features source-native-runtime --test compiler_contract --locked --offline --jobs 2 --target-dir "$native_work/entry-target" --config "build.build-dir=\"$native_work/entry-intermediates\"" -- --ignored --test-threads=1 2>&1 | tee "$RUNNER_TEMP/lustr-native-built/logs/root-package-contract-tests.log"
+      - name: Require exact native Cargo planning and warm process reuse
+        if: ${{ !cancelled() && steps.native_build.outcome == 'success' }}
+        run: |
+          python3 tools/test-native-cargo-plan.py \
+            --source "$GITHUB_WORKSPACE" \
+            --package "$RUNNER_TEMP/lustr-native-built/toolchain" \
+            --sdk "$(rustc --print sysroot)" \
+            --output "$RUNNER_TEMP/native-cargo-plan"
+      - name: Check declared upstream capabilities against the constructed native compiler
+        if: ${{ !cancelled() && steps.native_build.outcome == 'success' }}
+        run: |
+          set -o pipefail
+          native="$RUNNER_TEMP/lustr-native-built/toolchain/bin/lust"
+          "$native" capabilities --json > "$RUNNER_TEMP/lustr-native-built/logs/capabilities.json"
+          sha256sum "$native" "$RUNNER_TEMP/lustr-native-built/toolchain/bin/lust-core" compiler/native/scripts/test-capabilities.py > "$RUNNER_TEMP/lustr-native-built/logs/capability-inputs.sha256"
+          python3 compiler/native/scripts/test-capabilities.py "$native" 2>&1 | tee "$RUNNER_TEMP/lustr-native-built/logs/capability-probes.log"
+          cat >> "$GITHUB_STEP_SUMMARY" <<'MARKDOWN'
+          Capability probes check the pinned upstream declarations in eight
+          sections with the script's explicit unprobed exceptions. They run
+          only in qualification, never as request routing or trial compilation.
+          This functional debug-package gate does not prove all Rust coverage,
+          contextual support beyond its probes, or matched compilation speed.
+          MARKDOWN
+      - name: Compare supported capability outputs through the public compiler
+        if: ${{ !cancelled() && steps.native_build.outcome == 'success' }}
+        run: |
+          set -euo pipefail
+          python3 tools/test-capability-results.py -v
+          python3 tools/qualify-capability-results.py \
+            --entry "$RUNNER_TEMP/lustr-native-built/toolchain/bin/lustr" \
+            --rustc "$(rustup which rustc)" \
+            --output "$RUNNER_TEMP/capability-results"
+      - name: Compare pinned retained histories through the public compiler
+        if: ${{ !cancelled() && steps.native_build.outcome == 'success' }}
+        run: |
+          set -euo pipefail
+          python3 tools/test-retained-results.py -v \
+            --oracle-rustc "$(rustup which rustc)" \
+            --oracle-cargo "$(rustup which cargo)" \
+            --oracle-output "$RUNNER_TEMP/retained-oracle-controls"
+          python3 tools/qualify-retained-results.py \
+            --entry "$RUNNER_TEMP/lustr-native-built/toolchain/bin/lustr" \
+            --rustc "$(rustup which rustc)" \
+            --cargo "$(rustup which cargo)" \
+            --jobs 2 --output "$RUNNER_TEMP/retained-results"
+      - name: Build the actual native target-selector diagnostic
+        id: selector_build
+        if: ${{ !cancelled() && steps.native_build.outcome == 'success' }}
+        env:
+          LUSTR_LUST_ROOT: ${{ runner.temp }}/lustr-native-built/toolchain
+          LUSTR_NATIVE_BUILD_OUTPUT: ${{ runner.temp }}/lustr-native-built/NATIVE-BUILD-RECEIPT.txt
+        run: |
+          export RUSTC="$(rustup which rustc)"
+          export LUSTR_CORE_ROOT="$(rustc --print sysroot)"
+          cargo build --example profile-native-preflight --features source-native-runtime --locked --offline --jobs 2 --target-dir "$RUNNER_TEMP/lustr-native-built/work/entry-target" --config "build.build-dir=\"$RUNNER_TEMP/lustr-native-built/work/entry-intermediates\""
+      - name: Require native Cargo selection reuse and invalidation
+        if: ${{ !cancelled() && steps.selector_build.outcome == 'success' }}
+        run: |
+          python3 tools/test-native-selection-cache.py --profiler "$RUNNER_TEMP/lustr-native-built/work/entry-target/debug/examples/profile-native-preflight" --package-bin "$RUNNER_TEMP/lustr-native-built/toolchain/bin" --output "$RUNNER_TEMP/native-selection-cache"
+          python3 tools/test-native-selection-seed.py --profiler "$RUNNER_TEMP/lustr-native-built/work/entry-target/debug/examples/profile-native-preflight" --package-bin "$RUNNER_TEMP/lustr-native-built/toolchain/bin" --output "$RUNNER_TEMP/native-selection-seed"
+          python3 tools/test-native-compact-selection.py --profiler "$RUNNER_TEMP/lustr-native-built/work/entry-target/debug/examples/profile-native-preflight" --package-bin "$RUNNER_TEMP/lustr-native-built/toolchain/bin" --output "$RUNNER_TEMP/native-compact-selection"
+      - name: Preserve real symbol and ABI component controls
+        if: ${{ !cancelled() }}
+        run: |
+          python3 tools/test-mixed-symbols.py --tcc "$RUNNER_TEMP/lustr-tinycc/install/bin/tcc"
+          python3 tools/test-mixed-symbol-rename.py --tcc "$RUNNER_TEMP/lustr-tinycc/install/bin/tcc"
+      - name: Qualify actual native consumer completion and emitted objects
+        if: ${{ !cancelled() && steps.native_build.outcome == 'success' }}
+        env:
+          LUST_TCC_HOME: ${{ runner.temp }}/lustr-tinycc/install
+          RUST_MIN_STACK: '268435456'
+        run: |
+          set -euo pipefail
+          records="$RUNNER_TEMP/native-consumer-records"
+          mkdir -p "$records"
+          git rev-parse HEAD HEAD^{tree} HEAD:compiler/native > "$records/source.txt"
+          sha256sum crates/lustr-native-core/Cargo.toml crates/lustr-native-core/Cargo.lock crates/lustr-native-core/src/lib.rs crates/lustr-native-core/src/native_consumer.rs crates/lustr-native-core/src/native_object.rs crates/lustr-native-core/src/unit_object.rs tools/native-consumer-qualification.rs > "$records/source-inputs.sha256"
+          export RUSTC="$(rustup which rustc)"
+          "$RUSTC" -vV > "$records/compiler.txt"
+          sha256sum "$RUSTC" "$LUST_TCC_HOME/lib/libtcc.a" > "$records/tools.sha256"
+          clang_path="$(readlink -f "$(command -v clang)")"
+          printf '%s\n' "$clang_path" > "$records/clang-path.txt"
+          "$clang_path" --version > "$records/clang-version.txt"
+          sha256sum "$clang_path" >> "$records/tools.sha256"
+          cargo build --manifest-path crates/lustr-native-core/Cargo.toml --package lustr-native-core --example native-consumer-qualification --features native-qualification --locked --offline --jobs 2 --target-dir "$RUNNER_TEMP/native-consumer-target" --config "build.build-dir=\"$RUNNER_TEMP/native-consumer-intermediates\"" 2>&1 | tee "$records/build.log"
+          qualifier="$RUNNER_TEMP/native-consumer-target/debug/examples/native-consumer-qualification"
+          sha256sum "$qualifier" > "$records/qualifier.sha256"
+          "$qualifier" "$records/campaign" "$RUSTC" 2>&1 | tee "$records/qualification.log"
+          python3 -c 'import json,sys; r=json.load(open(sys.argv[1])); assert r["passed"] is True and r["controls"] == 17 and r["native_functions"] == 3 and r["checked_runtime_results"] == 131076' "$records/campaign/summary.json"
+          sha256sum --check "$records/source-inputs.sha256"
+          sha256sum --check "$records/tools.sha256"
+      - name: Retain native consumer records including failed attempts
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: native-consumer-records-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/native-consumer-records
+          if-no-files-found: error
+          retention-days: 14
+      - name: Qualify genuine provider definitions and native consumer semantics
+        id: shared_definitions
+        if: ${{ !cancelled() }}
+        run: |
+          python3 tools/qualify-shared-upstream.py --cargo "$(rustup which cargo)" --rustc "$(rustup which rustc)" --tcc "$RUNNER_TEMP/lustr-tinycc/install" --output "$RUNNER_TEMP/lustr-shared-upstream"
+      - name: Qualify retained native checks against an upstream associated type
+        if: ${{ !cancelled() && steps.shared_definitions.outcome == 'success' }}
+        run: |
+          set -euo pipefail
+          sdk="$(rustc --print sysroot)"
+          export LD_LIBRARY_PATH="$sdk/lib"
+          export LUST_NO_CACHE=1 LUST_NO_DAEMON=1 LUST_LIBRARY="$GITHUB_WORKSPACE/compiler/native/library"
+          evaluator="$RUNNER_TEMP/test-native-projection-retention"
+          qualifier="$RUNNER_TEMP/lustr-shared-upstream/target/debug/examples/native-upstream-qualification"
+          "$sdk/bin/rustc" --edition=2024 tools/test-native-projection-retention.rs -o "$evaluator"
+          sha256sum "$evaluator" "$qualifier" tools/test-native-projection-retention.rs tools/native-projection-qualification.rs > "$RUNNER_TEMP/native-projection-inputs.sha256"
+          "$evaluator" "$sdk/bin/cargo" "$sdk/bin/rustc" "$qualifier" "$RUNNER_TEMP/native-projection-retention"
+          sha256sum --check "$RUNNER_TEMP/native-projection-inputs.sha256"
+      - name: Qualify owned imported emission and failure preservation
+        if: ${{ !cancelled() }}
+        run: |
+          python3 tools/qualify-shared-upstream.py --cargo "$(rustup which cargo)" --rustc "$(rustup which rustc)" --tcc "$RUNNER_TEMP/lustr-tinycc/install" --output "$RUNNER_TEMP/lustr-import-emission" --emission-only
+      - name: Exercise supplemental qualification record packaging
+        if: always()
+        run: python3 tools/test-qualification-records.py -v
+      - name: Package supplemental qualification records
+        if: always()
+        run: |
+          python3 tools/package-qualification-records.py \
+            --root "$RUNNER_TEMP" --output "$RUNNER_TEMP/lustr-qualification-records"
+      - name: Retain supplemental qualification records
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: exclusive-qualification-records
+          if-no-files-found: error
+          path: |
+            ${{ runner.temp }}/lustr-qualification-records/inventory.json
+            ${{ runner.temp }}/lustr-qualification-records/records.tar.gz
+      - name: Retain source-bound results and every failure
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: exclusive-entry-and-shared-services
+          if-no-files-found: error
+          path: |
+            ${{ runner.temp }}/release-refusal.json
+            ${{ runner.temp }}/native-build-policy.json
+            ${{ runner.temp }}/exclusive-entry.json
+            ${{ runner.temp }}/native-selection-cache
+            ${{ runner.temp }}/native-selection-seed
+            ${{ runner.temp }}/native-compact-selection
+            ${{ runner.temp }}/native-cargo-plan
+            ${{ runner.temp }}/public-native-library
+            ${{ runner.temp }}/tinycc-signing-qualification
+            ${{ runner.temp }}/lustr-tinycc/logs
+            ${{ runner.temp }}/lustr-tinycc/COMPONENTS.txt
+            ${{ runner.temp }}/lustr-native-built/COMPONENTS.txt
+            ${{ runner.temp }}/lustr-native-built/logs
+            ${{ runner.temp }}/lustr-root-package-controls
+            ${{ runner.temp }}/retained-results
+            ${{ runner.temp }}/retained-oracle-controls
+            ${{ runner.temp }}/capability-results/report.json
+            ${{ runner.temp }}/capability-results/*.stdout
+            ${{ runner.temp }}/capability-results/*.stderr
+            ${{ runner.temp }}/lustr-shared-upstream/verification.json
+            ${{ runner.temp }}/lustr-shared-upstream/*.stdout
+            ${{ runner.temp }}/lustr-shared-upstream/*.stderr
+            ${{ runner.temp }}/lustr-shared-upstream/campaign
+            ${{ runner.temp }}/native-projection-inputs.sha256
+            ${{ runner.temp }}/native-projection-retention/*.stdout
+            ${{ runner.temp }}/native-projection-retention/*.stderr
+            ${{ runner.temp }}/native-projection-retention/*.status
+            ${{ runner.temp }}/lustr-import-emission/verification.json
+            ${{ runner.temp }}/lustr-import-emission/*.stdout
+            ${{ runner.temp }}/lustr-import-emission/*.stderr
+            ${{ runner.temp }}/lustr-import-emission/campaign
+
   compatibility:
-    name: Cargo compatibility (${{ matrix.os }})
+    name: Retained Cargo planning helpers (${{ matrix.os }})
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-24.04, macos-15, windows-latest]
-    runs-on: ${{ matrix.os }}
+        os: [ubuntu-24.04, macos-26, windows-latest]
+    runs-on: ${{ ((github.event_name != 'pull_request' && github.event_name != 'pull_request_target') || github.event.pull_request.head.repo.full_name == github.repository) && fromJSON(vars.CI_RUNNER_ROUTES || '{}')[matrix.os] || matrix.os }}
     steps:
       - uses: actions/checkout@v4
       - name: Install Rust
@@ -77,71 +621,15 @@ jobs:
         run: cargo +1.99.1 fmt --manifest-path crates/lustr/Cargo.toml -- --check
       - name: Check paired statistical methods
         run: python3 -m unittest discover -s crates/lustr/bench -p "test_*.py" -v
-      - name: Compile and execute full Rust qualification
+      - name: Test every retained planning, retired entry and reference contract
         run: cargo +1.99.1 test --manifest-path crates/lustr/Cargo.toml --locked --offline
 
   minimum-rust:
-    name: Coordinator minimum Rust
-    runs-on: ubuntu-24.04
+    name: Planning helpers minimum Rust
+    runs-on: ${{ ((github.event_name != 'pull_request' && github.event_name != 'pull_request_target') || github.event.pull_request.head.repo.full_name == github.repository) && fromJSON(vars.CI_RUNNER_ROUTES || '{}')['ubuntu-24.04'] || 'ubuntu-24.04' }}
     steps:
       - uses: actions/checkout@v4
       - name: Install minimum supported Rust
         run: rustup toolchain install 1.85.0 --profile minimal
       - name: Build and test on minimum Rust
         run: cargo +1.85.0 test --manifest-path crates/lustr/Cargo.toml --locked --offline
-
-  lust:
-    name: Actual Lust subset qualification
-    runs-on: ubuntu-24.04
-    steps:
-      - uses: actions/checkout@v4
-      - name: Install Rust
-        run: rustup toolchain install 1.99.1 --profile minimal
-      - name: Build pinned tcc
-        run: compiler/native/scripts/build-tcc.sh
-      - name: Build upstream Lust
-        run: cargo +1.99.1 build --manifest-path compiler/native/Cargo.toml --profile gate --locked
-      - name: Verify Lust execution and honest rejection
-        env:
-          LUST_TEST_LUST: ${{ github.workspace }}/compiler/native/target/gate/lust
-        run: cargo +1.99.1 test --manifest-path crates/lustr/Cargo.toml --locked --offline --test qualification actual_lust -- --ignored --nocapture
-
-  cranelift:
-    name: Cranelift with unwinding qualification
-    runs-on: ubuntu-24.04
-    env:
-      RUSTUP_TOOLCHAIN: nightly-2026-11-05
-    steps:
-      - uses: actions/checkout@v4
-      - name: Build pinned backend with unwind support
-        run: |
-          bash crates/lustr/scripts/build-cranelift.sh
-          source crates/lustr/target/complement/env.sh
-          printf 'LUST_CRANELIFT_BACKEND=%s\n' "$LUST_CRANELIFT_BACKEND" >> "$GITHUB_ENV"
-      - name: Verify full Rust, panic recovery, and tests
-        run: cargo +nightly-2026-11-05 test --manifest-path crates/lustr/Cargo.toml --locked --offline --test qualification actual_cranelift -- --ignored --nocapture
-      - name: Verify both Rust ABI directions across LLVM and Cranelift
-        env:
-          LUST_TEST_ABI_EVIDENCE: ${{ github.workspace }}/compiler-set-mixed-abi
-        run: cargo +nightly-2026-11-05 test --manifest-path crates/lustr/Cargo.toml --locked --offline --test mixed_abi actual_cranelift -- --ignored --nocapture
-      - name: Compile and test the coordinator with its complementary backend
-        run: target/debug/cargo-lust --engine cranelift test --manifest-path crates/lustr/Cargo.toml --target-dir crates/lustr/target/complement-tests --locked --offline
-      - name: Build coordinator for measurement
-        run: cargo +nightly-2026-11-05 build --manifest-path crates/lustr/Cargo.toml --release --locked --offline
-      - name: Measure the selected backend
-        run: python3 crates/lustr/bench/measure.py --coordinator target/release/cargo-lust --engine cranelift --samples 6 --output compiler-set-cranelift.json
-      - name: Build native dependency for real-project qualification
-        run: compiler/native/scripts/build-tcc.sh
-      - name: Compile, test, and measure unchanged Lust with both backends
-        env:
-          LUST_TCC_HOME: ${{ github.workspace }}/compiler/native/third_party/tcc
-        run: python3 crates/lustr/bench/measure-project.py --coordinator "$GITHUB_WORKSPACE/target/release/cargo-lust" --project compiler/native --samples 2 --output compiler-set-lust-project.json
-      - uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: compiler-set-cranelift
-          path: |
-            compiler-set-cranelift.json
-            compiler-set-lust-project.json
-            crates/lustr/target/complement/backend.json
-            compiler-set-mixed-abi

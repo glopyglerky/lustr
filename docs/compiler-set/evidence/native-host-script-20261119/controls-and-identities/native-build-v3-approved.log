@@ -1,0 +1,988 @@
+   Compiling lust v0.2.0 (/tmp/lustr-implementation-20261119/compiler/native)
+warning: unused imports: `Pat` and `Stmt`
+    --> src/check/collect.rs:2167:35
+     |
+2167 |     use crate::ast::{BinOp, Expr, Pat, Stmt};
+     |                                   ^^^  ^^^^
+     |
+     = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
+
+warning: unused import: `IterKind as K`
+   --> src/check/iter.rs:834:13
+    |
+834 |         use IterKind as K;
+    |             ^^^^^^^^^^^^^
+
+warning: unused imports: `ItemKind` and `self`
+  --> src/check/variance.rs:12:18
+   |
+12 | use crate::ast::{self, ItemKind};
+   |                  ^^^^  ^^^^^^^^
+
+warning: unused import: `crate::check::sync::SyncOp`
+    --> src/check/mod.rs:4210:17
+     |
+4210 |             use crate::check::sync::SyncOp;
+     |                 ^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `crate::ty::sync::SyncTy`
+    --> src/check/mod.rs:4211:17
+     |
+4211 |             use crate::ty::sync::SyncTy;
+     |                 ^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `crate::intern::FxMap`
+  --> src/driver/kept_delta.rs:50:5
+   |
+50 | use crate::intern::FxMap;
+   |     ^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `PreparedRequest`
+  --> src/driver/mod.rs:43:32
+   |
+43 | pub use compile::{Preparation, PreparedRequest};
+   |                                ^^^^^^^^^^^^^^^
+
+warning: use of deprecated method `std::sync::atomic::Atomic::<u64>::fetch_update`: renamed to `try_update` for consistency
+   --> src/driver/mod.rs:132:19
+    |
+132 |         Self(NEXT.fetch_update(Ordering::Relaxed, Ordering::Relaxed, |n| n.checked_add(1)).expect("native phase identity exhausted"))
+    |                   ^^^^^^^^^^^^
+    |
+    = note: `#[warn(deprecated)]` on by default
+help: replace the use of the deprecated method
+    |
+132 -         Self(NEXT.fetch_update(Ordering::Relaxed, Ordering::Relaxed, |n| n.checked_add(1)).expect("native phase identity exhausted"))
+132 +         Self(NEXT.try_update(Ordering::Relaxed, Ordering::Relaxed, |n| n.checked_add(1)).expect("native phase identity exhausted"))
+    |
+
+warning: unused import: `crate::ty::TyIntern`
+    --> src/check/collect.rs:7373:9
+     |
+7373 |     use crate::ty::TyIntern;
+     |         ^^^^^^^^^^^^^^^^^^^
+
+warning: unused variable: `dt`
+    --> src/borrowck/regions.rs:6112:57
+     |
+6112 |     fn call_from_ref(&mut self, avs: &[(Ty, Vec<u32>)], dt: Ty, dv: &[u32]) -> bool {
+     |                                                         ^^ help: if this is intentional, prefix it with an underscore: `_dt`
+     |
+     = note: `#[warn(unused_variables)]` (part of `#[warn(unused)]`) on by default
+
+warning: variable does not need to be mutable
+   --> src/cgen/kconst.rs:643:13
+    |
+643 |     let mut bytes = |at: usize, val: u128, n: usize, b: &mut [u8], cls: &mut [u8]| {
+    |         ----^^^^^
+    |         |
+    |         help: remove this `mut`
+    |
+    = note: `#[warn(unused_mut)]` (part of `#[warn(unused)]`) on by default
+
+warning: unused variable: `variants`
+    --> src/cgen.rs:1447:30
+     |
+1447 | fn enum_is_exact(l: &Layout, variants: usize) -> bool {
+     |                              ^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_variants`
+
+warning: variable does not need to be mutable
+   --> src/check/any.rs:722:13
+    |
+722 |     let mut one = |p: &Program, tys: &mut _, path: &str| Some(tn_apply(path, vec![tn_first(p, tys, t, open, in_sig)?]));
+    |         ----^^^
+    |         |
+    |         help: remove this `mut`
+
+warning: variable does not need to be mutable
+   --> src/check/any.rs:859:13
+    |
+859 |     let mut arg = |tys: &mut _, i: usize| tn_arg(p, tys, *args.get(i)?, open, in_sig);
+    |         ----^^^
+    |         |
+    |         help: remove this `mut`
+
+warning: unused variable: `def`
+    --> src/check/closure.rs:2338:33
+     |
+2338 |                 TyKind::Closure(def, _) => {
+     |                                 ^^^ help: if this is intentional, prefix it with an underscore: `_def`
+
+warning: unused variable: `x`
+    --> src/check/collect.rs:2455:20
+     |
+2455 |         (SVal::Int(x, None), SVal::Int(_, Some(it))) if !matches!(op, BinOp::Shl | BinOp::Shr) => {
+     |                    ^ help: if this is intentional, prefix it with an underscore: `_x`
+
+warning: value assigned to `static_count` is never read
+    --> src/check/collect.rs:6306:28
+     |
+6306 |     let mut static_count = 0u32;
+     |                            ^^^^ this value is reassigned later and never used
+...
+6484 |         static_count = ranks.iter().copied().max().map_or(0, |m| m + 1);
+     |         --------------------------------------------------------------- `static_count` is overwritten here before the previous value is read
+     |
+     = note: `#[warn(unused_assignments)]` (part of `#[warn(unused)]`) on by default
+
+warning: variable does not need to be mutable
+    --> src/check/collect.rs:7017:13
+     |
+7017 |     let mut take = |g: &ast::Generics, out: &mut Vec<Sym>| {
+     |         ----^^^^
+     |         |
+     |         help: remove this `mut`
+
+warning: variable does not need to be mutable
+    --> src/check/collect.rs:7383:13
+     |
+7383 |     let mut args_match = |a: crate::ty::ArgsId, b: crate::ty::ArgsId, map: &mut Vec<(u32, Ty)>, cmap: &mut Vec<(u32, crate::ty::Co...
+     |         ----^^^^^^^^^^
+     |         |
+     |         help: remove this `mut`
+
+warning: unused variable: `extend`
+   --> src/check/generics.rs:206:13
+    |
+206 |         let extend = lang_trait(&["core", "iter"], "Extend");
+    |             ^^^^^^ help: if this is intentional, prefix it with an underscore: `_extend`
+
+warning: unreachable pattern
+   --> src/check/generics.rs:392:13
+    |
+388 |             "Extend" => self.extend,
+    |             -------- matches all the relevant values
+...
+392 |             "Extend" => self.extend,
+    |             ^^^^^^^^ no value can reach this
+    |
+    = note: `#[warn(unreachable_patterns)]` (part of `#[warn(unused)]`) on by default
+
+warning: variable does not need to be mutable
+    --> src/check/generics.rs:1597:13
+     |
+1597 |     let mut lt = |lt: ast::Lifetime, bound: &[Sym], out: &mut Vec<(ast::Lifetime, bool)>| {
+     |         ----^^
+     |         |
+     |         help: remove this `mut`
+
+warning: value assigned to `to_glue` is never read
+     --> src/check/generics.rs:11788:27
+      |
+11788 |           let mut to_glue = false;
+      |                             ^^^^^ this value is reassigned later and never used
+...
+11801 | /             to_glue = !has_rel
+11802 | |                 && !prove_goal(p, &[], TraitRef { def: lang.ord, args: ord_args, bindings: EMPTY_BINDINGS })
+11803 | |                 && crate::check::collect::has_ord(p, &p.tys, self_ty);
+      | |_____________________________________________________________________- `to_glue` is overwritten here before the previous value is read
+
+warning: unused variable: `m`
+     --> src/check/generics.rs:13432:28
+      |
+13432 |             TyKind::Ref(_, m, e) if is_default => matches!(cx.tys.kind(e), TyKind::Str | TyKind::Slice(_)).then_some(Vec::new()),
+      |                            ^ help: if this is intentional, prefix it with an underscore: `_m`
+
+warning: unreachable pattern
+    --> src/check/iter.rs:1667:19
+     |
+1635 |                 | "size_hint"
+     |                   ----------- matches all the relevant values
+...
+1667 |                 | "size_hint"
+     |                   ^^^^^^^^^^^ no value can reach this
+
+warning: variable does not need to be mutable
+   --> src/check/depth.rs:397:13
+    |
+397 |     let mut max_of = |ts: Vec<Ty>, memo: &mut FxMap<Ty, usize>| {
+    |         ----^^^^^^
+    |         |
+    |         help: remove this `mut`
+
+warning: unused variable: `p`
+  --> src/check/opaque.rs:88:13
+   |
+88 |         let p = self.p;
+   |             ^ help: if this is intentional, prefix it with an underscore: `_p`
+
+warning: variable does not need to be mutable
+    --> src/check/opaque.rs:1138:13
+     |
+1138 |     let mut in_args = |a: ArgsId, out: &mut Vec<Ty>| {
+     |         ----^^^^^^^
+     |         |
+     |         help: remove this `mut`
+
+warning: unused variable: `p`
+    --> src/check/mod.rs:9159:13
+     |
+9159 |         let p = self.p;
+     |             ^ help: if this is intentional, prefix it with an underscore: `_p`
+
+warning: unused variable: `a`
+     --> src/check/mod.rs:16578:26
+      |
+16578 |         for (_, _, n, _, a, g) in &spine {
+      |                          ^ help: if this is intentional, prefix it with an underscore: `_a`
+
+warning: value assigned to `last` is never read
+    --> src/daemon.rs:1230:9
+     |
+1230 |         last = std::time::Instant::now();
+     |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ this value is reassigned later and never used
+...
+1276 |         last = std::time::Instant::now();
+     |         -------------------------------- `last` is overwritten here before the previous value is read
+
+warning: unused variable: `manifest_dir`
+    --> src/driver/compile.rs:2203:13
+     |
+2203 |         let manifest_dir = unit.package.manifest_path.parent().map_or_else(PathBuf::new, Path::to_path_buf);
+     |             ^^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_manifest_dir`
+
+warning: unused variable: `src`
+    --> src/driver/compile.rs:4781:52
+     |
+4781 |         mut program, results, reemit, map, source: src, path, work, fn_count, fn_lines_all, body_hashes_all,
+     |                                                    ^^^ help: if this is intentional, prefix it with an underscore: `_src`
+
+warning: variable does not need to be mutable
+   --> src/driver/span_shift.rs:178:13
+    |
+178 |     let mut list = |extras: &mut Vec<ExtraNodes>, own: Span, spans: &[Span], pick: fn(&mut ExtraNodes) -> &mut Vec<usize>, i: usize...
+    |         ----^^^^
+    |         |
+    |         help: remove this `mut`
+
+warning: unused variable: `m`
+   --> src/expand/match_.rs:802:23
+    |
+802 |     fn current(&self, m: &Matcher) -> Cur {
+    |                       ^ help: if this is intentional, prefix it with an underscore: `_m`
+
+warning: variable does not need to be mutable
+   --> src/ir.rs:409:13
+    |
+409 |     let mut scan_rv = |rv: &Rvalue, bad: &mut Vec<bool>| match rv {
+    |         ----^^^^^^^
+    |         |
+    |         help: remove this `mut`
+
+warning: variable does not need to be mutable
+   --> src/lower/any.rs:177:17
+    |
+177 |         let mut word = |this: &mut Self, k: u32| {
+    |             ----^^^^
+    |             |
+    |             help: remove this `mut`
+
+warning: unreachable pattern
+   --> src/lower/iter.rs:100:15
+    |
+ 49 |             | B::IterNextBack
+    |               --------------- matches all the relevant values
+...
+100 |             | B::IterNextBack
+    |               ^^^^^^^^^^^^^^^ no value can reach this
+
+warning: unreachable pattern
+   --> src/lower/iter.rs:116:15
+    |
+ 50 |             | B::IterSizeHint
+    |               --------------- matches all the relevant values
+...
+116 |             | B::IterSizeHint
+    |               ^^^^^^^^^^^^^^^ no value can reach this
+
+warning: unreachable pattern
+   --> src/lower/iter.rs:142:15
+    |
+ 51 |             | B::IterLen
+    |               ---------- matches all the relevant values
+...
+142 |             | B::IterLen
+    |               ^^^^^^^^^^ no value can reach this
+
+warning: variable does not need to be mutable
+    --> src/lower/iter.rs:5954:17
+     |
+5954 |         let mut side_ok = |this: &mut Self, side: Place, is_start: bool| -> Local {
+     |             ----^^^^^^^
+     |             |
+     |             help: remove this `mut`
+
+warning: variable does not need to be mutable
+    --> src/lower/iter.rs:6784:17
+     |
+6784 |         let mut side = |this: &mut Self, v: Local, vt: Ty, q: Option<(AdtId, Ty)>, dt: Ty| -> Operand {
+     |             ----^^^^
+     |             |
+     |             help: remove this `mut`
+
+warning: variable does not need to be mutable
+  --> src/lower/range_fmt.rs:24:17
+   |
+24 |         let mut field = |this: &mut Self, i: u32| -> FmtPart {
+   |             ----^^^^^
+   |             |
+   |             help: remove this `mut`
+
+warning: unreachable pattern
+    --> src/lower.rs:3118:13
+     |
+2092 |             Expr::Int(..) | Expr::Float(_) | Expr::Bool(_) | Expr::Char(_) | Expr::Str(_) | Expr::ByteStr(_) | Expr::Unit => {
+     |                             -------------- matches all the relevant values
+...
+3118 |             Expr::Float(_)
+     |             ^^^^^^^^^^^^^^ no value can reach this
+
+warning: variable does not need to be mutable
+    --> src/lower.rs:4011:17
+     |
+4011 |         let mut dest_arg = |this: &mut Self| {
+     |             ----^^^^^^^^
+     |             |
+     |             help: remove this `mut`
+
+warning: variable does not need to be mutable
+    --> src/lower.rs:4200:25
+     |
+4200 |                 let mut side = |this: &mut Self, site: ExprId, f: LocalDefId| -> (Operand, Operand) {
+     |                     ----^^^^
+     |                     |
+     |                     help: remove this `mut`
+
+warning: unused variable: `a`
+    --> src/lower.rs:5128:27
+     |
+5128 |                 for (ai, &a) in args.iter().enumerate() {
+     |                           ^ help: if this is intentional, prefix it with an underscore: `_a`
+
+warning: unreachable pattern
+    --> src/lower.rs:6995:13
+     |
+6905 |             Pat::Slice { prefix, middle, suffix } => {
+     |             ------------------------------------- matches all the relevant values
+...
+6995 |             Pat::Slice { .. } | Pat::QPath { .. } | Pat::MacroCall(_) => {}
+     |             ^^^^^^^^^^^^^^^^^ no value can reach this
+
+warning: unreachable pattern
+    --> src/lower.rs:6995:33
+     |
+6934 |             Pat::Path(_) | Pat::QPath { .. } | Pat::TupleStruct { .. } | Pat::Struct { .. } => {
+     |                            ----------------- matches all the relevant values
+...
+6995 |             Pat::Slice { .. } | Pat::QPath { .. } | Pat::MacroCall(_) => {}
+     |                                 ^^^^^^^^^^^^^^^^^ no value can reach this
+
+warning: value assigned to `last` is never read
+    --> src/resolve/worklist.rs:3544:13
+     |
+3540 |     macro_rules! lap {
+...
+3544 |             last = now;
+     |             ^^^^^^^^^^
+...
+4358 |     lap!("resolve: chunk scan+concat");
+     |     ---------------------------------- in this macro invocation
+     |
+     = help: maybe it is overwritten before being read?
+
+warning: unreachable pattern
+    --> src/ty/consteval.rs:4117:13
+     |
+4114 |             ConstValue::Aggregate(vals) => vals.get(i).cloned(),
+     |             --------------------------- matches all the relevant values
+...
+4117 |             ConstValue::Aggregate(_) | ConstValue::Repeat(..) => None,
+     |             ^^^^^^^^^^^^^^^^^^^^^^^^ no value can reach this
+
+warning: variable does not need to be mutable
+    --> src/ty/lang.rs:2309:13
+     |
+2309 |     let mut find = |rows: &[&str], kind| rows.iter().any(|r| std_row_eq(r, path)).then_some(kind);
+     |         ----^^^^
+     |         |
+     |         help: remove this `mut`
+
+warning: variable does not need to be mutable
+   --> src/main.rs:121:13
+    |
+121 |     let mut row = |rows: &mut Vec<(String, usize)>, name: &str, f: &mut dyn FnMut()| {
+    |         ----^^^
+    |         |
+    |         help: remove this `mut`
+
+warning: type `UnitDefs` is more private than the item `Mode::from_env`
+   --> src/cc/pgo.rs:74:5
+    |
+ 74 |     pub fn from_env(spec: &CcSpec, work: &Path, defs: Option<&UnitDefs>, warm: Option<&Warm>) -> Result<Option<Mode>, String> {
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ associated function `Mode::from_env` is reachable at visibility `pub(crate)`
+    |
+note: but type `UnitDefs` is only usable at visibility `pub(in crate::cc)`
+   --> src/cc/pgo.rs:592:1
+    |
+592 | pub(super) struct UnitDefs {
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^
+    = note: `#[warn(private_interfaces)]` on by default
+
+warning: type `Warm` is more private than the item `Mode::from_env`
+   --> src/cc/pgo.rs:74:5
+    |
+ 74 |     pub fn from_env(spec: &CcSpec, work: &Path, defs: Option<&UnitDefs>, warm: Option<&Warm>) -> Result<Option<Mode>, String> {
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ associated function `Mode::from_env` is reachable at visibility `pub(crate)`
+    |
+note: but type `Warm` is only usable at visibility `pub(in crate::cc)`
+   --> src/cc/pgo.rs:186:1
+    |
+186 | pub(super) struct Warm {
+    | ^^^^^^^^^^^^^^^^^^^^^^
+
+warning: function `build` is never used
+   --> src/cc.rs:740:8
+    |
+740 | pub fn build(units: &[UnitIn], spec: &CcSpec, out: &Path, debug: bool, cache: Option<&crate::driver::cache::Cache>, work: &Path) ->...
+    |        ^^^^^
+    |
+    = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: struct `NativeTypeAbi` is never constructed
+    --> src/cgen.rs:2092:12
+     |
+2092 | pub struct NativeTypeAbi {
+     |            ^^^^^^^^^^^^^
+
+warning: function `native_type_abi` is never used
+    --> src/cgen.rs:2096:8
+     |
+2096 | pub fn native_type_abi(p: &Program, t: Ty) -> Option<NativeTypeAbi> {
+     |        ^^^^^^^^^^^^^^^
+
+warning: variant `OneStep` is never constructed
+     --> src/cgen.rs:12524:5
+      |
+12517 | pub(crate) enum Decls {
+      |                 ----- variant in this enum
+...
+12524 |     OneStep { blocks: bool },
+      |     ^^^^^^^
+      |
+      = note: `Decls` has a derived impl for the trait `Clone`, but this is intentionally ignored during dead code analysis
+
+warning: function `glue_shards` is never used
+   --> src/cgen/names.rs:257:8
+    |
+257 | pub fn glue_shards(p: &Program, g: &GlueSet, out: &[FnOut], target: usize) -> Vec<String> {
+    |        ^^^^^^^^^^^
+
+warning: method `is_empty` is never used
+   --> src/cgen/record.rs:141:12
+    |
+ 94 | impl ReadTable {
+    | -------------- method in this implementation
+...
+141 |     pub fn is_empty(&self) -> bool {
+    |            ^^^^^^^^
+
+warning: function `llvm_triple` is never used
+    --> src/cgen/ll.rs:3132:8
+     |
+3132 | pub fn llvm_triple(triple: &str) -> String {
+     |        ^^^^^^^^^^^
+
+warning: method `check_method_vis` is never used
+    --> src/check/mod.rs:3872:8
+     |
+3107 | impl<'p> Ctx<'p> {
+     | ---------------- method in this implementation
+...
+3872 |     fn check_method_vis(&mut self, base: Ty, name: Sym, span: Span) {
+     |        ^^^^^^^^^^^^^^^^
+
+warning: variant `Trait` is never constructed
+   --> src/check/collect.rs:145:5
+    |
+141 | pub enum BodyTypeItem {
+    |          ------------ variant in this enum
+...
+145 |     Trait(DefId),
+    |     ^^^^^
+    |
+    = note: `BodyTypeItem` has derived impls for the traits `Debug` and `Clone`, but these are intentionally ignored during dead code analysis
+
+warning: function `named_const_int` is never used
+    --> src/check/collect.rs:1897:8
+     |
+1897 | pub fn named_const_int(ast: &Ast, interner: &Interner, known: &Known, names: &[Sym]) -> Option<u128> {
+     |        ^^^^^^^^^^^^^^^
+
+warning: function `truncate_to_int` is never used
+    --> src/check/collect.rs:3165:4
+     |
+3165 | fn truncate_to_int(v: i128, it: IntTy) -> i128 {
+     |    ^^^^^^^^^^^^^^^
+
+warning: function `collect_with_definitions` is never used
+    --> src/check/collect.rs:3482:8
+     |
+3482 | pub fn collect_with_definitions(
+     |        ^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: field `span` is never read
+  --> src/check/const_body.rs:48:5
+   |
+39 | struct Site {
+   |        ---- field in this struct
+...
+48 |     span: Span,
+   |     ^^^^
+
+warning: function `check_all_with` is never used
+  --> src/check/const_body.rs:70:8
+   |
+70 | pub fn check_all_with(
+   |        ^^^^^^^^^^^^^^
+
+warning: function `build_generics` is never used
+    --> src/check/generics.rs:5069:8
+     |
+5069 | pub fn build_generics(
+     |        ^^^^^^^^^^^^^^
+
+warning: function `materialize_native_adt_types` is never used
+     --> src/check/generics.rs:13212:8
+      |
+13212 | pub fn materialize_native_adt_types(p: &mut Program, types: &[Ty]) {
+      |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: function `check_native_adts` is never used
+   --> src/check/outlives.rs:752:8
+    |
+752 | pub fn check_native_adts(p: &mut Program, defs: &[DefId], errs: &mut Vec<Diag>) {
+    |        ^^^^^^^^^^^^^^^^^
+
+warning: method `conversion_call` is never used
+   --> src/check/own.rs:365:19
+    |
+360 | impl<'p> Ctx<'p> {
+    | ---------------- method in this implementation
+...
+365 |     pub(super) fn conversion_call(&self, e: ExprId) -> bool {
+    |                   ^^^^^^^^^^^^^^^
+
+warning: function `reading` is never used
+   --> src/check/spec.rs:228:8
+    |
+228 | pub fn reading() -> bool {
+    |        ^^^^^^^
+
+warning: function `method_path` is never used
+   --> src/def.rs:279:8
+    |
+279 | pub fn method_path(impl_hash: DefPathHash, impl_text: &str, name: &str) -> (DefPathHash, String) {
+    |        ^^^^^^^^^^^
+
+warning: function `impl_hash` is never used
+   --> src/def.rs:289:8
+    |
+289 | pub fn impl_hash(krate: StableCrateHash, module: &[&str], header: &str, ordinal: u32) -> DefPathHash {
+    |        ^^^^^^^^^
+
+warning: function `method_hash` is never used
+   --> src/def.rs:294:8
+    |
+294 | pub fn method_hash(impl_hash: DefPathHash, name: &str) -> DefPathHash {
+    |        ^^^^^^^^^^^
+
+warning: function `prepare_imported` is never used
+  --> src/driver/mod.rs:64:8
+   |
+64 | pub fn prepare_imported<'a>(req: &'a Request, session: &'a mut Session, definitions: &dyn imports::Definitions) -> Result<Preparatio...
+   |        ^^^^^^^^^^^^^^^^
+
+warning: multiple fields are never read
+   --> src/driver/mod.rs:141:9
+    |
+140 | pub struct Prepared<'a> {
+    |            -------- fields in this struct
+141 |     pub id: PhaseId,
+    |         ^^
+142 |     pub request: &'a Request,
+    |         ^^^^^^^
+143 |     pub input: &'a std::sync::Arc<crate::ast::Ast>,
+    |         ^^^^^
+144 |     pub program: &'a crate::check::collect::Program,
+    |         ^^^^^^^
+145 |     pub map: &'a crate::diag::SourceMap,
+    |         ^^^
+146 |     /// Root text used when the single-file path has no SourceMap entry.
+147 |     pub source: &'a str,
+    |         ^^^^^^
+148 |     /// Functions actually checked now; others may have qualified native reuse.
+149 |     pub work: &'a [usize],
+    |         ^^^^
+    |
+    = note: `Prepared` has a derived impl for the trait `Clone`, but this is intentionally ignored during dead code analysis
+
+warning: function `scan_ast` is never used
+   --> src/driver/ast_hash.rs:178:15
+    |
+178 | pub(crate) fn scan_ast(ast: &Ast) -> AstScans {
+    |               ^^^^^^^^
+
+warning: field `0` is never read
+   --> src/driver/ir_cache.rs:479:11
+    |
+479 |     Infer(bool),
+    |     ----- ^^^^
+    |     |
+    |     field in this variant
+    |
+    = note: `TyTree` has derived impls for the traits `Debug` and `Clone`, but these are intentionally ignored during dead code analysis
+help: consider changing the field to be of unit type to suppress this warning while preserving the field numbering, or remove the field
+    |
+479 -     Infer(bool),
+479 +     Infer(()),
+    |
+
+warning: function `cargo_vars` is never used
+  --> src/driver/buildscript.rs:51:4
+   |
+51 | fn cargo_vars(env: ClientEnv) -> Vec<(String, String)> {
+   |    ^^^^^^^^^^
+
+warning: enum `Holds` is never used
+   --> src/driver/buildscript.rs:148:6
+    |
+148 | enum Holds {
+    |      ^^^^^
+
+warning: function `output_hash` is never used
+   --> src/driver/buildscript.rs:180:4
+    |
+180 | fn output_hash(out: &BuildOutput, out_dir: Option<&Path>) -> u64 {
+    |    ^^^^^^^^^^^
+
+warning: function `record_path` is never used
+   --> src/driver/buildscript.rs:219:4
+    |
+219 | fn record_path(cache_dir: &Path, manifest_dir: &Path) -> PathBuf {
+    |    ^^^^^^^^^^^
+
+warning: function `dir_hash` is never used
+   --> src/driver/buildscript.rs:246:4
+    |
+246 | fn dir_hash(dir: &Path, skip: &dyn Fn(&Path) -> bool) -> u64 {
+    |    ^^^^^^^^
+
+warning: function `path_hash` is never used
+   --> src/driver/buildscript.rs:275:4
+    |
+275 | fn path_hash(path: &Path) -> u64 {
+    |    ^^^^^^^^^
+
+warning: function `package_hash` is never used
+   --> src/driver/buildscript.rs:284:4
+    |
+284 | fn package_hash(dir: &Path, cache_dir: &Path) -> u64 {
+    |    ^^^^^^^^^^^^
+
+warning: function `stamp` is never used
+   --> src/driver/buildscript.rs:295:4
+    |
+295 | fn stamp(path: &Path) -> String {
+    |    ^^^^^
+
+warning: function `setup_hash` is never used
+   --> src/driver/buildscript.rs:306:4
+    |
+306 | fn setup_hash(rustc: Option<&Path>, env: ClientEnv) -> u64 {
+    |    ^^^^^^^^^^
+
+warning: method `holds` is never used
+   --> src/driver/buildscript.rs:484:8
+    |
+365 | impl Record {
+    | ----------- method in this implementation
+...
+484 |     fn holds(&self, cache_dir: &Path, env: ClientEnv) -> Holds {
+    |        ^^^^^
+
+warning: field `error` is never read
+   --> src/driver/buildscript.rs:538:25
+    |
+538 |     Failed { hash: u64, error: String },
+    |     ------              ^^^^^
+    |     |
+    |     field in this variant
+
+warning: variants `Fresh` and `Reran` are never constructed
+   --> src/driver/buildscript.rs:532:5
+    |
+528 | pub enum Refresh {
+    |          ------- variants in this enum
+...
+532 |     Fresh { hash: u64 },
+    |     ^^^^^
+533 |     /// The script re-ran through Cargo and the record was rewritten.
+534 |     Reran { hash: u64 },
+    |     ^^^^^
+
+warning: function `source_hashes` is never used
+   --> src/driver/buildscript.rs:615:4
+    |
+615 | fn source_hashes(mut sources: Vec<PathBuf>, script: &Path) -> Vec<(PathBuf, u64)> {
+    |    ^^^^^^^^^^^^^
+
+warning: function `store_record` is never used
+   --> src/driver/buildscript.rs:678:4
+    |
+678 | fn store_record(cache_dir: &Path, manifest_dir: &Path, rec: &Record) {
+    |    ^^^^^^^^^^^^
+
+warning: field `lease` is never read
+   --> src/driver/buildscript.rs:699:5
+    |
+690 | pub struct Outputs {
+    |            ------- field in this struct
+...
+699 |     lease: Option<std::sync::Arc<std::fs::File>>,
+    |     ^^^^^
+    |
+    = note: `Outputs` has a derived impl for the trait `Clone`, but this is intentionally ignored during dead code analysis
+
+warning: function `outputs` is never used
+   --> src/driver/buildscript.rs:709:8
+    |
+709 | pub fn outputs(manifest_dir: &Path, _cache_dir: &Path, _env: ClientEnv) -> Result<Option<Outputs>, String> {
+    |        ^^^^^^^
+
+warning: function `shell_words` is never used
+   --> src/driver/buildscript.rs:735:4
+    |
+735 | fn shell_words(s: &str) -> Vec<String> {
+    |    ^^^^^^^^^^^
+
+warning: function `printed_commands` is never used
+   --> src/driver/buildscript.rs:783:4
+    |
+783 | fn printed_commands(stderr: &str) -> Vec<(Vec<(String, String)>, Vec<String>)> {
+    |    ^^^^^^^^^^^^^^^^
+
+warning: function `extra_filename` is never used
+   --> src/driver/buildscript.rs:806:4
+    |
+806 | fn extra_filename(argv: &[String]) -> &str {
+    |    ^^^^^^^^^^^^^^
+
+warning: function `compile_dep_info` is never used
+   --> src/driver/buildscript.rs:819:4
+    |
+819 | fn compile_dep_info(argv: &[String], script: &Path) -> Option<(PathBuf, Vec<PathBuf>, Vec<String>)> {
+    |    ^^^^^^^^^^^^^^^^
+
+warning: function `cargo_error` is never used
+   --> src/driver/buildscript.rs:845:4
+    |
+845 | fn cargo_error(stderr: &str) -> String {
+    |    ^^^^^^^^^^^
+
+warning: function `recorded_output` is never used
+   --> src/driver/buildscript.rs:859:4
+    |
+859 | fn recorded_output(out_dir: &Path) -> Result<String, String> {
+    |    ^^^^^^^^^^^^^^^
+
+warning: methods `request`, `checked_functions`, `source_map`, and `imported_dependencies` are never used
+    --> src/driver/compile.rs:2772:12
+     |
+2771 | impl PreparedRequest<'_> {
+     | ------------------------ methods in this implementation
+2772 |     pub fn request(&self) -> &Request {
+     |            ^^^^^^^
+...
+2783 |     pub fn checked_functions(&self) -> &[usize] {
+     |            ^^^^^^^^^^^^^^^^^
+...
+2787 |     pub fn source_map(&self) -> &SourceMap {
+     |            ^^^^^^^^^^
+...
+2796 |     pub fn imported_dependencies(&self) -> &[super::imports::Dependency] {
+     |            ^^^^^^^^^^^^^^^^^^^^^
+
+warning: function `prepare_imported` is never used
+    --> src/driver/compile.rs:2836:15
+     |
+2836 | pub(super) fn prepare_imported<'a>(req: &'a Request, session: &'a mut Session, definitions: &dyn super::imports::Definitions) -> R...
+     |               ^^^^^^^^^^^^^^^^
+
+warning: fields `identity` and `contents` are never read
+  --> src/driver/imports.rs:15:9
+   |
+14 | pub struct Dependency {
+   |            ---------- fields in this struct
+15 |     pub identity: String,
+   |         ^^^^^^^^
+16 |     pub contents: std::sync::Arc<[u8]>,
+   |         ^^^^^^^^
+
+warning: struct `Unintegrated` is never constructed
+  --> src/driver/imports.rs:22:12
+   |
+22 | pub struct Unintegrated(pub &'static str);
+   |            ^^^^^^^^^^^^
+
+warning: field `user_macros` is never read
+   --> src/driver/patch.rs:148:5
+    |
+130 | pub(crate) struct PatchBase {
+    |                   --------- field in this struct
+...
+148 |     user_macros: bool,
+    |     ^^^^^^^^^^^
+
+warning: method `set_output` is never used
+   --> src/driver/session.rs:604:12
+    |
+481 | impl Session {
+    | ------------ method in this implementation
+...
+604 |     pub fn set_output(&mut self, output: OutputKind) {
+    |            ^^^^^^^^^^
+
+warning: method `len` is never used
+   --> src/driver/read_cover.rs:286:12
+    |
+263 | impl<V> NameMap<V> {
+    | ------------------ method in this implementation
+...
+286 |     pub fn len(&self) -> usize {
+    |            ^^^
+
+warning: multiple fields are never read
+   --> src/intern.rs:450:5
+    |
+222 |         pub struct Known {
+    |                    ----- fields in this struct
+...
+450 |     is_some,
+    |     ^^^^^^^
+451 |     is_none,
+    |     ^^^^^^^
+452 |     unwrap,
+    |     ^^^^^^
+453 |     expect,
+454 |     unwrap_or,
+    |     ^^^^^^^^^
+...
+496 |     is_ok,
+    |     ^^^^^
+497 |     is_err,
+    |     ^^^^^^
+...
+529 |     from_utf8,
+    |     ^^^^^^^^^
+...
+536 |     unwrap_or_default,
+    |     ^^^^^^^^^^^^^^^^^
+    |
+    = note: this warning originates in the macro `known_syms` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+warning: function `lifetime_name` is never used
+   --> src/lexer.rs:683:8
+    |
+683 | pub fn lifetime_name(name: &str) -> bool {
+    |        ^^^^^^^^^^^^^
+
+warning: static `CCC_RANGES` is never used
+   --> src/xid_table.rs:241:19
+    |
+241 | pub(crate) static CCC_RANGES: &[(u32, u32, u32)] = &[
+    |                   ^^^^^^^^^^
+
+warning: static `CANON_DECOMP` is never used
+   --> src/xid_table.rs:318:19
+    |
+318 | pub(crate) static CANON_DECOMP: &[(u32, u32, u32)] = &[
+    |                   ^^^^^^^^^^^^
+
+warning: static `COMPOSE_PAIRS` is never used
+   --> src/xid_table.rs:732:19
+    |
+732 | pub(crate) static COMPOSE_PAIRS: &[(u32, u32, u32)] = &[
+    |                   ^^^^^^^^^^^^^
+
+warning: method `at_literal_start` is never used
+    --> src/parser.rs:4003:8
+     |
+1005 | impl<'a> Parser<'a> {
+     | ------------------- method in this implementation
+...
+4003 |     fn at_literal_start(&self) -> bool {
+     |        ^^^^^^^^^^^^^^^^
+
+warning: method `max` is never used
+   --> src/ty/mod.rs:250:12
+    |
+171 | impl IntTy {
+    | ---------- method in this implementation
+...
+250 |     pub fn max(self) -> u64 {
+    |            ^^^
+
+warning: function `needs_std_load` is never used
+    --> src/ty/lang.rs:1685:8
+     |
+1685 | pub fn needs_std_load(src: &str) -> bool {
+     |        ^^^^^^^^^^^^^^
+
+warning: suspicious definition of the runtime `write` symbol used by the standard library
+  --> src/daemon.rs:68:5
+   |
+68 |     fn write(fd: i32, buf: *const u8, count: usize) -> isize;
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = note: expected `unsafe extern "C" fn(i32, *const c_void, usize) -> isize` (for the current target)
+              found `unsafe extern "C" fn(i32, *const u8, usize) -> isize`
+   = help: either fix the signature or remove any attributes like `#[unsafe(no_mangle)]`, `#[unsafe(export_name = "write")]`, or `#[link_name = "write"]`
+   = help: allow this lint if the signature is compatible
+   = note: `#[warn(suspicious_runtime_symbol_definitions)]` on by default
+
+warning: suspicious definition of the runtime `read` symbol used by the standard library
+  --> src/daemon.rs:78:5
+   |
+78 |     fn read(fd: i32, buf: *mut u8, count: usize) -> isize;
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = note: expected `unsafe extern "C" fn(i32, *mut c_void, usize) -> isize` (for the current target)
+              found `unsafe extern "C" fn(i32, *mut u8, usize) -> isize`
+   = help: either fix the signature or remove any attributes like `#[unsafe(no_mangle)]`, `#[unsafe(export_name = "read")]`, or `#[link_name = "read"]`
+   = help: allow this lint if the signature is compatible
+
+warning: direct cast of function item into an integer
+    --> src/daemon.rs:1142:43
+     |
+1142 |         signal(SIGINT, on_shutdown_signal as usize);
+     |                                           ^^^^^^^^
+     |
+     = note: `#[warn(function_casts_as_integer)]` on by default
+help: first cast to a pointer `as *const ()`
+     |
+1142 |         signal(SIGINT, on_shutdown_signal as *const () as usize);
+     |                                           ++++++++++++
+
+warning: direct cast of function item into an integer
+    --> src/daemon.rs:1143:44
+     |
+1143 |         signal(SIGTERM, on_shutdown_signal as usize);
+     |                                            ^^^^^^^^
+     |
+help: first cast to a pointer `as *const ()`
+     |
+1143 |         signal(SIGTERM, on_shutdown_signal as *const () as usize);
+     |                                            ++++++++++++
+
+warning: `lust` (bin "lust-core") generated 122 warnings (run `cargo fix --bin "lust-core" -p lust` to apply 41 suggestions)
+    Finished `dev` profile [unoptimized] target(s) in 51.34s

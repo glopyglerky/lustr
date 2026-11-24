@@ -56,6 +56,7 @@ pub fn shift_program(p: &mut Program, f: &mut dyn FnMut(Span) -> Span) -> usize 
         main: _,
         krate: _,
         stable_crate: _,
+        imported_crates: _,
         fn_defs: _,
         def_by_hash: _,
         std_fns: _,
@@ -103,10 +104,14 @@ fn shift_gen_tables(gx: &mut GenTables, sp: &mut dyn FnMut(&mut Span)) {
         lang: _,
         index,
         trait_names: _,
+        imported_projections: _, // no consumer spans
+        generic_associated: _, // definition identities do not move
         trait_scopes: _,
         trait_methods,
         lang_method_sigs: _,
         trait_assoc_defaults: _,
+        trait_assoc_generics,
+        impl_assoc_generics,
         trait_unsafe: _,
         trait_assoc_consts: _,
         wf_headers,
@@ -181,6 +186,14 @@ fn shift_gen_tables(gx: &mut GenTables, sp: &mut dyn FnMut(&mut Span)) {
         anon_wants: _,
     } = gx;
     index.for_each_span(&mut |s| sp(s));
+    for item in trait_assoc_generics.values_mut() {
+        shift_generics(&mut item.generics, sp);
+        sp(&mut item.span);
+    }
+    for item in impl_assoc_generics.values_mut() {
+        shift_generics(&mut item.declaration.generics, sp);
+        sp(&mut item.declaration.span);
+    }
     trait_methods.values_mut().for_each(|t| shift_generics(&mut t.generics, sp));
     for (_, g, s) in wf_headers.iter_mut() {
         shift_generics(g, sp);

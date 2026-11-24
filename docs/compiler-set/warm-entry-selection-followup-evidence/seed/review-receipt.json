@@ -1,0 +1,16 @@
+{
+  "assertions": 85,
+  "helper_build_receipt_sha256": "c369789bf0203c62537a47efdb627bf9ecde79c56a39dc9a7e13f85b1386f92e",
+  "helper_sha256": "5a6356c6d50da4896906c9610d6175d2b5213b6f4efd2457297aa36c537a0b33",
+  "invocations": 38,
+  "results_sha256": "b2a9557846c837a9777577d7542610b02d17ecdcc2c68f5c0a1b8b40bb53e6fa",
+  "schema": "lustr-selection-seed-independent-review-v1",
+  "scope": "independent production selection initialization and selector review; no native compiler execution or speed claim",
+  "source": {
+    "revision": "a0f2b79ee70952e8227a18663cb0aae2e9e7aa11",
+    "tree": "bd08959de47e01064da5637c6932a9de85f2ee40"
+  },
+  "status": "completed",
+  "test_script": "tools/test-native-selection-seed.py",
+  "test_script_sha256": "2c18c95cb95a4728c96bbad21beb469bb2c6841f285f4c7dc4f37130114b2f45"
+}

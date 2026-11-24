@@ -1,0 +1,48 @@
+{
+  "argv": [
+    "<OUTPUT>/ci-audit-target/debug/lustr-bench-gate",
+    "tests",
+    "test",
+    "--locked",
+    "--offline"
+  ],
+  "cwd": "<OUTPUT>/ci-audit-direct-gate/source",
+  "exit_code": 0,
+  "source_before": {
+    "crates/lustr-bench/src/bin/lustr-bench-gate.rs": "88a6ad1f778cd5b7e243a542065291528147a5b176d70c79bb4f2867831f8bfd",
+    "crates/lustr-bench/fixtures/tiny/Cargo.toml": "16e99d215e56533d2358c918005eec67cd986a641cc1a0dd1d610f7b197ff471",
+    "crates/lustr-bench/fixtures/tiny/Cargo.lock": "ff89af33adaa3239aefd01f0ae2af7067e6a74c91ae404cceb9fc36793fd4e64",
+    "crates/lustr-bench/fixtures/tiny/src/main.rs": "af93ee5f010c5fd298f78984045fd4de6816e18279e1aa29bc2024c2399c05fc"
+  },
+  "source_after": {
+    "crates/lustr-bench/src/bin/lustr-bench-gate.rs": "88a6ad1f778cd5b7e243a542065291528147a5b176d70c79bb4f2867831f8bfd",
+    "crates/lustr-bench/fixtures/tiny/Cargo.toml": "16e99d215e56533d2358c918005eec67cd986a641cc1a0dd1d610f7b197ff471",
+    "crates/lustr-bench/fixtures/tiny/Cargo.lock": "ff89af33adaa3239aefd01f0ae2af7067e6a74c91ae404cceb9fc36793fd4e64",
+    "crates/lustr-bench/fixtures/tiny/src/main.rs": "af93ee5f010c5fd298f78984045fd4de6816e18279e1aa29bc2024c2399c05fc"
+  },
+  "gate_binary_sha256": "a8c024205c45f9734ae81ee984a8ccdab4db368f27799757ff62eae23a6d43a9",
+  "rustc_sha256": "ca9d833d09469a534ca1449e71ca9961608409cdb257df96cf8035338fac28de",
+  "cargo_sha256": "da29c2a9ff7f85bda5587e9c974e05c9e2a7196377e54466f6e9d6f9e00b2530",
+  "purpose": "Functional direct Cargo test-result gate only; this is not a benchmark or lustr compilation.",
+  "current_compiler_qualification": false,
+  "performance_qualification": false,
+  "explicit_environment": {
+    "RUSTC": "<PINNED_SDK>/bin/rustc",
+    "RUSTDOC": "<PINNED_SDK>/bin/rustdoc",
+    "CARGO": "<PINNED_SDK>/bin/cargo",
+    "CARGO_HOME": "<CARGO_CACHE>",
+    "CARGO_TARGET_DIR": "<OUTPUT>/ci-audit-direct-gate/target",
+    "CARGO_BUILD_BUILD_DIR": "<OUTPUT>/ci-audit-direct-gate/intermediates",
+    "CARGO_BUILD_JOBS": "2"
+  },
+  "streams": {
+    "stdout": {
+      "path": "direct-cargo-gate.stdout",
+      "sha256": "0bd5f750a866f781da5403df4a068bd3ee529a935908ecbde58b55d17a22e8ad"
+    },
+    "stderr": {
+      "path": "direct-cargo-gate.stderr",
+      "sha256": "f9a62684080578941ff796736388342993d66e90bd52111b0ee3b4bc9f85f24c"
+    }
+  }
+}

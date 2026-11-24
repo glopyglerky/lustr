@@ -1,0 +1,7 @@
+Traceback (most recent call last):
+  File "/tmp/lustr-replay-predecessor-aat2lkly/bundle/replay.py", line 97, in <module>
+    main()
+  File "/tmp/lustr-replay-predecessor-aat2lkly/bundle/replay.py", line 38, in main
+    assert sha256((ROOT / relative(name)).read_bytes()) == expected, name
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: reconstruction.json

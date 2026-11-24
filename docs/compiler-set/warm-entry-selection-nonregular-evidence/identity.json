@@ -1,0 +1,66 @@
+{
+  "descriptor_path": {
+    "revision": "ddf84bc779d4aef0b866708624940eed5815ae1a",
+    "tree": "ee13a019e62c3140817deb3232eb329ef80cb272"
+  },
+  "native_source_closure_unchanged_from": "28a2842635ee994db492b43f8c956eddce57a803",
+  "native_source_closures": {
+    "ddf84bc779d4aef0b866708624940eed5815ae1a": {
+      "compiler/native": "12ae35ee30f81d11f55b184134f8a0c4a977a496",
+      "crates/lustr-native-core": "41b1ab87e952f0fe4282c4699d0cf0f2fbbcec30",
+      "library": "27b519aadbbb4aa386beff12f940a526816c6e25",
+      "src/host_runtime.rs": "748da275aba3250ca351c72dc850c771d63e4a1c",
+      "tools/native-tcc-input-observer.rs": "8242d2612904c504aee194dd967f28ea7b8271c3",
+      "upstream/bluefe-core.pin": "ada26570137047454b8eba363cf7a7167077abe3",
+      "upstream/runtime": "faf950dd5f2b1d3aaa04912861a01a236b4d8835"
+    },
+    "e997dde3361d9a17e46727f331832211ce8a0d05": {
+      "compiler/native": "12ae35ee30f81d11f55b184134f8a0c4a977a496",
+      "crates/lustr-native-core": "41b1ab87e952f0fe4282c4699d0cf0f2fbbcec30",
+      "library": "27b519aadbbb4aa386beff12f940a526816c6e25",
+      "src/host_runtime.rs": "748da275aba3250ca351c72dc850c771d63e4a1c",
+      "tools/native-tcc-input-observer.rs": "8242d2612904c504aee194dd967f28ea7b8271c3",
+      "upstream/bluefe-core.pin": "ada26570137047454b8eba363cf7a7167077abe3",
+      "upstream/runtime": "faf950dd5f2b1d3aaa04912861a01a236b4d8835"
+    }
+  },
+  "original_helper_source": "1aff7f7331d1d4293d3f5c74c740318c9686b030",
+  "original_selection_cache_sha256": "c6fc392e1a46980292fb4813a6fadba8a0c96d2686301ced2b1dcad38981c3f2",
+  "regression_tool_revision": "e4134d66b916dccb1ac12e9639a0b1bce45b1e6a",
+  "regression_tool_sha256": "a1d018d05702bcf5ac06bf8024e17914ca05e2f8931c1a95eae2c2df9791963b",
+  "regular_file_fix": {
+    "revision": "e997dde3361d9a17e46727f331832211ce8a0d05",
+    "tree": "3dafe1c9d972fca573c21c304500b3b0e983e5b6"
+  },
+  "same_selection_cache_bytes_at": "3d2d4c17d3da929b0b1c0a871bd7128e58e21578",
+  "schema": "lustr-selection-nonregular-review-v1",
+  "scope": "Selection correctness and source review only; no native runtime or performance qualification.",
+  "sets": [
+    {
+      "name": "original-cargo-fifo",
+      "original_results_sha256": "7b4e3487b4b4ac9b35f1f26993c8201f634c973e718d3377e4b464240d7ecea2",
+      "public_results_sha256": "cbaa36a27c8caa22f96b65d626deeb0edad07062793e1ccd6e59b6075153bcb8",
+      "records": 4
+    },
+    {
+      "name": "original-receipt-fifo",
+      "original_results_sha256": "c91c50a0fa07110b0b64511f806305d1ec3430623a068453464555334a1a6de8",
+      "public_results_sha256": "3761fc3146b409954038be91f040d17059e1faa1c21e5920e9a5b12bd6ca9705",
+      "records": 4
+    },
+    {
+      "assertions": 265,
+      "name": "regular-file-fix",
+      "original_results_sha256": "e95f394c9a5dfb77f7800d75725b182083e5964249f6ae2a21fadbf3eafba08e",
+      "public_results_sha256": "b2c62a5bedd1aebdd391f74c58cd031bf91857fbeeb8388bce1974f2b9a4e437",
+      "records": 140
+    },
+    {
+      "assertions": 265,
+      "name": "descriptor-path",
+      "original_results_sha256": "7371d1101372065aa84dc6e4e86f1aff1172a495d6f0cf2a4f04adeb67604802",
+      "public_results_sha256": "4b5b8cd3f2ab7a049f1cde43798aeb1ecf7fe76fbce20086cc2839450cdd677a",
+      "records": 140
+    }
+  ]
+}

@@ -4,7 +4,7 @@ version = "0.1.0"
 edition = "2024"
 rust-version = "1.85"
 license = "MIT"
-description = "Lustr compiler coordinator for BlueFe and complete Cargo projects"
+description = "Retained Cargo planning helpers; compilation coordinator retired"
 publish = false
 default-run = "lustr"
 

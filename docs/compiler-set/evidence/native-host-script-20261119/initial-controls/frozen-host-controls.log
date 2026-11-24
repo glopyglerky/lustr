@@ -1,0 +1,32 @@
+
+running 14 tests
+test driver::buildscript::native::tests::a_new_alternative_module_rechecks_the_host_without_running_a_stale_binary ... ok
+test driver::buildscript::native::tests::a_real_failed_script_executes_once_and_uses_only_the_supplied_environment ... ok
+test driver::buildscript::native::tests::a_symlink_parent_traversal_cannot_certify_an_unrelated_lexical_path ... ok
+test driver::buildscript::native::tests::actual_compile_environment_reads_invalidate_without_unread_environment_noise ... ok
+test driver::buildscript::native::tests::changed_runtime_input_keeps_the_result_but_never_certifies_post_run_bytes ... ok
+test driver::buildscript::native::tests::changed_source_cannot_be_rebound_to_old_compilation_after_a_run ... ok
+test driver::buildscript::native::tests::failed_run_has_one_attempt_and_keeps_prior_record_for_proven_recovery ... ok
+test driver::buildscript::native::tests::generated_output_lease_survives_clones_until_the_last_consumer_drops ... ok
+test driver::buildscript::native::tests::malformed_or_unrepresented_directives_and_missing_outputs_fail_closed ... ok
+test driver::buildscript::native::tests::newly_declared_external_input_is_uncacheable_until_observed_before_a_later_request ... 
+thread 'driver::buildscript::native::tests::newly_declared_external_input_is_uncacheable_until_observed_before_a_later_request' (56) panicked at src/driver/buildscript/native.rs:1013:9:
+assertion failed: read_record(&fixture.record()).unwrap().runtime_reusable
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+FAILED
+test driver::buildscript::native::tests::positive_job_counts_are_represented_and_untransferred_jobservers_remain_explicit ... ok
+test driver::buildscript::native::tests::publication_failure_never_creates_a_success_record_or_retries ... ok
+test driver::buildscript::native::tests::runtime_snapshots_distinguish_missing_inputs_and_ignore_future_mtimes ... 
+thread 'driver::buildscript::native::tests::runtime_snapshots_distinguish_missing_inputs_and_ignore_future_mtimes' (59) panicked at src/driver/buildscript/native.rs:1040:9:
+an explicit prior rerun contract must not scan the package on every edit
+FAILED
+test driver::buildscript::native::tests::unchanged_records_do_no_compile_or_run_and_client_values_remain_distinct ... ok
+
+failures:
+
+failures:
+    driver::buildscript::native::tests::newly_declared_external_input_is_uncacheable_until_observed_before_a_later_request
+    driver::buildscript::native::tests::runtime_snapshots_distinguish_missing_inputs_and_ignore_future_mtimes
+
+test result: FAILED. 12 passed; 2 failed; 0 ignored; 0 measured; 427 filtered out; finished in 0.02s
+

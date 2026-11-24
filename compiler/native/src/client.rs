@@ -24,7 +24,7 @@ use std::path::{Path, PathBuf};
 unsafe extern "C" {
     fn setsid() -> i32;
     fn flock(fd: i32, operation: i32) -> i32;
-    fn fcntl(fd: i32, cmd: i32, arg: i32) -> i32;
+    fn fcntl(fd: i32, cmd: i32, ...) -> i32;
 }
 const LOCK_EX: i32 = 2;
 const LOCK_NB: i32 = 4;
@@ -69,6 +69,8 @@ fn maybe_autostart(sock: &Path, file: &Path, core: &Path) {
     if env_on("LUST_NO_DAEMON") || protocol::source_override().is_some() {
         return;
     }
+    let Ok(address) = protocol::host_runtime::DaemonSocket::resolve(sock) else { return };
+    let sock = address.path();
     let Some(lock) = claim_start(&protocol::daemon_lock_path(sock)) else { return };
     let lock_fd = lock.as_raw_fd();
     let dir = log_dir(file);
@@ -83,7 +85,14 @@ fn maybe_autostart(sock: &Path, file: &Path, core: &Path) {
         .env("LUST_DAEMON_PREWARM", file)
         .env("LUST_DAEMON_PREWARM_AFTER", std::process::id().to_string())
         .env("LUST_DAEMON_LOCK_FD", lock_fd.to_string())
+        .env("LUST_DAEMON_SOCKET", sock)
         .stdin(std::process::Stdio::null());
+    let directory_fd = address.inherited_fd();
+    if let Some(fd) = directory_fd {
+        cmd.env("LUST_DAEMON_DIRECTORY_FD", fd.to_string());
+    } else {
+        cmd.env_remove("LUST_DAEMON_DIRECTORY_FD");
+    }
     if let Ok(f) = log {
         if let Ok(f2) = f.try_clone() {
             cmd.stdout(f).stderr(f2);
@@ -95,8 +104,9 @@ fn maybe_autostart(sock: &Path, file: &Path, core: &Path) {
     // plain syscalls; no Rust code runs.
     unsafe {
         cmd.pre_exec(move || {
-            setsid();
-            fcntl(lock_fd, F_SETFD, 0);
+            if setsid() < 0 || fcntl(lock_fd, F_SETFD, 0) < 0 || directory_fd.is_some_and(|fd| fcntl(fd, F_SETFD, 0) < 0) {
+                return Err(std::io::Error::last_os_error());
+            }
             Ok(())
         });
     }
@@ -108,6 +118,8 @@ fn maybe_autostart(sock: &Path, file: &Path, core: &Path) {
 }
 
 fn main() {
+    protocol::reject_internal_probe();
+    if protocol::product_identity_query() { return; }
     let args: Vec<String> = std::env::args().skip(1).collect();
     // The package version and the build hash (which also keys the daemon socket and the cache).
     if matches!(args.first().map(String::as_str), Some("--version" | "-V")) {
@@ -150,11 +162,15 @@ fn main() {
             // start one nor send work to a live one.
             // A std or adapter source override is never served warm (see
             // `protocol::source_override`).
-            if !env_on("LUST_NO_DAEMON")
-                && protocol::source_override().is_none()
-                && let Some(resp) = protocol::request(&sock, &req)
-            {
-                protocol::finish(resp, run, &req.out, &run_args);
+            if !env_on("LUST_NO_DAEMON") && protocol::source_override().is_none() {
+                match protocol::request(&sock, &req) {
+                    Ok(Some(resp)) => protocol::finish(resp, run, &req.out, &run_args),
+                    Ok(None) => {},
+                    Err(error) => {
+                        eprintln!("error: {error}");
+                        std::process::exit(3);
+                    }
+                }
             }
             // No daemon answered: start one for the next command, answer this one cold.
             maybe_autostart(&sock, &req.file, &core);

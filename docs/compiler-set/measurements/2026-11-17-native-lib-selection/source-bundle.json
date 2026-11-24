@@ -1,0 +1,10 @@
+{
+  "schema": "lustr-qualified-source-bundle-v1",
+  "bundle": "source.bundle",
+  "sha256": "747aa4ef81fc94f7d59a7b9a4a611fe5843e36f03d2924544b56da6a16007b5c",
+  "bytes": 121741,
+  "prerequisite": "dec0ce2e3a68b82cac16eae238fc51b16e534e5e",
+  "head": "e4d35545e69e09e798057e9b72f91f0bcb359d8d",
+  "qualified_revision": "b4ae69f676eaf89ae3e4ab087aa5906307b9cb2a",
+  "qualified_native_tree": "cb797ce8ce82192b87b3835267fc223c295dba70"
+}

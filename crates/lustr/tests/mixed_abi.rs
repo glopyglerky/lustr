@@ -1,5 +1,6 @@
-//! Real crate-boundary qualification. A fresh compilation and verified compiler
-//! command are prerequisites for claiming either backend participated.
+//! Independent stock-compiler ABI reference for the retained mixed-crate fixture.
+//! These results do not qualify Lustr. Its integrated compiler must independently
+//! preserve the same ABI, runtime, panic and destructor outcomes.
 
 use std::collections::BTreeSet;
 use std::ffi::{OsStr, OsString};
@@ -11,10 +12,6 @@ use std::time::{SystemTime, UNIX_EPOCH};
 
 const EXPECTED_STDOUT: &[u8] = b"mixed-abi passed: aggregates=3 generics=2 traits=2 niches=6 enums=3 allocation-directions=2 unwind-directions=2 atomics=8000 tls-threads=2 c-callbacks=1\n";
 const EXPECTED_STDERR: &[u8] = b"mixed-abi panic hook: consumer-origin\nmixed-abi panic hook: provider-origin\n";
-// rustc shipped by the nightly-2026-11-05 backend pin. Updating this gate
-// requires qualifying the new pair; a toolchain name alone is not identity.
-const PINNED_RUSTC_COMMIT: &str = "2d20b42b883dcfc014f3c2c56081eeb6091c2179";
-const PINNED_HOST: &str = "x86_64-unknown-linux-gnu";
 const CRATES: [&str; 3] = ["mixed_abi_contract", "mixed_abi_provider", "mixed_abi_app"];
 static SERIAL: AtomicU64 = AtomicU64::new(0);
 
@@ -45,15 +42,8 @@ impl Scratch {
         Self { root, fixture, evidence }
     }
 
-    fn command(&self, target: &str, engine: Option<&str>) -> Command {
-        let mut command = match engine {
-            None => Command::new(cargo()),
-            Some(engine) => {
-                let mut command = Command::new(env!("CARGO_BIN_EXE_cargo-lust"));
-                command.env("LUST_CARGO", cargo()).args(["--engine", engine]);
-                command
-            }
-        };
+    fn command(&self, target: &str) -> Command {
+        let mut command = Command::new(cargo());
         command.current_dir(&self.fixture).env("CARGO_TARGET_DIR", self.root.join(target));
         // Prevent the test runner's compilation settings from becoming the
         // fixture baseline. Every intended backend is in this Cargo command.
@@ -299,11 +289,11 @@ fn assert_test_ran(output: &Output) {
 }
 
 #[test]
-fn ordinary_cargo_and_coordinator_preserve_the_bidirectional_contract() {
+fn independent_stock_reference_preserves_the_bidirectional_contract() {
     let mut scratch = Scratch::new("ordinary");
     // Follow the README's direct-run workflow first. Its normal Cargo output
     // must not prevent a subsequent fresh qualification of the same sources.
-    let mut documented = scratch.command("documented", None);
+    let mut documented = scratch.command("documented");
     documented.args(["run", "--offline", "--locked", "--quiet"]);
     documented.env("CARGO_TARGET_DIR", scratch.fixture.join("target"));
     let ran = scratch.execute("documented-direct-run", &mut documented);
@@ -315,100 +305,14 @@ fn ordinary_cargo_and_coordinator_preserve_the_bidirectional_contract() {
     assert!(!fresh.join("target").exists(), "generated artifacts must not enter the qualification copy");
     scratch.fixture = fresh;
     let expected: Vec<_> = CRATES.iter().map(|name| (*name, Backend::DefaultLlvm)).collect();
-    let baseline = scratch.execute("llvm-build", build_arguments(&mut scratch.command("llvm", None), "build"));
+    let baseline = scratch.execute("llvm-build", build_arguments(&mut scratch.command("llvm"), "build"));
     let baseline_compilers = verified(&baseline.stderr, &expected);
-    let baseline = scratch.run_binary("llvm");
-    let tested = scratch.execute("llvm-test", build_arguments(&mut scratch.command("llvm", None), "test"));
+    scratch.run_binary("llvm");
+    let tested = scratch.execute("llvm-test", build_arguments(&mut scratch.command("llvm"), "test"));
     assert_eq!(verified(&tested.stderr, &expected), baseline_compilers);
     assert_test_ran(&tested);
 
-    let built = scratch.execute("coordinator-build", build_arguments(&mut scratch.command("coordinator", Some("rustc")), "build"));
-    assert_eq!(verified(&built.stderr, &expected), baseline_compilers);
-    let candidate = scratch.run_binary("coordinator");
-    assert_eq!(candidate.status.code(), baseline.status.code());
-    assert_eq!(candidate.stdout, baseline.stdout);
-    assert_eq!(candidate.stderr, baseline.stderr);
-    let tested = scratch.execute("coordinator-test", build_arguments(&mut scratch.command("coordinator", Some("rustc")), "test"));
-    assert_eq!(verified(&tested.stderr, &expected), baseline_compilers);
-    assert_test_ran(&tested);
-    scratch.completed("passed: fresh ordinary Cargo and coordinated rustc builds, direct executables and Cargo test harnesses\n");
-}
-
-fn mixed_command(scratch: &Scratch, target: &str, operation: &str, llvm_packages: &[&str]) -> Command {
-    let mut command = scratch.command(target, Some("cranelift"));
-    build_arguments(&mut command, operation);
-    for profile in ["dev", "test"] {
-        for package in llvm_packages {
-            command.arg("--config").arg(format!("profile.{profile}.package.{package}.codegen-backend=\"llvm\""));
-        }
-    }
-    command
-}
-
-#[test]
-#[ignore = "requires pinned Linux x86_64 nightly-2026-11-05 Cargo and LUST_CRANELIFT_BACKEND built with unwinding"]
-fn actual_cranelift_preserves_both_directions_of_the_rust_abi() {
-    let backend = std::env::var_os("LUST_CRANELIFT_BACKEND").expect("set LUST_CRANELIFT_BACKEND to the pinned unwind-capable backend");
-    let backend_path = Path::new(&backend);
-    assert!(backend_path.is_absolute() && backend_path.is_file(), "LUST_CRANELIFT_BACKEND must be an existing absolute library path");
-    let backend = backend.to_str().expect("verbose qualification requires a UTF-8 backend path");
-    let scratch = Scratch::new("actual-cranelift");
-    let baseline_expected: Vec<_> = CRATES.iter().map(|name| (*name, Backend::DefaultLlvm)).collect();
-    let built = scratch.execute("llvm-build", build_arguments(&mut scratch.command("llvm", None), "build"));
-    let baseline_compilers = verified(&built.stderr, &baseline_expected);
-    assert_eq!(baseline_compilers.len(), 1, "all crate boundaries must use one matching rustc frontend");
-    let compiler = baseline_compilers.first().unwrap();
-    let identity = scratch.execute("rustc-identity", Command::new(compiler).arg("-vV"));
-    let identity = String::from_utf8(identity.stdout).unwrap();
-    let expected_commit = std::env::var("LUST_TEST_RUSTC_COMMIT").unwrap_or_else(|_| PINNED_RUSTC_COMMIT.to_owned());
-    assert!(
-        expected_commit.len() == 40 && expected_commit.bytes().all(|byte| byte.is_ascii_hexdigit()),
-        "qualification requires a full compiler commit"
-    );
-    assert!(
-        identity.lines().any(|line| line == format!("commit-hash: {expected_commit}")),
-        "backend ABI gate requires the pinned rustc commit; observed:\n{identity}"
-    );
-    assert!(
-        identity.lines().any(|line| line == format!("host: {PINNED_HOST}")),
-        "this backend pair is qualified only for {PINNED_HOST}; observed:\n{identity}"
-    );
-    let baseline = scratch.run_binary("llvm");
-    let tested = scratch.execute("llvm-test", build_arguments(&mut scratch.command("llvm", None), "test"));
-    assert_eq!(verified(&tested.stderr, &baseline_expected), baseline_compilers);
-    assert_test_ran(&tested);
-
-    for (target, llvm_packages, expected) in [
-        (
-            "cranelift-consumer",
-            ["mixed-abi-contract", "mixed-abi-provider"],
-            [
-                ("mixed_abi_contract", Backend::Explicit("llvm")),
-                ("mixed_abi_provider", Backend::Explicit("llvm")),
-                ("mixed_abi_app", Backend::Explicit(backend)),
-            ],
-        ),
-        (
-            "cranelift-provider",
-            ["mixed-abi-contract", "mixed-abi-app"],
-            [
-                ("mixed_abi_contract", Backend::Explicit("llvm")),
-                ("mixed_abi_provider", Backend::Explicit(backend)),
-                ("mixed_abi_app", Backend::Explicit("llvm")),
-            ],
-        ),
-    ] {
-        let built = scratch.execute(&format!("{target}-build"), &mut mixed_command(&scratch, target, "build", &llvm_packages));
-        assert_eq!(verified(&built.stderr, &expected), baseline_compilers, "mixed crates used a different frontend");
-        let candidate = scratch.run_binary(target);
-        assert_eq!(candidate.status.code(), baseline.status.code());
-        assert_eq!(candidate.stdout, baseline.stdout);
-        assert_eq!(candidate.stderr, baseline.stderr);
-        let tested = scratch.execute(&format!("{target}-test"), &mut mixed_command(&scratch, target, "test", &llvm_packages));
-        assert_eq!(verified(&tested.stderr, &expected), baseline_compilers, "test harnesses used a different frontend");
-        assert_test_ran(&tested);
-    }
-    scratch.completed(&format!("passed: fresh all-LLVM baseline and both mixed LLVM/Cranelift selections; direct execution and Cargo tests; complete destructor/panic contract\nrustc_commit={expected_commit}\nhost={PINNED_HOST}\nbackend={backend}\n"));
+    scratch.completed("passed: independent stock compiler fresh builds, executable and Cargo test; no Lustr qualification\n");
 }
 
 #[test]

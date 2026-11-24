@@ -1,14 +1,143 @@
 # Native compiler entry candidate
 
-> Historical implementation description for default snapshot
+> Historical entry implementation and later bounded experiments, retained from
+> the pre-reconciliation candidate. The original default snapshot is
 > [`7cea76c9`](https://github.com/glopyglerky/lustr/tree/7cea76c9d3adc587b54ccff168fe07efafd40309).
 > The retries and whole-program `rustc-full` routes described below are
-> transitional behavior that must be removed from the completed product.
+> removed by the [exclusive coverage cleanup](exclusive-coverage-cleanup.md).
 > They are not the required architecture. Follow the [architecture plan](architecture-plan.md),
 > [current design checkpoint](design.md) and [completion checklist](completion-checklist.md).
 > Later candidate qualification is recorded separately by exact source.
+> The diagnostic-driven `native-inference` worker and retrying exported ABIs
+> described later in this file are retired by the current sole-goal audit.
+> Original source and fixtures remain in history. Their removal does not remove
+> the ordinary retained Lust compiler or qualify the missing Rust complement.
+
+The owned original-AST panic-text extension also models list-array expressions
+from their ordered native element IDs and exact original spans/commas/brackets.
+It retains explicit wrappers and the pinned Rust array/list indentation boxes.
+Array repeats bind both original native children, source semicolon and brackets,
+with a separate indentation box and a break after the semicolon. The length is
+printed as its anonymous-const value expression. Unrepresented attributes remain
+outside this formatting rule.
+Only derived panic text is seeded before full native rechecking; executable
+array semantics and source remain unchanged. Component qualification and
+measurements are separate from full native Rust, crates and product delivery.
+The const-block extension uses the actual native block ID, original spans and
+`const` token, then applies the pinned anonymous-const indentation box around
+the existing block printer. Const evaluation and rejection stay in the native
+compiler's complete recheck; the formatter supplies only derived panic text.
 
 Status: source candidate, not a released or fully qualified replacement.
+
+The current candidate combines a whole-target Lust path with an identified
+Rust implementation and a bounded mixed bridge. Importing upstream Rust is
+allowed; the full-program retry route below is transitional compatibility,
+not completion of the requested compiler boundary. The retained experimental
+`lustr_native_object_v1` phase experiment shares original native semantic/IR
+APIs and emits real freestanding objects without fake rlib/rmeta. Its primitive
+scope is under qualification. Crate resolution, metadata/imports, complete Rust
+coverage, Cargo composition and measured project speed remain open.
+
+The internal [typed artifact experiment](proofs/native-crates.md) adds actual
+checked structural signatures and complete object closure, with independently
+identified imports installed before native resolver rewriting. It materializes
+foreign signature types in the consumer's existing type tables without source
+or AST declarations, before initializer and body checking. The qualifier executes
+independent scalar producer/consumer composition through native checking,
+lowering and C generation. Scalar function values retain independent item
+identity and reify to the recorded producer symbol; callee effects, borrow uses
+and pointer evaluation before arguments remain in the native pipeline.
+General library/Cargo composition remains open.
+The producer artifact entry also uses the existing resolver. Its versioned
+image retains inline modules, scoped visibility, namespace bindings and real
+re-export targets; imported module lookup keys retain stable crate identity.
+The qualifier executes path/re-export/glob consumers and rejects malformed
+visibility, hidden/private/restricted paths and independent item substitution.
+The integration is unadmitted and the production entry is unchanged.
+Format sixteen retains bounded structural signature graphs for scalars, floats,
+tuples, arrays and safe function pointers. It recomputes native
+layout, Copy and drop facts and compares effective C passing rules before
+installing signatures. Large and zero-sized returns use existing native backend
+rules. Required memory calls close over Lust's existing C memory unit and the
+exact licensed musl fill dependency, with localized symbols. Runtime-bearing
+library images record remaining dependencies and actual function locations;
+the consumer must match them to freshly compiled original runtime and location
+providers before imported semantic definitions. Symbol kinds and qualified
+relocation uses must agree. This does not qualify general no_std runtime support.
+Original region signatures now accompany represented sized reference types.
+The consumer validates their erased shapes and installs them before body work;
+independent calls and local pointer coercions use the native borrow rules.
+Borrowed callback exports preserve the original output-slot mask and width,
+validate their bounded region shapes and enter the original pointer proof.
+Unbounded named late-bound function declarations must match their original
+native region names, count and binding classification. Lifetime-only function
+declarations also retain early-bound parameters and declared outlives facts.
+Independent names, canonical facts and binding flags validate before publication;
+the original native engine handles calls and pointer generality. Free item
+regions and type/const-generic region images still refuse.
+Binders the original parser normalizes to elision retain that behavior; general
+higher-ranked support is not established.
+
+Slice and string reference nodes represent sized wide references with original
+native layout, Copy/drop and effective C ABI checks. Slice element graphs keep
+their own lifetime applications; no layout is fabricated for `[T]` or `str`.
+Original native region/call/pointer/borrow/lowering machinery supplies semantics.
+General unsized aggregates and real core/no_std runtime remain unqualified.
+
+Closed nongeneric structs and enums retain original stable identities, variant
+shapes and discriminants, field types and visibility. A proposed shape-only bridge lets every image's layout, Copy,
+drop, effective ABI and region records validate before any imported semantic
+payload or type name is published. The original `Packet` partial gate executes;
+the unchanged array-backed nominal gate also executes large/nested and borrowed
+consumers. The separate runtime gate checks independent producer and consumer
+panic locations and malformed dependency refusal before imported semantic
+publication. Tuple/unit constructors and enum variant imports/re-exports use
+the original native resolver and privacy checks. Tagged and niche enum layouts
+are recomputed, including every variant offset and tag field. Independent
+producer/consumer runtime, empty-enum production, malformed-record rejection
+and remapping have bounded evidence. General nominal graphs and no_std runtime
+remain open.
+
+Lifetime-only nominal records retain original declaration names and kept field
+types alongside erased layouts. Separate applied nodes preserve lifetime
+arguments, including nested nominal fields. Kept fields and function signatures
+require complete applications before publication; omitted records cannot remove
+a nested static relationship. Original native scopes and region tables supply
+variance, outlives and borrowing. Applied enums retain their complete layouts.
+Declared nominal lifetime outlives bounds retain canonical parameter relations,
+including bounds to `'static`, in the original scope and region tables. A focused
+original-checker interface validates staged nested static obligations before
+imported definitions, names, constants or signatures are published, preserving
+queued consumer obligations. Reference cycles name a complete definition in the
+same image by stable identity, with separate kept lifetime arguments. Shapes
+receive fresh consumer indexes before materialization; ordinary value edges
+remain ordered. Recursive and mutually recursive runtime, borrow rejection,
+malformed target/application, late ABI and remapping checks pass. Function
+type/const generics and borrowed nominal pointer images remain unqualified.
+
+A separate symbolic nominal table records type/const declaration kinds and
+indexes, exact implicit Sized predicates and scalar, tuple and array fields.
+Uninstantiated templates have no layout, Copy/drop or C ABI record. The original
+native materializer builds concrete consumer instances, with names derived from
+actual instance keys and inert table rows preserved. A focused resolver join
+reads collected declarations when no local written header exists; the original
+argument resolver and const typer enforce kinds, arity, types and ranges.
+Bounded independent struct/enum and type/const runtime pairs pass, with move,
+identity and typed-const rejection and checksum-valid malformed-template checks.
+Every type parameter must occur in a field; unused const parameters remain legal.
+General producer applications, lifetime-bearing symbolic fields, defaults,
+derives, Drop, trait predicates and generic bodies still require records.
+
+Closed exported constants carry stable identities, type roots, evaluated
+scalar/aggregate/ADT values and promotion qualifiers. Original native initializer
+type and borrow checks remain required. Values validate before imported semantic
+publication and enter the consumer's existing constant tables with fresh indexes.
+Actual transient initializer checks enter the original static const-function walk,
+with explicit nested inline-const traversal. Earlier inaccessible private constants
+with unrepresented values retain their bindings without an imported value grant.
+Generic const bodies and reference/allocation/function identities, genuine core,
+general type/generic const positions and Cargo integration remain open.
 
 The primary Cargo project and command entry point are at the repository root.
 `src/main.rs` accepts rustc requests and native whole-file `build`/`check`
@@ -71,6 +200,204 @@ an interrupted copy cannot publish a partial destination. Forced termination
 can leave that temporary file. No crash-durability guarantee is made.
 
 ## Contracts and limits
+
+### Experimental native constraint inference
+
+The separate experimental `lustr_native_session_v1` entry retains an actual
+native driver Session across supported edits and enters the requested native
+phase directly. It shares that state with existing Lustr elaboration, then
+retires transformed state after the request. Standalone linking currently adds
+two private intermediate links because Lust couples semantic persistence and
+base-library linking. The [shared-session contract](proofs/native-session.md)
+records its bounded checks, input obligations and open performance/crate gates.
+Product routing and the retained-artifact ABI remain separately qualified.
+
+The opt-in ABI's owned frontend can also parse bounded boolean `unsafe` blocks
+from original tokens, including initialized boolean locals with checked lexical
+scope, shadowing and nested block capture. Direct safe Rust calls with boolean
+inputs and output require original-context native target, safety and ABI checks
+before collection returns. An explicit module composition references unchanged Lust
+modules; separate parser and collection facades retain the original AST and
+lower only safety-qualified clones before full native checks. The native
+item parser and arena append API also integrate original local function items
+including local `const fn` headers, into affected enclosing blocks without
+changing their native qualifiers. Native const-function checking remains
+required even for runtime-only calls. Native statement-item collection retains their
+lexical scope, forward visibility, duplicate checks and separate function bodies.
+Items within the bounded boolean safety derivation remain unsupported. The native
+expander's exact injected assertion-message form is preserved through its payload
+argument and call-span provenance. This supplies no general unsafe-operation
+permission. The default ABI still includes pristine Lust's entry source.
+See the [frontend contract and limits](proofs/native-unsafe-blocks.md).
+
+The `native-inference` Cargo features are off by default, independently in the
+root and `crates/lustr-native-core`. The owned ABI module reads actual checked
+types and AST nodes after an ordinary native rejection. Its bounded rule handles
+delayed `&str`/`String` and checked canonical owned `OsString`/`PathBuf` sources
+to canonical platform `OsString`/`PathBuf` conversions. A checked shared reference
+to the exact canonical platform `Path` or `OsStr` also supports delayed `PathBuf` conversion;
+mutable references and user lookalikes refuse this extension. This covers
+including non-Copy `Vec<OsString>`/`Vec<PathBuf>` `extend` arrays fixed by later constraints. Competing
+source traits and custom `Extend` implementations refuse this rule. An owned
+AST clone receives explicit qualified `Into` calls; original source bytes stay
+unchanged. The arena reindexer preserves expression references and function and
+closure ranges. Retained checks, passing marks and generic reuse are cleared,
+then native collect/check/borrow checking/code generation run again. At most two
+elaboration rounds can expose checked constraints hidden by an earlier rejected
+conversion in the same function; unresolved programs remain failures.
+
+The inference worker starts with one retained native `Check`, using its rejected
+program directly for elaboration. It no longer runs a discarded full build
+before that check. A passing check still requires the requested native `Build`,
+including code generation and linking. Original build-only library/target
+refusals run through the unchanged build entry before any source check. This
+worker reuses its initial check only within one request. The product does not
+retain inference sessions across requests.
+
+A separate experimental `lustr_native_retained_v1` ABI can reuse one successful
+inference executable in the same loaded compiler process, for at most 64 calls.
+It accepts a complete Unicode client environment without mutating process
+environment. Request/profile/features/target/shown-path, process environment,
+working directory and actual Cargo graph must match. Bounded byte snapshots
+cover the source tree and declared native library/TinyCC roots, including
+directory entries and source symlinks. Native observed source and macro reads
+must belong to those snapshots; module alternatives and observed path bindings
+must still stand. Unknown reads, edits, output removal/tampering and changed
+path bindings compile again from original source. Failures are never cached.
+No elaborated AST survives a request. A hit verifies the existing ELF bytes
+and permissions instead of checking or linking again.
+
+The runtime source trees must remain fixed for this process: a changed or
+unreadable native library/TinyCC input retires the instance with status 2,
+requiring a new process. The declared extra source roots use
+`LUSTR_INFERENCE_REUSE_ROOTS`; an undeclared observed input disables artifact
+reuse. Tree collection bounds file/name/path bytes and entries before allocation.
+The pinned Linux GNU x86_64 prototype also observes actual TinyCC header,
+CRT, library and linker-script opens, including failed search candidates.
+Session disk objects and manifests are disabled before checking. Every generated
+C-unit object must match a replay through the same native compiler with a Rust
+observer recording raw length-framed pathnames. In-process inputs use bounded
+descriptor reads that preserve offsets and errno. Clock-macro expansion,
+unknown observer/compiler identities and incomplete observations prevent reuse;
+secondary compiler failures remain failures. Source edits still run the full
+native pipeline. Files must stay stable during a request. Runtime-loader
+closure and supervised product lifecycle remain open, and this is not admitted
+as a general build cache, product service, daemon replacement, native Cargo
+freshness or release. Its [fresh optimized measurements](measurements/2026-11-15-native-host-inputs-v36/README.md)
+retain substantial miss-time regressions and a coordinator no-op slower than Cargo.
+`tools/native-retained-probe.rs` and `tests/native_reuse.rs` exercise this ABI
+directly. The original one-shot entry and product routes remain separate.
+
+The Cargo validation bridge admits only a same-package bin/library closure
+without build scripts. It intersects actual selected-unit Cargo environment
+facts, requires every observed read to agree, and checks all recorded file,
+environment and shown-path dependencies with the native validator. Position
+reads, stale inputs, differing per-unit values and unsupported closures refuse
+elaboration. The opt-in ABI conservatively refuses non-Unicode environments
+before native setup. It does not mutate the process environment. A unique
+scratch guard owns temporary output through normal return and unwinding;
+process abort or forced termination cannot run its destructor.
+
+The optional root product path invokes `lustr-native-worker` after native
+rejection. It loads a separately installed `lib/liblustr_inference_core.so`;
+the primary `liblustr_native_core.so` and existing native success path remain
+separate. Both components need the matching runtime-family identity. Nondefault
+caller huge-page policies retain the established executable/full-core route;
+worker failures and signals stay failures. The published preview contains no
+such worker or inference extension.
+
+`tests/native_inference.rs` qualifies direct native ELF/runtime results against
+the real Rust/Cargo oracle, seven invalid/ambiguous cases, controlled Cargo
+environment/refusal contexts, the unchanged complete coordinator and a mixed
+drop/unwind fixture. Product checks cover actual worker selection, nondefault
+huge-page routing and terminal worker status/signal propagation. These bounded
+Linux x86_64 checks do not establish full Rust, native rlib/metadata/dep-info,
+general Cargo support, retained inference sessions, release admission or speed.
+
+The owned PathBuf rule has an actual component36 native rejection and stock
+runtime witness. Its mixed alias/OsString/PathBuf fixture checks arena ordering,
+Drop and unwind; borrowing, moved String, mutability and ambiguous traits/Extend
+remain rejected. Retained requests also compare PathBuf-to-OsString target
+edits, rejection and recovery with cold native compilation and the stock oracle.
+The product34 inference component remains separate and unchanged.
+
+The shared `Path` rule preserves the original borrowed-path source and compares
+native runtime output with stock Rust. Mixed aliases, arrays, closures, owner
+mutation after copying and Drop/unwind are exercised together. Live-borrow owner
+moves/mutation, moved results, immutable vectors and competing methods/Extend
+remain rejected. Retained source/target edits, invalid edits and recovery are
+checked against cold native compilation and the oracle. These are bounded
+component tests; the product34 component and general native coverage remain
+separate.
+
+The shared `OsStr` rule preserves its original component40 rejection source.
+The mixed fixture combines aliases, arrays, closures, prior Path and owned
+conversions, Linux non-Unicode OS bytes, mutation after copying, Drop and unwind.
+Live and expired borrows, moves, mutable references, lookalikes and ambiguous
+methods/Extend remain subject to the complete native recheck. Direct runtime
+parity, retained source/target edits, rejection and recovery qualify this rule;
+they do not establish general language or crate coverage.
+
+The checked assertion rule preserves the complete original mixed `OsStr`
+source, including its shared slice/array `assert_eq!` comparisons. For a checked
+shared array reference against a shared slice of the same concrete element type,
+the owned AST adds native array-to-slice unsizing inside the original
+`assert_eq!` or `assert_ne!` macro. Rvalues retain the direct cast. For a place,
+an owned match first borrows both original operands in order. Fresh bindings
+must be absent from the complete interner. Expression and pattern arenas and
+function ranges are remapped together, including empty and nested arenas.
+Each lazy message argument retains its original borrowed place and then uses
+both operand bindings, keeping the original place loans live during message
+evaluation. A failed first implementation omitted those uses and accepted an
+invalid message assignment; its source and failure are retained. The corrected
+development candidate rejects that case after elaboration and preserves packed
+field rejection, non-Copy messages, formatting and temporary-message drops.
+Equality and Debug must exist for the canonical element type. Full native
+checking, borrowing and code generation run again; original source remains
+unchanged. Unresolved, generic, mutable and heterogeneous forms remain outside
+this rule. The existing two-round bound and retained original-source invalidation
+still apply. An owned original-AST formatter now supplies a bounded native
+extension for long message-free `assert!` conditions. It reads original source
+tokens into a scratch AST, derives consistent/inconsistent line breaks, and
+replaces only the unknown-text marker before full native rechecking. Original
+condition evaluation, arenas, borrowing, Drop and unwind remain native work.
+Expanded macro contexts, empty statements, items, attributes,
+generics and unmodeled grammar retain L0809. The original mixed source and
+long-false multiline payload have direct and retained development parity;
+the [formatter contract and corpus](proofs/native-assert-text.md) retain its
+proof limits and first payload indentation failure. This component expansion does not qualify the product route,
+general Rust/Cargo coverage or a compilation speed gain.
+
+The owned panic-text formatter also models binary operators from their original
+AST and source-token boundaries, preserving explicit parentheses and pinned
+Rust precedence/fixity. Unmodeled contextual fixups retain refusal. The original
+condition and native executable evaluation, borrowing, const and unwind checks
+stay unchanged. Direct/retained runtime, independent review and measurements
+qualify this component separately; the full compiler contract remains open.
+
+The original-AST panic-text formatter also handles bounded struct expressions
+using exact path, field, shorthand and rest source identities. It models
+consistent field boxes, conditional trailing commas and closing indentation.
+The application and executable field AST are unchanged; full native checking
+still determines acceptance. Attributes, generic paths and unmodeled contextual
+forms retain refusal. The complete original struct assertion and scoped direct,
+retained, review and measurement evidence remain separate from product and full
+language qualification.
+
+Tuple-field panic text uses the original scratch-AST index and exact source
+tokens, including the native parser's two-node split of a float token such as
+`value.0.1`. Both expression boxes and explicit parentheses are preserved;
+noncanonical tokens and unmodeled contexts refuse. Source and executable field
+access remain unchanged and subject to the complete native recheck. Component
+runtime, retained edits/recovery, optimized measurements and independent review
+qualify this expansion separately from the full compiler contract.
+
+Tuple-literal panic text uses original ordered element spans and source commas.
+Structural tuple parentheses stay distinct from extra source wrappers; singleton
+commas and the pinned inconsistent-list layout remain explicit. Only the derived
+panic literal changes before full native checking. Actual runtime, rejection,
+retained edit/recovery, review and speed evidence qualify this bounded component
+separately; full Rust and crate support remain open.
 
 ### Native source-library additions
 

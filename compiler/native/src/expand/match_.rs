@@ -270,9 +270,9 @@ fn vis_follow_ok(tok: Tok) -> bool {
     matches!(
         tok,
         Comma
-            | Ident(_)
+            | Ident(_, _)
             | Reserved(_)
-            | Lifetime(_)
+            | Lifetime(_, _)
             | Underscore
             | PathSep
             | Star
@@ -805,7 +805,7 @@ impl Cursor {
             None => delim.map_or(Cur::Eof, Cur::Close),
             Some(Tt::Tok(t)) => match glued_at(trees, *pos) {
                 Some(glued) => Cur::Tok(glued, 2, false),
-                None => Cur::Tok(t.tok, 1, raw_tok(m, t)),
+                None => Cur::Tok(t.tok, 1, raw_tok(t)),
             },
             Some(Tt::Delim(d, _, _)) => Cur::Open(*d),
             Some(Tt::Frag(kind, inner, _)) => {
@@ -852,19 +852,12 @@ fn glued_at(trees: &[Tt], i: usize) -> Option<Tok> {
 /// True when matcher token `pattern` matches the current token: the same
 /// token, and both raw or neither (rustc's `token_name_eq`).
 fn cur_is(m: &Matcher, cur: Cur, pattern: &Token) -> bool {
-    matches!(cur, Cur::Tok(actual, _, raw) if tok_matches(&pattern.tok, &actual, m.strings) && raw == raw_tok(m, pattern))
+    matches!(cur, Cur::Tok(actual, _, raw) if tok_matches(&pattern.tok, &actual, m.strings) && raw == raw_tok(pattern))
 }
 
-/// True when an identifier or lifetime token was written raw (`r#name`,
-/// `'r#name`). The lexer keeps only the name; a raw token's span also
-/// covers the `r#`.
-fn raw_tok(m: &Matcher, t: &Token) -> bool {
-    let len = t.span.hi.saturating_sub(t.span.lo) as usize;
-    match t.tok {
-        Tok::Ident(s) => len == m.interner.get(s).len() + 2,
-        Tok::Lifetime(s) => len == m.interner.get(s).len() + 3,
-        _ => false,
-    }
+/// Rawness is lexical token identity, independent of normalized name length.
+fn raw_tok(t: &Token) -> bool {
+    matches!(t.tok, Tok::Ident(_, true) | Tok::Lifetime(_, true))
 }
 
 /// Matches one arm against the call input, the way rustc's macro
@@ -1027,7 +1020,7 @@ fn frag_span(slice: &[Tt], at: Span) -> Span {
 fn is_ident_tok(tok: Tok) -> bool {
     matches!(
         tok,
-        Tok::Ident(_)
+        Tok::Ident(_, _)
             | Tok::Reserved(_)
             | Tok::As
             | Tok::Break
@@ -1112,7 +1105,7 @@ pub(super) fn is_rustc_ident(tok: Tok) -> bool {
 fn ident_can_begin_expr(m: &Matcher, tok: Tok) -> bool {
     use Tok::*;
     match tok {
-        Ident(_) | SelfLower | SelfUpper | Super | Crate => true,
+        Ident(_, _) | SelfLower | SelfUpper | Super | Crate => true,
         Async | Break | Const | Continue | False | For | If | Let | Loop | Match | Move | Return | True | Unsafe | While | Static => true,
         Reserved(s) => matches!(m.interner.get(s), "do" | "box" | "gen" | "try" | "yield"),
         _ => false,
@@ -1123,7 +1116,7 @@ fn ident_can_begin_expr(m: &Matcher, tok: Tok) -> bool {
 fn ident_can_begin_type(m: &Matcher, tok: Tok) -> bool {
     use Tok::*;
     match tok {
-        Ident(_) | SelfLower | SelfUpper | Super | Crate => true,
+        Ident(_, _) | SelfLower | SelfUpper | Super | Crate => true,
         Underscore | For | Impl | Fn | Unsafe | Extern | Dyn => true,
         Reserved(s) => m.interner.get(s) == "typeof",
         _ => false,
@@ -1151,7 +1144,7 @@ fn can_begin_expr(m: &Matcher, cur: Cur) -> bool {
                         | Lt
                         | Shl
                         | PathSep
-                        | Lifetime(_)
+                        | Lifetime(_, _)
                         | Pound
                 )
         }
@@ -1166,7 +1159,7 @@ fn can_begin_type(m: &Matcher, cur: Cur) -> bool {
     use Tok::*;
     match cur {
         Cur::Tok(t, ..) if is_rustc_ident(t) => ident_can_begin_type(m, t),
-        Cur::Tok(t, ..) => matches!(t, Bang | Star | Amp | AndAnd | Question | Lifetime(_) | Lt | Shl | PathSep),
+        Cur::Tok(t, ..) => matches!(t, Bang | Star | Amp | AndAnd | Question | Lifetime(_, _) | Lt | Shl | PathSep),
         Cur::Open(d) => d != Delim::Brace,
         Cur::Frag(kind, _) => matches!(kind, FragKind::Ty | FragKind::Path),
         Cur::Close(_) | Cur::Eof => false,
@@ -1211,7 +1204,7 @@ fn may_begin(m: &Matcher, kind: FragKind, cur: Cur) -> bool {
         FragKind::Expr => (can_begin_expr(m, cur) || is(Tok::Underscore)) && !is(Tok::Let),
         FragKind::Ty => can_begin_type(m, cur),
         FragKind::Ident => matches!(cur, Cur::Tok(t, ..) if is_ident_tok(t)),
-        FragKind::Lifetime => matches!(cur, Cur::Tok(Tok::Lifetime(_), ..)),
+        FragKind::Lifetime => matches!(cur, Cur::Tok(Tok::Lifetime(_, _), ..)),
         FragKind::Literal => match cur {
             Cur::Tok(t, ..) => is_literal_tok(t) || t == Tok::Minus,
             Cur::Frag(kind, reads_literal) => kind == FragKind::Literal || reads_literal,
@@ -1298,14 +1291,14 @@ fn keyword_lifetimes(m: &Matcher, trees: &[Tt], meta: bool) -> Result<(), Diag> 
         match tree {
             Tt::Tok(t) => {
                 meta_args &= t.tok != Tok::Eq;
-                let Tok::Lifetime(name) = t.tok else { continue };
+                let Tok::Lifetime(name, _) = t.tok else { continue };
                 // A label: after `break` or `continue`, or before `:` and a loop or block.
                 let label = matches!(prev(1), Some(Tok::Break | Tok::Continue))
                     || (tok(i + 1) == Some(Tok::Colon)
                         && (matches!(tok(i + 2), Some(Tok::Loop | Tok::While | Tok::For))
                             || matches!(trees.get(i + 2), Some(Tt::Delim(Delim::Brace, _, _)))));
                 let text = m.interner.get(name);
-                if let Some(d) = crate::lexer::keyword_lifetime_error(text, raw_tok(m, t), label, t.span) {
+                if let Some(d) = crate::lexer::keyword_lifetime_error(text, raw_tok(t), label, t.span) {
                     return Err(d);
                 }
             }
@@ -1460,7 +1453,7 @@ fn continues(m: &Matcher, kind: FragKind, input: &[Tt], pos: usize, end: usize) 
                 }
                 let block_like = (matches!(slice.last(), Some(Tt::Delim(Delim::Brace, _, _)))
                     && (matches!(slice.first(), Some(Tt::Delim(Delim::Brace, _, _)))
-                        || matches!(head, Some(If | Match | Loop | While | For | Unsafe | Async | Const | Lifetime(_)))))
+                        || matches!(head, Some(If | Match | Loop | While | For | Unsafe | Async | Const | Lifetime(_, _)))))
                     || matches!(slice, [Tt::Frag(FragKind::Block, _, _)]);
                 if block_like {
                     return matches!(next_tok, Some(Dot | Question));
@@ -1576,7 +1569,7 @@ fn fragment_ends(m: &mut Matcher, kind: FragKind, input: &[Tt], pos: usize) -> R
     let first = tok_at(input, pos).map(|t| t.tok);
     // A lifetime begins a type only as the first bound of a bare trait
     // object (`'a + Trait`); rustc rejects one with no `+` after it.
-    if kind == FragKind::Ty && matches!(first, Some(Tok::Lifetime(_))) && tok_at(input, pos + 1).map(|t| t.tok) != Some(Tok::Plus) {
+    if kind == FragKind::Ty && matches!(first, Some(Tok::Lifetime(_, _))) && tok_at(input, pos + 1).map(|t| t.tok) != Some(Tok::Plus) {
         return Ok(vec![]);
     }
     let mut ends = match kind {
@@ -1585,7 +1578,7 @@ fn fragment_ends(m: &mut Matcher, kind: FragKind, input: &[Tt], pos: usize) -> R
             _ => vec![],
         },
         FragKind::Lifetime => match first {
-            Some(Tok::Lifetime(_)) => vec![pos + 1],
+            Some(Tok::Lifetime(_, _)) => vec![pos + 1],
             _ => vec![],
         },
         FragKind::Literal => match first {
@@ -1864,7 +1857,7 @@ fn ends_operand(tree: &Tt) -> bool {
         Tt::Frag(..) => false,
         Tt::Tok(t) => matches!(
             t.tok,
-            Tok::Ident(_)
+            Tok::Ident(_, _)
                 | Tok::Int(..)
                 | Tok::Float(_)
                 | Tok::Str(..)
@@ -2057,7 +2050,7 @@ fn generic_arg_ok(m: &mut Matcher, piece: &[Tt]) -> bool {
     if piece.is_empty() {
         return false;
     }
-    if matches!(piece, [Tt::Tok(t)] if matches!(t.tok, Tok::Lifetime(_))) {
+    if matches!(piece, [Tt::Tok(t)] if matches!(t.tok, Tok::Lifetime(_, _))) {
         return true;
     }
     if probe(m, FragKind::Ty, piece) || probe(m, FragKind::Expr, piece) {
@@ -2214,9 +2207,9 @@ fn probe_flatten_impl(m: &Matcher, kind: FragKind, trees: &[Tt], bounds: Option<
     fn placeholder(m: &Matcher, kind: FragKind, span: Span, out: &mut Vec<Token>) {
         let tok = |tok: Tok| Token { tok, span };
         match kind {
-            FragKind::Ty | FragKind::Path => out.push(tok(Tok::Ident(m.interner.intern("u8")))),
+            FragKind::Ty | FragKind::Path => out.push(tok(Tok::Ident(m.interner.intern("u8"), false))),
             FragKind::Item => out.extend(
-                [Tok::Fn, Tok::Ident(m.interner.intern("__lust_probe")), Tok::LParen, Tok::RParen, Tok::LBrace, Tok::RBrace].map(tok),
+                [Tok::Fn, Tok::Ident(m.interner.intern("__lust_probe"), false), Tok::LParen, Tok::RParen, Tok::LBrace, Tok::RBrace].map(tok),
             ),
             FragKind::Pat | FragKind::PatParam => out.push(tok(Tok::Underscore)),
             FragKind::Block => out.extend([Tok::LBrace, Tok::RBrace].map(tok)),
@@ -2244,14 +2237,14 @@ fn probe_flatten_impl(m: &Matcher, kind: FragKind, trees: &[Tt], bounds: Option<
             // A path fragment is a whole path: no `::` or struct body
             // extends it.
             FragKind::Path if next.is_some_and(|t| t.is_tok(Tok::PathSep) || matches!(t, Tt::Delim(Delim::Brace, _, _))) => out.push(bad),
-            FragKind::Path => out.push(tok(Tok::Ident(m.interner.intern("u8")))),
+            FragKind::Path => out.push(tok(Tok::Ident(m.interner.intern("u8"), false))),
             FragKind::Pat | FragKind::PatParam => {
-                out.extend([Tok::LBracket, Tok::Ref, Tok::Ident(m.interner.intern("__lust_p")), Tok::RBracket].map(tok))
+                out.extend([Tok::LBracket, Tok::Ref, Tok::Ident(m.interner.intern("__lust_p"), false), Tok::RBracket].map(tok))
             }
             FragKind::Expr | FragKind::Expr2021 | FragKind::Literal => out.push(tok(Tok::Int(0, None, None))),
             // An inner block, so a path before it does not read it as
             // a struct literal body.
-            FragKind::Block if matches!(out.as_slice(), [.., l, c] if matches!(l.tok, Tok::Lifetime(_)) && c.tok == Tok::Colon) => out.push(bad),
+            FragKind::Block if matches!(out.as_slice(), [.., l, c] if matches!(l.tok, Tok::Lifetime(_, _)) && c.tok == Tok::Colon) => out.push(bad),
             FragKind::Block => out.extend([Tok::LBrace, Tok::LBrace, Tok::RBrace, Tok::RBrace].map(tok)),
             FragKind::Item => placeholder(m, frag, span, out),
             // A whole statement, valid only where one stands.
@@ -2297,11 +2290,11 @@ fn probe_flatten_impl(m: &Matcher, kind: FragKind, trees: &[Tt], bounds: Option<
             // template that only stringifies the fragment would then
             // accept the program.
             if let Tt::Tok(t) = &trees[i]
-                && matches!(t.tok, Tok::Lifetime(_))
+                && matches!(t.tok, Tok::Lifetime(_, _))
                 && matches!(kind, FragKind::Ty | FragKind::Path)
             {
                 match out.last().map(|x| x.tok) {
-                    Some(Tok::Lt | Tok::Comma) => out.push(Token { tok: Tok::Ident(m.interner.intern("u8")), span: t.span }),
+                    Some(Tok::Lt | Tok::Comma) => out.push(Token { tok: Tok::Ident(m.interner.intern("u8"), false), span: t.span }),
                     Some(Tok::Amp | Tok::AndAnd) => {}
                     Some(Tok::Plus) => {
                         out.pop();

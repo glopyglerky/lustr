@@ -689,7 +689,7 @@ fn tn_const(tys: &impl TyIntern, c: crate::ty::ConstId, open: bool) -> Option<St
     match tys.const_kind(c) {
         ConstKind::Int(v) => Some(format!("{v}")),
         ConstKind::Bool(b) => Some(format!("{b}")),
-        ConstKind::Char(ch) => Some(format!("'{ch}'", ch = ch.escape_debug())),
+        ConstKind::Char(ch) => Some(format!("'{ch}'", ch = crate::unicode::escape_debug(&ch.to_string()))),
         _ if open => Some("_".into()),
         _ => None,
     }
@@ -732,8 +732,8 @@ fn tn_adt(p: &Program, tys: &mut impl TyIntern, t: Ty, open: bool, in_sig: bool)
             ));
         }
         Some(B::Boxed) => return one(p, tys, "alloc::boxed::Box"),
-        Some(B::Rc) => return one(p, tys, "alloc::rc::Rc"),
-        Some(B::Weak) => return one(p, tys, "alloc::rc::Weak"),
+        Some(B::Rc) => return one(p, tys, "alloc::rcs::rc::Rc"),
+        Some(B::Weak) => return one(p, tys, "alloc::rcs::rc::Weak"),
         Some(B::RefCell) => return one(p, tys, "core::cell::RefCell"),
         Some(B::Cell) => return one(p, tys, "core::cell::Cell"),
         Some(B::RefGuard) => return Some(tn_apply("core::cell::Ref", vec!["'_".into(), tn_first(p, tys, t, open, in_sig)?])),
@@ -779,8 +779,8 @@ fn tn_sync(p: &Program, tys: &mut impl TyIntern, t: Ty, k: crate::ty::sync::Sync
     let one = |path: &str| Some(tn_apply(path, vec![first.clone()?]));
     let lt_one = |path: &str| Some(tn_apply(path, vec!["'_".into(), first.clone()?]));
     Some(match k {
-        S::Arc => return one("alloc::sync::Arc"),
-        S::ArcWeak => return one("alloc::sync::Weak"),
+        S::Arc => return one("alloc::rcs::arc::Arc"),
+        S::ArcWeak => return one("alloc::rcs::arc::Weak"),
         S::AtomicBool => "core::sync::atomic::Atomic<bool>".into(),
         S::AtomicI8 => "core::sync::atomic::Atomic<i8>".into(),
         S::AtomicU8 => "core::sync::atomic::Atomic<u8>".into(),

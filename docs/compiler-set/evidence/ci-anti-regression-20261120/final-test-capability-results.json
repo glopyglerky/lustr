@@ -1,0 +1,42 @@
+{
+  "argv": [
+    "python3",
+    "tools/test-capability-results.py",
+    "-v"
+  ],
+  "cwd": "<CHECKOUT>",
+  "exit_code": 0,
+  "source_before": {
+    "tools/qualify-capability-results.py": "32a04132df7e34e7cf858230a799a186809a92579fbadba8a483f6403ac97fd0",
+    "tools/qualify-retained-results.py": "f920747ba2eec90dc009efdd237becba6b0f207cabd3c07c38932c1186603326",
+    "tools/test-capability-results.py": "77795f2cc65e099dc3626deff2a8a3784e79ae819390c6031598318414e68fc5",
+    "tools/test-retained-results.py": "a1e078b9c8cf1e6301c2d176f66f9913ec3463c342270a778446f48aedc1c894",
+    "tools/test-retired-acquisition.py": "01a95068d18c6cea935f84a937c976303f7f56ffd70b22e30983219fbe83e5cd",
+    "tools/test-workflow-inputs.py": "6d34fc5f8cdc5c1bb0f7879f40337827aa29e1a9f1f8a292e9a119da73edcdaa",
+    ".github/workflows/compiler-set.yml": "31de7b07e2cc9ce4477a3bc77d8ff677b1deb31e1fc165967850dedad79f0e17",
+    ".github/workflows/native-probe-tests.yml": "0c13e54efbab9f7e06efae5908e17554a826a79e24ea19cdd273633ec7a192f8",
+    ".github/workflows/warm-entry-performance.yml": "f1dc5e1d88db509cdd8a3d65f1f13f251a8f9756ce7a620a31b963a26e18cb84",
+    ".github/workflows/warm-native-performance.yml": "3e9ddba3536f95ee1983fd7d9cf1506f04f95a31bb0dfb0c0df8d11f4e6a1aff"
+  },
+  "source_after": {
+    "tools/qualify-capability-results.py": "32a04132df7e34e7cf858230a799a186809a92579fbadba8a483f6403ac97fd0",
+    "tools/qualify-retained-results.py": "f920747ba2eec90dc009efdd237becba6b0f207cabd3c07c38932c1186603326",
+    "tools/test-capability-results.py": "77795f2cc65e099dc3626deff2a8a3784e79ae819390c6031598318414e68fc5",
+    "tools/test-retained-results.py": "a1e078b9c8cf1e6301c2d176f66f9913ec3463c342270a778446f48aedc1c894",
+    "tools/test-retired-acquisition.py": "01a95068d18c6cea935f84a937c976303f7f56ffd70b22e30983219fbe83e5cd",
+    "tools/test-workflow-inputs.py": "6d34fc5f8cdc5c1bb0f7879f40337827aa29e1a9f1f8a292e9a119da73edcdaa",
+    ".github/workflows/compiler-set.yml": "31de7b07e2cc9ce4477a3bc77d8ff677b1deb31e1fc165967850dedad79f0e17",
+    ".github/workflows/native-probe-tests.yml": "0c13e54efbab9f7e06efae5908e17554a826a79e24ea19cdd273633ec7a192f8",
+    ".github/workflows/warm-entry-performance.yml": "f1dc5e1d88db509cdd8a3d65f1f13f251a8f9756ce7a620a31b963a26e18cb84",
+    ".github/workflows/warm-native-performance.yml": "3e9ddba3536f95ee1983fd7d9cf1506f04f95a31bb0dfb0c0df8d11f4e6a1aff"
+  },
+  "current_compiler_qualification": false,
+  "stdout": {
+    "path": "final-test-capability-results.stdout",
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "stderr": {
+    "path": "final-test-capability-results.stderr",
+    "sha256": "08cf6eae4ae3f90bd21d2fed98c4bf3089bfc0a59b9f3d1e3d47452b0c0f7833"
+  }
+}

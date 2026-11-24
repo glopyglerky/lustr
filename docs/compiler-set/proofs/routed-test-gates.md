@@ -1,18 +1,28 @@
-# Explicit test routes and tool binding
+# Historical coordinator test-route binding
 
-The benchmark helper supports an explicit coordinator route:
+The coordinator test route described in the
+[original record](https://github.com/glopyglerky/lustr/blob/ea26fe16636d390763257a19c19df3db992cdbcb/docs/compiler-set/proofs/routed-test-gates.md)
+belongs to a retired full-compiler package. It is not a current Lustr test or
+compilation entry. Follow the [exclusive coverage contract](../exclusive-coverage-contract.md)
+and [current measurement guide](../benchmark-method.md).
 
-```text
-lustr-bench-gate tests-via /absolute/toolchain/bin/lustr \
-  --bluefe-root /absolute/toolchain --engine cranelift \
-  test -p your-package --locked --offline -vv
-```
+The original proof checked exact OS-string identity for the selected Cargo,
+rustc and rustdoc paths, direct argument-vector forwarding, actual backend
+selection, nonempty test execution, panic recovery and destructor behavior.
+Those are useful evidence requirements. They did not establish exclusive Lust
+ownership or a selective Rust complement: both backend lanes used a complete
+Rust frontend.
 
-Set `CARGO`, `RUSTC` and `RUSTDOC` to that root's corresponding `bin` paths.
-Use a qualified matching `LUST_CRANELIFT_BACKEND` for Cranelift, and supply it
-as a hashed external input to a campaign. Pin the coordinator and helper
-executables as tools. The legacy `tests <Cargo arguments>` mode still invokes
-the explicitly selected Cargo directly.
+The original source, command recipe, bounded native tests and limitations remain
+available at the immutable link above. The
+[historical frontend measurements](../measurements/2026-11-09-shared-v2/README.md)
+retain their actual direct-gate limitation. No result is transferred to a later
+compiler, and no new acquisition command is recommended here.
+
+## Preserved source-bound proof and checks
+
+The following proof and checks retain the original coordinator implementation
+scope. They do not describe an available current product route.
 
 ## Conditional invocation statement
 

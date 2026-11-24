@@ -77,6 +77,7 @@ pub fn digest(p: &Program) -> Vec<(&'static str, u64)> {
         main,                        // refuse: main is never patched
         krate: _,                    // same
         stable_crate: _,             // same
+        imported_crates: _,          // imported requests cannot enter delta reuse
         fn_defs,                     // same (the fn's hash stands)
         def_by_hash,                 // same
         std_fns: _,                  // same (std splice edits refuse)
@@ -128,10 +129,14 @@ fn gen_digest(gx: &GenTables, out: &mut Vec<(&'static str, u64)>) {
         lang: _,                  // same
         index: _,                 // same: impl records do not hold fn sigs
         trait_names: _,           // same
+        imported_projections: _,  // same within one imported generation
+        generic_associated: _,    // same: associated declarations are never body-patched
         trait_scopes: _,          // same
         trait_methods: _,         // refuse: trait method decls are never patched
         lang_method_sigs: _,      // refuse: lang methods are never patched
         trait_assoc_defaults: _,  // same
+        trait_assoc_generics: _,  // same: associated declarations are never body-patched
+        impl_assoc_generics: _,   // same: impl-associated declarations are never body-patched
         trait_unsafe: _,          // same
         trait_assoc_consts: _,    // same
         wf_headers: _,            // same (impl headers)

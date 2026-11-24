@@ -1,0 +1,5 @@
+{
+  "scope": "Initial wrapper build used pristine native hash before the fourth receipt was read; no execution or measurement used it. Rebuilt below with be64fca1236b2d1f.",
+  "binary_sha256": "66bce21523be4aa6914987abe89ed84091bec4b4c2bdf7619767d36ce2b86335",
+  "native_build_hash": "3f8bc1081a58ff1c"
+}

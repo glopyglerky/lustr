@@ -1,0 +1,71 @@
+{
+  "schema": "lustr-public-library-attempt-v1",
+  "observed_date": "2026-11-22",
+  "source": {
+    "head": "9e5f01ef8d5e12b67e3800b78e2c2bc8a2eab368",
+    "tree": "e6208e91ed88475781b23db134124485e185343f",
+    "merge_checkout": "b6371d0c36ef228aff97fd0ef217d435cfc59492",
+    "merge_tree_equals_head_tree": true,
+    "native_tree": "cf814ae25c232997752d6200077febf9256aefe9"
+  },
+  "compiler_set": {
+    "run_id": 44970593122,
+    "job_id": 137049279296,
+    "public_library_step": "failure",
+    "job_still_running_at_observation": true,
+    "other_jobs_successful_at_observation": 9
+  },
+  "original_public_artifact": {
+    "id": 14733522141,
+    "bytes": 14625949,
+    "sha256": "42825b4daf428b63f39e0cee22cc9e698aa36bd86f99e736887d6e1ba0895ced",
+    "download_digest_verified": true,
+    "candidate_or_consumers_rerun_in_review": false
+  },
+  "public_campaign": {
+    "passed": false,
+    "functional_passed": false,
+    "exec_trace_qualified": true,
+    "completed_real_cargo_histories": 9,
+    "completed_eviction_replays": 4,
+    "original_consumers": 12,
+    "checked_runtime_assertions": 3145824,
+    "assertion_scope": "Fixed scalar corpus, not distinct Rust programs or language features",
+    "raw_public_history_requests": 3,
+    "raw_public_json_passed": true,
+    "version_refusal_passed": true,
+    "completed_metadata_transitions": 0,
+    "metadata_transition_consumers": 0,
+    "later_unintegrated_request_refusals_executed": false,
+    "failure": "metadata transition did not perform exactly one successful public invocation"
+  },
+  "first_metadata_request": {
+    "observed_process_exit": 0,
+    "observed_direct_public_executions": 1,
+    "native_request_index": 18,
+    "native_status": 0,
+    "native_phase": "complete",
+    "native_checked_bodies": 0,
+    "native_generated_bodies": 0,
+    "native_compiled_objects": 0,
+    "metadata_encodes": 0,
+    "archive_builds": 0,
+    "publication_count": 0,
+    "artifact_reused": true
+  },
+  "evaluator_correction": {
+    "cause": "inspect_processes unconditionally skipped the validated first process, so a direct compiler root was omitted from compiles",
+    "repair": "Count an actual non-query public compiler root once; preserve Cargo and daemon root exclusions, child ancestry, actual exits and extra compiler detection",
+    "product_compiler_changed": false,
+    "new_regression_failed_before_repair": true,
+    "focused_controls_after_repair": 26,
+    "complete_campaign_on_repaired_source": "pending"
+  },
+  "qualification": {
+    "public_retained_integration": false,
+    "full_rust_replacement": false,
+    "performance": false,
+    "release": false,
+    "qualifies_later_source": false
+  }
+}

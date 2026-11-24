@@ -31,6 +31,9 @@ pub const KNOWN_CFG_NAMES: &[&str] = &[
     "target_pointer_width",
     "target_has_atomic",
     "target_has_atomic_primitive_alignment",
+    "target_has_atomic_load_store",
+    "target_has_threads",
+    "target_object_format",
     "target_feature",
     "target_thread_local",
     "unix",
@@ -38,6 +41,9 @@ pub const KNOWN_CFG_NAMES: &[&str] = &[
     "panic",
     "overflow_checks",
     "debug_assertions",
+    "ub_checks",
+    "fmt_debug",
+    "relocation_model",
     "test",
     "docsrs",
     "fuzzing",
@@ -46,12 +52,14 @@ pub const KNOWN_CFG_NAMES: &[&str] = &[
     "target_abi_version",
 ];
 
-/// Cfg names rustc 1.99 gates behind a nightly feature (E0658). A
+/// Cfg names the pinned Rust SDK gates behind a nightly feature (E0658). A
 /// predicate that names one is L0523 wherever it appears, as in rustc,
 /// even under `any`/`all`/`not` that would not need its value.
 pub const UNSTABLE_CFG_NAMES: &[&str] = &[
     "overflow_checks",
     "target_has_atomic_load_store",
+    "target_has_threads",
+    "target_object_format",
     "target_thread_local",
     "ub_checks",
     "contract_checks",
@@ -179,9 +187,8 @@ impl CfgEnv {
             ("aarch64", "linux", _) => &["neon"],
             ("x86_64", "macos", _) => &["cmpxchg16b", "fxsr", "sse", "sse2", "sse3", "sse4.1", "ssse3"],
             ("aarch64", "macos", _) => &[
-                "aes", "crc", "dit", "dotprod", "dpb", "dpb2", "fcma", "fhm", "flagm", "fp16", "frintts", "jsconv", "lor",
-                "lse", "neon", "paca", "pacg", "pan", "pmuv3", "ras", "rcpc", "rcpc2", "rdm", "sb", "sha2", "sha3", "ssbs",
-                "vh",
+                "aes", "crc", "dit", "dotprod", "dpb", "dpb2", "fcma", "fhm", "flagm", "fp16", "frintts", "jsconv", "lor", "lse", "neon",
+                "paca", "pacg", "pan", "pmuv3", "ras", "rcpc", "rcpc2", "rdm", "sb", "sha2", "sha3", "ssbs", "vh",
             ],
             ("x86_64", "windows", _) => &["cmpxchg16b", "fxsr", "sse", "sse2", "sse3"],
             ("aarch64", "windows", _) => &["neon"],
@@ -190,6 +197,30 @@ impl CfgEnv {
         };
         for f in features {
             env.pair("target_feature", f);
+        }
+        // This host row is bound to the declared Rust SDK 5b7b37ae, not
+        // the compiler used to build Lustr. Other target rows retain their
+        // historical scope until separately checked. The x87 bit is required
+        // by the x86_64 hard-float ABI; load/store widths are the existing
+        // native atomic widths. Native output is ELF and host threads exist.
+        if triple == "x86_64-unknown-linux-gnu" {
+            env.pair("target_feature", "x87");
+            env.pair("target_object_format", "elf");
+            env.flags.insert("target_has_threads".into());
+            for width in ["8", "16", "32", "64", "ptr"] {
+                env.pair("target_has_atomic_load_store", width);
+            }
+            // These describe the declared configuration. Pinned Rust's cfg
+            // uses the target-default relocation model even under a codegen
+            // override; this is no claim that native ELF output is PIE/PIC.
+            // Debug formatting uses the existing full-derive mode. UB checks
+            // default to debug_assertions; their instrumentation remains
+            // unfinished and this flag is not a completion certificate.
+            env.pair("relocation_model", "pic");
+            env.pair("fmt_debug", "full");
+            if profile.debug_assertions {
+                env.flags.insert("ub_checks".into());
+            }
         }
         if !arch.starts_with("wasm") {
             env.flags.insert("target_thread_local".into());
@@ -207,12 +238,12 @@ impl CfgEnv {
         env
     }
 
-    /// True for the release triples whose full cfg table above is copied
-    /// from rustc (the six ts-rust release targets, both Linux libc
-    /// flavors, and x86_64 windows-gnu). A foreign `--target` names one
-    /// of these or it stays a clear error: for another triple the table
-    /// is classification only and a check could accept where rustc
-    /// rejects.
+    /// True for the existing release triples with represented target/profile
+    /// rows (the six ts-rust targets, both Linux libc flavors, and x86_64
+    /// windows-gnu). This admission list is not complete Rust cfg or backend
+    /// equivalence: for example native reliable f16/f128 capabilities remain
+    /// unproved and absent. Another triple has classification facts only and
+    /// remains an explicit foreign-target gap.
     pub fn is_release_target(triple: &str) -> bool {
         matches!(
             triple,
@@ -304,7 +335,7 @@ impl CfgEnv {
         let name_of = |trees: &[TokenTree], at: usize| -> Option<(String, Span)> {
             match trees.get(at) {
                 Some(TokenTree::Token(t)) => match t.tok {
-                    Tok::Ident(s) => Some((interner.get(s).to_string(), t.span)),
+                    Tok::Ident(s, _) => Some((interner.get(s).to_string(), t.span)),
                     Tok::True => Some(("true".into(), t.span)),
                     Tok::False => Some(("false".into(), t.span)),
                     _ => None,
@@ -355,7 +386,7 @@ impl CfgEnv {
             let value = match trees.get(*pos + 1) {
                 Some(TokenTree::Token(t)) => match t.tok {
                     Tok::Str(i, _) => strings.get(i as usize).cloned().unwrap_or_default(),
-                    Tok::Ident(s) => interner.get(s).to_string(),
+                    Tok::Ident(s, _) => interner.get(s).to_string(),
                     _ => String::new(),
                 },
                 _ => String::new(),
@@ -458,7 +489,7 @@ fn attr_from_trees(trees: &[TokenTree], span: Span, style: crate::ast::AttrStyle
     let mut i = 0;
     while let Some(TokenTree::Token(t)) = trees.get(i) {
         match t.tok {
-            Tok::Ident(s) => {
+            Tok::Ident(s, _) => {
                 path.push(crate::ast::PathSeg::plain(s));
                 i += 1;
                 if matches!(trees.get(i), Some(TokenTree::Token(t2)) if t2.tok == Tok::PathSep) {
@@ -517,7 +548,8 @@ pub fn outline_cfg_attr_enabled(
                 end += 1;
             }
             let piece = &trees[start..end];
-            let is_cfg = matches!(piece.first(), Some(TokenTree::Token(t)) if matches!(t.tok, Tok::Ident(s) if interner.get(s) == "cfg"));
+            let is_cfg =
+                matches!(piece.first(), Some(TokenTree::Token(t)) if matches!(t.tok, Tok::Ident(s, _) if interner.get(s) == "cfg"));
             if is_cfg
                 && let Some(TokenTree::Delim(_, inner, _)) = piece.get(1)
                 && !env.eval(inner, strings, interner, span)?
@@ -607,6 +639,26 @@ mod tests {
         // Gated even where `any` would not need its value.
         assert_eq!(eval_pred(&env, "any(unix, target_thread_local)").unwrap_err().code, "L0523");
         assert!(eval_pred(&env, "target_has_atomic_primitive_alignment = \"8\"").unwrap());
+        for pred in
+            ["target_has_threads", "target_object_format = \"elf\"", "ub_checks", "fmt_debug = \"full\"", "relocation_model = \"pic\""]
+        {
+            assert_eq!(eval_pred(&env, pred).unwrap_err().code, "L0523");
+        }
+    }
+
+    #[test]
+    fn pinned_linux_host_facts_preserve_requested_profile_and_unstable_gates() {
+        let env = CfgEnv::new("x86_64-unknown-linux-gnu", &[], false, ProfileFlags::DEV_UNWIND);
+        assert!(eval_pred(&env, "target_feature = \"x87\"").unwrap());
+        assert!(env.flags.contains("ub_checks"));
+        assert!(env.flags.contains("target_has_threads"));
+        assert!(env.pairs.contains(&("target_object_format".into(), "elf".into())));
+        assert!(env.pairs.contains(&("relocation_model".into(), "pic".into())));
+        assert!(env.pairs.contains(&("fmt_debug".into(), "full".into())));
+        assert_eq!(env.pairs.iter().filter(|(name, _)| name == "target_has_atomic_load_store").count(), 5);
+        let off = CfgEnv::new("x86_64-unknown-linux-gnu", &[], false, ProfileFlags { debug_assertions: false, ..ProfileFlags::DEV_UNWIND });
+        assert!(!off.flags.contains("ub_checks"));
+        assert!(!off.flags.contains("debug_assertions"));
     }
 
     #[test]

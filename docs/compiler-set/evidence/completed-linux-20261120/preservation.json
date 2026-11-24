@@ -1,0 +1,14 @@
+{
+  "all_selected_record_payloads_preserved_byte_exact": true,
+  "archives_never_executed": true,
+  "current_original_zip_sha256": "93c83be3ef1ccef020f3330868aad7f7ab4d3415d550763ff18d24ac3a9cce36",
+  "current_supplemental_contains_small_generated_artifacts": true,
+  "full_package_artifacts_not_downloaded": true,
+  "original_current_supplemental_preserved": true,
+  "original_current_supplemental_storage": "two ordered exact binary parts; original ZIP bytes and identity unchanged",
+  "original_linux_zips_verified_but_not_published": true,
+  "original_unpublished_local_receipt_repair_archive_not_recovered": true,
+  "prior_capture_verdict_remains_false": true,
+  "prior_failed_zip_recovered_and_verified_but_not_duplicated_here": true,
+  "prior_inventory_preserved_exactly_under_gzip": true
+}

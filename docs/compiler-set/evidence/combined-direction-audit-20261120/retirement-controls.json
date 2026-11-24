@@ -1,0 +1,23 @@
+{
+  "command": [
+    "python3",
+    "tools/test-retired-acquisition.py",
+    "-v"
+  ],
+  "cwd": "<CHECKOUT>",
+  "explicit_environment": {},
+  "expected_exit": 0,
+  "exit_code": 0,
+  "duration_seconds": 1.2308783531188965,
+  "expected_result_observed": true,
+  "stdout": {
+    "path": "retirement-controls.stdout",
+    "bytes": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "stderr": {
+    "path": "retirement-controls.stderr",
+    "bytes": 617,
+    "sha256": "aebf9e54ae87f0c98222a2dbc60682adfbf04f1933bcebe9294837e2662c8a7b"
+  }
+}

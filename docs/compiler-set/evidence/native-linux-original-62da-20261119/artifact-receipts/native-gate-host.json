@@ -1,0 +1,85 @@
+{
+  "schema": "lustr-benchmark-host-v1",
+  "recorded_utc": "2026-11-19T12:43:10.831103+00:00",
+  "platform": {
+    "system": "Linux",
+    "release": "7.0.0-1017-azure",
+    "machine": "x86_64"
+  },
+  "cpu_model": {
+    "value": "AMD EPYC 9V74 80-Core Processor",
+    "source": "/proc/cpuinfo: model name or Processor"
+  },
+  "logical_cpus": {
+    "value": 4,
+    "source": "os.cpu_count"
+  },
+  "process_affinity": {
+    "value": [
+      0,
+      1,
+      2,
+      3
+    ],
+    "source": "os.sched_getaffinity(0)"
+  },
+  "physical_memory_bytes": {
+    "value": 16760344576,
+    "source": "/proc/meminfo: MemTotal"
+  },
+  "frequency_governors": {
+    "value": null,
+    "source": "/sys/devices/system/cpu/cpufreq/policy*/scaling_governor",
+    "unavailable_reason": "not reported on this host"
+  },
+  "cgroup_v2_cpu_max": {
+    "value": null,
+    "source": "/sys/fs/cgroup/cpu.max",
+    "unavailable_reason": "not reported on this host"
+  },
+  "cgroup_v2_memory_max": {
+    "value": null,
+    "source": "/sys/fs/cgroup/memory.max",
+    "unavailable_reason": "not reported on this host"
+  },
+  "cgroup_v2_cpuset_effective": {
+    "value": "0-3",
+    "source": "/sys/fs/cgroup/cpuset.cpus.effective"
+  },
+  "runner": {
+    "RUNNER_OS": {
+      "value": "Linux",
+      "source": "environment:RUNNER_OS"
+    },
+    "RUNNER_ARCH": {
+      "value": "X64",
+      "source": "environment:RUNNER_ARCH"
+    },
+    "ImageOS": {
+      "value": "ubuntu24",
+      "source": "environment:ImageOS"
+    },
+    "ImageVersion": {
+      "value": "20261111.370.1",
+      "source": "environment:ImageVersion"
+    },
+    "GITHUB_RUN_ID": {
+      "value": "44525981171",
+      "source": "environment:GITHUB_RUN_ID"
+    },
+    "GITHUB_RUN_ATTEMPT": {
+      "value": "1",
+      "source": "environment:GITHUB_RUN_ATTEMPT"
+    },
+    "GITHUB_SHA": {
+      "value": "a3c878f6123b4f5dc5e2eff598b52c83ab5b4ec3",
+      "source": "environment:GITHUB_SHA"
+    }
+  },
+  "limits": [
+    "Container-visible host facts; physical memory is not a process budget.",
+    "Cgroup files describe the visible cgroup root; nested constraints may differ.",
+    "Affinity is observed, not pinned. CPU frequency and host load can change.",
+    "No process CPU time, RSS, energy or isolated application runtime is measured."
+  ]
+}

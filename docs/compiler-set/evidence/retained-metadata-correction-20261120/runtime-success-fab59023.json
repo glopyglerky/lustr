@@ -1,0 +1,116 @@
+{
+  "broader_ci": {
+    "run_id": 44698641523,
+    "state_at_observation": "in_progress",
+    "success_inferred": false,
+    "url": "https://github.com/glopyglerky/lustr/actions/runs/44698641523"
+  },
+  "compiler_set": {
+    "conclusion": "success",
+    "metadata_job": 136161562827,
+    "public_native_job": 136161562680,
+    "run_id": 44698641439,
+    "successful_jobs": 10,
+    "url": "https://github.com/glopyglerky/lustr/actions/runs/44698641439"
+  },
+  "independent_metadata_audit": {
+    "candidate_rerun": false,
+    "original_protocol_trace_arguments_directories_exits_and_response_boundaries_checked": true,
+    "sha256": "332a7e9a42f3215283b51a7125386f260620d57a05cb54da57a7784d4369bba1"
+  },
+  "metadata_campaign": {
+    "artifact_tool_calls_in_each_no_op": 0,
+    "assertion_count_scope": "Checks in a fixed scalar campaign, not distinct Rust programs or features",
+    "candidate_socket_calls_observed": 0,
+    "command_output_records_verified": 85,
+    "complete_source_and_built_tool_after_checks_passed": true,
+    "evaluator_methods": 30,
+    "exact_native_error_and_summary_verified": true,
+    "fresh_archive_byte_equality": true,
+    "history_transitions": 29,
+    "no_op_intervals": 5,
+    "ordinary_rust_consumers": 25,
+    "original_rust_negative_diagnostics_with_verified_spans": 5,
+    "passed": true,
+    "preservation_on_publication_failure_verified": true,
+    "runtime_assertions": 6815952,
+    "sdk_setup_refusals": 2,
+    "sessions": 3,
+    "source_files_after_check": 13090,
+    "source_gitlinks_after_check": 1,
+    "successful_consumer_commands": 75,
+    "total_requests": 33,
+    "trace_scope": "Actual process and socket observations; not proof of zero internal work or timing"
+  },
+  "metadata_candidate": {
+    "bytes": 355602216,
+    "independently_hashed_from_original_archive": true,
+    "sha256": "396f466119c52c0517aa690d045a20111d8474bb8985bccd26190ac0bd34148c"
+  },
+  "observed_date": "2026-11-20",
+  "original_metadata_artifact": {
+    "bytes": 117880528,
+    "digest_matches_github_upload": true,
+    "id": 14611648584,
+    "sha256": "dc33c5393058b34645bf1e89fe6add7de58925521b31d3cefdf65bea495d916f"
+  },
+  "public_native": {
+    "all_upload_digests_verified": true,
+    "audit_sha256": "722f64d42327c64059caaa067ac22e53856fd62a607e4dc5874865dd1155fba2",
+    "conclusion": "success",
+    "duration": "23m15s",
+    "full_retained_coverage": false,
+    "job_id": 136161562680,
+    "original_artifacts": [
+      {
+        "id": 14613900112,
+        "kind": "primary",
+        "sha256": "c1e5ecbb2baab7929ebbbabddf5dc6bba93a7a02016d8bd3a93cb97c9efb5af8"
+      },
+      {
+        "id": 14613126215,
+        "kind": "supplemental",
+        "sha256": "5eea3fbc72e1dfaf3b1d84de1e38f493f932d796bccecf3aaedf048ecdcdd603"
+      },
+      {
+        "id": 14613615115,
+        "kind": "native-consumer",
+        "sha256": "ea9f13ba08a8d7b68dc31799951ce9f2c69b40ddd9a8c625d0b13f2bf46fff0e"
+      },
+      {
+        "id": 14612311003,
+        "kind": "source-receipt",
+        "sha256": "8cd3548cba543ba52d052ca3f1e01d16bbe448ee5386cfe93f629ab8f70b995f"
+      }
+    ],
+    "per_unresolved_history_causal_diagnosis_claimed": false,
+    "required_selected_histories_passed": 349,
+    "scenario_register": "upstream/retained-scenario-results.json",
+    "scenario_register_sha256": "4f528b413b1e742eda662bea0bf29e84adc357214a8b2815548f7ae74f6100e8",
+    "unresolved_meaning": "Pinned unresolved historical observations, not current passes, allowed regression budgets or production owner-selection rules",
+    "unresolved_registered_histories": 13,
+    "unselected_required_histories": 0
+  },
+  "retention": "Original ZIP archives, raw outputs, source/tool identities, independent audits and all earlier failed attempts retained and checksum-verified through the existing evidence owner.",
+  "schema": "retained-metadata-qualified-checkpoint-v1",
+  "scope": {
+    "compiler_wide_no_std": false,
+    "entry": "Separate retained native metadata research caller",
+    "fixture": "Fixed no_std scalar-library corpus",
+    "full_lust_subset_coverage": false,
+    "full_rust_replacement": false,
+    "performance_qualified": false,
+    "public_retained_library_integration": false,
+    "public_socket_independence": false,
+    "qualifies_later_source": false,
+    "release_qualified": false,
+    "target": "Hosted Linux x86-64"
+  },
+  "source": {
+    "head": "fab59023b9635f2c5e5d03d29b44865839dc3eba",
+    "merge_checkout": "dfefd1917547bc307b19b5b577120d7528668bc0",
+    "merge_tree_equals_head_tree": true,
+    "native_tree": "d894bf7f69541285ea9a58a205b9e2df3323b099",
+    "tree": "0cb22f9ea67923ac59ae1fd54533aa14615f6091"
+  }
+}

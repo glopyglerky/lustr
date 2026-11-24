@@ -17,6 +17,12 @@ mod cgen;
 mod check;
 mod colwidth;
 mod daemon;
+#[cfg(feature="exclusive-native")]
+#[path="../../../crates/lustr-native-core/src/library_artifact.rs"]
+mod library_artifact;
+#[cfg(feature="exclusive-native")]
+#[path="../../../crates/lustr-native-core/src/public_library.rs"]
+mod public_library;
 mod def;
 mod diag;
 mod driver;
@@ -43,6 +49,7 @@ mod testrun;
 #[allow(dead_code)] // See `mod mono`.
 mod traits;
 mod ty;
+mod unicode;
 
 use protocol::Invocation;
 
@@ -368,10 +375,32 @@ fn image_run(reqs: &[driver::Request], dir: &std::path::Path) -> Vec<driver::Res
 }
 
 fn main() {
+    protocol::reject_internal_probe();
+    if protocol::product_identity_query() { return; }
+    #[cfg(feature = "exclusive-native")]
+    if std::env::args_os().skip(1).eq([std::ffi::OsString::from("--lustr-prime-cargo-runtime")]) {
+        if let Err(error) = cc::prime_cargo_runtime() {
+            eprintln!("error: {error}");
+            std::process::exit(1);
+        }
+        return;
+    }
+    #[cfg(feature = "exclusive-native")]
+    {
+        let mut args = std::env::args_os().skip(1);
+        if args.next().as_deref() == Some(std::ffi::OsStr::new("--lustr-print-cfg")) {
+            if let Err(error) = print_compiler_cfg(args) {
+                eprintln!("error: {error}");
+                std::process::exit(2);
+            }
+            return;
+        }
+    }
     // A re-executed image process (src/image.rs) runs with randomization
     // off and an arena variable: its children get neither.
     image::process_start();
     // Cargo runs lust-core as its RUSTC_WRAPPER during the feature probe.
+    #[cfg(not(feature = "exclusive-native"))]
     if let Some(code) = resolve::probe::wrapper_main() {
         std::process::exit(code);
     }
@@ -385,6 +414,8 @@ fn main() {
         Some("explain") => std::process::exit(explain::run(&args[1..])),
         Some("capabilities") => std::process::exit(capabilities::run(&args[1..])),
         Some("expand") => std::process::exit(expand::run_expand(&args[1..])),
+        #[cfg(feature = "exclusive-native")]
+        Some("--lustr-stdin-source") => compile_stdin_source(&args[1..]),
         _ => {}
     }
     // A CI job may check its sources out while lust restores its front image
@@ -525,4 +556,100 @@ fn main() {
             std::process::exit(2);
         }
     }
+}
+
+#[cfg(feature = "exclusive-native")]
+fn print_compiler_cfg(mut args: impl Iterator<Item = std::ffi::OsString>) -> Result<(), String> {
+    use protocol::library_contract::{CompilerCfg, cargo_check_cfg, classify_cfg};
+
+    // Cargo discovery uses the same target/profile facts and validates the
+    // same user cfg values as the native compiler request.
+    let mut cfg = resolve::cfg::CfgEnv::new(protocol::host_triple(), &[], false, protocol::ProfileFlags::DEV_UNWIND);
+    while let Some(flag) = args.next() {
+        let value = args.next().and_then(|value| value.into_string().ok())
+            .ok_or("missing or non-Unicode native cfg argument")?;
+        match flag.to_str() {
+            Some("--cfg") => match classify_cfg(&value).ok_or("unrepresented Cargo feature cfg")? {
+                CompilerCfg::Test => { cfg.flags.insert("test".into()); }
+                CompilerCfg::Feature(name) => { cfg.features.insert(name.into()); }
+                CompilerCfg::Custom(spec) => {
+                    let value = driver::buildscript::cfg_directive("rustc-cfg", spec)?;
+                    cfg.add_rustc_cfg(&value);
+                }
+            },
+            Some("--check-cfg") if cargo_check_cfg(&value) => {}
+            Some("--check-cfg") => return Err(format!("unrepresented check-cfg argument {value:?}")),
+            _ => return Err(format!("invalid native cfg option {flag:?}")),
+        }
+    }
+    let mut lines: Vec<_> = cfg.flags.into_iter().collect();
+    lines.extend(cfg.pairs.into_iter().map(|(name, value)| format!("{name}={value:?}")));
+    lines.extend(cfg.features.into_iter().map(|name| format!("feature={name:?}")));
+    lines.sort();
+    lines.dedup();
+    for line in lines { println!("{line}"); }
+    Ok(())
+}
+
+#[cfg(feature = "exclusive-native")]
+fn compile_stdin_source(args: &[String]) -> ! {
+    use std::io::Read;
+    let mut source = String::new();
+    if std::io::stdin().read_to_string(&mut source).is_err() {
+        eprintln!("error: couldn't read from stdin, as it did not contain valid UTF-8");
+        std::process::exit(1);
+    }
+    let Some(Invocation::Compile { mut req, run: false, args: run_args }) = protocol::parse_args(args)
+        else {
+            eprintln!("error: invalid native stdin compiler request");
+            std::process::exit(2);
+        };
+    if req.session.library.as_ref().is_some_and(|key| !key.standalone) || req.session.krate.manifest_path.is_some() || req.cc
+        || req.emit_c.is_some() || req.file.file_name().is_none_or(|name| name != "<anon>")
+    {
+        eprintln!("error: stdin requires a standalone native Rust request");
+        std::process::exit(2);
+    }
+    if req.session.library.is_none() {
+        req.session.krate.target_name = "rust_out".into();
+    }
+    let (display, doctest_offset) = if let Ok(path) = std::env::var("UNSTABLE_RUSTDOC_TEST_PATH") {
+        let Some(offset) = std::env::var("UNSTABLE_RUSTDOC_TEST_LINE").ok().and_then(|line| line.parse::<isize>().ok()) else {
+            eprintln!("error: UNSTABLE_RUSTDOC_TEST_LINE must be an integer");
+            std::process::exit(2);
+        };
+        let Ok(file) = std::path::absolute(std::path::Path::new(&path)) else {
+            eprintln!("error: invalid Rustdoc source path");
+            std::process::exit(2);
+        };
+        req.client.shown = Some(path.as_str().into());
+        req.file = file;
+        req.session.krate.root = req.file.clone();
+        if let Some(key) = &mut req.session.library {
+            key.source_path = req.file.clone();
+        }
+        (path, Some(offset))
+    } else {
+        ("<anon>".to_owned(), None)
+    };
+    let source = driver::StdinSource {
+        text: source,
+        origin: std::sync::Arc::new(expand::StdinOrigin { root: req.file.clone(), display, doctest_offset }),
+    };
+    own_env(&mut req);
+    if source.text.len() < BIG_FILE as usize { tcc::set_huge_pages(false); } else { pool::small_pages_in_parallel(); }
+    let dir = std::env::temp_dir().join(format!("lust-{}-stdin", std::process::id()));
+    let mut session = driver::Session::new(dir, false, req.session.clone());
+    session.cache_tried = true;
+    session.caches.leak_at_exit = true;
+    let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+        if req.session.library.is_some() {
+            public_library::Owner::compile_stdin(&req, &mut session, source)
+        } else {
+            driver::compile_stdin(&req, &mut session, source)
+        }
+    }));
+    remove_obj_dir(session.obj_dir());
+    let result = result.unwrap_or_else(|payload| std::panic::resume_unwind(payload));
+    protocol::finish(result, false, &req.out, &run_args)
 }

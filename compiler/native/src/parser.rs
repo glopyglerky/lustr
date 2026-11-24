@@ -5,7 +5,7 @@
 // and `async` keep theirs (L0404, L0405), and each AST v2 form whose parser
 // lands later rejects with the Appendix A code for its area (docs/ARCH.md S3b).
 use crate::ast::*;
-use crate::diag::{Diag, Span, not_yet};
+use crate::diag::{self, Diag, Span};
 use crate::intern::{Interner, Known, Sym};
 use crate::lexer::{Delim, Lexed, Tok, Token, TokenTree, decode_byte_char, decode_byte_str};
 
@@ -24,15 +24,35 @@ const C_METHOD: &str = "L0721"; // method and receiver forms
 const C_EXTERN: &str = "L0810"; // extern blocks and foreign items
 const C_CORE: &str = "L0820"; // core expression, pattern, and statement forms
 
+fn not_yet(code: &'static str, span: Span, what: &str) -> Diag {
+    diag::not_yet(code, span, what).requiring_rust_complement()
+}
+
 fn unsafe_error(span: Span) -> Diag {
     Diag::new("L0404", span, "`unsafe` is not supported", "Remove the unsafe code.")
+        .requiring_rust_complement()
 }
 
 fn async_error(span: Span) -> Diag {
     Diag::new("L0405", span, "`async` is not supported", "Use std::thread and channels.")
+        .requiring_rust_complement()
 }
 
 type PResult<T> = Result<T, Diag>;
+
+/// The crate attribute consumed by the native artifact root parser.
+pub(crate) fn leading_no_std(lexed: &Lexed, interner: &Interner) -> Option<Attr> {
+    let [pound, bang, open, name, close, ..] = lexed.tokens.as_slice() else { return None; };
+    let Tok::Ident(symbol, _) = name.tok else { return None; };
+    if pound.tok != Tok::Pound || bang.tok != Tok::Bang || open.tok != Tok::LBracket
+        || interner.get(symbol) != "no_std"
+        || close.tok != Tok::RBracket
+    {
+        return None;
+    }
+    Some(Attr { style: AttrStyle::Inner, path: vec![PathSeg::plain(symbol)],
+        input: AttrInput::None, span: pound.span.to(close.span) })
+}
 
 mod attrs;
 mod hrtb;
@@ -746,7 +766,7 @@ fn parse_fmt_spec(fmt: &str) -> Result<(FmtSpec, Option<FmtCount>, Option<FmtCou
     // A count from an argument: `name$` or `N$`, with its end.
     let count_arg = |cs: &[char], j: usize| -> Option<(FmtCount, usize)> {
         let mut k = j;
-        while k < cs.len() && (cs[k].is_alphanumeric() || cs[k] == '_') {
+        while k < cs.len() && (crate::unicode::is_alphanumeric(cs[k]) || cs[k] == '_') {
             k += 1;
         }
         if k == j || cs.get(k) != Some(&'$') {
@@ -887,7 +907,7 @@ fn is_allow(attr: &Attr, known: &Known) -> bool {
 fn tok_name(t: Tok) -> &'static str {
     use Tok::*;
     match t {
-        Ident(_) => "identifier",
+        Ident(_, _) => "identifier",
         Reserved(_) => "reserved keyword",
         Int(..) => "integer literal",
         Float(_) => "float literal",
@@ -896,7 +916,7 @@ fn tok_name(t: Tok) -> &'static str {
         ByteStr(_) => "byte string literal",
         ByteChar(_) => "byte char literal",
         Char(..) => "char literal",
-        Lifetime(_) => "lifetime",
+        Lifetime(_, _) => "lifetime",
         As => "`as`",
         Break => "`break`",
         Const => "`const`",
@@ -1100,13 +1120,13 @@ impl<'a> Parser<'a> {
     }
     fn ident(&mut self) -> PResult<(Sym, Span)> {
         match self.peek() {
-            Tok::Ident(s) => Ok((s, self.bump().span)),
+            Tok::Ident(s, _) => Ok((s, self.bump().span)),
             Tok::SelfUpper => Ok((self.known.self_type, self.bump().span)),
             Tok::Reserved(_) => Err(self.reserved_error(self.span())),
             // A lifetime is never an identifier in rustc grammar, so a
             // cfg syntax check reports it as L0001, not the L0203 reject.
-            Tok::Lifetime(_) if self.cfg_syntax => Err(syntax(self.span(), "expected identifier, found lifetime")),
-            Tok::Lifetime(_) => Err(lifetime_error(self.span())),
+            Tok::Lifetime(_, _) if self.cfg_syntax => Err(syntax(self.span(), "expected identifier, found lifetime")),
+            Tok::Lifetime(_, _) => Err(lifetime_error(self.span())),
             t => Err(syntax(self.span(), format!("expected identifier, found {}", tok_name(t)))),
         }
     }
@@ -1155,7 +1175,7 @@ impl<'a> Parser<'a> {
     /// True when the current token is the identifier `name` (for weak keywords
     /// such as `union`, `macro_rules`, and `raw`).
     fn at_ident(&self, name: &str) -> bool {
-        matches!(self.peek(), Tok::Ident(s) if self.interner.get(s) == name)
+        matches!(self.peek(), Tok::Ident(s, _) if self.interner.get(s) == name)
     }
 
     /// True at a macro call head: a path of one or more segments ending in `!`
@@ -1164,7 +1184,7 @@ impl<'a> Parser<'a> {
         let mut j = self.pos;
         loop {
             match self.toks.get(j).map(|t| t.tok) {
-                Some(Tok::Ident(_) | Tok::SelfUpper | Tok::Crate | Tok::Super | Tok::SelfLower) => j += 1,
+                Some(Tok::Ident(_, _) | Tok::SelfUpper | Tok::Crate | Tok::Super | Tok::SelfLower) => j += 1,
                 _ => return false,
             }
             match self.toks.get(j).map(|t| t.tok) {
@@ -1188,7 +1208,7 @@ impl<'a> Parser<'a> {
         }
         match self.toks.get(j + 1).map(|t| t.tok) {
             Some(Tok::LBrace) => true,
-            Some(Tok::Ident(_)) => self.toks.get(j + 2).map(|t| t.tok) == Some(Tok::LBrace),
+            Some(Tok::Ident(_, _)) => self.toks.get(j + 2).map(|t| t.tok) == Some(Tok::LBrace),
             _ => false,
         }
     }
@@ -1227,7 +1247,7 @@ impl<'a> Parser<'a> {
         let mut path = Vec::new();
         loop {
             match self.bump().tok {
-                Tok::Ident(s) => path.push(PathSeg::plain(s)),
+                Tok::Ident(s, _) => path.push(PathSeg::plain(s)),
                 Tok::Crate => path.push(PathSeg::plain(self.interner.intern("crate"))),
                 Tok::Super => path.push(PathSeg::plain(self.interner.intern("super"))),
                 Tok::SelfLower => path.push(PathSeg::plain(self.known.self_value)),
@@ -1695,7 +1715,7 @@ impl<'a> Parser<'a> {
             let mut bi = 0usize;
             while let Some(t) = body.get(bi) {
                 match t.tok {
-                    Tok::Ident(s) => {
+                    Tok::Ident(s, _) => {
                         path.push(PathSeg::plain(s));
                         bi += 1;
                         if body.get(bi).map(|t| t.tok) == Some(Tok::PathSep) {
@@ -1722,7 +1742,7 @@ impl<'a> Parser<'a> {
             // no unsafe code, so none of them is supported yet.
             if path.is_empty() && body.first().map(|t| t.tok) == Some(Tok::Unsafe) && body.get(1).map(|t| t.tok) == Some(Tok::LParen) {
                 let inner = match body.get(2).map(|t| t.tok) {
-                    Some(Tok::Ident(s)) => self.interner.get(s).to_string(),
+                    Some(Tok::Ident(s, _)) => self.interner.get(s).to_string(),
                     _ => "..".to_string(),
                 };
                 return Err(not_yet(C_ATTR, start, &format!("the `#[unsafe({inner})]` attribute")));
@@ -1808,7 +1828,7 @@ impl<'a> Parser<'a> {
                     }
                     for t in &body[bi + 1..] {
                         match t.tok {
-                            Tok::Ident(s) => out.derives.push((s, t.span)),
+                            Tok::Ident(s, _) => out.derives.push((s, t.span)),
                             Tok::Comma | Tok::PathSep => {}
                             Tok::RParen => break,
                             _ => return Err(syntax(t.span, "expected a trait name in `derive`")),
@@ -1915,7 +1935,7 @@ impl<'a> Parser<'a> {
             i += 1;
         }
         loop {
-            if !matches!(at(i), Tok::Ident(_) | Tok::SelfLower | Tok::SelfUpper | Tok::Super | Tok::Crate) {
+            if !matches!(at(i), Tok::Ident(_, _) | Tok::SelfLower | Tok::SelfUpper | Tok::Super | Tok::Crate) {
                 return Err(syntax(if i < hi { self.toks[i].span } else { start }, "expected an attribute name"));
             }
             i += 1;
@@ -2048,7 +2068,7 @@ impl<'a> Parser<'a> {
         let vis_span = if vis == Vis::Private { vis_start } else { vis_start.to(self.prev_span()) };
         // A `const` item (`const NAME: Ty = ...;`), told apart from a
         // `const fn` qualifier by the name and colon after it.
-        if self.peek() == Tok::Const && matches!(self.peek_at(1), Tok::Ident(_) | Tok::Underscore) && self.peek_at(2) == Tok::Colon {
+        if self.peek() == Tok::Const && matches!(self.peek_at(1), Tok::Ident(_, _) | Tok::Underscore) && self.peek_at(2) == Tok::Colon {
             let kind = ItemKind::Const(self.const_def()?);
             self.check_derive_test(&parsed, false, false)?;
             attrs::check_target(&parsed.attrs, "constants", 0, self.interner)?;
@@ -2144,7 +2164,7 @@ impl<'a> Parser<'a> {
             _ if qual.is_const => return Err(not_yet(C_CONST, start, "const and static items")),
             _ if qual.is_async => return Err(async_error(start)),
             _ if qual.is_unsafe => return Err(unsafe_error(start)),
-            Tok::Ident(_) if self.cfg_syntax && self.at_ident("union") && matches!(self.peek_at(1), Tok::Ident(_)) => {
+            Tok::Ident(_, _) if self.cfg_syntax && self.at_ident("union") && matches!(self.peek_at(1), Tok::Ident(_, _)) => {
                 self.bump(); // `union`
                 let (name, name_span) = self.ident()?;
                 let generics = self.generics(true)?;
@@ -2159,16 +2179,16 @@ impl<'a> Parser<'a> {
                     derives: derives.clone(),
                 })
             }
-            Tok::Ident(_) if self.at_ident("union") && matches!(self.peek_at(1), Tok::Ident(_)) => {
+            Tok::Ident(_, _) if self.at_ident("union") && matches!(self.peek_at(1), Tok::Ident(_, _)) => {
                 return Err(not_yet(C_TY, start, "unions"));
             }
-            Tok::Ident(_) | Tok::SelfUpper | Tok::Crate | Tok::Super if self.cfg_syntax && self.at_path_macro_call() => {
+            Tok::Ident(_, _) | Tok::SelfUpper | Tok::Crate | Tok::Super if self.cfg_syntax && self.at_path_macro_call() => {
                 self.skip_macro_invocation()?;
                 self.eat(Tok::Semi);
                 self.scope_allows.truncate(scope_mark);
                 return Ok(None);
             }
-            Tok::Ident(_) | Tok::SelfUpper | Tok::Crate | Tok::Super if self.at_path_macro_call() => {
+            Tok::Ident(_, _) | Tok::SelfUpper | Tok::Crate | Tok::Super if self.at_path_macro_call() => {
                 return Err(macro_error(start));
             }
             Tok::Reserved(_) => return Err(self.reserved_error(start)),
@@ -2221,7 +2241,7 @@ impl<'a> Parser<'a> {
         let mut prefix = Vec::new();
         loop {
             let name = match self.peek() {
-                Tok::Ident(_) | Tok::SelfUpper => self.ident()?.0,
+                Tok::Ident(_, _) | Tok::SelfUpper => self.ident()?.0,
                 Tok::SelfLower => {
                     self.bump();
                     self.known.self_value
@@ -2291,7 +2311,7 @@ impl<'a> Parser<'a> {
                     let _generics = self.generics(true)?;
                     self.expect(Tok::Semi, "`;`")?;
                 }
-                Tok::Ident(_) | Tok::SelfUpper if self.at_path_macro_call() => {
+                Tok::Ident(_, _) | Tok::SelfUpper if self.at_path_macro_call() => {
                     self.skip_macro_invocation()?;
                     self.eat(Tok::Semi);
                 }
@@ -2488,9 +2508,9 @@ impl<'a> Parser<'a> {
     /// One written lifetime ('a, 'static, '_) at the current token.
     fn lifetime_here(&mut self) -> PResult<Lifetime> {
         match self.peek() {
-            Tok::Lifetime(name) => {
+            Tok::Lifetime(name, raw) => {
                 let span = self.bump().span;
-                self.check_lifetime_name(name, span, false);
+                self.check_lifetime_name(name, raw, span, false);
                 Ok(Lifetime { name, span })
             }
             t => Err(syntax(self.span(), format!("expected a lifetime, found {}", tok_name(t)))),
@@ -2502,9 +2522,9 @@ impl<'a> Parser<'a> {
     /// on, as in rustc, so the error is deferred: fragment probes, which
     /// ignore deferred errors, read such names the way rustc's parser does.
     /// Added for fx-lex-small (W-CORELANG owns the parser).
-    fn check_lifetime_name(&mut self, name: Sym, span: Span, label: bool) {
+    fn check_lifetime_name(&mut self, name: Sym, raw: bool, span: Span, label: bool) {
         let text = self.interner.get(name);
-        if let Some(d) = crate::lexer::keyword_lifetime_error(text, crate::lexer::lifetime_is_raw(text, span), label, span) {
+        if let Some(d) = crate::lexer::keyword_lifetime_error(text, raw, label, span) {
             self.defer(d);
         }
     }
@@ -2527,7 +2547,7 @@ impl<'a> Parser<'a> {
             }
             let pattrs = self.part_attributes("type parameters", 0)?;
             match self.peek() {
-                Tok::Lifetime(_) => {
+                Tok::Lifetime(_, _) => {
                     if !allow_lifetimes {
                         return Err(lifetime_error(self.span()));
                     }
@@ -2539,7 +2559,7 @@ impl<'a> Parser<'a> {
                             if !self.eat(Tok::Plus) {
                                 break;
                             }
-                            if !matches!(self.peek(), Tok::Lifetime(_)) {
+                            if !matches!(self.peek(), Tok::Lifetime(_, _)) {
                                 break;
                             }
                         }
@@ -2554,7 +2574,7 @@ impl<'a> Parser<'a> {
                     let default = if self.eat(Tok::Eq) { Some(self.const_arg_expr()?) } else { None };
                     params.push(GenericParam::Const { name, span, ty, default, attrs: pattrs.attrs });
                 }
-                Tok::Ident(_) => {
+                Tok::Ident(_, _) => {
                     let (name, span) = self.ident()?;
                     let bounds = if self.eat(Tok::Colon) { self.bounds()? } else { Vec::new() };
                     let default = if self.eat(Tok::Eq) { Some(self.ty()?) } else { None };
@@ -2619,7 +2639,7 @@ impl<'a> Parser<'a> {
     fn trait_bound(&mut self) -> PResult<TraitBound> {
         let binder = self.opt_binder()?;
         let maybe = self.eat(Tok::Question);
-        if matches!(self.peek(), Tok::Lifetime(_)) && binder.is_empty() && !maybe {
+        if matches!(self.peek(), Tok::Lifetime(_, _)) && binder.is_empty() && !maybe {
             return Ok(TraitBound::Lifetime(self.lifetime_here()?));
         }
         // The legacy `~const` and `async` bound modifiers are not
@@ -2686,7 +2706,7 @@ impl<'a> Parser<'a> {
         let mut args = Vec::new();
         while self.peek() != Tok::Gt {
             match self.peek() {
-                Tok::Lifetime(_) => {
+                Tok::Lifetime(_, _) => {
                     let lt = self.lifetime_here()?;
                     if self.interner.get(lt.name) == "static" {
                         return Err(syntax(lt.span, "expected lifetime parameter in `use<...>` precise captures list, found `'static`"));
@@ -2717,7 +2737,7 @@ impl<'a> Parser<'a> {
             if matches!(self.peek(), Tok::LBrace | Tok::Semi) {
                 break;
             }
-            if matches!(self.peek(), Tok::Lifetime(_)) {
+            if matches!(self.peek(), Tok::Lifetime(_, _)) {
                 let lt = self.lifetime_here()?;
                 self.expect(Tok::Colon, "`:`")?;
                 let mut bounds = Vec::new();
@@ -2726,7 +2746,7 @@ impl<'a> Parser<'a> {
                     if !self.eat(Tok::Plus) {
                         break;
                     }
-                    if !matches!(self.peek(), Tok::Lifetime(_)) {
+                    if !matches!(self.peek(), Tok::Lifetime(_, _)) {
                         break;
                     }
                 }
@@ -2788,10 +2808,10 @@ impl<'a> Parser<'a> {
                 (Tok::Mut, Tok::SelfLower, _, _) => Some((SelfKind::Value, true, 2, None)),
                 (Tok::Amp, Tok::SelfLower, _, _) => Some((SelfKind::Ref, false, 2, None)),
                 (Tok::Amp, Tok::Mut, Tok::SelfLower, _) => Some((SelfKind::RefMut, false, 3, None)),
-                (Tok::Amp, Tok::Lifetime(lt), Tok::SelfLower, _) => {
+                (Tok::Amp, Tok::Lifetime(lt, _), Tok::SelfLower, _) => {
                     Some((SelfKind::Ref, false, 3, Some(Lifetime { name: lt, span: self.toks[self.pos + 1].span })))
                 }
-                (Tok::Amp, Tok::Lifetime(lt), Tok::Mut, Tok::SelfLower) => {
+                (Tok::Amp, Tok::Lifetime(lt, _), Tok::Mut, Tok::SelfLower) => {
                     Some((SelfKind::RefMut, false, 4, Some(Lifetime { name: lt, span: self.toks[self.pos + 1].span })))
                 }
                 _ => None,
@@ -2799,7 +2819,7 @@ impl<'a> Parser<'a> {
         };
         if let Some((kind, mutable, n, lifetime)) = self_form {
             if let Some(lt) = lifetime {
-                self.check_lifetime_name(lt.name, lt.span, false);
+                self.check_lifetime_name(lt.name, matches!(self.toks[self.pos + 1].tok, Tok::Lifetime(_, true)), lt.span, false);
             }
             for _ in 0..n {
                 self.bump();
@@ -2829,12 +2849,12 @@ impl<'a> Parser<'a> {
             // The plain `name: Ty` and `mut name: Ty` forms keep
             // the exact name span: hygiene reads the name token's
             // context as the binding's context (ARCH 6.3).
-            let plain = (matches!(self.peek(), Tok::Ident(_) | Tok::Reserved(_)) && self.peek_at(1) == Tok::Colon)
-                || (self.peek() == Tok::Mut && matches!(self.peek_at(1), Tok::Ident(_)) && self.peek_at(2) == Tok::Colon);
+            let plain = (matches!(self.peek(), Tok::Ident(_, _) | Tok::Reserved(_)) && self.peek_at(1) == Tok::Colon)
+                || (self.peek() == Tok::Mut && matches!(self.peek_at(1), Tok::Ident(_, _)) && self.peek_at(2) == Tok::Colon);
             if plain {
                 let mutable = self.eat(Tok::Mut);
                 let (pname, pspan) = match self.peek() {
-                    Tok::Ident(_) => self.ident()?,
+                    Tok::Ident(_, _) => self.ident()?,
                     Tok::Reserved(_) => return Err(self.reserved_error(self.span())),
                     _ => unreachable!(),
                 };
@@ -3096,7 +3116,7 @@ impl<'a> Parser<'a> {
                     fns.push(def);
                 }
                 Tok::Type => types.push(self.assoc_type()?),
-                Tok::Const if matches!(self.peek_at(1), Tok::Ident(_) | Tok::Underscore) => consts.push(self.assoc_const()?),
+                Tok::Const if matches!(self.peek_at(1), Tok::Ident(_, _) | Tok::Underscore) => consts.push(self.assoc_const()?),
                 Tok::Const | Tok::Unsafe | Tok::Async | Tok::Extern if self.cfg_syntax => {
                     while matches!(self.peek(), Tok::Const | Tok::Unsafe | Tok::Async) {
                         self.bump();
@@ -3121,11 +3141,11 @@ impl<'a> Parser<'a> {
                 Tok::Const => return Err(self.reject(C_CONST, "const functions")),
                 Tok::Unsafe => return Err(unsafe_error(self.span())),
                 Tok::Async => return Err(async_error(self.span())),
-                Tok::Ident(_) | Tok::SelfUpper if self.cfg_syntax && self.at_path_macro_call() => {
+                Tok::Ident(_, _) | Tok::SelfUpper if self.cfg_syntax && self.at_path_macro_call() => {
                     self.skip_macro_invocation()?;
                     self.eat(Tok::Semi);
                 }
-                Tok::Ident(_) | Tok::SelfUpper if self.at_path_macro_call() => return Err(macro_error(self.span())),
+                Tok::Ident(_, _) | Tok::SelfUpper if self.at_path_macro_call() => return Err(macro_error(self.span())),
                 t => return Err(syntax(self.span(), format!("expected a trait item, found {}", tok_name(t)))),
             }
             self.scope_allows.truncate(item_mark);
@@ -3159,7 +3179,7 @@ impl<'a> Parser<'a> {
         // `::` (`impl crate::a::Trait for T`): `path` reads the anchor as
         // a first segment and the resolver rewrites it, as in a bound.
         // An inherent impl's Self type may start the same way.
-        let path_start = matches!(self.peek(), Tok::Ident(_) | Tok::SelfUpper | Tok::Crate | Tok::Super | Tok::SelfLower | Tok::PathSep);
+        let path_start = matches!(self.peek(), Tok::Ident(_, _) | Tok::SelfUpper | Tok::Crate | Tok::Super | Tok::SelfLower | Tok::PathSep);
         let (trait_ref, self_ty) = if path_start {
             let header_start = self.span();
             let path = self.trait_path()?;
@@ -3211,7 +3231,7 @@ impl<'a> Parser<'a> {
                 }
                 Tok::Type if trait_ref.is_some() || self.cfg_syntax => types.push(self.assoc_type()?),
                 Tok::Type => return Err(self.reject(C_ASSOC, "associated types in inherent impls")),
-                Tok::Const if matches!(self.peek_at(1), Tok::Ident(_) | Tok::Underscore) => {
+                Tok::Const if matches!(self.peek_at(1), Tok::Ident(_, _) | Tok::Underscore) => {
                     let mut def = self.assoc_const()?;
                     def.vis = vis;
                     consts.push(def);
@@ -3247,11 +3267,11 @@ impl<'a> Parser<'a> {
                 Tok::Const => return Err(self.reject(C_CONST, "const functions")),
                 Tok::Unsafe => return Err(unsafe_error(self.span())),
                 Tok::Async => return Err(async_error(self.span())),
-                Tok::Ident(_) | Tok::SelfUpper if self.cfg_syntax && self.at_path_macro_call() => {
+                Tok::Ident(_, _) | Tok::SelfUpper if self.cfg_syntax && self.at_path_macro_call() => {
                     self.skip_macro_invocation()?;
                     self.eat(Tok::Semi);
                 }
-                Tok::Ident(_) | Tok::SelfUpper if self.at_path_macro_call() => return Err(macro_error(self.span())),
+                Tok::Ident(_, _) | Tok::SelfUpper if self.at_path_macro_call() => return Err(macro_error(self.span())),
                 t => return Err(syntax(self.span(), format!("expected an impl item, found {}", tok_name(t)))),
             }
         }
@@ -3299,7 +3319,7 @@ impl<'a> Parser<'a> {
                 // Written lifetimes are recorded; regions are erased
                 // in this milestone, and collect decides which
                 // written forms the subset accepts.
-                let lifetime = if matches!(self.peek(), Tok::Lifetime(_)) {
+                let lifetime = if matches!(self.peek(), Tok::Lifetime(_, _)) {
                     let lt = self.lifetime_here()?;
                     Some(lt)
                 } else {
@@ -3408,8 +3428,8 @@ impl<'a> Parser<'a> {
                         break;
                     }
                     let pstart = self.span();
-                    let name = if matches!(self.peek(), Tok::Ident(_)) && self.peek_at(1) == Tok::Colon {
-                        let Tok::Ident(n) = self.bump().tok else { unreachable!() };
+                    let name = if matches!(self.peek(), Tok::Ident(_, _)) && self.peek_at(1) == Tok::Colon {
+                        let Tok::Ident(n, _) = self.bump().tok else { unreachable!() };
                         self.bump();
                         Some(n)
                     } else {
@@ -3502,11 +3522,11 @@ impl<'a> Parser<'a> {
                 Ok(t)
             }
             Tok::For => Err(not_yet(C_TRAIT, start, "higher-ranked (`for<..>`) types and bounds")),
-            Tok::Ident(_) | Tok::SelfUpper if self.cfg_syntax && self.at_path_macro_call() => {
+            Tok::Ident(_, _) | Tok::SelfUpper if self.cfg_syntax && self.at_path_macro_call() => {
                 let (span, _) = self.skip_macro_invocation()?;
                 Ok(self.push_ty(TyExpr::Unit, span))
             }
-            Tok::Ident(_) | Tok::SelfUpper if self.at_path_macro_call() => Err(macro_error(start)),
+            Tok::Ident(_, _) | Tok::SelfUpper if self.at_path_macro_call() => Err(macro_error(start)),
             _ => {
                 let path = self.path(true)?;
                 Ok(self.push_ty(TyExpr::Path(path), start.to(self.prev_span())))
@@ -3540,7 +3560,7 @@ impl<'a> Parser<'a> {
         match self.peek() {
             Tok::Minus => self.prefix(false),
             Tok::LBrace => self.block_like_expr(false),
-            Tok::Int(..) | Tok::Str(..) | Tok::Char(..) | Tok::True | Tok::False | Tok::Ident(_) | Tok::SelfUpper => {
+            Tok::Int(..) | Tok::Str(..) | Tok::Char(..) | Tok::True | Tok::False | Tok::Ident(_, _) | Tok::SelfUpper => {
                 self.primary(false, false)
             }
             // A token that starts no expression is a grammar error, also
@@ -3560,8 +3580,8 @@ impl<'a> Parser<'a> {
         let mut args = Vec::new();
         while self.peek() != Tok::Gt {
             match self.peek() {
-                Tok::Lifetime(_) => args.push(GenericArg::Lifetime(self.lifetime_here()?)),
-                Tok::Ident(name) if self.peek_at(1) == Tok::Eq => {
+                Tok::Lifetime(_, _) => args.push(GenericArg::Lifetime(self.lifetime_here()?)),
+                Tok::Ident(name, _) if self.peek_at(1) == Tok::Eq => {
                     let span = self.span();
                     self.bump();
                     self.bump();
@@ -3573,7 +3593,7 @@ impl<'a> Parser<'a> {
                     };
                     args.push(GenericArg::Binding { name, span, kind });
                 }
-                Tok::Ident(name) if self.peek_at(1) == Tok::Colon => {
+                Tok::Ident(name, _) if self.peek_at(1) == Tok::Colon => {
                     let span = self.span();
                     self.bump();
                     self.bump();
@@ -3631,7 +3651,7 @@ impl<'a> Parser<'a> {
             };
             segs.push(PathSeg { name, args });
             if self.peek() == Tok::PathSep
-                && matches!(self.peek_at(1), Tok::Ident(_) | Tok::SelfUpper | Tok::Crate | Tok::Super | Tok::SelfLower)
+                && matches!(self.peek_at(1), Tok::Ident(_, _) | Tok::SelfUpper | Tok::Crate | Tok::Super | Tok::SelfLower)
             {
                 self.bump();
             } else {
@@ -3707,7 +3727,7 @@ impl<'a> Parser<'a> {
             Some(Tok::Fn | Tok::Struct | Tok::Enum | Tok::Impl | Tok::Mod | Tok::Trait | Tok::Static | Tok::Type | Tok::Extern) => true,
             Some(Tok::Const) => self.toks.get(j + 1).map(|t| t.tok) != Some(Tok::LBrace),
             // `union` is a contextual keyword: an item only when a name follows.
-            Some(Tok::Ident(s)) => self.interner.get(s) == "union" && matches!(self.toks.get(j + 1).map(|t| t.tok), Some(Tok::Ident(_))),
+            Some(Tok::Ident(s, _)) => self.interner.get(s) == "union" && matches!(self.toks.get(j + 1).map(|t| t.tok), Some(Tok::Ident(_, _))),
             _ => false,
         }
     }
@@ -3865,7 +3885,7 @@ impl<'a> Parser<'a> {
                 stmts.push(Stmt::Let { pat, ty, init, els, attrs: stmt_attrs.attrs, span: s.to(self.prev_span()) });
                 continue;
             }
-            let labeled = matches!(self.peek(), Tok::Lifetime(_)) && self.peek_at(1) == Tok::Colon;
+            let labeled = matches!(self.peek(), Tok::Lifetime(_, _)) && self.peek_at(1) == Tok::Colon;
             // An inline `const { .. }` block is block-like too: as a
             // statement it needs no `;` and ends at its `}` (rustc).
             let const_block = self.peek() == Tok::Const && self.peek_at(1) == Tok::LBrace;
@@ -4014,7 +4034,7 @@ impl<'a> Parser<'a> {
     /// `at_bound_start` at lookahead `n`.
     fn at_bound_start_at(&self, n: usize) -> bool {
         self.at_literal_start_at(n)
-            || matches!(self.peek_at(n), Tok::Ident(_) | Tok::SelfUpper | Tok::Crate | Tok::Super | Tok::SelfLower | Tok::PathSep | Tok::Lt)
+            || matches!(self.peek_at(n), Tok::Ident(_, _) | Tok::SelfUpper | Tok::Crate | Tok::Super | Tok::SelfLower | Tok::PathSep | Tok::Lt)
     }
 
     /// Parses one range pattern bound: a literal (possibly negated) or
@@ -4025,7 +4045,7 @@ impl<'a> Parser<'a> {
             let (self_ty, trait_path, segs) = self.qpath_parts()?;
             let span = start.to(self.prev_span());
             Ok(self.push_expr(Expr::QPath { self_ty, trait_path, segs }, span))
-        } else if matches!(self.peek(), Tok::Ident(_) | Tok::SelfUpper | Tok::Crate | Tok::Super | Tok::SelfLower | Tok::PathSep) {
+        } else if matches!(self.peek(), Tok::Ident(_, _) | Tok::SelfUpper | Tok::Crate | Tok::Super | Tok::SelfLower | Tok::PathSep) {
             let path = self.path(false)?;
             let span = start.to(self.prev_span());
             Ok(self.push_expr(Expr::Path(path), span))
@@ -4113,15 +4133,15 @@ impl<'a> Parser<'a> {
                     Pat::QPath { self_ty, trait_path, segs }
                 }
             }
-            Tok::Ident(_) | Tok::SelfUpper if self.cfg_syntax && self.at_path_macro_call() => {
+            Tok::Ident(_, _) | Tok::SelfUpper if self.cfg_syntax && self.at_path_macro_call() => {
                 self.skip_macro_invocation()?;
                 Pat::Wild
             }
-            Tok::Ident(_) | Tok::SelfUpper if self.at_path_macro_call() => return Err(macro_error(start)),
+            Tok::Ident(_, _) | Tok::SelfUpper if self.at_path_macro_call() => return Err(macro_error(start)),
             // A path pattern may start with a module anchor
             // (`crate::m::E::A`, `super::S { .. }`, `::m::C`): the same
             // path forms as after an identifier, never a binding.
-            Tok::Ident(_) | Tok::SelfUpper | Tok::Crate | Tok::Super | Tok::SelfLower | Tok::PathSep => {
+            Tok::Ident(_, _) | Tok::SelfUpper | Tok::Crate | Tok::Super | Tok::SelfLower | Tok::PathSep => {
                 let anchored = matches!(self.peek(), Tok::Crate | Tok::Super | Tok::SelfLower | Tok::PathSep);
                 let path = self.path(false)?;
                 if self.peek() == Tok::DotDotEq || self.peek() == Tok::DotDot {
@@ -4982,7 +5002,7 @@ impl<'a> Parser<'a> {
                     // `match`, a loop, `const { .. }`) ends the arm at its
                     // `}` and needs no `,`, as in rustc; a `.` or `?`
                     // after it continues one expression that does.
-                    let labeled = matches!(self.peek(), Tok::Lifetime(_)) && self.peek_at(1) == Tok::Colon;
+                    let labeled = matches!(self.peek(), Tok::Lifetime(_, _)) && self.peek_at(1) == Tok::Colon;
                     let const_block = self.peek() == Tok::Const && self.peek_at(1) == Tok::LBrace;
                     let mut block_body =
                         labeled || const_block || matches!(self.peek(), Tok::LBrace | Tok::If | Tok::Match | Tok::While | Tok::Loop | Tok::For);
@@ -5233,10 +5253,10 @@ impl<'a> Parser<'a> {
                 let val = if self.can_start_expr() { Some(self.expr()?) } else { None };
                 Expr::Return(val)
             }
-            Tok::Lifetime(name) => {
+            Tok::Lifetime(name, raw) => {
                 let span = self.span();
                 self.bump();
-                self.check_lifetime_name(name, span, true);
+                self.check_lifetime_name(name, raw, span, true);
                 self.expect(Tok::Colon, "`:` after a label")?;
                 let label = Label { name, span };
                 return self.block_like_labeled(Some(label), inner_ok);
@@ -5309,7 +5329,7 @@ impl<'a> Parser<'a> {
                 self.bump();
                 Expr::Underscore
             }
-            Tok::Ident(_) | Tok::SelfUpper => {
+            Tok::Ident(_, _) | Tok::SelfUpper => {
                 if self.peek_at(1) == Tok::Bang {
                     return self.macro_call();
                 }
@@ -5353,10 +5373,10 @@ impl<'a> Parser<'a> {
     /// An optional label after `break` or `continue` (no colon follows it there).
     fn break_label(&mut self) -> Option<Label> {
         match self.peek() {
-            Tok::Lifetime(name) => {
+            Tok::Lifetime(name, raw) => {
                 let span = self.span();
                 self.bump();
-                self.check_lifetime_name(name, span, true);
+                self.check_lifetime_name(name, raw, span, true);
                 Some(Label { name, span })
             }
             _ => None,
@@ -5460,7 +5480,7 @@ impl<'a> Parser<'a> {
     /// True at a `std::mem::offset_of!` or `core::mem::offset_of!` path call.
     fn at_offset_of_path(&self) -> bool {
         let name_at = |j: usize| match self.toks.get(j).map(|t| t.tok) {
-            Some(Tok::Ident(s)) => Some(self.interner.get(s)),
+            Some(Tok::Ident(s, _)) => Some(self.interner.get(s)),
             _ => None,
         };
         matches!(name_at(self.pos), Some("std" | "core"))
@@ -5482,7 +5502,7 @@ impl<'a> Parser<'a> {
         let mut last_text = String::new();
         loop {
             match self.peek() {
-                Tok::Ident(s) => {
+                Tok::Ident(s, _) => {
                     last_text = self.interner.get(s).to_string();
                     self.bump();
                 }
@@ -5497,7 +5517,7 @@ impl<'a> Parser<'a> {
         }
         self.expect(Tok::Bang, "`!` after a macro name")?;
         // A definition names the macro before its group.
-        if last_text == "macro_rules" && matches!(self.peek(), Tok::Ident(_)) {
+        if last_text == "macro_rules" && matches!(self.peek(), Tok::Ident(_, _)) {
             self.bump();
         }
         let close_of = |t: Tok| match t {
@@ -5642,7 +5662,7 @@ impl<'a> Parser<'a> {
                     if self.peek() == close {
                         break;
                     }
-                    if let Tok::Ident(name) = self.peek()
+                    if let Tok::Ident(name, _) = self.peek()
                         && self.peek_at(1) == Tok::Eq
                     {
                         let name_span = self.bump().span;
@@ -5894,16 +5914,21 @@ mod tests {
     /// the error is L9001, not a parser stack overflow (fx-parsehang).
     #[test]
     fn right_recursion_depth_cap() {
-        let n = 100_000;
-        let cases = [
-            format!("fn f(a: bool) {{ if a {{}}{} }}", " else if a {}".repeat(n)),
-            format!("fn f() {{ let mut a = 0; a{} = 0; }}", " = a".repeat(n)),
-            format!("fn f() {{ let _ = {}0; }}", "|| ".repeat(n)),
-            format!("fn f(y: i32) {{ let {}x = y; }}", "&".repeat(n)),
-            format!("fn f(y: i32) {{ let {}x = y; }}", "a @ ".repeat(n)),
-        ];
-        for src in &cases {
-            assert_eq!(parse_src(src).err().expect("deep shape rejects").code, "L9001", "{}", &src[..40]);
-        }
+        // Exercise the production compiler stack contract. The default libtest
+        // thread stack is smaller than pool::STACK_SIZE, especially on Darwin;
+        // overflowing that unrelated stack does not test the parser's guard.
+        crate::pool::thread("parser-depth-test").spawn(|| {
+            let n = 100_000;
+            let cases = [
+                format!("fn f(a: bool) {{ if a {{}}{} }}", " else if a {}".repeat(n)),
+                format!("fn f() {{ let mut a = 0; a{} = 0; }}", " = a".repeat(n)),
+                format!("fn f() {{ let _ = {}0; }}", "|| ".repeat(n)),
+                format!("fn f(y: i32) {{ let {}x = y; }}", "&".repeat(n)),
+                format!("fn f(y: i32) {{ let {}x = y; }}", "a @ ".repeat(n)),
+            ];
+            for src in &cases {
+                assert_eq!(parse_src(src).err().expect("deep shape rejects").code, "L9001", "{}", &src[..40]);
+            }
+        }).unwrap().join().unwrap();
     }
 }

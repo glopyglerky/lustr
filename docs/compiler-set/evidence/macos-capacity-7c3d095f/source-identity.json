@@ -1,0 +1,57 @@
+{
+  "published_head": "7c3d095fa8971a4c38aa0edf62e8fcfd7a51589a",
+  "runner_merge": "66963315e9736ce9f151ce8ccac248d35a01d048",
+  "tree": "2a6a51f099bdcdb74871fdc2e65a4df87aa0c867",
+  "source_files": [
+    {
+      "path": ".github/workflows/ci.yml",
+      "bytes": 27463,
+      "sha256": "e7153ed63717f940650dc1febfc29302425fb373ab964d68ca2eb0d160c41f95"
+    },
+    {
+      "path": ".github/workflows/compiler-set.yml",
+      "bytes": 25425,
+      "sha256": "d8d3c4df1cb3cba45614ff4fa3f72ee7f0b11845027ce0071f6a8e7881bae7b6"
+    },
+    {
+      "path": "upstream/tinycc-macho-signing.json",
+      "bytes": 1498,
+      "sha256": "267ab4a86786ac2baecc2e0102f319f6888456f427557f6b76624a6c4a623cde"
+    },
+    {
+      "path": "upstream/tinycc-macho-signing.patch",
+      "bytes": 2279,
+      "sha256": "87d816a4ee3a54cb0c6aec5c5a2e89f0e884251869f09ec68a2a84cdc03398c9"
+    },
+    {
+      "path": "tools/apply-tinycc-signing.py",
+      "bytes": 2624,
+      "sha256": "a1782d5d48911b49168aa2562daa97f9eb021f0aeef6e4b5e2655dbdfadf15c7"
+    },
+    {
+      "path": "tools/test-tinycc-signing.py",
+      "bytes": 16955,
+      "sha256": "5505c8870d15c04202f40659f80b35c844f12ace06934817639ca1d2d9a00548"
+    },
+    {
+      "path": "compiler/native/src/tcc.rs",
+      "bytes": 26936,
+      "sha256": "6dfeafcebc222b938bf05720207d163539b9f834f10645d8b210f6ec615a2161"
+    },
+    {
+      "path": "compiler/native/scripts/ci.sh",
+      "bytes": 3020,
+      "sha256": "a075fd6c10a20f2455aacbaa939de9772f826d8fac354429cc6c6a11835fd94d"
+    },
+    {
+      "path": "compiler/native/scripts/test-crates.sh",
+      "bytes": 14833,
+      "sha256": "71068b816ae5220ef7a514475068ceae96e33f78998fcc848640f19037483433"
+    },
+    {
+      "path": "compiler/native/tests/crates/odd-path/fixture.txt",
+      "bytes": 244,
+      "sha256": "df8641e69a7cb2e37ffbad0611b5d6f98229d663e5529dd3d47f046e959f64ce"
+    }
+  ]
+}

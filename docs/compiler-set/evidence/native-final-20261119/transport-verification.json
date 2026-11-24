@@ -1,0 +1,53 @@
+{
+  "schema": 1,
+  "native_tree": "80a66542b8dc348b036e2974ab2e6e0c42a433fe",
+  "change_commit": "64686b9c74606b3b25039e0415b12538480d0fc5",
+  "matching_change_commit_in_this_worktree": "58c31a0a634fcdfa9a13fe16e790dae60d755c58",
+  "declared_rust_source": "5b7b37aefcb5b2fba3c2392bc9065b9e4602d494",
+  "native_check": {
+    "bins": [
+      "lust",
+      "lust-core"
+    ],
+    "command": "cargo check --manifest-path compiler/native/Cargo.toml --locked --offline --profile gate --jobs 2 --bin lust --bin lust-core --message-format=json",
+    "passed": true,
+    "jsonl_sha256": "fe4e493b4ed91683e98690c40b4139bdf1e408621ab2586b24f11ee012752e84",
+    "stderr_sha256": "224e4ffccd1a537258095c1baa349ec12c3919c0bf21ad37ca53153b5f3c3f45"
+  },
+  "protocol_tests": {
+    "passed": 21,
+    "failed": 0,
+    "compile": "rustc --edition=2024 --test compiler/native/src/protocol.rs",
+    "binary_sha256": "be42e5b908fce004e9ee57e3f3f763bd849bfc995bab1881d868b5db3dd39629",
+    "stdout_sha256": "509b58a647801f02d5b6848128e8aed01033e9a9ac5179064873a080613f769c",
+    "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "test_names": [
+      "host_runtime::tests::liveness_never_probes_a_process_group",
+      "host_runtime::tests::private_socket_is_stable_and_isolates_workspaces",
+      "host_runtime::tests::private_socket_rejects_shared_and_symlinked_directories",
+      "host_runtime::tests::short_socket_keeps_its_namespace_without_a_descriptor",
+      "tests::cargo_profile_reads_any_profile",
+      "tests::daemon_exchange_does_not_replay_after_partial_write_or_lost_reply",
+      "tests::dev_config_sets_effective_features",
+      "tests::dev_profile_follows_cargo_precedence",
+      "tests::feature_selections_are_distinct_keys",
+      "tests::graph_key_covers_resolver_inputs",
+      "tests::manifest_flags_name_the_crate",
+      "tests::mixed_admission_wire_errors_are_not_retryable_misses",
+      "tests::mixed_admission_wire_keeps_ordinary_response_bytes",
+      "tests::mixed_admission_wire_roundtrips_all_outcomes",
+      "tests::native_wire_ambiguous_results_are_never_retryable_misses",
+      "tests::native_wire_preserves_status_and_utf8_without_reclassifying_failures",
+      "tests::release_with_targets_is_the_cc_driver",
+      "tests::rustc_profile_flags",
+      "tests::synthetic_key_shape",
+      "tests::toml_lookup_profile_forms",
+      "tests::wire_round_trips_the_session_key"
+    ]
+  },
+  "limits": [
+    "This is an independent module test execution and complete native bin type-check, not an actual Unix socket exchange or rebuilt release package.",
+    "The protocol fixture uses an explicit nonrelease build identity and does not qualify a package identity.",
+    "The preceding native runtime/compiler binary results remain attached to their original source."
+  ]
+}

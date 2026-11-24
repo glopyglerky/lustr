@@ -1,0 +1,13 @@
+{
+  "schema": "lustr-native-consumer-emitter-provenance-review-v1",
+  "workflow_sha256": "d356209ac9e5980cfca2500ac0d33a91605da98ddbabc1396d3e02e31dff9303",
+  "previous_workflow_sha256": "6955a4ec296c98307648a3c1a1395561d98372774addfa655eea3e160d785976",
+  "previous_verification_sha256": "21fcf741bb68d6e73957e730b41e821b4b22be907101ef70c4604a6b65cf6fa6",
+  "change": "Record resolved Clang executable path, version and digest alongside Rust/TinyCC, and verify the recorded tool bytes after the qualifier. Existing qualifier source and workload are unchanged.",
+  "review": {
+    "workflow_parsed": true,
+    "run_bash_syntax_status": 0,
+    "clang_path_version_digest_and_final_tool_check_present": true
+  },
+  "hosted_execution": false
+}

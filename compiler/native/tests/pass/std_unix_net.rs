@@ -2,6 +2,7 @@
 // abstract name, addresses, shutdown, and io errors.
 use std::io::{Read, Write};
 use std::net::Shutdown;
+#[cfg(target_os = "linux")]
 use std::os::linux::net::SocketAddrExt;
 use std::os::unix::net::{SocketAddr, UnixListener, UnixStream};
 
@@ -14,8 +15,11 @@ fn main() {
     println!("{} {}", a.local_addr().unwrap().is_unnamed(), a.peer_addr().unwrap().is_unnamed());
     let named = SocketAddr::from_pathname("rel.sock").unwrap();
     println!("{:?}", named);
-    let abs = SocketAddr::from_abstract_name(b"lust-test").unwrap();
-    println!("{:?} {:?}", abs, abs.as_abstract_name().map(|x| String::from_utf8_lossy(x).into_owned()));
+    #[cfg(target_os = "linux")]
+    {
+        let abs = SocketAddr::from_abstract_name(b"lust-test").unwrap();
+        println!("{:?} {:?}", abs, abs.as_abstract_name().map(|x| String::from_utf8_lossy(x).into_owned()));
+    }
     println!("{:?}", SocketAddr::from_pathname("x".repeat(200)).map_err(|e| e.kind()));
     let dir = std::env::temp_dir().join(format!("lust-unix-{}", std::process::id()));
     let _ = std::fs::remove_dir_all(&dir);
@@ -34,11 +38,15 @@ fn main() {
     c.shutdown(Shutdown::Write).unwrap();
     println!("{}", s.read(&mut buf).unwrap());
     println!("{:?}", UnixStream::connect(dir.join("missing")).map_err(|e| e.kind()));
-    let al = UnixListener::bind_addr(&abs).unwrap();
-    println!("{}", al.local_addr().unwrap().as_abstract_name().map_or(false, |x| String::from_utf8_lossy(x) == "lust-test"));
-    let mut ac = UnixStream::connect_addr(&abs).unwrap();
-    let (mut asrv, _) = al.accept().unwrap();
-    ac.write_all(b"z").unwrap();
-    println!("{}", asrv.read(&mut buf).unwrap());
+    #[cfg(target_os = "linux")]
+    {
+        let abs = SocketAddr::from_abstract_name(b"lust-test").unwrap();
+        let al = UnixListener::bind_addr(&abs).unwrap();
+        println!("{}", al.local_addr().unwrap().as_abstract_name().map_or(false, |x| String::from_utf8_lossy(x) == "lust-test"));
+        let mut ac = UnixStream::connect_addr(&abs).unwrap();
+        let (mut asrv, _) = al.accept().unwrap();
+        ac.write_all(b"z").unwrap();
+        println!("{}", asrv.read(&mut buf).unwrap());
+    }
     std::fs::remove_dir_all(&dir).unwrap();
 }

@@ -1,0 +1,46 @@
+{
+  "argv": [
+    "<PINNED_SDK>/bin/cargo",
+    "build",
+    "--example",
+    "replay",
+    "--bin",
+    "lustr-bench-gate",
+    "--manifest-path",
+    "crates/lustr-bench/Cargo.toml",
+    "--locked",
+    "--offline"
+  ],
+  "cwd": "<CHECKOUT>",
+  "exit_code": 0,
+  "source_before": {
+    "crates/lustr-bench/Cargo.toml": "171da99f41dcbf6c51cbf9401ea885404d441b0873b18f23a51c5d726b56fbbc",
+    "crates/lustr-bench/Cargo.lock": "0a91bce153dfd86eace542bdf0dccabf2c7fc1035e1c332481d9a45f55a00970",
+    "crates/lustr-bench/src/main.rs": "e40c826b097d227616f4e439baf1b4879b2e582e73458d4946aa128d3231f476",
+    "crates/lustr-bench/src/bin/lustr-bench-gate.rs": "88a6ad1f778cd5b7e243a542065291528147a5b176d70c79bb4f2867831f8bfd",
+    "crates/lustr-bench/tests/routed.rs": "c310a9f892ac6088560f90101703cfa984cf8c4525b792df84b5daf69a079bfc"
+  },
+  "source_after": {
+    "crates/lustr-bench/Cargo.toml": "171da99f41dcbf6c51cbf9401ea885404d441b0873b18f23a51c5d726b56fbbc",
+    "crates/lustr-bench/Cargo.lock": "0a91bce153dfd86eace542bdf0dccabf2c7fc1035e1c332481d9a45f55a00970",
+    "crates/lustr-bench/src/main.rs": "e40c826b097d227616f4e439baf1b4879b2e582e73458d4946aa128d3231f476",
+    "crates/lustr-bench/src/bin/lustr-bench-gate.rs": "88a6ad1f778cd5b7e243a542065291528147a5b176d70c79bb4f2867831f8bfd",
+    "crates/lustr-bench/tests/routed.rs": "c310a9f892ac6088560f90101703cfa984cf8c4525b792df84b5daf69a079bfc"
+  },
+  "current_compiler_qualification": false,
+  "explicit_environment": {
+    "RUSTC": "<PINNED_SDK>/bin/rustc",
+    "CARGO_HOME": "<CARGO_CACHE>",
+    "CARGO_TARGET_DIR": "<OUTPUT>/ci-audit-target",
+    "CARGO_BUILD_BUILD_DIR": "<OUTPUT>/ci-audit-intermediates",
+    "CARGO_BUILD_JOBS": "2"
+  },
+  "stdout": {
+    "path": "replay-adapter-build.stdout",
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "stderr": {
+    "path": "replay-adapter-build.stderr",
+    "sha256": "24bc53586720ae04055d3ec0a39d643f686e696930a066a56a4ceaa4b252f5a8"
+  }
+}

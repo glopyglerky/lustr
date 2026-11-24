@@ -1,0 +1,99 @@
+{
+  "artifact": {
+    "bytes": 80269658,
+    "download_digest_verified": true,
+    "id": 14610454078,
+    "uploaded_sha256": "7a7a511ed76156e00eda031dd5e33c3eeb3204435fa26de69c28cb760e8a7508"
+  },
+  "campaign_passed": false,
+  "candidate": {
+    "bytes": 355602216,
+    "independently_hashed_from_original_archive": true,
+    "sha256": "9509b658cd5f6e37304e1fe6033a1f693bfacac98525f4b05c94b96ad2c0b04a"
+  },
+  "candidate_rerun_by_reviewer": false,
+  "consumer_assertion_distribution": {
+    "262152": 11,
+    "393228": 2
+  },
+  "consumer_source_program_output_hashes_and_39_successful_commands_verified": true,
+  "diagnostic": {
+    "checked_definitions": [
+      {
+        "name": "helper",
+        "native_id": [
+          11888898275624724064,
+          17864265065841802870
+        ]
+      }
+    ],
+    "commands": [],
+    "counts": {
+      "archive_builds": 0,
+      "checked_bodies": 1,
+      "compiled_objects": 0,
+      "generated_bodies": 0,
+      "metadata_encodes": 0,
+      "reused_objects": 0,
+      "sdk_loads": 1
+    },
+    "generated_definitions": [],
+    "matcher_defect": "The strict authored expectation omitted the normal terminal summary written by unchanged pinned Lust errors().",
+    "native_summary": "error: could not compile `<exact attempted source path>` due to 1 previous error(s)\\n",
+    "phase": "native-prepare",
+    "report_sha256": "5074342e9a5e8ade0665b5928a7fa54b0564d7965977cfc2f488ac43b148f35a",
+    "source_sha256": "e28e1051f40877626e03fdc2fa0364ac79812fcdb1b2f1de8a5b8c3d3823fbcc",
+    "status": 1,
+    "stderr_sha256": "558a6ae5188f0ba308ab132bd1fce80db1adfd8b397e56b026aeca760b7fcfe2",
+    "type_error_and_source_span_exact": true
+  },
+  "evaluator_controls_passed": 30,
+  "first_failure": "private-body failure did not preserve the exact native type diagnostic and source span",
+  "full_compiler_or_performance_qualification": false,
+  "full_retained_source_and_tool_after_validation_completed": false,
+  "observed_history": [
+    "cold",
+    "no-op",
+    "body-edit",
+    "body-edit-no-op",
+    "body-revert",
+    "span-only",
+    "reorder",
+    "insert",
+    "insert-no-op",
+    "remove",
+    "signature",
+    "signature-no-op",
+    "signature-revert",
+    "invalid-private"
+  ],
+  "original_job_log_sha256": "8f0f31b5551d3d4ff10293a8b9d0c34a86a8093987dc58c0052393bfdec95c99",
+  "remaining_history_and_sessions_not_run": true,
+  "schema": "retained-metadata-runtime-failure-v1",
+  "source": {
+    "head": "b5b55b7813843956062fc40180a759c1b4569541",
+    "merge_checkout": "1e33d1c192d353a63f7409ac253bd7b85b2e1193",
+    "native_tree": "d894bf7f69541285ea9a58a205b9e2df3323b099",
+    "tree": "633533abfabe97bf5a8915500f711d0f5c938a66"
+  },
+  "trace": {
+    "actual_calls_in_noop_and_invalid_intervals": {
+      "body-edit-no-op": 0,
+      "insert-no-op": 0,
+      "invalid-private": 0,
+      "no-op": 0,
+      "signature-no-op": 0
+    },
+    "all_observed_prefix_hashes_verified": true,
+    "original_sha256": "c0ca63e6a424983c73da5ccddb0ba8351c0a29707f9058722cbe4090c79a3829"
+  },
+  "verified_consumer_count": 13,
+  "verified_runtime_assertions": 3670128,
+  "workflow": {
+    "job_conclusion": "failure",
+    "job_id": 136156822759,
+    "job_url": "https://github.com/glopyglerky/lustr/actions/runs/44697238021/job/136156822759",
+    "run_id": 44697238021,
+    "whole_run_conclusion_not_claimed": true
+  }
+}

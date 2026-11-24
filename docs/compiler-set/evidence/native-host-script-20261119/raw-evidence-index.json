@@ -1,0 +1,3218 @@
+{
+  "archive_sha256": "ee8bf86f72094de9192052ca9790b7d6a904976d45a2cd00c951cba40dc17934",
+  "members": [
+    {
+      "path": "counters-v2-qualified/diamond/000.stderr",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0,
+      "original_path": "/tmp/lustr-buildscript-execution-review/counters-v2-qualified/diamond/000.stderr",
+      "original_mtime_ns": 1795097235857435338
+    },
+    {
+      "path": "counters-v2-qualified/diamond/000.stdout",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0,
+      "original_path": "/tmp/lustr-buildscript-execution-review/counters-v2-qualified/diamond/000.stdout",
+      "original_mtime_ns": 1795097235857435338
+    },
+    {
+      "path": "counters-v2-qualified/diamond/000.trace.jsonl",
+      "sha256": "a9c16c08b16f370636aa7b4a7921dcbef098e46c66ea63305760e066cf4bf572",
+      "bytes": 45,
+      "original_path": "/tmp/lustr-buildscript-execution-review/counters-v2-qualified/diamond/000.trace.jsonl",
+      "original_mtime_ns": 1795097235857435338
+    },
+    {
+      "path": "counters-v2-qualified/diamond/001.stderr",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0,
+      "original_path": "/tmp/lustr-buildscript-execution-review/counters-v2-qualified/diamond/001.stderr",
+      "original_mtime_ns": 1795097235997156069
+    },
+    {
+      "path": "counters-v2-qualified/diamond/001.stdout",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0,
+      "original_path": "/tmp/lustr-buildscript-execution-review/counters-v2-qualified/diamond/001.stdout",
+      "original_mtime_ns": 1795097235997156069
+    },
+    {
+      "path": "counters-v2-qualified/diamond/001.trace.jsonl",
+      "sha256": "a9c16c08b16f370636aa7b4a7921dcbef098e46c66ea63305760e066cf4bf572",
+      "bytes": 45,
+      "original_path": "/tmp/lustr-buildscript-execution-review/counters-v2-qualified/diamond/001.trace.jsonl",
+      "original_mtime_ns": 1795097235997156069
+    },
+    {
+      "path": "counters-v2-qualified/diamond/002.stderr",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0,
+      "original_path": "/tmp/lustr-buildscript-execution-review/counters-v2-qualified/diamond/002.stderr",
+      "original_mtime_ns": 1795097236003595253
+    },
+    {
+      "path": "counters-v2-qualified/diamond/002.stdout",
+      "sha256": "3defe166069d53b9aa50308df38c9f4f23939a09d3d8e26a1527290cb36ae6b3",
+      "bytes": 4,
+      "original_path": "/tmp/lustr-buildscript-execution-review/counters-v2-qualified/diamond/002.stdout",
+      "original_mtime_ns": 1795097236003595253
+    },
+    {
+      "path": "counters-v2-qualified/diamond/003.stderr",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0,
+      "original_path": "/tmp/lustr-buildscript-execution-review/counters-v2-qualified/diamond/003.stderr",
+      "original_mtime_ns": 1795097236229431503
+    },
+    {
+      "path": "counters-v2-qualified/diamond/003.stdout",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0,
+      "original_path": "/tmp/lustr-buildscript-execution-review/counters-v2-qualified/diamond/003.stdout",
+      "original_mtime_ns": 1795097236229431503
+    },
+    {
+      "path": "counters-v2-qualified/diamond/003.trace.jsonl",
+      "sha256": "a9c16c08b16f370636aa7b4a7921dcbef098e46c66ea63305760e066cf4bf572",
+      "bytes": 45,
+      "original_path": "/tmp/lustr-buildscript-execution-review/counters-v2-qualified/diamond/003.trace.jsonl",
+      "original_mtime_ns": 1795097236229431503
+    },
+    {
+      "path": "counters-v2-qualified/diamond/004.stderr",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0,
+      "original_path": "/tmp/lustr-buildscript-execution-review/counters-v2-qualified/diamond/004.stderr",
+      "original_mtime_ns": 1795097236240584554
+    },
+    {
+      "path": "counters-v2-qualified/diamond/004.stdout",
+      "sha256": "3defe166069d53b9aa50308df38c9f4f23939a09d3d8e26a1527290cb36ae6b3",
+      "bytes": 4,
+      "original_path": "/tmp/lustr-buildscript-execution-review/counters-v2-qualified/diamond/004.stdout",
+      "original_mtime_ns": 1795097236240584554
+    },
+    {
+      "path": "counters-v2-qualified/diamond/005.stderr",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0,
+      "original_path": "/tmp/lustr-buildscript-execution-review/counters-v2-qualified/diamond/005.stderr",
+      "original_mtime_ns": 1795097236365430102
+    },
+    {
+      "path": "counters-v2-qualified/diamond/005.stdout",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0,
+      "original_path": "/tmp/lustr-buildscript-execution-review/counters-v2-qualified/diamond/005.stdout",
+      "original_mtime_ns": 1795097236365430102
+    },
+    {
+      "path": "counters-v2-qualified/diamond/005.trace.jsonl",
+      "sha256": "a9c16c08b16f370636aa7b4a7921dcbef098e46c66ea63305760e066cf4bf572",
+      "bytes": 45,
+      "original_path": "/tmp/lustr-buildscript-execution-review/counters-v2-qualified/diamond/005.trace.jsonl",
+      "original_mtime_ns": 1795097236365430102
+    },
+    {
+      "path": "counters-v2-qualified/diamond/006.stderr",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0,
+      "original_path": "/tmp/lustr-buildscript-execution-review/counters-v2-qualified/diamond/006.stderr",
+      "original_mtime_ns": 1795097236515594372
+    },
+    {
+      "path": "counters-v2-qualified/diamond/006.stdout",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0,
+      "original_path": "/tmp/lustr-buildscript-execution-review/counters-v2-qualified/diamond/006.stdout",
+      "original_mtime_ns": 1795097236515594372
+    },
+    {
+      "path": "counters-v2-qualified/diamond/006.trace.jsonl",
+      "sha256": "a9c16c08b16f370636aa7b4a7921dcbef098e46c66ea63305760e066cf4bf572",
+      "bytes": 45,
+      "original_path": "/tmp/lustr-buildscript-execution-review/counters-v2-qualified/diamond/006.trace.jsonl",
+      "original_mtime_ns": 1795097236515594372
+    },
+    {
+      "path": "counters-v2-qualified/diamond/007.stderr",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0,
+      "original_path": "/tmp/lustr-buildscript-execution-review/counters-v2-qualified/diamond/007.stderr",
+      "original_mtime_ns": 1795097236521396359
+    },
+    {
+      "path": "counters-v2-qualified/diamond/007.stdout",
+      "sha256": "9b8583219b85ffd578cc95af733d3b5b7aadb66acf8ac5d38a5f2eeee734c604",
+      "bytes": 6,
+      "original_path": "/tmp/lustr-buildscript-execution-review/counters-v2-qualified/diamond/007.stdout",
+      "original_mtime_ns": 1795097236521396359
+    },
+    {
+      "path": "counters-v2-qualified/diamond/008.stderr",
+      "sha256": "d8949ccbd0f24d07b5fe77909e900f6a074bbfc95772c33cb71b59f7f3407740",
+      "bytes": 509,
+      "original_path": "/tmp/lustr-buildscript-execution-review/counters-v2-qualified/diamond/008.stderr",
+      "original_mtime_ns": 1795097236762630438
+    },
+    {
+      "path": "counters-v2-qualified/diamond/008.stdout",
+      "sha256": "c7db5ff66d751124cfd853f2acd42cceadeab23ea83ed56f052ac852d771e0f7",
+      "bytes": 4976,
+      "original_path": "/tmp/lustr-buildscript-execution-review/counters-v2-qualified/diamond/008.stdout",
+      "original_mtime_ns": 1795097236762607904
+    },
+    {
+      "path": "counters-v2-qualified/diamond/009.stderr",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0,
+      "original_path": "/tmp/lustr-buildscript-execution-review/counters-v2-qualified/diamond/009.stderr",
+      "original_mtime_ns": 1795097236765849721
+    },
+    {
+      "path": "counters-v2-qualified/diamond/009.stdout",
+      "sha256": "3defe166069d53b9aa50308df38c9f4f23939a09d3d8e26a1527290cb36ae6b3",
+      "bytes": 4,
+      "original_path": "/tmp/lustr-buildscript-execution-review/counters-v2-qualified/diamond/009.stdout",
+      "original_mtime_ns": 1795097236765849721
+    },
+    {
+      "path": "counters-v2-qualified/diamond/work/Cargo.lock",
+      "sha256": "bad0ee3277f9803ed930c1e646f9ae3751d6d8fab259c8727e5d7ef6fc7a3f70",
+      "bytes": 392,
+      "original_path": "/tmp/lustr-buildscript-execution-review/counters-v2-qualified/diamond/work/Cargo.lock",
+      "original_mtime_ns": 1795097235212118172
+    },
+    {
+      "path": "counters-v2-qualified/diamond/work/Cargo.toml",
+      "sha256": "81542a0346079263afe044b88f0b7cbebd273af5c7cb1ce5668a45463577ab42",
+      "bytes": 116,
+      "original_path": "/tmp/lustr-buildscript-execution-review/counters-v2-qualified/diamond/work/Cargo.toml",
+      "original_mtime_ns": 1795097235187175806
+    },
+    {
+      "path": "counters-v2-qualified/diamond/work/left/Cargo.toml",
+      "sha256": "22878e10a95b2fe2cfde6976366c405f13c3bf0cba29434e1318c8a797d5074b",
+      "bytes": 94,
+      "original_path": "/tmp/lustr-buildscript-execution-review/counters-v2-qualified/diamond/work/left/Cargo.toml",
+      "original_mtime_ns": 1795097235187206292
+    },
+    {
+      "path": "counters-v2-qualified/diamond/work/left/src/lib.rs",
+      "sha256": "99e9dc4d39ef3bc209762dad334f9033cdb50dc278e410cab6ae03ca76e91224",
+      "bytes": 51,
+      "original_path": "/tmp/lustr-buildscript-execution-review/counters-v2-qualified/diamond/work/left/src/lib.rs",
+      "original_mtime_ns": 1795097235187221765
+    },
+    {
+      "path": "counters-v2-qualified/diamond/work/right/Cargo.toml",
+      "sha256": "85a88f8bc26e5da22dc35862b2b0c688ef788471a485c08cbf5e4f00804c7659",
+      "bytes": 95,
+      "original_path": "/tmp/lustr-buildscript-execution-review/counters-v2-qualified/diamond/work/right/Cargo.toml",
+      "original_mtime_ns": 1795097235187233613
+    },
+    {
+      "path": "counters-v2-qualified/diamond/work/right/src/lib.rs",
+      "sha256": "99e9dc4d39ef3bc209762dad334f9033cdb50dc278e410cab6ae03ca76e91224",
+      "bytes": 51,
+      "original_path": "/tmp/lustr-buildscript-execution-review/counters-v2-qualified/diamond/work/right/src/lib.rs",
+      "original_mtime_ns": 1795097235187245330
+    },
+    {
+      "path": "counters-v2-qualified/diamond/work/shared/Cargo.toml",
+      "sha256": "e791e68ef289645171448f6f26a020f96666a621ae56bb1fd5d85a7f360905ab",
+      "bytes": 55,
+      "original_path": "/tmp/lustr-buildscript-execution-review/counters-v2-qualified/diamond/work/shared/Cargo.toml",
+      "original_mtime_ns": 1795097235187305540
+    },
+    {
+      "path": "counters-v2-qualified/diamond/work/shared/build.rs",
+      "sha256": "0ccd62a737423923fe08f248e9147d5f03310f4248fc09fb621202849ce4578b",
+      "bytes": 370,
+      "original_path": "/tmp/lustr-buildscript-execution-review/counters-v2-qualified/diamond/work/shared/build.rs",
+      "original_mtime_ns": 1795097235187332060
+    },
+    {
+      "path": "counters-v2-qualified/diamond/work/shared/src/lib.rs",
+      "sha256": "85d3724c3af88c7b1d36e9072d71e63fe59e74f54bb367b2478df9757ca264e4",
+      "bytes": 54,
+      "original_path": "/tmp/lustr-buildscript-execution-review/counters-v2-qualified/diamond/work/shared/src/lib.rs",
+      "original_mtime_ns": 1795097235187317618
+    },
+    {
+      "path": "counters-v2-qualified/diamond/work/src/main.rs",
+      "sha256": "b7c32dd2f404478ce110d3e07efd8ee583c95e86c434ead59fd65dd10331663d",
+      "bytes": 64,
+      "original_path": "/tmp/lustr-buildscript-execution-review/counters-v2-qualified/diamond/work/src/main.rs",
+      "original_mtime_ns": 1795097235187191640
+    },
+    {
+      "path": "counters-v2-qualified/failed_script/000.stderr",
+      "sha256": "e676cb897aeeeec8502a0cad26602e478193d55f448f0e9d5068afe8bfded05a",
+      "bytes": 92,
+      "original_path": "/tmp/lustr-buildscript-execution-review/counters-v2-qualified/failed_script/000.stderr",
+      "original_mtime_ns": 1795097237483251991
+    },
+    {
+      "path": "counters-v2-qualified/failed_script/000.stdout",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0,
+      "original_path": "/tmp/lustr-buildscript-execution-review/counters-v2-qualified/failed_script/000.stdout",
+      "original_mtime_ns": 1795097237477418896
+    },
+    {
+      "path": "counters-v2-qualified/failed_script/000.trace.jsonl",
+      "sha256": "b3950c6bd408e467def5224e5d148112cf09cd5eccf002ddf7b41a0102a00c14",
+      "bytes": 52,
+      "original_path": "/tmp/lustr-buildscript-execution-review/counters-v2-qualified/failed_script/000.trace.jsonl",
+      "original_mtime_ns": 1795097237477418896
+    },
+    {
+      "path": "counters-v2-qualified/failed_script/001.stderr",
+      "sha256": "e676cb897aeeeec8502a0cad26602e478193d55f448f0e9d5068afe8bfded05a",
+      "bytes": 92,
+      "original_path": "/tmp/lustr-buildscript-execution-review/counters-v2-qualified/failed_script/001.stderr",
+      "original_mtime_ns": 1795097238243482874
+    },
+    {
+      "path": "counters-v2-qualified/failed_script/001.stdout",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0,
+      "original_path": "/tmp/lustr-buildscript-execution-review/counters-v2-qualified/failed_script/001.stdout",
+      "original_mtime_ns": 1795097238237411451
+    },
+    {
+      "path": "counters-v2-qualified/failed_script/001.trace.jsonl",
+      "sha256": "b3950c6bd408e467def5224e5d148112cf09cd5eccf002ddf7b41a0102a00c14",
+      "bytes": 52,
+      "original_path": "/tmp/lustr-buildscript-execution-review/counters-v2-qualified/failed_script/001.trace.jsonl",
+      "original_mtime_ns": 1795097238237411451
+    },
+    {
+      "path": "counters-v2-qualified/failed_script/work/Cargo.lock",
+      "sha256": "10aa028a836cfa84104f0d554758fcb2529d7ad5bb6065016084cac4c3ce2e44",
+      "bytes": 156,
+      "original_path": "/tmp/lustr-buildscript-execution-review/counters-v2-qualified/failed_script/work/Cargo.lock",
+      "original_mtime_ns": 1795097236793061888
+    },
+    {
+      "path": "counters-v2-qualified/failed_script/work/Cargo.toml",
+      "sha256": "221c2747c2db876e362862fd637ce748829586b5065086f099487a70f86c408e",
+      "bytes": 61,
+      "original_path": "/tmp/lustr-buildscript-execution-review/counters-v2-qualified/failed_script/work/Cargo.toml",
+      "original_mtime_ns": 1795097236766752929
+    },
+    {
+      "path": "counters-v2-qualified/failed_script/work/build.rs",
+      "sha256": "04f342ff2f4484aeba652909f21adbc5ebdf5991606193885b722ebdd5ef067d",
+      "bytes": 338,
+      "original_path": "/tmp/lustr-buildscript-execution-review/counters-v2-qualified/failed_script/work/build.rs",
+      "original_mtime_ns": 1795097236766775703
+    },
+    {
+      "path": "counters-v2-qualified/failed_script/work/src/lib.rs",
+      "sha256": "85d3724c3af88c7b1d36e9072d71e63fe59e74f54bb367b2478df9757ca264e4",
+      "bytes": 54,
+      "original_path": "/tmp/lustr-buildscript-execution-review/counters-v2-qualified/failed_script/work/src/lib.rs",
+      "original_mtime_ns": 1795097236766794521
+    },
+    {
+      "path": "counters-v2-qualified/failed_script/work/src/main.rs",
+      "sha256": "d19eade9fd2d1cbe62fa785ae81b2f6310b4cc70a4e30f7ffe7ecad5452e0741",
+      "bytes": 53,
+      "original_path": "/tmp/lustr-buildscript-execution-review/counters-v2-qualified/failed_script/work/src/main.rs",
+      "original_mtime_ns": 1795097236766808512
+    },
+    {
+      "path": "counters-v2-qualified/record-snapshots/diamond/cache/buildscript-native-ccb7176bc5641760.txt",
+      "sha256": "c884f3ccf9baa17e22e2af63e8310bd4a8a2ec13b20b3c7437e4e778a07dca82",
+      "bytes": 5140,
+      "original_path": "/tmp/lustr-buildscript-execution-review/counters-v2-qualified/diamond/cache/buildscript-native-ccb7176bc5641760.txt",
+      "original_mtime_ns": 1795097236345430308
+    },
+    {
+      "path": "counters-v2-qualified/record-snapshots/same_package/cache/buildscript-native-d1b86c85def9db92.txt",
+      "sha256": "faec3baeb7507b6eb407e5cffeeee8421985cf7defb025655b189ac2206c19bf",
+      "bytes": 4580,
+      "original_path": "/tmp/lustr-buildscript-execution-review/counters-v2-qualified/same_package/cache/buildscript-native-d1b86c85def9db92.txt",
+      "original_mtime_ns": 1795097234857445646
+    },
+    {
+      "path": "counters-v2-qualified/report.json",
+      "sha256": "15921697d00775e60ad90eb59532041656522debfd70b04e2ddd7f2b07542f61",
+      "bytes": 36121,
+      "original_path": "/tmp/lustr-buildscript-execution-review/counters-v2-qualified/report.json",
+      "original_mtime_ns": 1795097238246173580
+    },
+    {
+      "path": "counters-v2-qualified/same_package/000.stderr",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0,
+      "original_path": "/tmp/lustr-buildscript-execution-review/counters-v2-qualified/same_package/000.stderr",
+      "original_mtime_ns": 1795097234445449894
+    },
+    {
+      "path": "counters-v2-qualified/same_package/000.stdout",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0,
+      "original_path": "/tmp/lustr-buildscript-execution-review/counters-v2-qualified/same_package/000.stdout",
+      "original_mtime_ns": 1795097234445449894
+    },
+    {
+      "path": "counters-v2-qualified/same_package/000.trace.jsonl",
+      "sha256": "a9c16c08b16f370636aa7b4a7921dcbef098e46c66ea63305760e066cf4bf572",
+      "bytes": 45,
+      "original_path": "/tmp/lustr-buildscript-execution-review/counters-v2-qualified/same_package/000.trace.jsonl",
+      "original_mtime_ns": 1795097234445449894
+    },
+    {
+      "path": "counters-v2-qualified/same_package/001.stderr",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0,
+      "original_path": "/tmp/lustr-buildscript-execution-review/counters-v2-qualified/same_package/001.stderr",
+      "original_mtime_ns": 1795097234637447915
+    },
+    {
+      "path": "counters-v2-qualified/same_package/001.stdout",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0,
+      "original_path": "/tmp/lustr-buildscript-execution-review/counters-v2-qualified/same_package/001.stdout",
+      "original_mtime_ns": 1795097234637447915
+    },
+    {
+      "path": "counters-v2-qualified/same_package/001.trace.jsonl",
+      "sha256": "a9c16c08b16f370636aa7b4a7921dcbef098e46c66ea63305760e066cf4bf572",
+      "bytes": 45,
+      "original_path": "/tmp/lustr-buildscript-execution-review/counters-v2-qualified/same_package/001.trace.jsonl",
+      "original_mtime_ns": 1795097234634395807
+    },
+    {
+      "path": "counters-v2-qualified/same_package/002.stderr",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0,
+      "original_path": "/tmp/lustr-buildscript-execution-review/counters-v2-qualified/same_package/002.stderr",
+      "original_mtime_ns": 1795097234646011417
+    },
+    {
+      "path": "counters-v2-qualified/same_package/002.stdout",
+      "sha256": "73cb3858a687a8494ca3323053016282f3dad39d42cf62ca4e79dda2aac7d9ac",
+      "bytes": 2,
+      "original_path": "/tmp/lustr-buildscript-execution-review/counters-v2-qualified/same_package/002.stdout",
+      "original_mtime_ns": 1795097234646011417
+    },
+    {
+      "path": "counters-v2-qualified/same_package/003.stderr",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0,
+      "original_path": "/tmp/lustr-buildscript-execution-review/counters-v2-qualified/same_package/003.stderr",
+      "original_mtime_ns": 1795097234782485278
+    },
+    {
+      "path": "counters-v2-qualified/same_package/003.stdout",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0,
+      "original_path": "/tmp/lustr-buildscript-execution-review/counters-v2-qualified/same_package/003.stdout",
+      "original_mtime_ns": 1795097234782485278
+    },
+    {
+      "path": "counters-v2-qualified/same_package/003.trace.jsonl",
+      "sha256": "a9c16c08b16f370636aa7b4a7921dcbef098e46c66ea63305760e066cf4bf572",
+      "bytes": 45,
+      "original_path": "/tmp/lustr-buildscript-execution-review/counters-v2-qualified/same_package/003.trace.jsonl",
+      "original_mtime_ns": 1795097234782485278
+    },
+    {
+      "path": "counters-v2-qualified/same_package/004.stderr",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0,
+      "original_path": "/tmp/lustr-buildscript-execution-review/counters-v2-qualified/same_package/004.stderr",
+      "original_mtime_ns": 1795097234787572444
+    },
+    {
+      "path": "counters-v2-qualified/same_package/004.stdout",
+      "sha256": "73cb3858a687a8494ca3323053016282f3dad39d42cf62ca4e79dda2aac7d9ac",
+      "bytes": 2,
+      "original_path": "/tmp/lustr-buildscript-execution-review/counters-v2-qualified/same_package/004.stdout",
+      "original_mtime_ns": 1795097234787572444
+    },
+    {
+      "path": "counters-v2-qualified/same_package/005.stderr",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0,
+      "original_path": "/tmp/lustr-buildscript-execution-review/counters-v2-qualified/same_package/005.stderr",
+      "original_mtime_ns": 1795097234875674738
+    },
+    {
+      "path": "counters-v2-qualified/same_package/005.stdout",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0,
+      "original_path": "/tmp/lustr-buildscript-execution-review/counters-v2-qualified/same_package/005.stdout",
+      "original_mtime_ns": 1795097234875043843
+    },
+    {
+      "path": "counters-v2-qualified/same_package/005.trace.jsonl",
+      "sha256": "a9c16c08b16f370636aa7b4a7921dcbef098e46c66ea63305760e066cf4bf572",
+      "bytes": 45,
+      "original_path": "/tmp/lustr-buildscript-execution-review/counters-v2-qualified/same_package/005.trace.jsonl",
+      "original_mtime_ns": 1795097234875043843
+    },
+    {
+      "path": "counters-v2-qualified/same_package/006.stderr",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0,
+      "original_path": "/tmp/lustr-buildscript-execution-review/counters-v2-qualified/same_package/006.stderr",
+      "original_mtime_ns": 1795097234983733368
+    },
+    {
+      "path": "counters-v2-qualified/same_package/006.stdout",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0,
+      "original_path": "/tmp/lustr-buildscript-execution-review/counters-v2-qualified/same_package/006.stdout",
+      "original_mtime_ns": 1795097234983733368
+    },
+    {
+      "path": "counters-v2-qualified/same_package/006.trace.jsonl",
+      "sha256": "a9c16c08b16f370636aa7b4a7921dcbef098e46c66ea63305760e066cf4bf572",
+      "bytes": 45,
+      "original_path": "/tmp/lustr-buildscript-execution-review/counters-v2-qualified/same_package/006.trace.jsonl",
+      "original_mtime_ns": 1795097234983733368
+    },
+    {
+      "path": "counters-v2-qualified/same_package/007.stderr",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0,
+      "original_path": "/tmp/lustr-buildscript-execution-review/counters-v2-qualified/same_package/007.stderr",
+      "original_mtime_ns": 1795097234988040068
+    },
+    {
+      "path": "counters-v2-qualified/same_package/007.stdout",
+      "sha256": "348df4eb47f9230bfe89637afe7409bec883424d822257b6cbbce93ee780d992",
+      "bytes": 3,
+      "original_path": "/tmp/lustr-buildscript-execution-review/counters-v2-qualified/same_package/007.stdout",
+      "original_mtime_ns": 1795097234988040068
+    },
+    {
+      "path": "counters-v2-qualified/same_package/008.stderr",
+      "sha256": "d7464dd8027bc1efae3240b5c61a84d32541f60101ebb482cc757d7473a4c3de",
+      "bytes": 187,
+      "original_path": "/tmp/lustr-buildscript-execution-review/counters-v2-qualified/same_package/008.stderr",
+      "original_mtime_ns": 1795097235185113610
+    },
+    {
+      "path": "counters-v2-qualified/same_package/008.stdout",
+      "sha256": "a6210d088ee9067a459089b24ec37af769abeb3d5c4752de902ab51cb7fb6bee",
+      "bytes": 3162,
+      "original_path": "/tmp/lustr-buildscript-execution-review/counters-v2-qualified/same_package/008.stdout",
+      "original_mtime_ns": 1795097235185081802
+    },
+    {
+      "path": "counters-v2-qualified/same_package/009.stderr",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0,
+      "original_path": "/tmp/lustr-buildscript-execution-review/counters-v2-qualified/same_package/009.stderr",
+      "original_mtime_ns": 1795097235186667017
+    },
+    {
+      "path": "counters-v2-qualified/same_package/009.stdout",
+      "sha256": "73cb3858a687a8494ca3323053016282f3dad39d42cf62ca4e79dda2aac7d9ac",
+      "bytes": 2,
+      "original_path": "/tmp/lustr-buildscript-execution-review/counters-v2-qualified/same_package/009.stdout",
+      "original_mtime_ns": 1795097235186667017
+    },
+    {
+      "path": "counters-v2-qualified/same_package/work/Cargo.lock",
+      "sha256": "10aa028a836cfa84104f0d554758fcb2529d7ad5bb6065016084cac4c3ce2e44",
+      "bytes": 156,
+      "original_path": "/tmp/lustr-buildscript-execution-review/counters-v2-qualified/same_package/work/Cargo.lock",
+      "original_mtime_ns": 1795097233671214145
+    },
+    {
+      "path": "counters-v2-qualified/same_package/work/Cargo.toml",
+      "sha256": "221c2747c2db876e362862fd637ce748829586b5065086f099487a70f86c408e",
+      "bytes": 61,
+      "original_path": "/tmp/lustr-buildscript-execution-review/counters-v2-qualified/same_package/work/Cargo.toml",
+      "original_mtime_ns": 1795097233601240418
+    },
+    {
+      "path": "counters-v2-qualified/same_package/work/build.rs",
+      "sha256": "0ccd62a737423923fe08f248e9147d5f03310f4248fc09fb621202849ce4578b",
+      "bytes": 370,
+      "original_path": "/tmp/lustr-buildscript-execution-review/counters-v2-qualified/same_package/work/build.rs",
+      "original_mtime_ns": 1795097233601312456
+    },
+    {
+      "path": "counters-v2-qualified/same_package/work/src/lib.rs",
+      "sha256": "85d3724c3af88c7b1d36e9072d71e63fe59e74f54bb367b2478df9757ca264e4",
+      "bytes": 54,
+      "original_path": "/tmp/lustr-buildscript-execution-review/counters-v2-qualified/same_package/work/src/lib.rs",
+      "original_mtime_ns": 1795097233601337423
+    },
+    {
+      "path": "counters-v2-qualified/same_package/work/src/main.rs",
+      "sha256": "d19eade9fd2d1cbe62fa785ae81b2f6310b4cc70a4e30f7ffe7ecad5452e0741",
+      "bytes": 53,
+      "original_path": "/tmp/lustr-buildscript-execution-review/counters-v2-qualified/same_package/work/src/main.rs",
+      "original_mtime_ns": 1795097233601350342
+    },
+    {
+      "path": "counters-v2/diamond/000.stderr",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0,
+      "original_path": "/tmp/lustr-buildscript-execution-review/counters-v2/diamond/000.stderr",
+      "original_mtime_ns": 1795097193149850055
+    },
+    {
+      "path": "counters-v2/diamond/000.stdout",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0,
+      "original_path": "/tmp/lustr-buildscript-execution-review/counters-v2/diamond/000.stdout",
+      "original_mtime_ns": 1795097193149850055
+    },
+    {
+      "path": "counters-v2/diamond/000.trace.jsonl",
+      "sha256": "a9c16c08b16f370636aa7b4a7921dcbef098e46c66ea63305760e066cf4bf572",
+      "bytes": 45,
+      "original_path": "/tmp/lustr-buildscript-execution-review/counters-v2/diamond/000.trace.jsonl",
+      "original_mtime_ns": 1795097193149850055
+    },
+    {
+      "path": "counters-v2/diamond/work/Cargo.lock",
+      "sha256": "bad0ee3277f9803ed930c1e646f9ae3751d6d8fab259c8727e5d7ef6fc7a3f70",
+      "bytes": 392,
+      "original_path": "/tmp/lustr-buildscript-execution-review/counters-v2/diamond/work/Cargo.lock",
+      "original_mtime_ns": 1795097192275907889
+    },
+    {
+      "path": "counters-v2/diamond/work/Cargo.toml",
+      "sha256": "81542a0346079263afe044b88f0b7cbebd273af5c7cb1ce5668a45463577ab42",
+      "bytes": 116,
+      "original_path": "/tmp/lustr-buildscript-execution-review/counters-v2/diamond/work/Cargo.toml",
+      "original_mtime_ns": 1795097192246512308
+    },
+    {
+      "path": "counters-v2/diamond/work/left/Cargo.toml",
+      "sha256": "22878e10a95b2fe2cfde6976366c405f13c3bf0cba29434e1318c8a797d5074b",
+      "bytes": 94,
+      "original_path": "/tmp/lustr-buildscript-execution-review/counters-v2/diamond/work/left/Cargo.toml",
+      "original_mtime_ns": 1795097192246572177
+    },
+    {
+      "path": "counters-v2/diamond/work/left/src/lib.rs",
+      "sha256": "99e9dc4d39ef3bc209762dad334f9033cdb50dc278e410cab6ae03ca76e91224",
+      "bytes": 51,
+      "original_path": "/tmp/lustr-buildscript-execution-review/counters-v2/diamond/work/left/src/lib.rs",
+      "original_mtime_ns": 1795097192246592397
+    },
+    {
+      "path": "counters-v2/diamond/work/right/Cargo.toml",
+      "sha256": "85a88f8bc26e5da22dc35862b2b0c688ef788471a485c08cbf5e4f00804c7659",
+      "bytes": 95,
+      "original_path": "/tmp/lustr-buildscript-execution-review/counters-v2/diamond/work/right/Cargo.toml",
+      "original_mtime_ns": 1795097192246611185
+    },
+    {
+      "path": "counters-v2/diamond/work/right/src/lib.rs",
+      "sha256": "99e9dc4d39ef3bc209762dad334f9033cdb50dc278e410cab6ae03ca76e91224",
+      "bytes": 51,
+      "original_path": "/tmp/lustr-buildscript-execution-review/counters-v2/diamond/work/right/src/lib.rs",
+      "original_mtime_ns": 1795097192246629222
+    },
+    {
+      "path": "counters-v2/diamond/work/shared/Cargo.toml",
+      "sha256": "e791e68ef289645171448f6f26a020f96666a621ae56bb1fd5d85a7f360905ab",
+      "bytes": 55,
+      "original_path": "/tmp/lustr-buildscript-execution-review/counters-v2/diamond/work/shared/Cargo.toml",
+      "original_mtime_ns": 1795097192246648321
+    },
+    {
+      "path": "counters-v2/diamond/work/shared/build.rs",
+      "sha256": "0ccd62a737423923fe08f248e9147d5f03310f4248fc09fb621202849ce4578b",
+      "bytes": 370,
+      "original_path": "/tmp/lustr-buildscript-execution-review/counters-v2/diamond/work/shared/build.rs",
+      "original_mtime_ns": 1795097192246713889
+    },
+    {
+      "path": "counters-v2/diamond/work/shared/src/lib.rs",
+      "sha256": "85d3724c3af88c7b1d36e9072d71e63fe59e74f54bb367b2478df9757ca264e4",
+      "bytes": 54,
+      "original_path": "/tmp/lustr-buildscript-execution-review/counters-v2/diamond/work/shared/src/lib.rs",
+      "original_mtime_ns": 1795097192246664204
+    },
+    {
+      "path": "counters-v2/diamond/work/src/main.rs",
+      "sha256": "b7c32dd2f404478ce110d3e07efd8ee583c95e86c434ead59fd65dd10331663d",
+      "bytes": 64,
+      "original_path": "/tmp/lustr-buildscript-execution-review/counters-v2/diamond/work/src/main.rs",
+      "original_mtime_ns": 1795097192246534000
+    },
+    {
+      "path": "counters-v2/failed_script/000.stderr",
+      "sha256": "e676cb897aeeeec8502a0cad26602e478193d55f448f0e9d5068afe8bfded05a",
+      "bytes": 92,
+      "original_path": "/tmp/lustr-buildscript-execution-review/counters-v2/failed_script/000.stderr",
+      "original_mtime_ns": 1795097193936077840
+    },
+    {
+      "path": "counters-v2/failed_script/000.stdout",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0,
+      "original_path": "/tmp/lustr-buildscript-execution-review/counters-v2/failed_script/000.stdout",
+      "original_mtime_ns": 1795097193929841957
+    },
+    {
+      "path": "counters-v2/failed_script/000.trace.jsonl",
+      "sha256": "b3950c6bd408e467def5224e5d148112cf09cd5eccf002ddf7b41a0102a00c14",
+      "bytes": 52,
+      "original_path": "/tmp/lustr-buildscript-execution-review/counters-v2/failed_script/000.trace.jsonl",
+      "original_mtime_ns": 1795097193929841957
+    },
+    {
+      "path": "counters-v2/failed_script/work/Cargo.lock",
+      "sha256": "10aa028a836cfa84104f0d554758fcb2529d7ad5bb6065016084cac4c3ce2e44",
+      "bytes": 156,
+      "original_path": "/tmp/lustr-buildscript-execution-review/counters-v2/failed_script/work/Cargo.lock",
+      "original_mtime_ns": 1795097193194625662
+    },
+    {
+      "path": "counters-v2/failed_script/work/Cargo.toml",
+      "sha256": "221c2747c2db876e362862fd637ce748829586b5065086f099487a70f86c408e",
+      "bytes": 61,
+      "original_path": "/tmp/lustr-buildscript-execution-review/counters-v2/failed_script/work/Cargo.toml",
+      "original_mtime_ns": 1795097193157460453
+    },
+    {
+      "path": "counters-v2/failed_script/work/build.rs",
+      "sha256": "04f342ff2f4484aeba652909f21adbc5ebdf5991606193885b722ebdd5ef067d",
+      "bytes": 338,
+      "original_path": "/tmp/lustr-buildscript-execution-review/counters-v2/failed_script/work/build.rs",
+      "original_mtime_ns": 1795097193157487303
+    },
+    {
+      "path": "counters-v2/failed_script/work/src/lib.rs",
+      "sha256": "85d3724c3af88c7b1d36e9072d71e63fe59e74f54bb367b2478df9757ca264e4",
+      "bytes": 54,
+      "original_path": "/tmp/lustr-buildscript-execution-review/counters-v2/failed_script/work/src/lib.rs",
+      "original_mtime_ns": 1795097193157506853
+    },
+    {
+      "path": "counters-v2/failed_script/work/src/main.rs",
+      "sha256": "d19eade9fd2d1cbe62fa785ae81b2f6310b4cc70a4e30f7ffe7ecad5452e0741",
+      "bytes": 53,
+      "original_path": "/tmp/lustr-buildscript-execution-review/counters-v2/failed_script/work/src/main.rs",
+      "original_mtime_ns": 1795097193157558349
+    },
+    {
+      "path": "counters-v2/record-snapshots/diamond/cache/buildscript-native-0dc1d2b7ca66a271.txt",
+      "sha256": "84dabc3a29c03bbe76efb35bfd185856aeed9ff2e5095b5655c808f69b38ddcb",
+      "bytes": 4868,
+      "original_path": "/tmp/lustr-buildscript-execution-review/counters-v2/diamond/cache/buildscript-native-0dc1d2b7ca66a271.txt",
+      "original_mtime_ns": 1795097193133850221
+    },
+    {
+      "path": "counters-v2/record-snapshots/same_package/cache/buildscript-native-4b063a461de5025b.txt",
+      "sha256": "9ce7d9fd14ce0f247775fc2e6ee704bcec7496d39db084c5116f2f2866b43592",
+      "bytes": 4359,
+      "original_path": "/tmp/lustr-buildscript-execution-review/counters-v2/same_package/cache/buildscript-native-4b063a461de5025b.txt",
+      "original_mtime_ns": 1795097192225859638
+    },
+    {
+      "path": "counters-v2/report.json",
+      "sha256": "f93310a1d6ea25439672ea05713fdac5f2fb368749b86876bf57b523dfb0974b",
+      "bytes": 5066,
+      "original_path": "/tmp/lustr-buildscript-execution-review/counters-v2/report.json",
+      "original_mtime_ns": 1795097193936324237
+    },
+    {
+      "path": "counters-v2/same_package/000.stderr",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0,
+      "original_path": "/tmp/lustr-buildscript-execution-review/counters-v2/same_package/000.stderr",
+      "original_mtime_ns": 1795097192241859472
+    },
+    {
+      "path": "counters-v2/same_package/000.stdout",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0,
+      "original_path": "/tmp/lustr-buildscript-execution-review/counters-v2/same_package/000.stdout",
+      "original_mtime_ns": 1795097192241859472
+    },
+    {
+      "path": "counters-v2/same_package/000.trace.jsonl",
+      "sha256": "a9c16c08b16f370636aa7b4a7921dcbef098e46c66ea63305760e066cf4bf572",
+      "bytes": 45,
+      "original_path": "/tmp/lustr-buildscript-execution-review/counters-v2/same_package/000.trace.jsonl",
+      "original_mtime_ns": 1795097192241859472
+    },
+    {
+      "path": "counters-v2/same_package/work/Cargo.lock",
+      "sha256": "10aa028a836cfa84104f0d554758fcb2529d7ad5bb6065016084cac4c3ce2e44",
+      "bytes": 156,
+      "original_path": "/tmp/lustr-buildscript-execution-review/counters-v2/same_package/work/Cargo.lock",
+      "original_mtime_ns": 1795097191424006363
+    },
+    {
+      "path": "counters-v2/same_package/work/Cargo.toml",
+      "sha256": "221c2747c2db876e362862fd637ce748829586b5065086f099487a70f86c408e",
+      "bytes": 61,
+      "original_path": "/tmp/lustr-buildscript-execution-review/counters-v2/same_package/work/Cargo.toml",
+      "original_mtime_ns": 1795097191378119677
+    },
+    {
+      "path": "counters-v2/same_package/work/build.rs",
+      "sha256": "0ccd62a737423923fe08f248e9147d5f03310f4248fc09fb621202849ce4578b",
+      "bytes": 370,
+      "original_path": "/tmp/lustr-buildscript-execution-review/counters-v2/same_package/work/build.rs",
+      "original_mtime_ns": 1795097191378164143
+    },
+    {
+      "path": "counters-v2/same_package/work/src/lib.rs",
+      "sha256": "85d3724c3af88c7b1d36e9072d71e63fe59e74f54bb367b2478df9757ca264e4",
+      "bytes": 54,
+      "original_path": "/tmp/lustr-buildscript-execution-review/counters-v2/same_package/work/src/lib.rs",
+      "original_mtime_ns": 1795097191378183582
+    },
+    {
+      "path": "counters-v2/same_package/work/src/main.rs",
+      "sha256": "d19eade9fd2d1cbe62fa785ae81b2f6310b4cc70a4e30f7ffe7ecad5452e0741",
+      "bytes": 53,
+      "original_path": "/tmp/lustr-buildscript-execution-review/counters-v2/same_package/work/src/main.rs",
+      "original_mtime_ns": 1795097191378196692
+    },
+    {
+      "path": "directives/after/builtin/00.stderr",
+      "sha256": "e96a455caed100c1b2768b023f554d8876beac682c593e0f9b223d0beb6e9fee",
+      "bytes": 155,
+      "original_path": "/tmp/lustr-buildscript-directive-review/after/builtin/00.stderr",
+      "original_mtime_ns": 1795097260664747792
+    },
+    {
+      "path": "directives/after/builtin/00.stdout",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0,
+      "original_path": "/tmp/lustr-buildscript-directive-review/after/builtin/00.stdout",
+      "original_mtime_ns": 1795097260661182537
+    },
+    {
+      "path": "directives/after/builtin/01.stderr",
+      "sha256": "be6682a42d13df725f08c0715f5599d869f59887bfde7d896ac142eac921e8a5",
+      "bytes": 176,
+      "original_path": "/tmp/lustr-buildscript-directive-review/after/builtin/01.stderr",
+      "original_mtime_ns": 1795097260776932045
+    },
+    {
+      "path": "directives/after/builtin/01.stdout",
+      "sha256": "38f2d442f9ad6cc13d102d7bc0a276f3da91bb55d6289bca47b8561fc1a57318",
+      "bytes": 2520,
+      "original_path": "/tmp/lustr-buildscript-directive-review/after/builtin/01.stdout",
+      "original_mtime_ns": 1795097260776909221
+    },
+    {
+      "path": "directives/after/builtin/work/Cargo.lock",
+      "sha256": "faae0b4d7c18afb6ec5e33b1113b54cd72c19679aca560bc03e777f9800b0814",
+      "bytes": 155,
+      "original_path": "/tmp/lustr-buildscript-directive-review/after/builtin/work/Cargo.lock",
+      "original_mtime_ns": 1795097260481184402
+    },
+    {
+      "path": "directives/after/builtin/work/Cargo.toml",
+      "sha256": "f54223a2ee29dd5771f7181d834304955446a784b8125eb8eecb2f299b3964c0",
+      "bytes": 60,
+      "original_path": "/tmp/lustr-buildscript-directive-review/after/builtin/work/Cargo.toml",
+      "original_mtime_ns": 1795097260442643616
+    },
+    {
+      "path": "directives/after/builtin/work/build.rs",
+      "sha256": "e58325b251363df18d9dee016b52bf3f5544594562d298cb8b33eb621fac1212",
+      "bytes": 64,
+      "original_path": "/tmp/lustr-buildscript-directive-review/after/builtin/work/build.rs",
+      "original_mtime_ns": 1795097260442663565
+    },
+    {
+      "path": "directives/after/builtin/work/src/main.rs",
+      "sha256": "a5ba96216d75c13de75d3085e9254389bb51d3e77ab1ed400a8fdfbd9d89a32e",
+      "bytes": 31,
+      "original_path": "/tmp/lustr-buildscript-directive-review/after/builtin/work/src/main.rs",
+      "original_mtime_ns": 1795097260442679129
+    },
+    {
+      "path": "directives/after/escaped/00.stderr",
+      "sha256": "d04a18c60102369d12fb7e275579793892c21ae92699f502f9526c2f626bcfa0",
+      "bytes": 124,
+      "original_path": "/tmp/lustr-buildscript-directive-review/after/escaped/00.stderr",
+      "original_mtime_ns": 1795097260210316408
+    },
+    {
+      "path": "directives/after/escaped/00.stdout",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0,
+      "original_path": "/tmp/lustr-buildscript-directive-review/after/escaped/00.stdout",
+      "original_mtime_ns": 1795097260209187220
+    },
+    {
+      "path": "directives/after/escaped/01.stderr",
+      "sha256": "1aa819d030533770d14262a9b86f50b993cb3bb4ea85a4faa375a0c0ee7978ec",
+      "bytes": 165,
+      "original_path": "/tmp/lustr-buildscript-directive-review/after/escaped/01.stderr",
+      "original_mtime_ns": 1795097260438820021
+    },
+    {
+      "path": "directives/after/escaped/01.stdout",
+      "sha256": "1d01213c533ceca6200390c252642e62c2cc578495c9e49ce4bcfcbf6ddeb8b6",
+      "bytes": 4811,
+      "original_path": "/tmp/lustr-buildscript-directive-review/after/escaped/01.stdout",
+      "original_mtime_ns": 1795097260438785109
+    },
+    {
+      "path": "directives/after/escaped/02.stderr",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0,
+      "original_path": "/tmp/lustr-buildscript-directive-review/after/escaped/02.stderr",
+      "original_mtime_ns": 1795097260442111452
+    },
+    {
+      "path": "directives/after/escaped/02.stdout",
+      "sha256": "a17fcf0a2f50e2d495e4f90ce263410edc183add6c62699a2facbccf60410f74",
+      "bytes": 5,
+      "original_path": "/tmp/lustr-buildscript-directive-review/after/escaped/02.stdout",
+      "original_mtime_ns": 1795097260442111452
+    },
+    {
+      "path": "directives/after/escaped/work/Cargo.lock",
+      "sha256": "faae0b4d7c18afb6ec5e33b1113b54cd72c19679aca560bc03e777f9800b0814",
+      "bytes": 155,
+      "original_path": "/tmp/lustr-buildscript-directive-review/after/escaped/work/Cargo.lock",
+      "original_mtime_ns": 1795097260058468927
+    },
+    {
+      "path": "directives/after/escaped/work/Cargo.toml",
+      "sha256": "f54223a2ee29dd5771f7181d834304955446a784b8125eb8eecb2f299b3964c0",
+      "bytes": 60,
+      "original_path": "/tmp/lustr-buildscript-directive-review/after/escaped/work/Cargo.toml",
+      "original_mtime_ns": 1795097260030526484
+    },
+    {
+      "path": "directives/after/escaped/work/build.rs",
+      "sha256": "9c5913d91b45ff6244698fdaec72e15a45bf39d041fd4592aed141330c8e90c0",
+      "bytes": 59,
+      "original_path": "/tmp/lustr-buildscript-directive-review/after/escaped/work/build.rs",
+      "original_mtime_ns": 1795097260030539934
+    },
+    {
+      "path": "directives/after/escaped/work/src/main.rs",
+      "sha256": "5c0039e4f03f6393f66dae4b8443a98bc51864c7e89bbb0e6b8657584f486c02",
+      "bytes": 49,
+      "original_path": "/tmp/lustr-buildscript-directive-review/after/escaped/work/src/main.rs",
+      "original_mtime_ns": 1795097260030551531
+    },
+    {
+      "path": "directives/after/malformed/00.stderr",
+      "sha256": "bc72400b7897148e518049e3cf93657a0ca2dfc9703019b357559eaee9ffaeb4",
+      "bytes": 120,
+      "original_path": "/tmp/lustr-buildscript-directive-review/after/malformed/00.stderr",
+      "original_mtime_ns": 1795097259544634483
+    },
+    {
+      "path": "directives/after/malformed/00.stdout",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0,
+      "original_path": "/tmp/lustr-buildscript-directive-review/after/malformed/00.stdout",
+      "original_mtime_ns": 1795097259541194144
+    },
+    {
+      "path": "directives/after/malformed/01.stderr",
+      "sha256": "2cbad327619c964cf783c7649abd91929d7ef87ea52c7c925d6571f0a54a087b",
+      "bytes": 178,
+      "original_path": "/tmp/lustr-buildscript-directive-review/after/malformed/01.stderr",
+      "original_mtime_ns": 1795097259724949269
+    },
+    {
+      "path": "directives/after/malformed/01.stdout",
+      "sha256": "d6d847578b805b99677e50600ce29ae7ae7049b4b3f7f305d98f64915db439a1",
+      "bytes": 1851,
+      "original_path": "/tmp/lustr-buildscript-directive-review/after/malformed/01.stdout",
+      "original_mtime_ns": 1795097259724929890
+    },
+    {
+      "path": "directives/after/malformed/work/Cargo.lock",
+      "sha256": "faae0b4d7c18afb6ec5e33b1113b54cd72c19679aca560bc03e777f9800b0814",
+      "bytes": 155,
+      "original_path": "/tmp/lustr-buildscript-directive-review/after/malformed/work/Cargo.lock",
+      "original_mtime_ns": 1795097259330964989
+    },
+    {
+      "path": "directives/after/malformed/work/Cargo.toml",
+      "sha256": "f54223a2ee29dd5771f7181d834304955446a784b8125eb8eecb2f299b3964c0",
+      "bytes": 60,
+      "original_path": "/tmp/lustr-buildscript-directive-review/after/malformed/work/Cargo.toml",
+      "original_mtime_ns": 1795097259277168457
+    },
+    {
+      "path": "directives/after/malformed/work/build.rs",
+      "sha256": "d376c985fb9bdeac79d2fd910fc7b1f555eafaec699bfb1845a27cc205f1cae3",
+      "bytes": 52,
+      "original_path": "/tmp/lustr-buildscript-directive-review/after/malformed/work/build.rs",
+      "original_mtime_ns": 1795097259277197040
+    },
+    {
+      "path": "directives/after/malformed/work/src/main.rs",
+      "sha256": "a5ba96216d75c13de75d3085e9254389bb51d3e77ab1ed400a8fdfbd9d89a32e",
+      "bytes": 31,
+      "original_path": "/tmp/lustr-buildscript-directive-review/after/malformed/work/src/main.rs",
+      "original_mtime_ns": 1795097259277209108
+    },
+    {
+      "path": "directives/after/plain/00.stderr",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0,
+      "original_path": "/tmp/lustr-buildscript-directive-review/after/plain/00.stderr",
+      "original_mtime_ns": 1795097260981179220
+    },
+    {
+      "path": "directives/after/plain/00.stdout",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0,
+      "original_path": "/tmp/lustr-buildscript-directive-review/after/plain/00.stdout",
+      "original_mtime_ns": 1795097260981179220
+    },
+    {
+      "path": "directives/after/plain/01.stderr",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0,
+      "original_path": "/tmp/lustr-buildscript-directive-review/after/plain/01.stderr",
+      "original_mtime_ns": 1795097260983311787
+    },
+    {
+      "path": "directives/after/plain/01.stdout",
+      "sha256": "a17fcf0a2f50e2d495e4f90ce263410edc183add6c62699a2facbccf60410f74",
+      "bytes": 5,
+      "original_path": "/tmp/lustr-buildscript-directive-review/after/plain/01.stdout",
+      "original_mtime_ns": 1795097260983311787
+    },
+    {
+      "path": "directives/after/plain/02.stderr",
+      "sha256": "93d608c457c3a8eea6550b55be24d42e20a74c8c66d4ffd1eca5d8fb9ced1ff1",
+      "bytes": 163,
+      "original_path": "/tmp/lustr-buildscript-directive-review/after/plain/02.stderr",
+      "original_mtime_ns": 1795097261256655001
+    },
+    {
+      "path": "directives/after/plain/02.stdout",
+      "sha256": "90fbcbd031cf9a0b83c61c00705f99ec05edaab96f896c91c8543deffba90890",
+      "bytes": 4768,
+      "original_path": "/tmp/lustr-buildscript-directive-review/after/plain/02.stdout",
+      "original_mtime_ns": 1795097261256625277
+    },
+    {
+      "path": "directives/after/plain/03.stderr",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0,
+      "original_path": "/tmp/lustr-buildscript-directive-review/after/plain/03.stderr",
+      "original_mtime_ns": 1795097261258840321
+    },
+    {
+      "path": "directives/after/plain/03.stdout",
+      "sha256": "a17fcf0a2f50e2d495e4f90ce263410edc183add6c62699a2facbccf60410f74",
+      "bytes": 5,
+      "original_path": "/tmp/lustr-buildscript-directive-review/after/plain/03.stdout",
+      "original_mtime_ns": 1795097261258840321
+    },
+    {
+      "path": "directives/after/plain/work/Cargo.lock",
+      "sha256": "faae0b4d7c18afb6ec5e33b1113b54cd72c19679aca560bc03e777f9800b0814",
+      "bytes": 155,
+      "original_path": "/tmp/lustr-buildscript-directive-review/after/plain/work/Cargo.lock",
+      "original_mtime_ns": 1795097260810425772
+    },
+    {
+      "path": "directives/after/plain/work/Cargo.toml",
+      "sha256": "f54223a2ee29dd5771f7181d834304955446a784b8125eb8eecb2f299b3964c0",
+      "bytes": 60,
+      "original_path": "/tmp/lustr-buildscript-directive-review/after/plain/work/Cargo.toml",
+      "original_mtime_ns": 1795097260777846781
+    },
+    {
+      "path": "directives/after/plain/work/build.rs",
+      "sha256": "8a6ac336734309932c7add36f8aab87ab7c7231380a7597e92a978ddb520fb94",
+      "bytes": 57,
+      "original_path": "/tmp/lustr-buildscript-directive-review/after/plain/work/build.rs",
+      "original_mtime_ns": 1795097260777865228
+    },
+    {
+      "path": "directives/after/plain/work/src/main.rs",
+      "sha256": "2303a0623a6cad494a54b4ab1f3c67687d79d7c51718a642da7ccaf0936f90b8",
+      "bytes": 48,
+      "original_path": "/tmp/lustr-buildscript-directive-review/after/plain/work/src/main.rs",
+      "original_mtime_ns": 1795097260777881112
+    },
+    {
+      "path": "directives/after/record-snapshots/plain/cache/buildscript-native-4dbd7b5c2c88d4b9.txt",
+      "sha256": "07d23e0436acc6683874f6f38901eb0ed9e5cf232dd9a5a54a497a447f25dfff",
+      "bytes": 2894,
+      "original_path": "/tmp/lustr-buildscript-directive-review/after/plain/cache/buildscript-native-4dbd7b5c2c88d4b9.txt",
+      "original_mtime_ns": 1795097260933179718
+    },
+    {
+      "path": "directives/after/report.json",
+      "sha256": "ff50446ddb51b7e7575e3817a5d8611630197171f3b7745450795f13f0924f78",
+      "bytes": 17629,
+      "original_path": "/tmp/lustr-buildscript-directive-review/after/report.json",
+      "original_mtime_ns": 1795097261259239157
+    },
+    {
+      "path": "directives/after/unquoted/00.stderr",
+      "sha256": "ceac4fae48bff36a2f41c83f6d9bfa6272e94d020b6c4464e7f4b523258dfdac",
+      "bytes": 122,
+      "original_path": "/tmp/lustr-buildscript-directive-review/after/unquoted/00.stderr",
+      "original_mtime_ns": 1795097259896506951
+    },
+    {
+      "path": "directives/after/unquoted/00.stdout",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0,
+      "original_path": "/tmp/lustr-buildscript-directive-review/after/unquoted/00.stdout",
+      "original_mtime_ns": 1795097259893190495
+    },
+    {
+      "path": "directives/after/unquoted/01.stderr",
+      "sha256": "d38f12822b6b442aa314fe9151187f00e2008aa623ad77bad59a3596ab8a7371",
+      "bytes": 177,
+      "original_path": "/tmp/lustr-buildscript-directive-review/after/unquoted/01.stderr",
+      "original_mtime_ns": 1795097260030174569
+    },
+    {
+      "path": "directives/after/unquoted/01.stdout",
+      "sha256": "ae651bb24a957f8ba3d3b7a5a35ebe229f8e86d7d576dd0169a515f1306e0c7c",
+      "bytes": 2026,
+      "original_path": "/tmp/lustr-buildscript-directive-review/after/unquoted/01.stdout",
+      "original_mtime_ns": 1795097260030153758
+    },
+    {
+      "path": "directives/after/unquoted/work/Cargo.lock",
+      "sha256": "faae0b4d7c18afb6ec5e33b1113b54cd72c19679aca560bc03e777f9800b0814",
+      "bytes": 155,
+      "original_path": "/tmp/lustr-buildscript-directive-review/after/unquoted/work/Cargo.lock",
+      "original_mtime_ns": 1795097259761191863
+    },
+    {
+      "path": "directives/after/unquoted/work/Cargo.toml",
+      "sha256": "f54223a2ee29dd5771f7181d834304955446a784b8125eb8eecb2f299b3964c0",
+      "bytes": 60,
+      "original_path": "/tmp/lustr-buildscript-directive-review/after/unquoted/work/Cargo.toml",
+      "original_mtime_ns": 1795097259725356126
+    },
+    {
+      "path": "directives/after/unquoted/work/build.rs",
+      "sha256": "592e4841833811626e74d49ddff9132fc2bb1eadbc7409524ab3f89c5410a718",
+      "bytes": 54,
+      "original_path": "/tmp/lustr-buildscript-directive-review/after/unquoted/work/build.rs",
+      "original_mtime_ns": 1795097259725373913
+    },
+    {
+      "path": "directives/after/unquoted/work/src/main.rs",
+      "sha256": "cc9e9bbee462b4587331de85b49a189c115c2873d397c377d3b80a9388223de8",
+      "bytes": 49,
+      "original_path": "/tmp/lustr-buildscript-directive-review/after/unquoted/work/src/main.rs",
+      "original_mtime_ns": 1795097259725448914
+    },
+    {
+      "path": "directives/before/builtin/00.stderr",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0,
+      "original_path": "/tmp/lustr-buildscript-directive-review/before/builtin/00.stderr",
+      "original_mtime_ns": 1795096898145005133
+    },
+    {
+      "path": "directives/before/builtin/00.stdout",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0,
+      "original_path": "/tmp/lustr-buildscript-directive-review/before/builtin/00.stdout",
+      "original_mtime_ns": 1795096898145005133
+    },
+    {
+      "path": "directives/before/builtin/01.stderr",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0,
+      "original_path": "/tmp/lustr-buildscript-directive-review/before/builtin/01.stderr",
+      "original_mtime_ns": 1795096898149937176
+    },
+    {
+      "path": "directives/before/builtin/01.stdout",
+      "sha256": "f4472a14b6160e58b35bfeb710d23d240ab59402cc84bc7b5a579c7373849295",
+      "bytes": 4,
+      "original_path": "/tmp/lustr-buildscript-directive-review/before/builtin/01.stdout",
+      "original_mtime_ns": 1795096898149937176
+    },
+    {
+      "path": "directives/before/builtin/02.stderr",
+      "sha256": "f3efaa2ad6bf95112766ea87cebd6670f0df230b3d5323bdb6fc91d0c39c4dd7",
+      "bytes": 177,
+      "original_path": "/tmp/lustr-buildscript-directive-review/before/builtin/02.stderr",
+      "original_mtime_ns": 1795096898262474728
+    },
+    {
+      "path": "directives/before/builtin/02.stdout",
+      "sha256": "fca79b8e5d7ddbf7811690580e3979479a81cb2a5e1c54385e8462718b4f8fbf",
+      "bytes": 2529,
+      "original_path": "/tmp/lustr-buildscript-directive-review/before/builtin/02.stdout",
+      "original_mtime_ns": 1795096898262423371
+    },
+    {
+      "path": "directives/before/builtin/work/Cargo.lock",
+      "sha256": "faae0b4d7c18afb6ec5e33b1113b54cd72c19679aca560bc03e777f9800b0814",
+      "bytes": 155,
+      "original_path": "/tmp/lustr-buildscript-directive-review/before/builtin/work/Cargo.lock",
+      "original_mtime_ns": 1795096897983423254
+    },
+    {
+      "path": "directives/before/builtin/work/Cargo.toml",
+      "sha256": "f54223a2ee29dd5771f7181d834304955446a784b8125eb8eecb2f299b3964c0",
+      "bytes": 60,
+      "original_path": "/tmp/lustr-buildscript-directive-review/before/builtin/work/Cargo.toml",
+      "original_mtime_ns": 1795096897957444432
+    },
+    {
+      "path": "directives/before/builtin/work/build.rs",
+      "sha256": "e58325b251363df18d9dee016b52bf3f5544594562d298cb8b33eb621fac1212",
+      "bytes": 64,
+      "original_path": "/tmp/lustr-buildscript-directive-review/before/builtin/work/build.rs",
+      "original_mtime_ns": 1795096897957458033
+    },
+    {
+      "path": "directives/before/builtin/work/src/main.rs",
+      "sha256": "a5ba96216d75c13de75d3085e9254389bb51d3e77ab1ed400a8fdfbd9d89a32e",
+      "bytes": 31,
+      "original_path": "/tmp/lustr-buildscript-directive-review/before/builtin/work/src/main.rs",
+      "original_mtime_ns": 1795096897957468548
+    },
+    {
+      "path": "directives/before/escaped/00.stderr",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0,
+      "original_path": "/tmp/lustr-buildscript-directive-review/before/escaped/00.stderr",
+      "original_mtime_ns": 1795096897777009077
+    },
+    {
+      "path": "directives/before/escaped/00.stdout",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0,
+      "original_path": "/tmp/lustr-buildscript-directive-review/before/escaped/00.stdout",
+      "original_mtime_ns": 1795096897777009077
+    },
+    {
+      "path": "directives/before/escaped/01.stderr",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0,
+      "original_path": "/tmp/lustr-buildscript-directive-review/before/escaped/01.stderr",
+      "original_mtime_ns": 1795096897780804896
+    },
+    {
+      "path": "directives/before/escaped/01.stdout",
+      "sha256": "2ed27c1421e6928dbe13dbfdb5c59e1045b30341fe7ebe05700006bc5ac572c0",
+      "bytes": 6,
+      "original_path": "/tmp/lustr-buildscript-directive-review/before/escaped/01.stdout",
+      "original_mtime_ns": 1795096897780804896
+    },
+    {
+      "path": "directives/before/escaped/02.stderr",
+      "sha256": "3db973e39a7027c34c55b0016c26cec41ebea0fabf1461c473534949d6bc57a7",
+      "bytes": 166,
+      "original_path": "/tmp/lustr-buildscript-directive-review/before/escaped/02.stderr",
+      "original_mtime_ns": 1795096897955299543
+    },
+    {
+      "path": "directives/before/escaped/02.stdout",
+      "sha256": "892f0c315544a24624b72b65c90ca96c3ed93a17fb17bc7b0e064f10148c12d5",
+      "bytes": 4825,
+      "original_path": "/tmp/lustr-buildscript-directive-review/before/escaped/02.stdout",
+      "original_mtime_ns": 1795096897955222468
+    },
+    {
+      "path": "directives/before/escaped/03.stderr",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0,
+      "original_path": "/tmp/lustr-buildscript-directive-review/before/escaped/03.stderr",
+      "original_mtime_ns": 1795096897956993620
+    },
+    {
+      "path": "directives/before/escaped/03.stdout",
+      "sha256": "a17fcf0a2f50e2d495e4f90ce263410edc183add6c62699a2facbccf60410f74",
+      "bytes": 5,
+      "original_path": "/tmp/lustr-buildscript-directive-review/before/escaped/03.stdout",
+      "original_mtime_ns": 1795096897956993620
+    },
+    {
+      "path": "directives/before/escaped/work/Cargo.lock",
+      "sha256": "faae0b4d7c18afb6ec5e33b1113b54cd72c19679aca560bc03e777f9800b0814",
+      "bytes": 155,
+      "original_path": "/tmp/lustr-buildscript-directive-review/before/escaped/work/Cargo.lock",
+      "original_mtime_ns": 1795096897578456162
+    },
+    {
+      "path": "directives/before/escaped/work/Cargo.toml",
+      "sha256": "f54223a2ee29dd5771f7181d834304955446a784b8125eb8eecb2f299b3964c0",
+      "bytes": 60,
+      "original_path": "/tmp/lustr-buildscript-directive-review/before/escaped/work/Cargo.toml",
+      "original_mtime_ns": 1795096897552295437
+    },
+    {
+      "path": "directives/before/escaped/work/build.rs",
+      "sha256": "9c5913d91b45ff6244698fdaec72e15a45bf39d041fd4592aed141330c8e90c0",
+      "bytes": 59,
+      "original_path": "/tmp/lustr-buildscript-directive-review/before/escaped/work/build.rs",
+      "original_mtime_ns": 1795096897552332843
+    },
+    {
+      "path": "directives/before/escaped/work/src/main.rs",
+      "sha256": "5c0039e4f03f6393f66dae4b8443a98bc51864c7e89bbb0e6b8657584f486c02",
+      "bytes": 49,
+      "original_path": "/tmp/lustr-buildscript-directive-review/before/escaped/work/src/main.rs",
+      "original_mtime_ns": 1795096897552343489
+    },
+    {
+      "path": "directives/before/malformed/00.stderr",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0,
+      "original_path": "/tmp/lustr-buildscript-directive-review/before/malformed/00.stderr",
+      "original_mtime_ns": 1795096897069118903
+    },
+    {
+      "path": "directives/before/malformed/00.stdout",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0,
+      "original_path": "/tmp/lustr-buildscript-directive-review/before/malformed/00.stdout",
+      "original_mtime_ns": 1795096897069118903
+    },
+    {
+      "path": "directives/before/malformed/01.stderr",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0,
+      "original_path": "/tmp/lustr-buildscript-directive-review/before/malformed/01.stderr",
+      "original_mtime_ns": 1795096897074434742
+    },
+    {
+      "path": "directives/before/malformed/01.stdout",
+      "sha256": "f4472a14b6160e58b35bfeb710d23d240ab59402cc84bc7b5a579c7373849295",
+      "bytes": 4,
+      "original_path": "/tmp/lustr-buildscript-directive-review/before/malformed/01.stdout",
+      "original_mtime_ns": 1795096897074434742
+    },
+    {
+      "path": "directives/before/malformed/02.stderr",
+      "sha256": "0ce4318b1de7eb103027d7348e285d2a831daf25d5ae8e1601667f5908875cba",
+      "bytes": 179,
+      "original_path": "/tmp/lustr-buildscript-directive-review/before/malformed/02.stderr",
+      "original_mtime_ns": 1795096897225587866
+    },
+    {
+      "path": "directives/before/malformed/02.stdout",
+      "sha256": "1a5ed1942e5dd43b3f777e1f86de61fe8248db27e4a53c99c5f107f6f9acfdb7",
+      "bytes": 1860,
+      "original_path": "/tmp/lustr-buildscript-directive-review/before/malformed/02.stdout",
+      "original_mtime_ns": 1795096897225568327
+    },
+    {
+      "path": "directives/before/malformed/work/Cargo.lock",
+      "sha256": "faae0b4d7c18afb6ec5e33b1113b54cd72c19679aca560bc03e777f9800b0814",
+      "bytes": 155,
+      "original_path": "/tmp/lustr-buildscript-directive-review/before/malformed/work/Cargo.lock",
+      "original_mtime_ns": 1795096896825105021
+    },
+    {
+      "path": "directives/before/malformed/work/Cargo.toml",
+      "sha256": "f54223a2ee29dd5771f7181d834304955446a784b8125eb8eecb2f299b3964c0",
+      "bytes": 60,
+      "original_path": "/tmp/lustr-buildscript-directive-review/before/malformed/work/Cargo.toml",
+      "original_mtime_ns": 1795096896739988154
+    },
+    {
+      "path": "directives/before/malformed/work/build.rs",
+      "sha256": "d376c985fb9bdeac79d2fd910fc7b1f555eafaec699bfb1845a27cc205f1cae3",
+      "bytes": 52,
+      "original_path": "/tmp/lustr-buildscript-directive-review/before/malformed/work/build.rs",
+      "original_mtime_ns": 1795096896740016787
+    },
+    {
+      "path": "directives/before/malformed/work/src/main.rs",
+      "sha256": "a5ba96216d75c13de75d3085e9254389bb51d3e77ab1ed400a8fdfbd9d89a32e",
+      "bytes": 31,
+      "original_path": "/tmp/lustr-buildscript-directive-review/before/malformed/work/src/main.rs",
+      "original_mtime_ns": 1795096896740029165
+    },
+    {
+      "path": "directives/before/plain/00.stderr",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0,
+      "original_path": "/tmp/lustr-buildscript-directive-review/before/plain/00.stderr",
+      "original_mtime_ns": 1795096898477001575
+    },
+    {
+      "path": "directives/before/plain/00.stdout",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0,
+      "original_path": "/tmp/lustr-buildscript-directive-review/before/plain/00.stdout",
+      "original_mtime_ns": 1795096898477001575
+    },
+    {
+      "path": "directives/before/plain/01.stderr",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0,
+      "original_path": "/tmp/lustr-buildscript-directive-review/before/plain/01.stderr",
+      "original_mtime_ns": 1795096898480880984
+    },
+    {
+      "path": "directives/before/plain/01.stdout",
+      "sha256": "a17fcf0a2f50e2d495e4f90ce263410edc183add6c62699a2facbccf60410f74",
+      "bytes": 5,
+      "original_path": "/tmp/lustr-buildscript-directive-review/before/plain/01.stdout",
+      "original_mtime_ns": 1795096898480880984
+    },
+    {
+      "path": "directives/before/plain/02.stderr",
+      "sha256": "7e65b067ae607a85989faca8600d78dacd2d98fd99ae590049a44baee7732672",
+      "bytes": 164,
+      "original_path": "/tmp/lustr-buildscript-directive-review/before/plain/02.stderr",
+      "original_mtime_ns": 1795096898746363723
+    },
+    {
+      "path": "directives/before/plain/02.stdout",
+      "sha256": "57d18bceefaee771ac2cdf1e7cfb63c5195e14be19ce71881e6bedf36ae940bd",
+      "bytes": 4782,
+      "original_path": "/tmp/lustr-buildscript-directive-review/before/plain/02.stdout",
+      "original_mtime_ns": 1795096898746337784
+    },
+    {
+      "path": "directives/before/plain/03.stderr",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0,
+      "original_path": "/tmp/lustr-buildscript-directive-review/before/plain/03.stderr",
+      "original_mtime_ns": 1795096898748661911
+    },
+    {
+      "path": "directives/before/plain/03.stdout",
+      "sha256": "a17fcf0a2f50e2d495e4f90ce263410edc183add6c62699a2facbccf60410f74",
+      "bytes": 5,
+      "original_path": "/tmp/lustr-buildscript-directive-review/before/plain/03.stdout",
+      "original_mtime_ns": 1795096898748661911
+    },
+    {
+      "path": "directives/before/plain/work/Cargo.lock",
+      "sha256": "faae0b4d7c18afb6ec5e33b1113b54cd72c19679aca560bc03e777f9800b0814",
+      "bytes": 155,
+      "original_path": "/tmp/lustr-buildscript-directive-review/before/plain/work/Cargo.lock",
+      "original_mtime_ns": 1795096898288564147
+    },
+    {
+      "path": "directives/before/plain/work/Cargo.toml",
+      "sha256": "f54223a2ee29dd5771f7181d834304955446a784b8125eb8eecb2f299b3964c0",
+      "bytes": 60,
+      "original_path": "/tmp/lustr-buildscript-directive-review/before/plain/work/Cargo.toml",
+      "original_mtime_ns": 1795096898263235963
+    },
+    {
+      "path": "directives/before/plain/work/build.rs",
+      "sha256": "8a6ac336734309932c7add36f8aab87ab7c7231380a7597e92a978ddb520fb94",
+      "bytes": 57,
+      "original_path": "/tmp/lustr-buildscript-directive-review/before/plain/work/build.rs",
+      "original_mtime_ns": 1795096898263249964
+    },
+    {
+      "path": "directives/before/plain/work/src/main.rs",
+      "sha256": "2303a0623a6cad494a54b4ab1f3c67687d79d7c51718a642da7ccaf0936f90b8",
+      "bytes": 48,
+      "original_path": "/tmp/lustr-buildscript-directive-review/before/plain/work/src/main.rs",
+      "original_mtime_ns": 1795096898263260780
+    },
+    {
+      "path": "directives/before/record-snapshots/builtin/cache/buildscript-native-69d349f73b33226d.txt",
+      "sha256": "a90590bc0931a5e432f38d7973f3321d1b766921c11dcfc846669d6896bc8d4b",
+      "bytes": 2934,
+      "original_path": "/tmp/lustr-buildscript-directive-review/before/builtin/cache/buildscript-native-69d349f73b33226d.txt",
+      "original_mtime_ns": 1795096898117010051
+    },
+    {
+      "path": "directives/before/record-snapshots/escaped/cache/buildscript-native-5176f293125f4d7d.txt",
+      "sha256": "3125e8daad45abc343bd1208dbc6780429f1d244e23a68b3e717bac4b822e27f",
+      "bytes": 2928,
+      "original_path": "/tmp/lustr-buildscript-directive-review/before/escaped/cache/buildscript-native-5176f293125f4d7d.txt",
+      "original_mtime_ns": 1795096897734731944
+    },
+    {
+      "path": "directives/before/record-snapshots/malformed/cache/buildscript-native-29331399078666ef.txt",
+      "sha256": "a25c3dfc329ca25af020003d1a1c2a7a87313229909bbd5a59d4e9d0ef4eb581",
+      "bytes": 2958,
+      "original_path": "/tmp/lustr-buildscript-directive-review/before/malformed/cache/buildscript-native-29331399078666ef.txt",
+      "original_mtime_ns": 1795096897029017123
+    },
+    {
+      "path": "directives/before/record-snapshots/plain/cache/buildscript-native-ce93140229bda078.txt",
+      "sha256": "01ed2bc5e88e895963da9d355ddfe135aec4c909525d8261c732a11c47de0d51",
+      "bytes": 2891,
+      "original_path": "/tmp/lustr-buildscript-directive-review/before/plain/cache/buildscript-native-ce93140229bda078.txt",
+      "original_mtime_ns": 1795096898445001917
+    },
+    {
+      "path": "directives/before/record-snapshots/unquoted/cache/buildscript-native-2378585df1586db8.txt",
+      "sha256": "d6415d87a7c9bddd9cefac9313921968509e5360029547eb319bbe0ca371db87",
+      "bytes": 2942,
+      "original_path": "/tmp/lustr-buildscript-directive-review/before/unquoted/cache/buildscript-native-2378585df1586db8.txt",
+      "original_mtime_ns": 1795096897417012948
+    },
+    {
+      "path": "directives/before/report.json",
+      "sha256": "3bb762a5d9e0197ef627c429f248e55d410c8e371423c784ea884f2820203559",
+      "bytes": 21570,
+      "original_path": "/tmp/lustr-buildscript-directive-review/before/report.json",
+      "original_mtime_ns": 1795096898749147465
+    },
+    {
+      "path": "directives/before/unquoted/00.stderr",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0,
+      "original_path": "/tmp/lustr-buildscript-directive-review/before/unquoted/00.stderr",
+      "original_mtime_ns": 1795096897445012646
+    },
+    {
+      "path": "directives/before/unquoted/00.stdout",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0,
+      "original_path": "/tmp/lustr-buildscript-directive-review/before/unquoted/00.stdout",
+      "original_mtime_ns": 1795096897445012646
+    },
+    {
+      "path": "directives/before/unquoted/01.stderr",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0,
+      "original_path": "/tmp/lustr-buildscript-directive-review/before/unquoted/01.stderr",
+      "original_mtime_ns": 1795096897446978539
+    },
+    {
+      "path": "directives/before/unquoted/01.stdout",
+      "sha256": "a17fcf0a2f50e2d495e4f90ce263410edc183add6c62699a2facbccf60410f74",
+      "bytes": 5,
+      "original_path": "/tmp/lustr-buildscript-directive-review/before/unquoted/01.stdout",
+      "original_mtime_ns": 1795096897446978539
+    },
+    {
+      "path": "directives/before/unquoted/02.stderr",
+      "sha256": "13df54e6ed07975ff78f461ba6a57f3414c6d09ab49fef2dbda9027a8755ea9e",
+      "bytes": 178,
+      "original_path": "/tmp/lustr-buildscript-directive-review/before/unquoted/02.stderr",
+      "original_mtime_ns": 1795096897551814490
+    },
+    {
+      "path": "directives/before/unquoted/02.stdout",
+      "sha256": "7cea2581e9fff51a1d2a2513e343da8fbebc9507646e9afa8b3e1892a6b15e1e",
+      "bytes": 2035,
+      "original_path": "/tmp/lustr-buildscript-directive-review/before/unquoted/02.stdout",
+      "original_mtime_ns": 1795096897551788321
+    },
+    {
+      "path": "directives/before/unquoted/work/Cargo.lock",
+      "sha256": "faae0b4d7c18afb6ec5e33b1113b54cd72c19679aca560bc03e777f9800b0814",
+      "bytes": 155,
+      "original_path": "/tmp/lustr-buildscript-directive-review/before/unquoted/work/Cargo.lock",
+      "original_mtime_ns": 1795096897251006555
+    },
+    {
+      "path": "directives/before/unquoted/work/Cargo.toml",
+      "sha256": "f54223a2ee29dd5771f7181d834304955446a784b8125eb8eecb2f299b3964c0",
+      "bytes": 60,
+      "original_path": "/tmp/lustr-buildscript-directive-review/before/unquoted/work/Cargo.toml",
+      "original_mtime_ns": 1795096897226018218
+    },
+    {
+      "path": "directives/before/unquoted/work/build.rs",
+      "sha256": "592e4841833811626e74d49ddff9132fc2bb1eadbc7409524ab3f89c5410a718",
+      "bytes": 54,
+      "original_path": "/tmp/lustr-buildscript-directive-review/before/unquoted/work/build.rs",
+      "original_mtime_ns": 1795096897226044287
+    },
+    {
+      "path": "directives/before/unquoted/work/src/main.rs",
+      "sha256": "cc9e9bbee462b4587331de85b49a189c115c2873d397c377d3b80a9388223de8",
+      "bytes": 49,
+      "original_path": "/tmp/lustr-buildscript-directive-review/before/unquoted/work/src/main.rs",
+      "original_mtime_ns": 1795096897226106630
+    },
+    {
+      "path": "execution-scripts/capture-evidence.py",
+      "sha256": "143aeac66a0dbf37d6711cc8ea681859cdf26fcb6133af31f0740f73d128df59",
+      "bytes": 7310,
+      "original_path": "/tmp/lustr-buildscript-execution-review/capture-evidence.py",
+      "original_mtime_ns": 1795098682514258937
+    },
+    {
+      "path": "execution-scripts/run-directives.py",
+      "sha256": "aafacd6b99ebe4ef1964b1f14ad7614641d20678d2d76b75e73bfba68f0b4a6c",
+      "bytes": 4950,
+      "original_path": "/tmp/lustr-buildscript-execution-review/run-directives.py",
+      "original_mtime_ns": 1795096896405023837
+    },
+    {
+      "path": "execution-scripts/run-host-counters.py",
+      "sha256": "8bdba945453dc4fd91e7f4f6539df581dc92e6c0d43c34462681442d2d548b2f",
+      "bytes": 8116,
+      "original_path": "/tmp/lustr-buildscript-execution-review/run-host-counters.py",
+      "original_mtime_ns": 1795097233221462511
+    },
+    {
+      "path": "execution-scripts/run-host-histories.py",
+      "sha256": "c71a56dea92f3ede6eb598ba736cf81dbfe0890e709c64203e73860374fc40cc",
+      "bytes": 7358,
+      "original_path": "/tmp/lustr-buildscript-execution-review/run-host-histories.py",
+      "original_mtime_ns": 1795097232625468654
+    },
+    {
+      "path": "execution-scripts/run-module-absence.py",
+      "sha256": "c007a19864fce9c21ad91d82abbfa04573ff2166d4cc1fd49b408830fb2ca3c0",
+      "bytes": 3761,
+      "original_path": "/tmp/lustr-buildscript-execution-review/run-module-absence.py",
+      "original_mtime_ns": 1795096455825742208
+    },
+    {
+      "path": "execution-scripts/run-timestamps.py",
+      "sha256": "f1866b67b06d609252c7c15f657439046852f2564366cec4ea029e52f75dae91",
+      "bytes": 6224,
+      "original_path": "/tmp/lustr-buildscript-execution-review/run-timestamps.py",
+      "original_mtime_ns": 1795098496900255563
+    },
+    {
+      "path": "history-v2-qualified/cargo10_bs_env_rerun/000-v1-native-check.stderr",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0,
+      "original_path": "/tmp/lustr-buildscript-execution-review/history-v2-qualified/cargo10_bs_env_rerun/000-v1-native-check.stderr",
+      "original_mtime_ns": 1795097234769446554
+    },
+    {
+      "path": "history-v2-qualified/cargo10_bs_env_rerun/000-v1-native-check.stdout",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0,
+      "original_path": "/tmp/lustr-buildscript-execution-review/history-v2-qualified/cargo10_bs_env_rerun/000-v1-native-check.stdout",
+      "original_mtime_ns": 1795097234769446554
+    },
+    {
+      "path": "history-v2-qualified/cargo10_bs_env_rerun/000-v1-native-check.trace.jsonl",
+      "sha256": "a9c16c08b16f370636aa7b4a7921dcbef098e46c66ea63305760e066cf4bf572",
+      "bytes": 45,
+      "original_path": "/tmp/lustr-buildscript-execution-review/history-v2-qualified/cargo10_bs_env_rerun/000-v1-native-check.trace.jsonl",
+      "original_mtime_ns": 1795097234765446596
+    },
+    {
+      "path": "history-v2-qualified/cargo10_bs_env_rerun/001-v1-native-build.stderr",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0,
+      "original_path": "/tmp/lustr-buildscript-execution-review/history-v2-qualified/cargo10_bs_env_rerun/001-v1-native-build.stderr",
+      "original_mtime_ns": 1795097234877470667
+    },
+    {
+      "path": "history-v2-qualified/cargo10_bs_env_rerun/001-v1-native-build.stdout",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0,
+      "original_path": "/tmp/lustr-buildscript-execution-review/history-v2-qualified/cargo10_bs_env_rerun/001-v1-native-build.stdout",
+      "original_mtime_ns": 1795097234877470667
+    },
+    {
+      "path": "history-v2-qualified/cargo10_bs_env_rerun/001-v1-native-build.trace.jsonl",
+      "sha256": "a9c16c08b16f370636aa7b4a7921dcbef098e46c66ea63305760e066cf4bf572",
+      "bytes": 45,
+      "original_path": "/tmp/lustr-buildscript-execution-review/history-v2-qualified/cargo10_bs_env_rerun/001-v1-native-build.trace.jsonl",
+      "original_mtime_ns": 1795097234877470667
+    },
+    {
+      "path": "history-v2-qualified/cargo10_bs_env_rerun/002-v1-native-program.stderr",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0,
+      "original_path": "/tmp/lustr-buildscript-execution-review/history-v2-qualified/cargo10_bs_env_rerun/002-v1-native-program.stderr",
+      "original_mtime_ns": 1795097234879879180
+    },
+    {
+      "path": "history-v2-qualified/cargo10_bs_env_rerun/002-v1-native-program.stdout",
+      "sha256": "b4b7a19b969c4636da3369bac7d64a8c8410f6b5025be73cfb4c7d960d4830be",
+      "bytes": 14,
+      "original_path": "/tmp/lustr-buildscript-execution-review/history-v2-qualified/cargo10_bs_env_rerun/002-v1-native-program.stdout",
+      "original_mtime_ns": 1795097234879879180
+    },
+    {
+      "path": "history-v2-qualified/cargo10_bs_env_rerun/003-v1-cargo-build.stderr",
+      "sha256": "c82b310674b9f2b86a58cd72b6a5a3c7aa04c28d9f0175e32d99b0162c60387a",
+      "bytes": 186,
+      "original_path": "/tmp/lustr-buildscript-execution-review/history-v2-qualified/cargo10_bs_env_rerun/003-v1-cargo-build.stderr",
+      "original_mtime_ns": 1795097235065411399
+    },
+    {
+      "path": "history-v2-qualified/cargo10_bs_env_rerun/003-v1-cargo-build.stdout",
+      "sha256": "9f33b8d99f3d3cbd61185d39dea91021c777b0933f9754efcf427bfd9b56e23b",
+      "bytes": 2147,
+      "original_path": "/tmp/lustr-buildscript-execution-review/history-v2-qualified/cargo10_bs_env_rerun/003-v1-cargo-build.stdout",
+      "original_mtime_ns": 1795097235065392420
+    },
+    {
+      "path": "history-v2-qualified/cargo10_bs_env_rerun/004-v1-rust-program.stderr",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0,
+      "original_path": "/tmp/lustr-buildscript-execution-review/history-v2-qualified/cargo10_bs_env_rerun/004-v1-rust-program.stderr",
+      "original_mtime_ns": 1795097235067209451
+    },
+    {
+      "path": "history-v2-qualified/cargo10_bs_env_rerun/004-v1-rust-program.stdout",
+      "sha256": "b4b7a19b969c4636da3369bac7d64a8c8410f6b5025be73cfb4c7d960d4830be",
+      "bytes": 14,
+      "original_path": "/tmp/lustr-buildscript-execution-review/history-v2-qualified/cargo10_bs_env_rerun/004-v1-rust-program.stdout",
+      "original_mtime_ns": 1795097235067209451
+    },
+    {
+      "path": "history-v2-qualified/cargo10_bs_env_rerun/005-v2-native-check.stderr",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0,
+      "original_path": "/tmp/lustr-buildscript-execution-review/history-v2-qualified/cargo10_bs_env_rerun/005-v2-native-check.stderr",
+      "original_mtime_ns": 1795097235165442471
+    },
+    {
+      "path": "history-v2-qualified/cargo10_bs_env_rerun/005-v2-native-check.stdout",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0,
+      "original_path": "/tmp/lustr-buildscript-execution-review/history-v2-qualified/cargo10_bs_env_rerun/005-v2-native-check.stdout",
+      "original_mtime_ns": 1795097235165442471
+    },
+    {
+      "path": "history-v2-qualified/cargo10_bs_env_rerun/005-v2-native-check.trace.jsonl",
+      "sha256": "a9c16c08b16f370636aa7b4a7921dcbef098e46c66ea63305760e066cf4bf572",
+      "bytes": 45,
+      "original_path": "/tmp/lustr-buildscript-execution-review/history-v2-qualified/cargo10_bs_env_rerun/005-v2-native-check.trace.jsonl",
+      "original_mtime_ns": 1795097235165442471
+    },
+    {
+      "path": "history-v2-qualified/cargo10_bs_env_rerun/006-v2-native-build.stderr",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0,
+      "original_path": "/tmp/lustr-buildscript-execution-review/history-v2-qualified/cargo10_bs_env_rerun/006-v2-native-build.stderr",
+      "original_mtime_ns": 1795097235281985981
+    },
+    {
+      "path": "history-v2-qualified/cargo10_bs_env_rerun/006-v2-native-build.stdout",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0,
+      "original_path": "/tmp/lustr-buildscript-execution-review/history-v2-qualified/cargo10_bs_env_rerun/006-v2-native-build.stdout",
+      "original_mtime_ns": 1795097235281985981
+    },
+    {
+      "path": "history-v2-qualified/cargo10_bs_env_rerun/006-v2-native-build.trace.jsonl",
+      "sha256": "a9c16c08b16f370636aa7b4a7921dcbef098e46c66ea63305760e066cf4bf572",
+      "bytes": 45,
+      "original_path": "/tmp/lustr-buildscript-execution-review/history-v2-qualified/cargo10_bs_env_rerun/006-v2-native-build.trace.jsonl",
+      "original_mtime_ns": 1795097235281985981
+    },
+    {
+      "path": "history-v2-qualified/cargo10_bs_env_rerun/007-v2-native-program.stderr",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0,
+      "original_path": "/tmp/lustr-buildscript-execution-review/history-v2-qualified/cargo10_bs_env_rerun/007-v2-native-program.stderr",
+      "original_mtime_ns": 1795097235286337253
+    },
+    {
+      "path": "history-v2-qualified/cargo10_bs_env_rerun/007-v2-native-program.stdout",
+      "sha256": "7624775bba3cbea77f0bc317e0ff88a17896d10a6f8df058e55cac4c7bfbb684",
+      "bytes": 9,
+      "original_path": "/tmp/lustr-buildscript-execution-review/history-v2-qualified/cargo10_bs_env_rerun/007-v2-native-program.stdout",
+      "original_mtime_ns": 1795097235286337253
+    },
+    {
+      "path": "history-v2-qualified/cargo10_bs_env_rerun/008-v2-cargo-build.stderr",
+      "sha256": "3bd409f38ecfc4d2d6bf18803d172a809391871fda26f565ee9a23cca3bf25be",
+      "bytes": 186,
+      "original_path": "/tmp/lustr-buildscript-execution-review/history-v2-qualified/cargo10_bs_env_rerun/008-v2-cargo-build.stderr",
+      "original_mtime_ns": 1795097235391122374
+    },
+    {
+      "path": "history-v2-qualified/cargo10_bs_env_rerun/008-v2-cargo-build.stdout",
+      "sha256": "227b94dbd13fe256acb7eccdcfc7e4b1e32038d1ca1a4aaa8f389531770927f2",
+      "bytes": 2149,
+      "original_path": "/tmp/lustr-buildscript-execution-review/history-v2-qualified/cargo10_bs_env_rerun/008-v2-cargo-build.stdout",
+      "original_mtime_ns": 1795097235391106631
+    },
+    {
+      "path": "history-v2-qualified/cargo10_bs_env_rerun/009-v2-rust-program.stderr",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0,
+      "original_path": "/tmp/lustr-buildscript-execution-review/history-v2-qualified/cargo10_bs_env_rerun/009-v2-rust-program.stderr",
+      "original_mtime_ns": 1795097235392980126
+    },
+    {
+      "path": "history-v2-qualified/cargo10_bs_env_rerun/009-v2-rust-program.stdout",
+      "sha256": "7624775bba3cbea77f0bc317e0ff88a17896d10a6f8df058e55cac4c7bfbb684",
+      "bytes": 9,
+      "original_path": "/tmp/lustr-buildscript-execution-review/history-v2-qualified/cargo10_bs_env_rerun/009-v2-rust-program.stdout",
+      "original_mtime_ns": 1795097235392980126
+    },
+    {
+      "path": "history-v2-qualified/cargo10_bs_env_rerun/010-v3-native-check.stderr",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0,
+      "original_path": "/tmp/lustr-buildscript-execution-review/history-v2-qualified/cargo10_bs_env_rerun/010-v3-native-check.stderr",
+      "original_mtime_ns": 1795097235481439214
+    },
+    {
+      "path": "history-v2-qualified/cargo10_bs_env_rerun/010-v3-native-check.stdout",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0,
+      "original_path": "/tmp/lustr-buildscript-execution-review/history-v2-qualified/cargo10_bs_env_rerun/010-v3-native-check.stdout",
+      "original_mtime_ns": 1795097235481439214
+    },
+    {
+      "path": "history-v2-qualified/cargo10_bs_env_rerun/010-v3-native-check.trace.jsonl",
+      "sha256": "a9c16c08b16f370636aa7b4a7921dcbef098e46c66ea63305760e066cf4bf572",
+      "bytes": 45,
+      "original_path": "/tmp/lustr-buildscript-execution-review/history-v2-qualified/cargo10_bs_env_rerun/010-v3-native-check.trace.jsonl",
+      "original_mtime_ns": 1795097235477439255
+    },
+    {
+      "path": "history-v2-qualified/cargo10_bs_env_rerun/011-v3-native-build.stderr",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0,
+      "original_path": "/tmp/lustr-buildscript-execution-review/history-v2-qualified/cargo10_bs_env_rerun/011-v3-native-build.stderr",
+      "original_mtime_ns": 1795097235596327593
+    },
+    {
+      "path": "history-v2-qualified/cargo10_bs_env_rerun/011-v3-native-build.stdout",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0,
+      "original_path": "/tmp/lustr-buildscript-execution-review/history-v2-qualified/cargo10_bs_env_rerun/011-v3-native-build.stdout",
+      "original_mtime_ns": 1795097235596327593
+    },
+    {
+      "path": "history-v2-qualified/cargo10_bs_env_rerun/011-v3-native-build.trace.jsonl",
+      "sha256": "a9c16c08b16f370636aa7b4a7921dcbef098e46c66ea63305760e066cf4bf572",
+      "bytes": 45,
+      "original_path": "/tmp/lustr-buildscript-execution-review/history-v2-qualified/cargo10_bs_env_rerun/011-v3-native-build.trace.jsonl",
+      "original_mtime_ns": 1795097235596327593
+    },
+    {
+      "path": "history-v2-qualified/cargo10_bs_env_rerun/012-v3-native-program.stderr",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0,
+      "original_path": "/tmp/lustr-buildscript-execution-review/history-v2-qualified/cargo10_bs_env_rerun/012-v3-native-program.stderr",
+      "original_mtime_ns": 1795097235602765302
+    },
+    {
+      "path": "history-v2-qualified/cargo10_bs_env_rerun/012-v3-native-program.stdout",
+      "sha256": "5ae6fd862dd1ef5604d660dec26c339e794c31150ca42c398cd48408474761ac",
+      "bytes": 10,
+      "original_path": "/tmp/lustr-buildscript-execution-review/history-v2-qualified/cargo10_bs_env_rerun/012-v3-native-program.stdout",
+      "original_mtime_ns": 1795097235602765302
+    },
+    {
+      "path": "history-v2-qualified/cargo10_bs_env_rerun/013-v3-cargo-build.stderr",
+      "sha256": "289b16839c76775c5058aa5a1e751ca4f84b88d5d2ec0dd0944f199f4f77a831",
+      "bytes": 186,
+      "original_path": "/tmp/lustr-buildscript-execution-review/history-v2-qualified/cargo10_bs_env_rerun/013-v3-cargo-build.stderr",
+      "original_mtime_ns": 1795097235705632817
+    },
+    {
+      "path": "history-v2-qualified/cargo10_bs_env_rerun/013-v3-cargo-build.stdout",
+      "sha256": "4023ce5b80a2b9c1f124d0eae0658208559d8b230efe608ff9d9e90845413545",
+      "bytes": 2142,
+      "original_path": "/tmp/lustr-buildscript-execution-review/history-v2-qualified/cargo10_bs_env_rerun/013-v3-cargo-build.stdout",
+      "original_mtime_ns": 1795097235705616453
+    },
+    {
+      "path": "history-v2-qualified/cargo10_bs_env_rerun/014-v3-rust-program.stderr",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0,
+      "original_path": "/tmp/lustr-buildscript-execution-review/history-v2-qualified/cargo10_bs_env_rerun/014-v3-rust-program.stderr",
+      "original_mtime_ns": 1795097235708053349
+    },
+    {
+      "path": "history-v2-qualified/cargo10_bs_env_rerun/014-v3-rust-program.stdout",
+      "sha256": "5ae6fd862dd1ef5604d660dec26c339e794c31150ca42c398cd48408474761ac",
+      "bytes": 10,
+      "original_path": "/tmp/lustr-buildscript-execution-review/history-v2-qualified/cargo10_bs_env_rerun/014-v3-rust-program.stdout",
+      "original_mtime_ns": 1795097235708053349
+    },
+    {
+      "path": "history-v2-qualified/cargo10_bs_env_rerun/015-v4-native-check.stderr",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0,
+      "original_path": "/tmp/lustr-buildscript-execution-review/history-v2-qualified/cargo10_bs_env_rerun/015-v4-native-check.stderr",
+      "original_mtime_ns": 1795097235849435421
+    },
+    {
+      "path": "history-v2-qualified/cargo10_bs_env_rerun/015-v4-native-check.stdout",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0,
+      "original_path": "/tmp/lustr-buildscript-execution-review/history-v2-qualified/cargo10_bs_env_rerun/015-v4-native-check.stdout",
+      "original_mtime_ns": 1795097235849435421
+    },
+    {
+      "path": "history-v2-qualified/cargo10_bs_env_rerun/015-v4-native-check.trace.jsonl",
+      "sha256": "a9c16c08b16f370636aa7b4a7921dcbef098e46c66ea63305760e066cf4bf572",
+      "bytes": 45,
+      "original_path": "/tmp/lustr-buildscript-execution-review/history-v2-qualified/cargo10_bs_env_rerun/015-v4-native-check.trace.jsonl",
+      "original_mtime_ns": 1795097235849435421
+    },
+    {
+      "path": "history-v2-qualified/cargo10_bs_env_rerun/016-v4-native-build.stderr",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0,
+      "original_path": "/tmp/lustr-buildscript-execution-review/history-v2-qualified/cargo10_bs_env_rerun/016-v4-native-build.stderr",
+      "original_mtime_ns": 1795097235956518914
+    },
+    {
+      "path": "history-v2-qualified/cargo10_bs_env_rerun/016-v4-native-build.stdout",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0,
+      "original_path": "/tmp/lustr-buildscript-execution-review/history-v2-qualified/cargo10_bs_env_rerun/016-v4-native-build.stdout",
+      "original_mtime_ns": 1795097235956518914
+    },
+    {
+      "path": "history-v2-qualified/cargo10_bs_env_rerun/016-v4-native-build.trace.jsonl",
+      "sha256": "a9c16c08b16f370636aa7b4a7921dcbef098e46c66ea63305760e066cf4bf572",
+      "bytes": 45,
+      "original_path": "/tmp/lustr-buildscript-execution-review/history-v2-qualified/cargo10_bs_env_rerun/016-v4-native-build.trace.jsonl",
+      "original_mtime_ns": 1795097235956518914
+    },
+    {
+      "path": "history-v2-qualified/cargo10_bs_env_rerun/017-v4-native-program.stderr",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0,
+      "original_path": "/tmp/lustr-buildscript-execution-review/history-v2-qualified/cargo10_bs_env_rerun/017-v4-native-program.stderr",
+      "original_mtime_ns": 1795097235960984120
+    },
+    {
+      "path": "history-v2-qualified/cargo10_bs_env_rerun/017-v4-native-program.stdout",
+      "sha256": "b4b7a19b969c4636da3369bac7d64a8c8410f6b5025be73cfb4c7d960d4830be",
+      "bytes": 14,
+      "original_path": "/tmp/lustr-buildscript-execution-review/history-v2-qualified/cargo10_bs_env_rerun/017-v4-native-program.stdout",
+      "original_mtime_ns": 1795097235960984120
+    },
+    {
+      "path": "history-v2-qualified/cargo10_bs_env_rerun/018-v4-cargo-build.stderr",
+      "sha256": "5eed550dd903bd450d4715c3eff32cb02c54293210e7c6ebad3d19f56bc3673d",
+      "bytes": 186,
+      "original_path": "/tmp/lustr-buildscript-execution-review/history-v2-qualified/cargo10_bs_env_rerun/018-v4-cargo-build.stderr",
+      "original_mtime_ns": 1795097236020329810
+    },
+    {
+      "path": "history-v2-qualified/cargo10_bs_env_rerun/018-v4-cargo-build.stdout",
+      "sha256": "bd197b1f8fa3eaa3c7e87dfe6e9de0681c6e2172848526546c6f678023726db5",
+      "bytes": 2146,
+      "original_path": "/tmp/lustr-buildscript-execution-review/history-v2-qualified/cargo10_bs_env_rerun/018-v4-cargo-build.stdout",
+      "original_mtime_ns": 1795097236020314527
+    },
+    {
+      "path": "history-v2-qualified/cargo10_bs_env_rerun/019-v4-rust-program.stderr",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0,
+      "original_path": "/tmp/lustr-buildscript-execution-review/history-v2-qualified/cargo10_bs_env_rerun/019-v4-rust-program.stderr",
+      "original_mtime_ns": 1795097236023788691
+    },
+    {
+      "path": "history-v2-qualified/cargo10_bs_env_rerun/019-v4-rust-program.stdout",
+      "sha256": "b4b7a19b969c4636da3369bac7d64a8c8410f6b5025be73cfb4c7d960d4830be",
+      "bytes": 14,
+      "original_path": "/tmp/lustr-buildscript-execution-review/history-v2-qualified/cargo10_bs_env_rerun/019-v4-rust-program.stdout",
+      "original_mtime_ns": 1795097236023788691
+    },
+    {
+      "path": "history-v2-qualified/cargo10_bs_env_rerun/020-v5-native-check.stderr",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0,
+      "original_path": "/tmp/lustr-buildscript-execution-review/history-v2-qualified/cargo10_bs_env_rerun/020-v5-native-check.stderr",
+      "original_mtime_ns": 1795097236197431834
+    },
+    {
+      "path": "history-v2-qualified/cargo10_bs_env_rerun/020-v5-native-check.stdout",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0,
+      "original_path": "/tmp/lustr-buildscript-execution-review/history-v2-qualified/cargo10_bs_env_rerun/020-v5-native-check.stdout",
+      "original_mtime_ns": 1795097236197431834
+    },
+    {
+      "path": "history-v2-qualified/cargo10_bs_env_rerun/020-v5-native-check.trace.jsonl",
+      "sha256": "a9c16c08b16f370636aa7b4a7921dcbef098e46c66ea63305760e066cf4bf572",
+      "bytes": 45,
+      "original_path": "/tmp/lustr-buildscript-execution-review/history-v2-qualified/cargo10_bs_env_rerun/020-v5-native-check.trace.jsonl",
+      "original_mtime_ns": 1795097236197431834
+    },
+    {
+      "path": "history-v2-qualified/cargo10_bs_env_rerun/021-v5-native-build.stderr",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0,
+      "original_path": "/tmp/lustr-buildscript-execution-review/history-v2-qualified/cargo10_bs_env_rerun/021-v5-native-build.stderr",
+      "original_mtime_ns": 1795097236324304044
+    },
+    {
+      "path": "history-v2-qualified/cargo10_bs_env_rerun/021-v5-native-build.stdout",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0,
+      "original_path": "/tmp/lustr-buildscript-execution-review/history-v2-qualified/cargo10_bs_env_rerun/021-v5-native-build.stdout",
+      "original_mtime_ns": 1795097236324304044
+    },
+    {
+      "path": "history-v2-qualified/cargo10_bs_env_rerun/021-v5-native-build.trace.jsonl",
+      "sha256": "a9c16c08b16f370636aa7b4a7921dcbef098e46c66ea63305760e066cf4bf572",
+      "bytes": 45,
+      "original_path": "/tmp/lustr-buildscript-execution-review/history-v2-qualified/cargo10_bs_env_rerun/021-v5-native-build.trace.jsonl",
+      "original_mtime_ns": 1795097236324304044
+    },
+    {
+      "path": "history-v2-qualified/cargo10_bs_env_rerun/022-v5-native-program.stderr",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0,
+      "original_path": "/tmp/lustr-buildscript-execution-review/history-v2-qualified/cargo10_bs_env_rerun/022-v5-native-program.stderr",
+      "original_mtime_ns": 1795097236329724881
+    },
+    {
+      "path": "history-v2-qualified/cargo10_bs_env_rerun/022-v5-native-program.stdout",
+      "sha256": "7624775bba3cbea77f0bc317e0ff88a17896d10a6f8df058e55cac4c7bfbb684",
+      "bytes": 9,
+      "original_path": "/tmp/lustr-buildscript-execution-review/history-v2-qualified/cargo10_bs_env_rerun/022-v5-native-program.stdout",
+      "original_mtime_ns": 1795097236329724881
+    },
+    {
+      "path": "history-v2-qualified/cargo10_bs_env_rerun/023-v5-cargo-build.stderr",
+      "sha256": "01c90aa51cd5c07ffc6e82c0f7cbed014b41bda7857d2df381da6e3c8dc5c191",
+      "bytes": 186,
+      "original_path": "/tmp/lustr-buildscript-execution-review/history-v2-qualified/cargo10_bs_env_rerun/023-v5-cargo-build.stderr",
+      "original_mtime_ns": 1795097236419570664
+    },
+    {
+      "path": "history-v2-qualified/cargo10_bs_env_rerun/023-v5-cargo-build.stdout",
+      "sha256": "18f034c899d239ddff7cd9cd3ecb0a1060c9267ea426fa4be5a18b892a4f9150",
+      "bytes": 2148,
+      "original_path": "/tmp/lustr-buildscript-execution-review/history-v2-qualified/cargo10_bs_env_rerun/023-v5-cargo-build.stdout",
+      "original_mtime_ns": 1795097236419530233
+    },
+    {
+      "path": "history-v2-qualified/cargo10_bs_env_rerun/024-v5-rust-program.stderr",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0,
+      "original_path": "/tmp/lustr-buildscript-execution-review/history-v2-qualified/cargo10_bs_env_rerun/024-v5-rust-program.stderr",
+      "original_mtime_ns": 1795097236421980785
+    },
+    {
+      "path": "history-v2-qualified/cargo10_bs_env_rerun/024-v5-rust-program.stdout",
+      "sha256": "7624775bba3cbea77f0bc317e0ff88a17896d10a6f8df058e55cac4c7bfbb684",
+      "bytes": 9,
+      "original_path": "/tmp/lustr-buildscript-execution-review/history-v2-qualified/cargo10_bs_env_rerun/024-v5-rust-program.stdout",
+      "original_mtime_ns": 1795097236421980785
+    },
+    {
+      "path": "history-v2-qualified/cargo10_bs_env_rerun/025-v6-native-check.stderr",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0,
+      "original_path": "/tmp/lustr-buildscript-execution-review/history-v2-qualified/cargo10_bs_env_rerun/025-v6-native-check.stderr",
+      "original_mtime_ns": 1795097236533428370
+    },
+    {
+      "path": "history-v2-qualified/cargo10_bs_env_rerun/025-v6-native-check.stdout",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0,
+      "original_path": "/tmp/lustr-buildscript-execution-review/history-v2-qualified/cargo10_bs_env_rerun/025-v6-native-check.stdout",
+      "original_mtime_ns": 1795097236533428370
+    },
+    {
+      "path": "history-v2-qualified/cargo10_bs_env_rerun/025-v6-native-check.trace.jsonl",
+      "sha256": "a9c16c08b16f370636aa7b4a7921dcbef098e46c66ea63305760e066cf4bf572",
+      "bytes": 45,
+      "original_path": "/tmp/lustr-buildscript-execution-review/history-v2-qualified/cargo10_bs_env_rerun/025-v6-native-check.trace.jsonl",
+      "original_mtime_ns": 1795097236533428370
+    },
+    {
+      "path": "history-v2-qualified/cargo10_bs_env_rerun/026-v6-native-build.stderr",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0,
+      "original_path": "/tmp/lustr-buildscript-execution-review/history-v2-qualified/cargo10_bs_env_rerun/026-v6-native-build.stderr",
+      "original_mtime_ns": 1795097236657427091
+    },
+    {
+      "path": "history-v2-qualified/cargo10_bs_env_rerun/026-v6-native-build.stdout",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0,
+      "original_path": "/tmp/lustr-buildscript-execution-review/history-v2-qualified/cargo10_bs_env_rerun/026-v6-native-build.stdout",
+      "original_mtime_ns": 1795097236657427091
+    },
+    {
+      "path": "history-v2-qualified/cargo10_bs_env_rerun/026-v6-native-build.trace.jsonl",
+      "sha256": "a9c16c08b16f370636aa7b4a7921dcbef098e46c66ea63305760e066cf4bf572",
+      "bytes": 45,
+      "original_path": "/tmp/lustr-buildscript-execution-review/history-v2-qualified/cargo10_bs_env_rerun/026-v6-native-build.trace.jsonl",
+      "original_mtime_ns": 1795097236657427091
+    },
+    {
+      "path": "history-v2-qualified/cargo10_bs_env_rerun/027-v6-native-program.stderr",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0,
+      "original_path": "/tmp/lustr-buildscript-execution-review/history-v2-qualified/cargo10_bs_env_rerun/027-v6-native-program.stderr",
+      "original_mtime_ns": 1795097236665338813
+    },
+    {
+      "path": "history-v2-qualified/cargo10_bs_env_rerun/027-v6-native-program.stdout",
+      "sha256": "e93f45cdea323c7cd00e873614e9a1fe96f3f24b19fdfc7a587f2fa6e5678ed7",
+      "bytes": 9,
+      "original_path": "/tmp/lustr-buildscript-execution-review/history-v2-qualified/cargo10_bs_env_rerun/027-v6-native-program.stdout",
+      "original_mtime_ns": 1795097236665338813
+    },
+    {
+      "path": "history-v2-qualified/cargo10_bs_env_rerun/028-v6-cargo-build.stderr",
+      "sha256": "5eed550dd903bd450d4715c3eff32cb02c54293210e7c6ebad3d19f56bc3673d",
+      "bytes": 186,
+      "original_path": "/tmp/lustr-buildscript-execution-review/history-v2-qualified/cargo10_bs_env_rerun/028-v6-cargo-build.stderr",
+      "original_mtime_ns": 1795097236726262983
+    },
+    {
+      "path": "history-v2-qualified/cargo10_bs_env_rerun/028-v6-cargo-build.stdout",
+      "sha256": "1d9f24c21f393f55f56ba9fb02e8ac4ea663b9b4b568e484c5a714d94014598a",
+      "bytes": 2141,
+      "original_path": "/tmp/lustr-buildscript-execution-review/history-v2-qualified/cargo10_bs_env_rerun/028-v6-cargo-build.stdout",
+      "original_mtime_ns": 1795097236726235592
+    },
+    {
+      "path": "history-v2-qualified/cargo10_bs_env_rerun/029-v6-rust-program.stderr",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0,
+      "original_path": "/tmp/lustr-buildscript-execution-review/history-v2-qualified/cargo10_bs_env_rerun/029-v6-rust-program.stderr",
+      "original_mtime_ns": 1795097236728894400
+    },
+    {
+      "path": "history-v2-qualified/cargo10_bs_env_rerun/029-v6-rust-program.stdout",
+      "sha256": "e93f45cdea323c7cd00e873614e9a1fe96f3f24b19fdfc7a587f2fa6e5678ed7",
+      "bytes": 9,
+      "original_path": "/tmp/lustr-buildscript-execution-review/history-v2-qualified/cargo10_bs_env_rerun/029-v6-rust-program.stdout",
+      "original_mtime_ns": 1795097236728894400
+    },
+    {
+      "path": "history-v2-qualified/cargo10_bs_env_rerun/030-v7-native-check.stderr",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0,
+      "original_path": "/tmp/lustr-buildscript-execution-review/history-v2-qualified/cargo10_bs_env_rerun/030-v7-native-check.stderr",
+      "original_mtime_ns": 1795097236821425402
+    },
+    {
+      "path": "history-v2-qualified/cargo10_bs_env_rerun/030-v7-native-check.stdout",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0,
+      "original_path": "/tmp/lustr-buildscript-execution-review/history-v2-qualified/cargo10_bs_env_rerun/030-v7-native-check.stdout",
+      "original_mtime_ns": 1795097236821425402
+    },
+    {
+      "path": "history-v2-qualified/cargo10_bs_env_rerun/030-v7-native-check.trace.jsonl",
+      "sha256": "a9c16c08b16f370636aa7b4a7921dcbef098e46c66ea63305760e066cf4bf572",
+      "bytes": 45,
+      "original_path": "/tmp/lustr-buildscript-execution-review/history-v2-qualified/cargo10_bs_env_rerun/030-v7-native-check.trace.jsonl",
+      "original_mtime_ns": 1795097236821425402
+    },
+    {
+      "path": "history-v2-qualified/cargo10_bs_env_rerun/031-v7-native-build.stderr",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0,
+      "original_path": "/tmp/lustr-buildscript-execution-review/history-v2-qualified/cargo10_bs_env_rerun/031-v7-native-build.stderr",
+      "original_mtime_ns": 1795097236949424082
+    },
+    {
+      "path": "history-v2-qualified/cargo10_bs_env_rerun/031-v7-native-build.stdout",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0,
+      "original_path": "/tmp/lustr-buildscript-execution-review/history-v2-qualified/cargo10_bs_env_rerun/031-v7-native-build.stdout",
+      "original_mtime_ns": 1795097236949424082
+    },
+    {
+      "path": "history-v2-qualified/cargo10_bs_env_rerun/031-v7-native-build.trace.jsonl",
+      "sha256": "a9c16c08b16f370636aa7b4a7921dcbef098e46c66ea63305760e066cf4bf572",
+      "bytes": 45,
+      "original_path": "/tmp/lustr-buildscript-execution-review/history-v2-qualified/cargo10_bs_env_rerun/031-v7-native-build.trace.jsonl",
+      "original_mtime_ns": 1795097236948028830
+    },
+    {
+      "path": "history-v2-qualified/cargo10_bs_env_rerun/032-v7-native-program.stderr",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0,
+      "original_path": "/tmp/lustr-buildscript-execution-review/history-v2-qualified/cargo10_bs_env_rerun/032-v7-native-program.stderr",
+      "original_mtime_ns": 1795097236956111095
+    },
+    {
+      "path": "history-v2-qualified/cargo10_bs_env_rerun/032-v7-native-program.stdout",
+      "sha256": "900a32ee848e41e90bd434ce097d932c69d4f3a5b41f12a170405316da3df662",
+      "bytes": 15,
+      "original_path": "/tmp/lustr-buildscript-execution-review/history-v2-qualified/cargo10_bs_env_rerun/032-v7-native-program.stdout",
+      "original_mtime_ns": 1795097236956111095
+    },
+    {
+      "path": "history-v2-qualified/cargo10_bs_env_rerun/033-v7-cargo-build.stderr",
+      "sha256": "5eed550dd903bd450d4715c3eff32cb02c54293210e7c6ebad3d19f56bc3673d",
+      "bytes": 186,
+      "original_path": "/tmp/lustr-buildscript-execution-review/history-v2-qualified/cargo10_bs_env_rerun/033-v7-cargo-build.stderr",
+      "original_mtime_ns": 1795097237017216066
+    },
+    {
+      "path": "history-v2-qualified/cargo10_bs_env_rerun/033-v7-cargo-build.stdout",
+      "sha256": "a6b2504083243c9bb0122446925386c8576b266c81798cd2997c025874e755a3",
+      "bytes": 2147,
+      "original_path": "/tmp/lustr-buildscript-execution-review/history-v2-qualified/cargo10_bs_env_rerun/033-v7-cargo-build.stdout",
+      "original_mtime_ns": 1795097237017200804
+    },
+    {
+      "path": "history-v2-qualified/cargo10_bs_env_rerun/034-v7-rust-program.stderr",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0,
+      "original_path": "/tmp/lustr-buildscript-execution-review/history-v2-qualified/cargo10_bs_env_rerun/034-v7-rust-program.stderr",
+      "original_mtime_ns": 1795097237020366499
+    },
+    {
+      "path": "history-v2-qualified/cargo10_bs_env_rerun/034-v7-rust-program.stdout",
+      "sha256": "900a32ee848e41e90bd434ce097d932c69d4f3a5b41f12a170405316da3df662",
+      "bytes": 15,
+      "original_path": "/tmp/lustr-buildscript-execution-review/history-v2-qualified/cargo10_bs_env_rerun/034-v7-rust-program.stdout",
+      "original_mtime_ns": 1795097237020366499
+    },
+    {
+      "path": "history-v2-qualified/cargo10_bs_env_rerun/work/Cargo.lock",
+      "sha256": "f5e2c79b9630feee4d43c5754ab0eb1520c683ca52336d1b640ed87807805c61",
+      "bytes": 148,
+      "original_path": "/tmp/lustr-buildscript-execution-review/history-v2-qualified/cargo10_bs_env_rerun/work/Cargo.lock",
+      "original_mtime_ns": 1795097234008517806
+    },
+    {
+      "path": "history-v2-qualified/cargo10_bs_env_rerun/work/Cargo.toml",
+      "sha256": "4e8dbe6f45300f583044d226dcf7acb309f80c7742f094049e21c0b76fb6fd99",
+      "bytes": 72,
+      "original_path": "/tmp/lustr-buildscript-execution-review/history-v2-qualified/cargo10_bs_env_rerun/work/Cargo.toml",
+      "original_mtime_ns": 1795097235000000000
+    },
+    {
+      "path": "history-v2-qualified/cargo10_bs_env_rerun/work/build.rs",
+      "sha256": "e892bf4aa1f6e037e69adca346b699c018e38b56efcc2088d8882b666dceb5e4",
+      "bytes": 319,
+      "original_path": "/tmp/lustr-buildscript-execution-review/history-v2-qualified/cargo10_bs_env_rerun/work/build.rs",
+      "original_mtime_ns": 1795097235000000000
+    },
+    {
+      "path": "history-v2-qualified/cargo10_bs_env_rerun/work/src/main.rs",
+      "sha256": "a48c6190b8b25ce40fe19c725319f0c32b0ce0da2dc1688f56d8e350cc899f59",
+      "bytes": 132,
+      "original_path": "/tmp/lustr-buildscript-execution-review/history-v2-qualified/cargo10_bs_env_rerun/work/src/main.rs",
+      "original_mtime_ns": 1795097235000000000
+    },
+    {
+      "path": "history-v2-qualified/cargo12_dep_bs_env/000-v1-native-check.stderr",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0,
+      "original_path": "/tmp/lustr-buildscript-execution-review/history-v2-qualified/cargo12_dep_bs_env/000-v1-native-check.stderr",
+      "original_mtime_ns": 1795097237801415722
+    },
+    {
+      "path": "history-v2-qualified/cargo12_dep_bs_env/000-v1-native-check.stdout",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0,
+      "original_path": "/tmp/lustr-buildscript-execution-review/history-v2-qualified/cargo12_dep_bs_env/000-v1-native-check.stdout",
+      "original_mtime_ns": 1795097237801415722
+    },
+    {
+      "path": "history-v2-qualified/cargo12_dep_bs_env/000-v1-native-check.trace.jsonl",
+      "sha256": "a9c16c08b16f370636aa7b4a7921dcbef098e46c66ea63305760e066cf4bf572",
+      "bytes": 45,
+      "original_path": "/tmp/lustr-buildscript-execution-review/history-v2-qualified/cargo12_dep_bs_env/000-v1-native-check.trace.jsonl",
+      "original_mtime_ns": 1795097237797415761
+    },
+    {
+      "path": "history-v2-qualified/cargo12_dep_bs_env/001-v1-native-build.stderr",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0,
+      "original_path": "/tmp/lustr-buildscript-execution-review/history-v2-qualified/cargo12_dep_bs_env/001-v1-native-build.stderr",
+      "original_mtime_ns": 1795097237981413959
+    },
+    {
+      "path": "history-v2-qualified/cargo12_dep_bs_env/001-v1-native-build.stdout",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0,
+      "original_path": "/tmp/lustr-buildscript-execution-review/history-v2-qualified/cargo12_dep_bs_env/001-v1-native-build.stdout",
+      "original_mtime_ns": 1795097237981413959
+    },
+    {
+      "path": "history-v2-qualified/cargo12_dep_bs_env/001-v1-native-build.trace.jsonl",
+      "sha256": "a9c16c08b16f370636aa7b4a7921dcbef098e46c66ea63305760e066cf4bf572",
+      "bytes": 45,
+      "original_path": "/tmp/lustr-buildscript-execution-review/history-v2-qualified/cargo12_dep_bs_env/001-v1-native-build.trace.jsonl",
+      "original_mtime_ns": 1795097237981413959
+    },
+    {
+      "path": "history-v2-qualified/cargo12_dep_bs_env/002-v1-native-program.stderr",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0,
+      "original_path": "/tmp/lustr-buildscript-execution-review/history-v2-qualified/cargo12_dep_bs_env/002-v1-native-program.stderr",
+      "original_mtime_ns": 1795097237991136092
+    },
+    {
+      "path": "history-v2-qualified/cargo12_dep_bs_env/002-v1-native-program.stdout",
+      "sha256": "b63823326d32efd6efb182f3fb3b9d8fc62309d8912089d0c842d9812d8cd3ed",
+      "bytes": 8,
+      "original_path": "/tmp/lustr-buildscript-execution-review/history-v2-qualified/cargo12_dep_bs_env/002-v1-native-program.stdout",
+      "original_mtime_ns": 1795097237991136092
+    },
+    {
+      "path": "history-v2-qualified/cargo12_dep_bs_env/003-v1-cargo-build.stderr",
+      "sha256": "5455bfa341c13f009a90c2ae4bbbae226b9dea4dceee1d79b91c7a2013de21c9",
+      "bytes": 299,
+      "original_path": "/tmp/lustr-buildscript-execution-review/history-v2-qualified/cargo12_dep_bs_env/003-v1-cargo-build.stderr",
+      "original_mtime_ns": 1795097238301878202
+    },
+    {
+      "path": "history-v2-qualified/cargo12_dep_bs_env/003-v1-cargo-build.stdout",
+      "sha256": "56ecc83b3f72678129dfd2c2db0464b5d53fe16583b08abe684477b6ff6f91f7",
+      "bytes": 3127,
+      "original_path": "/tmp/lustr-buildscript-execution-review/history-v2-qualified/cargo12_dep_bs_env/003-v1-cargo-build.stdout",
+      "original_mtime_ns": 1795097238301864241
+    },
+    {
+      "path": "history-v2-qualified/cargo12_dep_bs_env/004-v1-rust-program.stderr",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0,
+      "original_path": "/tmp/lustr-buildscript-execution-review/history-v2-qualified/cargo12_dep_bs_env/004-v1-rust-program.stderr",
+      "original_mtime_ns": 1795097238304909697
+    },
+    {
+      "path": "history-v2-qualified/cargo12_dep_bs_env/004-v1-rust-program.stdout",
+      "sha256": "b63823326d32efd6efb182f3fb3b9d8fc62309d8912089d0c842d9812d8cd3ed",
+      "bytes": 8,
+      "original_path": "/tmp/lustr-buildscript-execution-review/history-v2-qualified/cargo12_dep_bs_env/004-v1-rust-program.stdout",
+      "original_mtime_ns": 1795097238304909697
+    },
+    {
+      "path": "history-v2-qualified/cargo12_dep_bs_env/005-v2-native-check.stderr",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0,
+      "original_path": "/tmp/lustr-buildscript-execution-review/history-v2-qualified/cargo12_dep_bs_env/005-v2-native-check.stderr",
+      "original_mtime_ns": 1795097238441409453
+    },
+    {
+      "path": "history-v2-qualified/cargo12_dep_bs_env/005-v2-native-check.stdout",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0,
+      "original_path": "/tmp/lustr-buildscript-execution-review/history-v2-qualified/cargo12_dep_bs_env/005-v2-native-check.stdout",
+      "original_mtime_ns": 1795097238441409453
+    },
+    {
+      "path": "history-v2-qualified/cargo12_dep_bs_env/005-v2-native-check.trace.jsonl",
+      "sha256": "a9c16c08b16f370636aa7b4a7921dcbef098e46c66ea63305760e066cf4bf572",
+      "bytes": 45,
+      "original_path": "/tmp/lustr-buildscript-execution-review/history-v2-qualified/cargo12_dep_bs_env/005-v2-native-check.trace.jsonl",
+      "original_mtime_ns": 1795097238441409453
+    },
+    {
+      "path": "history-v2-qualified/cargo12_dep_bs_env/006-v2-native-build.stderr",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0,
+      "original_path": "/tmp/lustr-buildscript-execution-review/history-v2-qualified/cargo12_dep_bs_env/006-v2-native-build.stderr",
+      "original_mtime_ns": 1795097238570956779
+    },
+    {
+      "path": "history-v2-qualified/cargo12_dep_bs_env/006-v2-native-build.stdout",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0,
+      "original_path": "/tmp/lustr-buildscript-execution-review/history-v2-qualified/cargo12_dep_bs_env/006-v2-native-build.stdout",
+      "original_mtime_ns": 1795097238570956779
+    },
+    {
+      "path": "history-v2-qualified/cargo12_dep_bs_env/006-v2-native-build.trace.jsonl",
+      "sha256": "a9c16c08b16f370636aa7b4a7921dcbef098e46c66ea63305760e066cf4bf572",
+      "bytes": 45,
+      "original_path": "/tmp/lustr-buildscript-execution-review/history-v2-qualified/cargo12_dep_bs_env/006-v2-native-build.trace.jsonl",
+      "original_mtime_ns": 1795097238570956779
+    },
+    {
+      "path": "history-v2-qualified/cargo12_dep_bs_env/007-v2-native-program.stderr",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0,
+      "original_path": "/tmp/lustr-buildscript-execution-review/history-v2-qualified/cargo12_dep_bs_env/007-v2-native-program.stderr",
+      "original_mtime_ns": 1795097238578028553
+    },
+    {
+      "path": "history-v2-qualified/cargo12_dep_bs_env/007-v2-native-program.stdout",
+      "sha256": "24d4941e67d5965d270eaebdb9816b994311e0f2f0e79ef6bb626f362c52842e",
+      "bytes": 4,
+      "original_path": "/tmp/lustr-buildscript-execution-review/history-v2-qualified/cargo12_dep_bs_env/007-v2-native-program.stdout",
+      "original_mtime_ns": 1795097238578028553
+    },
+    {
+      "path": "history-v2-qualified/cargo12_dep_bs_env/008-v2-cargo-build.stderr",
+      "sha256": "97b7733e5f85be574173d5271f06f07010915de9b380e06a55c3229b91e5e84d",
+      "bytes": 299,
+      "original_path": "/tmp/lustr-buildscript-execution-review/history-v2-qualified/cargo12_dep_bs_env/008-v2-cargo-build.stderr",
+      "original_mtime_ns": 1795097238693210680
+    },
+    {
+      "path": "history-v2-qualified/cargo12_dep_bs_env/008-v2-cargo-build.stdout",
+      "sha256": "1f8c8e0883703cdded814873cc11988b7ce52ad104063ddd0ac8adc0ba2694ab",
+      "bytes": 3123,
+      "original_path": "/tmp/lustr-buildscript-execution-review/history-v2-qualified/cargo12_dep_bs_env/008-v2-cargo-build.stdout",
+      "original_mtime_ns": 1795097238693198331
+    },
+    {
+      "path": "history-v2-qualified/cargo12_dep_bs_env/009-v2-rust-program.stderr",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0,
+      "original_path": "/tmp/lustr-buildscript-execution-review/history-v2-qualified/cargo12_dep_bs_env/009-v2-rust-program.stderr",
+      "original_mtime_ns": 1795097238696181804
+    },
+    {
+      "path": "history-v2-qualified/cargo12_dep_bs_env/009-v2-rust-program.stdout",
+      "sha256": "24d4941e67d5965d270eaebdb9816b994311e0f2f0e79ef6bb626f362c52842e",
+      "bytes": 4,
+      "original_path": "/tmp/lustr-buildscript-execution-review/history-v2-qualified/cargo12_dep_bs_env/009-v2-rust-program.stdout",
+      "original_mtime_ns": 1795097238696181804
+    },
+    {
+      "path": "history-v2-qualified/cargo12_dep_bs_env/010-v3-native-check.stderr",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0,
+      "original_path": "/tmp/lustr-buildscript-execution-review/history-v2-qualified/cargo12_dep_bs_env/010-v3-native-check.stderr",
+      "original_mtime_ns": 1795097238813405807
+    },
+    {
+      "path": "history-v2-qualified/cargo12_dep_bs_env/010-v3-native-check.stdout",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0,
+      "original_path": "/tmp/lustr-buildscript-execution-review/history-v2-qualified/cargo12_dep_bs_env/010-v3-native-check.stdout",
+      "original_mtime_ns": 1795097238813405807
+    },
+    {
+      "path": "history-v2-qualified/cargo12_dep_bs_env/010-v3-native-check.trace.jsonl",
+      "sha256": "a9c16c08b16f370636aa7b4a7921dcbef098e46c66ea63305760e066cf4bf572",
+      "bytes": 45,
+      "original_path": "/tmp/lustr-buildscript-execution-review/history-v2-qualified/cargo12_dep_bs_env/010-v3-native-check.trace.jsonl",
+      "original_mtime_ns": 1795097238813405807
+    },
+    {
+      "path": "history-v2-qualified/cargo12_dep_bs_env/011-v3-native-build.stderr",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0,
+      "original_path": "/tmp/lustr-buildscript-execution-review/history-v2-qualified/cargo12_dep_bs_env/011-v3-native-build.stderr",
+      "original_mtime_ns": 1795097238945465392
+    },
+    {
+      "path": "history-v2-qualified/cargo12_dep_bs_env/011-v3-native-build.stdout",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0,
+      "original_path": "/tmp/lustr-buildscript-execution-review/history-v2-qualified/cargo12_dep_bs_env/011-v3-native-build.stdout",
+      "original_mtime_ns": 1795097238945465392
+    },
+    {
+      "path": "history-v2-qualified/cargo12_dep_bs_env/011-v3-native-build.trace.jsonl",
+      "sha256": "a9c16c08b16f370636aa7b4a7921dcbef098e46c66ea63305760e066cf4bf572",
+      "bytes": 45,
+      "original_path": "/tmp/lustr-buildscript-execution-review/history-v2-qualified/cargo12_dep_bs_env/011-v3-native-build.trace.jsonl",
+      "original_mtime_ns": 1795097238945465392
+    },
+    {
+      "path": "history-v2-qualified/cargo12_dep_bs_env/012-v3-native-program.stderr",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0,
+      "original_path": "/tmp/lustr-buildscript-execution-review/history-v2-qualified/cargo12_dep_bs_env/012-v3-native-program.stderr",
+      "original_mtime_ns": 1795097238956064150
+    },
+    {
+      "path": "history-v2-qualified/cargo12_dep_bs_env/012-v3-native-program.stdout",
+      "sha256": "ca0dff2eeeb428d9b948154b48f08f4957c2aa0b9c36f31410812c2943df3b74",
+      "bytes": 4,
+      "original_path": "/tmp/lustr-buildscript-execution-review/history-v2-qualified/cargo12_dep_bs_env/012-v3-native-program.stdout",
+      "original_mtime_ns": 1795097238956064150
+    },
+    {
+      "path": "history-v2-qualified/cargo12_dep_bs_env/013-v3-cargo-build.stderr",
+      "sha256": "5aa42fb1853ec2a26ad7d4c2fc9e9e2318e4031a821419761addb720011ad264",
+      "bytes": 299,
+      "original_path": "/tmp/lustr-buildscript-execution-review/history-v2-qualified/cargo12_dep_bs_env/013-v3-cargo-build.stderr",
+      "original_mtime_ns": 1795097239084810453
+    },
+    {
+      "path": "history-v2-qualified/cargo12_dep_bs_env/013-v3-cargo-build.stdout",
+      "sha256": "e865a99f228a76896b47cfcc69265fd5cad8ca2d078b83057d3f0980ee5551f1",
+      "bytes": 3123,
+      "original_path": "/tmp/lustr-buildscript-execution-review/history-v2-qualified/cargo12_dep_bs_env/013-v3-cargo-build.stdout",
+      "original_mtime_ns": 1795097239084794009
+    },
+    {
+      "path": "history-v2-qualified/cargo12_dep_bs_env/014-v3-rust-program.stderr",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0,
+      "original_path": "/tmp/lustr-buildscript-execution-review/history-v2-qualified/cargo12_dep_bs_env/014-v3-rust-program.stderr",
+      "original_mtime_ns": 1795097239088126172
+    },
+    {
+      "path": "history-v2-qualified/cargo12_dep_bs_env/014-v3-rust-program.stdout",
+      "sha256": "ca0dff2eeeb428d9b948154b48f08f4957c2aa0b9c36f31410812c2943df3b74",
+      "bytes": 4,
+      "original_path": "/tmp/lustr-buildscript-execution-review/history-v2-qualified/cargo12_dep_bs_env/014-v3-rust-program.stdout",
+      "original_mtime_ns": 1795097239088126172
+    },
+    {
+      "path": "history-v2-qualified/cargo12_dep_bs_env/015-v4-native-check.stderr",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0,
+      "original_path": "/tmp/lustr-buildscript-execution-review/history-v2-qualified/cargo12_dep_bs_env/015-v4-native-check.stderr",
+      "original_mtime_ns": 1795097239193402084
+    },
+    {
+      "path": "history-v2-qualified/cargo12_dep_bs_env/015-v4-native-check.stdout",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0,
+      "original_path": "/tmp/lustr-buildscript-execution-review/history-v2-qualified/cargo12_dep_bs_env/015-v4-native-check.stdout",
+      "original_mtime_ns": 1795097239193402084
+    },
+    {
+      "path": "history-v2-qualified/cargo12_dep_bs_env/015-v4-native-check.trace.jsonl",
+      "sha256": "a9c16c08b16f370636aa7b4a7921dcbef098e46c66ea63305760e066cf4bf572",
+      "bytes": 45,
+      "original_path": "/tmp/lustr-buildscript-execution-review/history-v2-qualified/cargo12_dep_bs_env/015-v4-native-check.trace.jsonl",
+      "original_mtime_ns": 1795097239193402084
+    },
+    {
+      "path": "history-v2-qualified/cargo12_dep_bs_env/016-v4-native-build.stderr",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0,
+      "original_path": "/tmp/lustr-buildscript-execution-review/history-v2-qualified/cargo12_dep_bs_env/016-v4-native-build.stderr",
+      "original_mtime_ns": 1795097239319349504
+    },
+    {
+      "path": "history-v2-qualified/cargo12_dep_bs_env/016-v4-native-build.stdout",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0,
+      "original_path": "/tmp/lustr-buildscript-execution-review/history-v2-qualified/cargo12_dep_bs_env/016-v4-native-build.stdout",
+      "original_mtime_ns": 1795097239319349504
+    },
+    {
+      "path": "history-v2-qualified/cargo12_dep_bs_env/016-v4-native-build.trace.jsonl",
+      "sha256": "a9c16c08b16f370636aa7b4a7921dcbef098e46c66ea63305760e066cf4bf572",
+      "bytes": 45,
+      "original_path": "/tmp/lustr-buildscript-execution-review/history-v2-qualified/cargo12_dep_bs_env/016-v4-native-build.trace.jsonl",
+      "original_mtime_ns": 1795097239319349504
+    },
+    {
+      "path": "history-v2-qualified/cargo12_dep_bs_env/017-v4-native-program.stderr",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0,
+      "original_path": "/tmp/lustr-buildscript-execution-review/history-v2-qualified/cargo12_dep_bs_env/017-v4-native-program.stderr",
+      "original_mtime_ns": 1795097239326176784
+    },
+    {
+      "path": "history-v2-qualified/cargo12_dep_bs_env/017-v4-native-program.stdout",
+      "sha256": "b63823326d32efd6efb182f3fb3b9d8fc62309d8912089d0c842d9812d8cd3ed",
+      "bytes": 8,
+      "original_path": "/tmp/lustr-buildscript-execution-review/history-v2-qualified/cargo12_dep_bs_env/017-v4-native-program.stdout",
+      "original_mtime_ns": 1795097239326176784
+    },
+    {
+      "path": "history-v2-qualified/cargo12_dep_bs_env/018-v4-cargo-build.stderr",
+      "sha256": "97b7733e5f85be574173d5271f06f07010915de9b380e06a55c3229b91e5e84d",
+      "bytes": 299,
+      "original_path": "/tmp/lustr-buildscript-execution-review/history-v2-qualified/cargo12_dep_bs_env/018-v4-cargo-build.stderr",
+      "original_mtime_ns": 1795097239435443086
+    },
+    {
+      "path": "history-v2-qualified/cargo12_dep_bs_env/018-v4-cargo-build.stdout",
+      "sha256": "56ecc83b3f72678129dfd2c2db0464b5d53fe16583b08abe684477b6ff6f91f7",
+      "bytes": 3127,
+      "original_path": "/tmp/lustr-buildscript-execution-review/history-v2-qualified/cargo12_dep_bs_env/018-v4-cargo-build.stdout",
+      "original_mtime_ns": 1795097239435426992
+    },
+    {
+      "path": "history-v2-qualified/cargo12_dep_bs_env/019-v4-rust-program.stderr",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0,
+      "original_path": "/tmp/lustr-buildscript-execution-review/history-v2-qualified/cargo12_dep_bs_env/019-v4-rust-program.stderr",
+      "original_mtime_ns": 1795097239438386098
+    },
+    {
+      "path": "history-v2-qualified/cargo12_dep_bs_env/019-v4-rust-program.stdout",
+      "sha256": "b63823326d32efd6efb182f3fb3b9d8fc62309d8912089d0c842d9812d8cd3ed",
+      "bytes": 8,
+      "original_path": "/tmp/lustr-buildscript-execution-review/history-v2-qualified/cargo12_dep_bs_env/019-v4-rust-program.stdout",
+      "original_mtime_ns": 1795097239438386098
+    },
+    {
+      "path": "history-v2-qualified/cargo12_dep_bs_env/020-v5-native-check.stderr",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0,
+      "original_path": "/tmp/lustr-buildscript-execution-review/history-v2-qualified/cargo12_dep_bs_env/020-v5-native-check.stderr",
+      "original_mtime_ns": 1795097239541398675
+    },
+    {
+      "path": "history-v2-qualified/cargo12_dep_bs_env/020-v5-native-check.stdout",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0,
+      "original_path": "/tmp/lustr-buildscript-execution-review/history-v2-qualified/cargo12_dep_bs_env/020-v5-native-check.stdout",
+      "original_mtime_ns": 1795097239541398675
+    },
+    {
+      "path": "history-v2-qualified/cargo12_dep_bs_env/020-v5-native-check.trace.jsonl",
+      "sha256": "a9c16c08b16f370636aa7b4a7921dcbef098e46c66ea63305760e066cf4bf572",
+      "bytes": 45,
+      "original_path": "/tmp/lustr-buildscript-execution-review/history-v2-qualified/cargo12_dep_bs_env/020-v5-native-check.trace.jsonl",
+      "original_mtime_ns": 1795097239537398714
+    },
+    {
+      "path": "history-v2-qualified/cargo12_dep_bs_env/021-v5-native-build.stderr",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0,
+      "original_path": "/tmp/lustr-buildscript-execution-review/history-v2-qualified/cargo12_dep_bs_env/021-v5-native-build.stderr",
+      "original_mtime_ns": 1795097239672568486
+    },
+    {
+      "path": "history-v2-qualified/cargo12_dep_bs_env/021-v5-native-build.stdout",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0,
+      "original_path": "/tmp/lustr-buildscript-execution-review/history-v2-qualified/cargo12_dep_bs_env/021-v5-native-build.stdout",
+      "original_mtime_ns": 1795097239672568486
+    },
+    {
+      "path": "history-v2-qualified/cargo12_dep_bs_env/021-v5-native-build.trace.jsonl",
+      "sha256": "a9c16c08b16f370636aa7b4a7921dcbef098e46c66ea63305760e066cf4bf572",
+      "bytes": 45,
+      "original_path": "/tmp/lustr-buildscript-execution-review/history-v2-qualified/cargo12_dep_bs_env/021-v5-native-build.trace.jsonl",
+      "original_mtime_ns": 1795097239672568486
+    },
+    {
+      "path": "history-v2-qualified/cargo12_dep_bs_env/022-v5-native-program.stderr",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0,
+      "original_path": "/tmp/lustr-buildscript-execution-review/history-v2-qualified/cargo12_dep_bs_env/022-v5-native-program.stderr",
+      "original_mtime_ns": 1795097239678877538
+    },
+    {
+      "path": "history-v2-qualified/cargo12_dep_bs_env/022-v5-native-program.stdout",
+      "sha256": "24d4941e67d5965d270eaebdb9816b994311e0f2f0e79ef6bb626f362c52842e",
+      "bytes": 4,
+      "original_path": "/tmp/lustr-buildscript-execution-review/history-v2-qualified/cargo12_dep_bs_env/022-v5-native-program.stdout",
+      "original_mtime_ns": 1795097239678877538
+    },
+    {
+      "path": "history-v2-qualified/cargo12_dep_bs_env/023-v5-cargo-build.stderr",
+      "sha256": "ac500efb0529bfc7bff65a67f56d4223e61084bfcfc0e75517f101a27dfcbf61",
+      "bytes": 299,
+      "original_path": "/tmp/lustr-buildscript-execution-review/history-v2-qualified/cargo12_dep_bs_env/023-v5-cargo-build.stderr",
+      "original_mtime_ns": 1795097239757852930
+    },
+    {
+      "path": "history-v2-qualified/cargo12_dep_bs_env/023-v5-cargo-build.stdout",
+      "sha256": "e0e50532c3e3faab24577f2225ca38d21e38074d27a2f97bf91c9c920f6ca0cf",
+      "bytes": 3122,
+      "original_path": "/tmp/lustr-buildscript-execution-review/history-v2-qualified/cargo12_dep_bs_env/023-v5-cargo-build.stdout",
+      "original_mtime_ns": 1795097239757837256
+    },
+    {
+      "path": "history-v2-qualified/cargo12_dep_bs_env/024-v5-rust-program.stderr",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0,
+      "original_path": "/tmp/lustr-buildscript-execution-review/history-v2-qualified/cargo12_dep_bs_env/024-v5-rust-program.stderr",
+      "original_mtime_ns": 1795097239761116761
+    },
+    {
+      "path": "history-v2-qualified/cargo12_dep_bs_env/024-v5-rust-program.stdout",
+      "sha256": "24d4941e67d5965d270eaebdb9816b994311e0f2f0e79ef6bb626f362c52842e",
+      "bytes": 4,
+      "original_path": "/tmp/lustr-buildscript-execution-review/history-v2-qualified/cargo12_dep_bs_env/024-v5-rust-program.stdout",
+      "original_mtime_ns": 1795097239761116761
+    },
+    {
+      "path": "history-v2-qualified/cargo12_dep_bs_env/025-v6-native-check.stderr",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0,
+      "original_path": "/tmp/lustr-buildscript-execution-review/history-v2-qualified/cargo12_dep_bs_env/025-v6-native-check.stderr",
+      "original_mtime_ns": 1795097239865395500
+    },
+    {
+      "path": "history-v2-qualified/cargo12_dep_bs_env/025-v6-native-check.stdout",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0,
+      "original_path": "/tmp/lustr-buildscript-execution-review/history-v2-qualified/cargo12_dep_bs_env/025-v6-native-check.stdout",
+      "original_mtime_ns": 1795097239865395500
+    },
+    {
+      "path": "history-v2-qualified/cargo12_dep_bs_env/025-v6-native-check.trace.jsonl",
+      "sha256": "a9c16c08b16f370636aa7b4a7921dcbef098e46c66ea63305760e066cf4bf572",
+      "bytes": 45,
+      "original_path": "/tmp/lustr-buildscript-execution-review/history-v2-qualified/cargo12_dep_bs_env/025-v6-native-check.trace.jsonl",
+      "original_mtime_ns": 1795097239865395500
+    },
+    {
+      "path": "history-v2-qualified/cargo12_dep_bs_env/026-v6-native-build.stderr",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0,
+      "original_path": "/tmp/lustr-buildscript-execution-review/history-v2-qualified/cargo12_dep_bs_env/026-v6-native-build.stderr",
+      "original_mtime_ns": 1795097239999056031
+    },
+    {
+      "path": "history-v2-qualified/cargo12_dep_bs_env/026-v6-native-build.stdout",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0,
+      "original_path": "/tmp/lustr-buildscript-execution-review/history-v2-qualified/cargo12_dep_bs_env/026-v6-native-build.stdout",
+      "original_mtime_ns": 1795097239999056031
+    },
+    {
+      "path": "history-v2-qualified/cargo12_dep_bs_env/026-v6-native-build.trace.jsonl",
+      "sha256": "a9c16c08b16f370636aa7b4a7921dcbef098e46c66ea63305760e066cf4bf572",
+      "bytes": 45,
+      "original_path": "/tmp/lustr-buildscript-execution-review/history-v2-qualified/cargo12_dep_bs_env/026-v6-native-build.trace.jsonl",
+      "original_mtime_ns": 1795097239999056031
+    },
+    {
+      "path": "history-v2-qualified/cargo12_dep_bs_env/027-v6-native-program.stderr",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0,
+      "original_path": "/tmp/lustr-buildscript-execution-review/history-v2-qualified/cargo12_dep_bs_env/027-v6-native-program.stderr",
+      "original_mtime_ns": 1795097240005735631
+    },
+    {
+      "path": "history-v2-qualified/cargo12_dep_bs_env/027-v6-native-program.stdout",
+      "sha256": "7484fe5a18f32eb4267257744fb2dd11a49434700de471858b2f15282dba9adf",
+      "bytes": 9,
+      "original_path": "/tmp/lustr-buildscript-execution-review/history-v2-qualified/cargo12_dep_bs_env/027-v6-native-program.stdout",
+      "original_mtime_ns": 1795097240005735631
+    },
+    {
+      "path": "history-v2-qualified/cargo12_dep_bs_env/028-v6-cargo-build.stderr",
+      "sha256": "f994c08207963c7e8a1e749be8c51121ec4dbd420ebe3ea202897501c821ff93",
+      "bytes": 299,
+      "original_path": "/tmp/lustr-buildscript-execution-review/history-v2-qualified/cargo12_dep_bs_env/028-v6-cargo-build.stderr",
+      "original_mtime_ns": 1795097240076851004
+    },
+    {
+      "path": "history-v2-qualified/cargo12_dep_bs_env/028-v6-cargo-build.stdout",
+      "sha256": "330b8e1112098829854e21e85d270c77b54df995ca1787108c6faedd13ae68bb",
+      "bytes": 3127,
+      "original_path": "/tmp/lustr-buildscript-execution-review/history-v2-qualified/cargo12_dep_bs_env/028-v6-cargo-build.stdout",
+      "original_mtime_ns": 1795097240076835761
+    },
+    {
+      "path": "history-v2-qualified/cargo12_dep_bs_env/029-v6-rust-program.stderr",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0,
+      "original_path": "/tmp/lustr-buildscript-execution-review/history-v2-qualified/cargo12_dep_bs_env/029-v6-rust-program.stderr",
+      "original_mtime_ns": 1795097240080362324
+    },
+    {
+      "path": "history-v2-qualified/cargo12_dep_bs_env/029-v6-rust-program.stdout",
+      "sha256": "7484fe5a18f32eb4267257744fb2dd11a49434700de471858b2f15282dba9adf",
+      "bytes": 9,
+      "original_path": "/tmp/lustr-buildscript-execution-review/history-v2-qualified/cargo12_dep_bs_env/029-v6-rust-program.stdout",
+      "original_mtime_ns": 1795097240080362324
+    },
+    {
+      "path": "history-v2-qualified/cargo12_dep_bs_env/work/Cargo.lock",
+      "sha256": "c75a86d220f82a2e6554c5fd1fadfa730af11c841eb1114f698b340470453d9c",
+      "bytes": 219,
+      "original_path": "/tmp/lustr-buildscript-execution-review/history-v2-qualified/cargo12_dep_bs_env/work/Cargo.lock",
+      "original_mtime_ns": 1795097237054101630
+    },
+    {
+      "path": "history-v2-qualified/cargo12_dep_bs_env/work/Cargo.toml",
+      "sha256": "aa90499209559b5dbcbc265c328adb7fdedeb9f2246f6cfcb6e3117dc9b2de00",
+      "bytes": 111,
+      "original_path": "/tmp/lustr-buildscript-execution-review/history-v2-qualified/cargo12_dep_bs_env/work/Cargo.toml",
+      "original_mtime_ns": 1795097239000000000
+    },
+    {
+      "path": "history-v2-qualified/cargo12_dep_bs_env/work/dep/Cargo.toml",
+      "sha256": "3f85fea4e0a0bdedabaaea493681303d7b71545e54ebc31db3b69ef0321b01b1",
+      "bytes": 58,
+      "original_path": "/tmp/lustr-buildscript-execution-review/history-v2-qualified/cargo12_dep_bs_env/work/dep/Cargo.toml",
+      "original_mtime_ns": 1795097239000000000
+    },
+    {
+      "path": "history-v2-qualified/cargo12_dep_bs_env/work/dep/build.rs",
+      "sha256": "5b225367bdb7e5e53302e258307a9286568e2fe2ec8015b9a7b1907638b8bf19",
+      "bytes": 205,
+      "original_path": "/tmp/lustr-buildscript-execution-review/history-v2-qualified/cargo12_dep_bs_env/work/dep/build.rs",
+      "original_mtime_ns": 1795097239000000000
+    },
+    {
+      "path": "history-v2-qualified/cargo12_dep_bs_env/work/dep/src/lib.rs",
+      "sha256": "b535cbbb67c78a13f8552d60967c73168666789e16b9f9e6b09e512179f9d026",
+      "bytes": 39,
+      "original_path": "/tmp/lustr-buildscript-execution-review/history-v2-qualified/cargo12_dep_bs_env/work/dep/src/lib.rs",
+      "original_mtime_ns": 1795097239000000000
+    },
+    {
+      "path": "history-v2-qualified/cargo12_dep_bs_env/work/src/main.rs",
+      "sha256": "6cac4d5ee19f9ba9896bdbb640937630a5a8b009a01175b0ff27f7346365e3ce",
+      "bytes": 44,
+      "original_path": "/tmp/lustr-buildscript-execution-review/history-v2-qualified/cargo12_dep_bs_env/work/src/main.rs",
+      "original_mtime_ns": 1795097239000000000
+    },
+    {
+      "path": "history-v2-qualified/record-snapshots/cargo10_bs_env_rerun/native-cache/buildscript-native-660629ebab91fe40.txt",
+      "sha256": "f5b22fc3e7ed63bb8c63f7790eb16bf74094e0bae56ef03f13c7d88acaba83e7",
+      "bytes": 4730,
+      "original_path": "/tmp/lustr-buildscript-execution-review/history-v2-qualified/cargo10_bs_env_rerun/native-cache/buildscript-native-660629ebab91fe40.txt",
+      "original_mtime_ns": 1795097236809425524
+    },
+    {
+      "path": "history-v2-qualified/record-snapshots/cargo12_dep_bs_env/native-cache/buildscript-native-3da76a29edb4a5ca.txt",
+      "sha256": "d427700bc78e18d058ca47e39e754448de4cfa018f55cf4a5137c9efa648833c",
+      "bytes": 5346,
+      "original_path": "/tmp/lustr-buildscript-execution-review/history-v2-qualified/cargo12_dep_bs_env/native-cache/buildscript-native-3da76a29edb4a5ca.txt",
+      "original_mtime_ns": 1795097239857395578
+    },
+    {
+      "path": "history-v2-qualified/report.json",
+      "sha256": "574c281deaab8217919d326de2f96247cd0211048baa0f68acc4a1ee4749436b",
+      "bytes": 120696,
+      "original_path": "/tmp/lustr-buildscript-execution-review/history-v2-qualified/report.json",
+      "original_mtime_ns": 1795097240087443257
+    },
+    {
+      "path": "history-v2/cargo10_bs_env_rerun/000-v1-native-check.stderr",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0,
+      "original_path": "/tmp/lustr-buildscript-execution-review/history-v2/cargo10_bs_env_rerun/000-v1-native-check.stderr",
+      "original_mtime_ns": 1795097192761854079
+    },
+    {
+      "path": "history-v2/cargo10_bs_env_rerun/000-v1-native-check.stdout",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0,
+      "original_path": "/tmp/lustr-buildscript-execution-review/history-v2/cargo10_bs_env_rerun/000-v1-native-check.stdout",
+      "original_mtime_ns": 1795097192761854079
+    },
+    {
+      "path": "history-v2/cargo10_bs_env_rerun/000-v1-native-check.trace.jsonl",
+      "sha256": "a9c16c08b16f370636aa7b4a7921dcbef098e46c66ea63305760e066cf4bf572",
+      "bytes": 45,
+      "original_path": "/tmp/lustr-buildscript-execution-review/history-v2/cargo10_bs_env_rerun/000-v1-native-check.trace.jsonl",
+      "original_mtime_ns": 1795097192757854121
+    },
+    {
+      "path": "history-v2/cargo10_bs_env_rerun/work/Cargo.lock",
+      "sha256": "f5e2c79b9630feee4d43c5754ab0eb1520c683ca52336d1b640ed87807805c61",
+      "bytes": 148,
+      "original_path": "/tmp/lustr-buildscript-execution-review/history-v2/cargo10_bs_env_rerun/work/Cargo.lock",
+      "original_mtime_ns": 1795097191839011541
+    },
+    {
+      "path": "history-v2/cargo10_bs_env_rerun/work/Cargo.toml",
+      "sha256": "4e8dbe6f45300f583044d226dcf7acb309f80c7742f094049e21c0b76fb6fd99",
+      "bytes": 72,
+      "original_path": "/tmp/lustr-buildscript-execution-review/history-v2/cargo10_bs_env_rerun/work/Cargo.toml",
+      "original_mtime_ns": 1795097193000000000
+    },
+    {
+      "path": "history-v2/cargo10_bs_env_rerun/work/build.rs",
+      "sha256": "e892bf4aa1f6e037e69adca346b699c018e38b56efcc2088d8882b666dceb5e4",
+      "bytes": 319,
+      "original_path": "/tmp/lustr-buildscript-execution-review/history-v2/cargo10_bs_env_rerun/work/build.rs",
+      "original_mtime_ns": 1795097193000000000
+    },
+    {
+      "path": "history-v2/cargo10_bs_env_rerun/work/src/main.rs",
+      "sha256": "a48c6190b8b25ce40fe19c725319f0c32b0ce0da2dc1688f56d8e350cc899f59",
+      "bytes": 132,
+      "original_path": "/tmp/lustr-buildscript-execution-review/history-v2/cargo10_bs_env_rerun/work/src/main.rs",
+      "original_mtime_ns": 1795097193000000000
+    },
+    {
+      "path": "history-v2/cargo12_dep_bs_env/000-v1-native-check.stderr",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0,
+      "original_path": "/tmp/lustr-buildscript-execution-review/history-v2/cargo12_dep_bs_env/000-v1-native-check.stderr",
+      "original_mtime_ns": 1795097193589845489
+    },
+    {
+      "path": "history-v2/cargo12_dep_bs_env/000-v1-native-check.stdout",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0,
+      "original_path": "/tmp/lustr-buildscript-execution-review/history-v2/cargo12_dep_bs_env/000-v1-native-check.stdout",
+      "original_mtime_ns": 1795097193589845489
+    },
+    {
+      "path": "history-v2/cargo12_dep_bs_env/000-v1-native-check.trace.jsonl",
+      "sha256": "a9c16c08b16f370636aa7b4a7921dcbef098e46c66ea63305760e066cf4bf572",
+      "bytes": 45,
+      "original_path": "/tmp/lustr-buildscript-execution-review/history-v2/cargo12_dep_bs_env/000-v1-native-check.trace.jsonl",
+      "original_mtime_ns": 1795097193589845489
+    },
+    {
+      "path": "history-v2/cargo12_dep_bs_env/work/Cargo.lock",
+      "sha256": "c75a86d220f82a2e6554c5fd1fadfa730af11c841eb1114f698b340470453d9c",
+      "bytes": 219,
+      "original_path": "/tmp/lustr-buildscript-execution-review/history-v2/cargo12_dep_bs_env/work/Cargo.lock",
+      "original_mtime_ns": 1795097192805017009
+    },
+    {
+      "path": "history-v2/cargo12_dep_bs_env/work/Cargo.toml",
+      "sha256": "aa90499209559b5dbcbc265c328adb7fdedeb9f2246f6cfcb6e3117dc9b2de00",
+      "bytes": 111,
+      "original_path": "/tmp/lustr-buildscript-execution-review/history-v2/cargo12_dep_bs_env/work/Cargo.toml",
+      "original_mtime_ns": 1795097194000000000
+    },
+    {
+      "path": "history-v2/cargo12_dep_bs_env/work/dep/Cargo.toml",
+      "sha256": "3f85fea4e0a0bdedabaaea493681303d7b71545e54ebc31db3b69ef0321b01b1",
+      "bytes": 58,
+      "original_path": "/tmp/lustr-buildscript-execution-review/history-v2/cargo12_dep_bs_env/work/dep/Cargo.toml",
+      "original_mtime_ns": 1795097194000000000
+    },
+    {
+      "path": "history-v2/cargo12_dep_bs_env/work/dep/build.rs",
+      "sha256": "5b225367bdb7e5e53302e258307a9286568e2fe2ec8015b9a7b1907638b8bf19",
+      "bytes": 205,
+      "original_path": "/tmp/lustr-buildscript-execution-review/history-v2/cargo12_dep_bs_env/work/dep/build.rs",
+      "original_mtime_ns": 1795097194000000000
+    },
+    {
+      "path": "history-v2/cargo12_dep_bs_env/work/dep/src/lib.rs",
+      "sha256": "b535cbbb67c78a13f8552d60967c73168666789e16b9f9e6b09e512179f9d026",
+      "bytes": 39,
+      "original_path": "/tmp/lustr-buildscript-execution-review/history-v2/cargo12_dep_bs_env/work/dep/src/lib.rs",
+      "original_mtime_ns": 1795097194000000000
+    },
+    {
+      "path": "history-v2/cargo12_dep_bs_env/work/src/main.rs",
+      "sha256": "6cac4d5ee19f9ba9896bdbb640937630a5a8b009a01175b0ff27f7346365e3ce",
+      "bytes": 44,
+      "original_path": "/tmp/lustr-buildscript-execution-review/history-v2/cargo12_dep_bs_env/work/src/main.rs",
+      "original_mtime_ns": 1795097194000000000
+    },
+    {
+      "path": "history-v2/record-snapshots/cargo10_bs_env_rerun/native-cache/buildscript-native-7589512a436bcf05.txt",
+      "sha256": "0b3fd85428314611e77b2c7a470e4ce9bb0985781f6c5830a8323c37bc290cd9",
+      "bytes": 4511,
+      "original_path": "/tmp/lustr-buildscript-execution-review/history-v2/cargo10_bs_env_rerun/native-cache/buildscript-native-7589512a436bcf05.txt",
+      "original_mtime_ns": 1795097192745854245
+    },
+    {
+      "path": "history-v2/record-snapshots/cargo12_dep_bs_env/native-cache/buildscript-native-afca082a4d77415f.txt",
+      "sha256": "6508d6beb08bf19eb0bc19052500f967432580a0238e6374e6751d4d3f6fbb34",
+      "bytes": 5079,
+      "original_path": "/tmp/lustr-buildscript-execution-review/history-v2/cargo12_dep_bs_env/native-cache/buildscript-native-afca082a4d77415f.txt",
+      "original_mtime_ns": 1795097193569845696
+    },
+    {
+      "path": "history-v2/report.json",
+      "sha256": "2e050ac47ce35673adc569e72cf857ab89fa28ce3d79ab5674dea1955c3b71b5",
+      "bytes": 12964,
+      "original_path": "/tmp/lustr-buildscript-execution-review/history-v2/report.json",
+      "original_mtime_ns": 1795097193594975977
+    },
+    {
+      "path": "initial-harness/correction.json",
+      "sha256": "10fccdcacee62e48729340b294a8d95d46eadef82c33299d418941826c497d95",
+      "bytes": 637,
+      "original_path": "/tmp/lustr-buildscript-execution-review/initial-harness/correction.json",
+      "original_mtime_ns": 1795097231439423710
+    },
+    {
+      "path": "initial-harness/run-host-counters.py",
+      "sha256": "ee4b9082707c9ce222748fcc536eab9c5140236cf5739ffa4bed9f4e594c29e3",
+      "bytes": 7980,
+      "original_path": "/tmp/lustr-buildscript-execution-review/initial-harness/run-host-counters.py",
+      "original_mtime_ns": 1795097231439353386
+    },
+    {
+      "path": "initial-harness/run-host-histories.py",
+      "sha256": "fef1189ac02c9e686283c462cb9b2e46f5e1bf3a6e639af7c1dbdc0c1d69a734",
+      "bytes": 7269,
+      "original_path": "/tmp/lustr-buildscript-execution-review/initial-harness/run-host-histories.py",
+      "original_mtime_ns": 1795097231439298664
+    },
+    {
+      "path": "module-absence-v2/00.stderr",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0,
+      "original_path": "/tmp/lustr-buildscript-execution-review/module-absence-v2/00.stderr",
+      "original_mtime_ns": 1795097259577193771
+    },
+    {
+      "path": "module-absence-v2/00.stdout",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0,
+      "original_path": "/tmp/lustr-buildscript-execution-review/module-absence-v2/00.stdout",
+      "original_mtime_ns": 1795097259577193771
+    },
+    {
+      "path": "module-absence-v2/01.stderr",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0,
+      "original_path": "/tmp/lustr-buildscript-execution-review/module-absence-v2/01.stderr",
+      "original_mtime_ns": 1795097259579491102
+    },
+    {
+      "path": "module-absence-v2/01.stdout",
+      "sha256": "25718360e05d3c2d0963d1381e9dd4dae5fca789244ee4b9f861adcc0cc96218",
+      "bytes": 9,
+      "original_path": "/tmp/lustr-buildscript-execution-review/module-absence-v2/01.stdout",
+      "original_mtime_ns": 1795097259579491102
+    },
+    {
+      "path": "module-absence-v2/02.stderr",
+      "sha256": "3cd5781a207fc648479f104e53ccb0df5e56c14a7c07f85c2b47d57748612304",
+      "bytes": 600,
+      "original_path": "/tmp/lustr-buildscript-execution-review/module-absence-v2/02.stderr",
+      "original_mtime_ns": 1795097259683260272
+    },
+    {
+      "path": "module-absence-v2/02.stdout",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0,
+      "original_path": "/tmp/lustr-buildscript-execution-review/module-absence-v2/02.stdout",
+      "original_mtime_ns": 1795097259681192692
+    },
+    {
+      "path": "module-absence-v2/03.stderr",
+      "sha256": "f54ed626c650023db4e5d7d4f9f8f58830dd0dbed164ccf0119c3cb77cfe2869",
+      "bytes": 183,
+      "original_path": "/tmp/lustr-buildscript-execution-review/module-absence-v2/03.stderr",
+      "original_mtime_ns": 1795097259791113499
+    },
+    {
+      "path": "module-absence-v2/03.stdout",
+      "sha256": "5f4f6a42ce2319aeb8ef91652f782598e06e44f782f35008a0a988c4b3b59ab2",
+      "bytes": 2647,
+      "original_path": "/tmp/lustr-buildscript-execution-review/module-absence-v2/03.stdout",
+      "original_mtime_ns": 1795097259791093689
+    },
+    {
+      "path": "module-absence-v2/04.stderr",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0,
+      "original_path": "/tmp/lustr-buildscript-execution-review/module-absence-v2/04.stderr",
+      "original_mtime_ns": 1795097259921190205
+    },
+    {
+      "path": "module-absence-v2/04.stdout",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0,
+      "original_path": "/tmp/lustr-buildscript-execution-review/module-absence-v2/04.stdout",
+      "original_mtime_ns": 1795097259921190205
+    },
+    {
+      "path": "module-absence-v2/05.stderr",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0,
+      "original_path": "/tmp/lustr-buildscript-execution-review/module-absence-v2/05.stderr",
+      "original_mtime_ns": 1795097259925485427
+    },
+    {
+      "path": "module-absence-v2/05.stdout",
+      "sha256": "25718360e05d3c2d0963d1381e9dd4dae5fca789244ee4b9f861adcc0cc96218",
+      "bytes": 9,
+      "original_path": "/tmp/lustr-buildscript-execution-review/module-absence-v2/05.stdout",
+      "original_mtime_ns": 1795097259925485427
+    },
+    {
+      "path": "module-absence-v2/record-snapshots/cache/buildscript-native-6887a21e38ab3d23.txt",
+      "sha256": "a242e786959375ce7db9f4208da6043a5bf91badeb378d6086d855acd6bea6b9",
+      "bytes": 2771,
+      "original_path": "/tmp/lustr-buildscript-execution-review/module-absence-v2/cache/buildscript-native-6887a21e38ab3d23.txt",
+      "original_mtime_ns": 1795097259541194144
+    },
+    {
+      "path": "module-absence-v2/report.json",
+      "sha256": "17c37435d35189ef241b6fcc0c724bfcb38ab0cc8cf9bdd31bd03092ed5b8edf",
+      "bytes": 6275,
+      "original_path": "/tmp/lustr-buildscript-execution-review/module-absence-v2/report.json",
+      "original_mtime_ns": 1795097259925722721
+    },
+    {
+      "path": "module-absence-v2/work/Cargo.lock",
+      "sha256": "1d8cd7ba5221e8e96d02d25c57290342e1514a1fe1239478d8256324fbf6d1c3",
+      "bytes": 159,
+      "original_path": "/tmp/lustr-buildscript-execution-review/module-absence-v2/work/Cargo.lock",
+      "original_mtime_ns": 1795097259326911481
+    },
+    {
+      "path": "module-absence-v2/work/Cargo.toml",
+      "sha256": "5f13e69dfcdcbfa5333b8439299efac0c7095e6dfc740bd18db53fbda4c2d646",
+      "bytes": 64,
+      "original_path": "/tmp/lustr-buildscript-execution-review/module-absence-v2/work/Cargo.toml",
+      "original_mtime_ns": 1795097259276027210
+    },
+    {
+      "path": "module-absence-v2/work/build.rs",
+      "sha256": "8340040e19723d94c5605aa11dfefd6632d2770511d30ffa7ac234616234164a",
+      "bytes": 131,
+      "original_path": "/tmp/lustr-buildscript-execution-review/module-absence-v2/work/build.rs",
+      "original_mtime_ns": 1795097259276064595
+    },
+    {
+      "path": "module-absence-v2/work/helper.rs",
+      "sha256": "e832bf33e5d78034e8e16fe03f06c821862a6d8c429a43387eb485ace2ad1205",
+      "bytes": 46,
+      "original_path": "/tmp/lustr-buildscript-execution-review/module-absence-v2/work/helper.rs",
+      "original_mtime_ns": 1795097259276086678
+    },
+    {
+      "path": "module-absence-v2/work/src/main.rs",
+      "sha256": "b69d679d4edb8eaee658a16e7b841be26d69094aba6a8219d5fbc7c129d6c2bd",
+      "bytes": 45,
+      "original_path": "/tmp/lustr-buildscript-execution-review/module-absence-v2/work/src/main.rs",
+      "original_mtime_ns": 1795097259276109212
+    },
+    {
+      "path": "unchanged-donor/cargo10_bs_env_rerun/cargo",
+      "sha256": "5e85de2c6f4237d1f647bab600d8e8ee30e66937a5757f284fec8a534f385391",
+      "bytes": 23,
+      "original_path": "/tmp/lustr-buildscript-20261119/compiler/native/tests/daemon/cargo10_bs_env_rerun/cargo",
+      "original_mtime_ns": 1795093588229217726
+    },
+    {
+      "path": "unchanged-donor/cargo10_bs_env_rerun/daemon_env",
+      "sha256": "c8525d17f1ae4013de42342128f1291b3d5ad1f59ba1f37e66b6e2f7c00fb886",
+      "bytes": 20,
+      "original_path": "/tmp/lustr-buildscript-20261119/compiler/native/tests/daemon/cargo10_bs_env_rerun/daemon_env",
+      "original_mtime_ns": 1795093588229270385
+    },
+    {
+      "path": "unchanged-donor/cargo10_bs_env_rerun/v1/Cargo.toml",
+      "sha256": "4e8dbe6f45300f583044d226dcf7acb309f80c7742f094049e21c0b76fb6fd99",
+      "bytes": 72,
+      "original_path": "/tmp/lustr-buildscript-20261119/compiler/native/tests/daemon/cargo10_bs_env_rerun/v1/Cargo.toml",
+      "original_mtime_ns": 1795093588229270385
+    },
+    {
+      "path": "unchanged-donor/cargo10_bs_env_rerun/v1/build.rs",
+      "sha256": "e892bf4aa1f6e037e69adca346b699c018e38b56efcc2088d8882b666dceb5e4",
+      "bytes": 319,
+      "original_path": "/tmp/lustr-buildscript-20261119/compiler/native/tests/daemon/cargo10_bs_env_rerun/v1/build.rs",
+      "original_mtime_ns": 1795093588229315322
+    },
+    {
+      "path": "unchanged-donor/cargo10_bs_env_rerun/v1/src/main.rs",
+      "sha256": "a48c6190b8b25ce40fe19c725319f0c32b0ce0da2dc1688f56d8e350cc899f59",
+      "bytes": 132,
+      "original_path": "/tmp/lustr-buildscript-20261119/compiler/native/tests/daemon/cargo10_bs_env_rerun/v1/src/main.rs",
+      "original_mtime_ns": 1795093588229315322
+    },
+    {
+      "path": "unchanged-donor/cargo10_bs_env_rerun/v2/.scen",
+      "sha256": "7bc97c2eb5aedf28c6598c8bb2b7dcac8f97ed7da0f7be34a74920b050de1bce",
+      "bytes": 19,
+      "original_path": "/tmp/lustr-buildscript-20261119/compiler/native/tests/daemon/cargo10_bs_env_rerun/v2/.scen",
+      "original_mtime_ns": 1795093588229315322
+    },
+    {
+      "path": "unchanged-donor/cargo10_bs_env_rerun/v3/.scen",
+      "sha256": "a84d58201b8add7500a7ef0eb01dcf80e87d95673ba2bf43d4bea930e52480e3",
+      "bytes": 19,
+      "original_path": "/tmp/lustr-buildscript-20261119/compiler/native/tests/daemon/cargo10_bs_env_rerun/v3/.scen",
+      "original_mtime_ns": 1795093588229315322
+    },
+    {
+      "path": "unchanged-donor/cargo10_bs_env_rerun/v4/.scen",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0,
+      "original_path": "/tmp/lustr-buildscript-20261119/compiler/native/tests/daemon/cargo10_bs_env_rerun/v4/.scen",
+      "original_mtime_ns": 1795093588229315322
+    },
+    {
+      "path": "unchanged-donor/cargo10_bs_env_rerun/v5/.scen",
+      "sha256": "7bc97c2eb5aedf28c6598c8bb2b7dcac8f97ed7da0f7be34a74920b050de1bce",
+      "bytes": 19,
+      "original_path": "/tmp/lustr-buildscript-20261119/compiler/native/tests/daemon/cargo10_bs_env_rerun/v5/.scen",
+      "original_mtime_ns": 1795093588229315322
+    },
+    {
+      "path": "unchanged-donor/cargo10_bs_env_rerun/v6/.scen",
+      "sha256": "861c35857e8ed7819a6b54960aad6191e833fd3f45d184c6952ef1e0b28f4c25",
+      "bytes": 18,
+      "original_path": "/tmp/lustr-buildscript-20261119/compiler/native/tests/daemon/cargo10_bs_env_rerun/v6/.scen",
+      "original_mtime_ns": 1795093588229315322
+    },
+    {
+      "path": "unchanged-donor/cargo10_bs_env_rerun/v7/.scen",
+      "sha256": "2496a4aac3b39b737e0a1a2b16f803e1e2fb0c70d68a85ed19ca212ac2630f7b",
+      "bytes": 24,
+      "original_path": "/tmp/lustr-buildscript-20261119/compiler/native/tests/daemon/cargo10_bs_env_rerun/v7/.scen",
+      "original_mtime_ns": 1795093588229315322
+    },
+    {
+      "path": "unchanged-donor/cargo12_dep_bs_env/cargo",
+      "sha256": "5e85de2c6f4237d1f647bab600d8e8ee30e66937a5757f284fec8a534f385391",
+      "bytes": 23,
+      "original_path": "/tmp/lustr-buildscript-20261119/compiler/native/tests/daemon/cargo12_dep_bs_env/cargo",
+      "original_mtime_ns": 1795093588229544824
+    },
+    {
+      "path": "unchanged-donor/cargo12_dep_bs_env/daemon_env",
+      "sha256": "302bff88139e30fc207b3db122d7230437e725002eb21c74b4c9e7b33d42a507",
+      "bytes": 21,
+      "original_path": "/tmp/lustr-buildscript-20261119/compiler/native/tests/daemon/cargo12_dep_bs_env/daemon_env",
+      "original_mtime_ns": 1795093588229694097
+    },
+    {
+      "path": "unchanged-donor/cargo12_dep_bs_env/v1/Cargo.toml",
+      "sha256": "aa90499209559b5dbcbc265c328adb7fdedeb9f2246f6cfcb6e3117dc9b2de00",
+      "bytes": 111,
+      "original_path": "/tmp/lustr-buildscript-20261119/compiler/native/tests/daemon/cargo12_dep_bs_env/v1/Cargo.toml",
+      "original_mtime_ns": 1795093588229694097
+    },
+    {
+      "path": "unchanged-donor/cargo12_dep_bs_env/v1/dep/Cargo.toml",
+      "sha256": "3f85fea4e0a0bdedabaaea493681303d7b71545e54ebc31db3b69ef0321b01b1",
+      "bytes": 58,
+      "original_path": "/tmp/lustr-buildscript-20261119/compiler/native/tests/daemon/cargo12_dep_bs_env/v1/dep/Cargo.toml",
+      "original_mtime_ns": 1795093588229739715
+    },
+    {
+      "path": "unchanged-donor/cargo12_dep_bs_env/v1/dep/build.rs",
+      "sha256": "5b225367bdb7e5e53302e258307a9286568e2fe2ec8015b9a7b1907638b8bf19",
+      "bytes": 205,
+      "original_path": "/tmp/lustr-buildscript-20261119/compiler/native/tests/daemon/cargo12_dep_bs_env/v1/dep/build.rs",
+      "original_mtime_ns": 1795093588229756710
+    },
+    {
+      "path": "unchanged-donor/cargo12_dep_bs_env/v1/dep/src/lib.rs",
+      "sha256": "b535cbbb67c78a13f8552d60967c73168666789e16b9f9e6b09e512179f9d026",
+      "bytes": 39,
+      "original_path": "/tmp/lustr-buildscript-20261119/compiler/native/tests/daemon/cargo12_dep_bs_env/v1/dep/src/lib.rs",
+      "original_mtime_ns": 1795093588229756710
+    },
+    {
+      "path": "unchanged-donor/cargo12_dep_bs_env/v1/src/main.rs",
+      "sha256": "6cac4d5ee19f9ba9896bdbb640937630a5a8b009a01175b0ff27f7346365e3ce",
+      "bytes": 44,
+      "original_path": "/tmp/lustr-buildscript-20261119/compiler/native/tests/daemon/cargo12_dep_bs_env/v1/src/main.rs",
+      "original_mtime_ns": 1795093588229756710
+    },
+    {
+      "path": "unchanged-donor/cargo12_dep_bs_env/v2/.scen",
+      "sha256": "3b0560d782f0eb776716e819b80597d6dcf40406b984c885405c6ebf6787fa0b",
+      "bytes": 20,
+      "original_path": "/tmp/lustr-buildscript-20261119/compiler/native/tests/daemon/cargo12_dep_bs_env/v2/.scen",
+      "original_mtime_ns": 1795093588229756710
+    },
+    {
+      "path": "unchanged-donor/cargo12_dep_bs_env/v3/.scen",
+      "sha256": "40055c676eb7cffda36d4755ee173ac58a3bc5579ec1224b24f218576a12e458",
+      "bytes": 20,
+      "original_path": "/tmp/lustr-buildscript-20261119/compiler/native/tests/daemon/cargo12_dep_bs_env/v3/.scen",
+      "original_mtime_ns": 1795093588229756710
+    },
+    {
+      "path": "unchanged-donor/cargo12_dep_bs_env/v4/.scen",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0,
+      "original_path": "/tmp/lustr-buildscript-20261119/compiler/native/tests/daemon/cargo12_dep_bs_env/v4/.scen",
+      "original_mtime_ns": 1795093588229756710
+    },
+    {
+      "path": "unchanged-donor/cargo12_dep_bs_env/v5/.scen",
+      "sha256": "3b0560d782f0eb776716e819b80597d6dcf40406b984c885405c6ebf6787fa0b",
+      "bytes": 20,
+      "original_path": "/tmp/lustr-buildscript-20261119/compiler/native/tests/daemon/cargo12_dep_bs_env/v5/.scen",
+      "original_mtime_ns": 1795093588229756710
+    },
+    {
+      "path": "unchanged-donor/cargo12_dep_bs_env/v6/.scen",
+      "sha256": "77a4c6f7b4bb4fdd8f844c3763b2c1b6d2bc1f595fba1fc98289bbb25da0af44",
+      "bytes": 25,
+      "original_path": "/tmp/lustr-buildscript-20261119/compiler/native/tests/daemon/cargo12_dep_bs_env/v6/.scen",
+      "original_mtime_ns": 1795093588229756710
+    },
+    {
+      "path": "unchanged-donor/test-daemon-scenarios.py",
+      "sha256": "384add9654105496403f15cdd2bf8ad7ff3692a8c47ffa840c3c5229c809b9f4",
+      "bytes": 23102,
+      "original_path": "/tmp/lustr-buildscript-20261119/compiler/native/scripts/test-daemon-scenarios.py",
+      "original_mtime_ns": 1795093588128158537
+    }
+  ]
+}

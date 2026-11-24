@@ -1,0 +1,42 @@
+{
+  "cargo_sha256": "da29c2a9ff7f85bda5587e9c974e05c9e2a7196377e54466f6e9d6f9e00b2530",
+  "compiler_component_profile": "release",
+  "compiler_components_sha256": {
+    "cargo-lustr": "50d026d978b68dca13c76fc54cb7bf7dab2334155238231e45631bb43ca9cfe4",
+    "lust": "b16cc853e3ebd6abfa95f04940e6faea120d013456706792fcb64ebca1a60804",
+    "lust-core": "a4fcf99608083961fbd60d4f749a74a2b3842a017035b340e17dafcd60f4db65",
+    "lustr": "2fd4a67c770d9bf6699d5ca09688cb9a5fdc7f3cb5f1d3745afc1661325ef30e",
+    "rustc-full": "6a60b6452957f22a0277cc3dd6db4a0974d727da93039ef642619cd6873d91eb"
+  },
+  "constructor_receipts_sha256": {
+    "BUILD-PROFILE.txt": "edf9b8898c74458b11349cff0402ec3b3ded7721038627101e4ece564454a121",
+    "COMPONENTS.txt": "2e15f947b5e0b6ba40dd9982b2d292fa8c61fe412d269fb97724c69ef654ab18",
+    "NATIVE-BUILD-RECEIPT.txt": "c0f0a2cf55ca4c75a7a368d640dc7058467717366e2b0dd85f8405cbc6105830"
+  },
+  "coordinator_git_tree": "3f72ccd2f1c5f83f952e2a43564a046a32d75305",
+  "gate_sha256": "c6399ca37c73783dc2d8109dc0071fcc1726bec3c5c1be4c4c809f64f8d5663b",
+  "host": "x86_64-unknown-linux-gnu",
+  "jobs": 2,
+  "measurement": "wall time only; detached daemon CPU, memory and energy are not measured",
+  "native_participation": "not asserted; unchanged dev debug=2 is outside current mixed-object eligibility",
+  "pairs": 12,
+  "privacy": "Allowlist projection. Original report/spec/output SHA256 values identify private originals, not these rewritten bytes.",
+  "project_profiles": "unchanged dev and test defaults",
+  "reference_rustc_sha256": "ca9d833d09469a534ca1449e71ca9961608409cdb257df96cf8035338fac28de",
+  "replay_sha256": "7572ea1d52d26629eca33932eb9eeb9103bf4d331f42a917118b928b55fdb643",
+  "repository": "https://github.com/glopyglerky/lustr",
+  "revision": "b3393a4a2907228516546cd34f1a5c60aaf6aaaa",
+  "runner_sha256": "fa7a6a7df97ee270d4160cde8a3ccade92720e21f8055b0811e50f2997444c2f",
+  "rust_source": "5b7b37aefcb5b2fba3c2392bc9065b9e4602d494",
+  "rust_version": "rustc 1.102.0-nightly (5b7b37aef 2026-11-08)\nbinary: rustc\ncommit-hash: 5b7b37aefcb5b2fba3c2392bc9065b9e4602d494\ncommit-date: 2026-11-08\nhost: x86_64-unknown-linux-gnu\nrelease: 1.102.0-nightly\nLLVM version: 23.1.5",
+  "scenarios": [
+    "clean-dependency-build",
+    "primed-root-build",
+    "primed-root-check",
+    "no-op",
+    "compile-plus-test"
+  ],
+  "schema": "lustr-coordinator-campaign-v1",
+  "status": "passed",
+  "warmup_pairs": 2
+}

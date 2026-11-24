@@ -112,6 +112,33 @@ fn check_item(p: &mut Program, it: &Item) -> Option<Diag> {
     bad.map(|(g, r)| diag(&cx, &p.tys, &env, g, r, it.span))
 }
 
+/// Prove explicit associated-item requirements under that definition's real
+/// header and local clauses. In particular a clause on one assignment cannot
+/// become a fact about every associated value of the impl.
+pub(crate) fn check_requirements(
+    p: &mut Program, implied: &[Ty], facts: &[(u32, u32)], assumptions: &[Predicate], required: &[Predicate], span: Span,
+) -> Vec<Diag> {
+    let cx = Cx { regions: &p.regions, index: &p.gx.index };
+    let mut env = implied_env(&cx, &mut p.tys, implied, facts, assumptions);
+    // `Self: 'static` can name a compound type such as &'a T. Keep
+    // its actual components rather than testing an erased reference.
+    for predicate in assumptions {
+        match *predicate {
+            Predicate::TypeOutlives(t, r) => assume(&p.tys, &mut env, GenericArg::Ty(t), r),
+            Predicate::Outlives(a, b) => assume(&p.tys, &mut env, GenericArg::Lifetime(a), b),
+            _ => {}
+        }
+    }
+    required.iter().filter_map(|predicate| {
+        let (subject, region) = match *predicate {
+            Predicate::TypeOutlives(t, r) => (GenericArg::Ty(t), r),
+            Predicate::Outlives(a, b) => (GenericArg::Lifetime(a), b),
+            _ => return None,
+        };
+        (!holds(&cx, &p.tys, &env, subject, region)).then(|| diag(&cx, &p.tys, &env, subject, region, span))
+    }).collect()
+}
+
 /// The facts an item knows: declared ones, `T: 'static` bounds, and the
 /// requirements of its implied types.
 fn implied_env(cx: &Cx, tys: &mut impl TyIntern, implied: &[Ty], facts: &[(u32, u32)], preds: &[Predicate]) -> Env {
@@ -743,10 +770,22 @@ fn infer_adts(p: &mut Program) {
 fn check_adt_statics(p: &mut Program, errs: &mut Vec<Diag>) {
     let mut defs: Vec<DefId> = p.regions.adt_fields.keys().copied().collect();
     defs.sort_by_key(|d| (d.krate.0, d.hash.0));
-    for d in defs {
+    check_adt_statics_in(p, &defs, true, errs);
+}
+
+/// Validate newly staged native shapes before semantic publication. This
+/// reuses the original inference and static-obligation walk, leaves queued
+/// consumer obligations intact, and grants no trusted-source span exemption.
+pub fn check_native_adts(p: &mut Program, defs: &[DefId], errs: &mut Vec<Diag>) {
+    infer_adts(p);
+    check_adt_statics_in(p, defs, false, errs);
+}
+
+fn check_adt_statics_in(p: &mut Program, defs: &[DefId], trusted_source: bool, errs: &mut Vec<Diag>) {
+    for &d in defs {
         let Some(a) = p.adt_by_def(d) else { continue };
         let span = p.adt(a).span;
-        if p.shipped_crate_at(span).is_some() || p.in_lang_methods(span) {
+        if trusted_source && (p.shipped_crate_at(span).is_some() || p.in_lang_methods(span)) {
             continue;
         }
         let cx = Cx { regions: &p.regions, index: &p.gx.index };

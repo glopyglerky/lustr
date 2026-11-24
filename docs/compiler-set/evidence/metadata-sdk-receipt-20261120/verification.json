@@ -1,0 +1,31 @@
+{
+  "all_original_commands_zero_exit_no_diagnostics": true,
+  "candidate_compiler_coverage_claim": false,
+  "construction_passed": true,
+  "construction_tool_sha256": "eac23167bfc612bdd0ba6becfe6ed50922145bf59690619cbd744597b4228f8b",
+  "controls_source_sha256": "d8d2c2b26347dfd30e392cae9322bc6d960cfba6de9ed1334c3a6c99b9a7dac6",
+  "declared_sdk_inputs_unchanged": true,
+  "fixed_reference_builds": 1,
+  "fixed_reference_source_sha256": "c88b4bbcdc31261137f1c98a7ed706202ffcd687fd6d60a5f73fc818cd5236ba",
+  "initial_control_failure_retained": true,
+  "initial_failure_scope": "Incorrect expected hexadecimal value of a decimal StableCrateId in the new test; tool receipt and actual reader value were correct.",
+  "new_full_compiler_dependency": false,
+  "original_sdk_commands": 5,
+  "original_sdk_rlib_reader_ice_preserved": true,
+  "product_request_sdk_invocations": 0,
+  "published_path_replacements": {
+    "$ORIGINAL_READER_REVIEW": "earlier independent original-reader evidence directory",
+    "$OUTPUT": "fresh construction evidence directory",
+    "$REPOSITORY": "reviewed Lustr source checkout",
+    "$SDK": "declared Rust SDK root"
+  },
+  "receipt_sha256": "4e400b263bf9923616dea44ead2d77213703177d3bfaf6becd6a19a4c5a657a7",
+  "reference_artifact_payloads_copied_into_repository": false,
+  "refusal_controls": 14,
+  "refusal_controls_passed": 14,
+  "rust_revision": "5b7b37aefcb5b2fba3c2392bc9065b9e4602d494",
+  "schema": "lustr-metadata-sdk-receipt-evidence-v1",
+  "sdk_artifact_payloads_copied_into_repository": false,
+  "source_head_before_change": "2fed420ca69732885bf9b586acfa602de0c2014a",
+  "target": "x86_64-unknown-linux-gnu"
+}

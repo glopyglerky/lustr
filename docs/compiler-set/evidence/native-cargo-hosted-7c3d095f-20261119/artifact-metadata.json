@@ -1,0 +1,59 @@
+[
+  {
+    "id": 14546870100,
+    "name": "exclusive-qualification-records",
+    "size_in_bytes": 13603715,
+    "url": "https://api.github.com/repos/glopyglerky/lustr/actions/artifacts/14546870100",
+    "archive_download_url": "https://api.github.com/repos/glopyglerky/lustr/actions/artifacts/14546870100/zip",
+    "expired": false,
+    "created_at": "2026-11-19T15:38:10Z",
+    "expires_at": "2027-02-17T15:17:23Z",
+    "updated_at": "2026-11-19T15:38:10Z",
+    "digest": "sha256:4d7965327d6466f092c704992abca9baf950b8548d5e115225d5d2b5c4b4988a",
+    "workflow_run": {
+      "id": 44553094694,
+      "repository_id": 1450430441,
+      "head_repository_id": 1450430441,
+      "head_branch": "lustr/exclusive-coverage-public-20261119",
+      "head_sha": "7c3d095fa8971a4c38aa0edf62e8fcfd7a51589a"
+    }
+  },
+  {
+    "id": 14546231385,
+    "name": "exclusive-entry-and-shared-services",
+    "size_in_bytes": 586107251,
+    "url": "https://api.github.com/repos/glopyglerky/lustr/actions/artifacts/14546231385",
+    "archive_download_url": "https://api.github.com/repos/glopyglerky/lustr/actions/artifacts/14546231385/zip",
+    "expired": false,
+    "created_at": "2026-11-19T15:39:42Z",
+    "expires_at": "2027-02-17T15:17:23Z",
+    "updated_at": "2026-11-19T15:39:42Z",
+    "digest": "sha256:5170926f6a099a752fd9d55477c93f627fa698996db210bbdbed6ec2bc7b1699",
+    "workflow_run": {
+      "id": 44553094694,
+      "repository_id": 1450430441,
+      "head_repository_id": 1450430441,
+      "head_branch": "lustr/exclusive-coverage-public-20261119",
+      "head_sha": "7c3d095fa8971a4c38aa0edf62e8fcfd7a51589a"
+    }
+  },
+  {
+    "id": 14543483935,
+    "name": "runner-source-44553094694-1",
+    "size_in_bytes": 461,
+    "url": "https://api.github.com/repos/glopyglerky/lustr/actions/artifacts/14543483935",
+    "archive_download_url": "https://api.github.com/repos/glopyglerky/lustr/actions/artifacts/14543483935/zip",
+    "expired": false,
+    "created_at": "2026-11-19T15:17:33Z",
+    "expires_at": "2026-12-03T15:17:32Z",
+    "updated_at": "2026-11-19T15:17:33Z",
+    "digest": "sha256:952b7e39da905ac4b4a56339fe635f7314fe51cbf04b80d78eb0a9534688d488",
+    "workflow_run": {
+      "id": 44553094694,
+      "repository_id": 1450430441,
+      "head_repository_id": 1450430441,
+      "head_branch": "lustr/exclusive-coverage-public-20261119",
+      "head_sha": "7c3d095fa8971a4c38aa0edf62e8fcfd7a51589a"
+    }
+  }
+]

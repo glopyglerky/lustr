@@ -113,3 +113,46 @@ public integrated routing and final package acceptance remain distinct work in
 the [architecture plan](architecture-plan.md). No result here proves all-Rust
 correctness or authorizes transferring an earlier revision's speed or platform
 claims to a later one.
+
+## Later PR30 observation — 19 November 2026, 05:02 UTC
+
+The initial PR #30 source at `b94d3713616804fead3f30b18a530e2e81a9510b`
+subsequently completed the
+[source-built mixed job 135334423280](https://github.com/glopyglerky/lustr/actions/runs/44457024620/job/135334423280)
+successfully. Its mixed Cargo/edit/rejection, retained-check metadata,
+aggregate/reference/generic-caller libraries, complete entry/runtime contract,
+and profiling/reporting steps all completed. The run now has nine successful
+jobs; the
+[Cranelift project qualification job 135334423582](https://github.com/glopyglerky/lustr/actions/runs/44457024620/job/135334423582)
+remains failed at the native project qualification step. The original 04:27 UTC
+observation above is retained as the earlier state of this same run.
+
+This later success qualifies the executed mixed boundary on that initial PR #30
+source. It does not repair the separate native-unit failures or qualify the
+newer Unicode, standard-library, cleanup, socket or owned-request changes in the
+[19 November candidate continuation](design.md).
+The new job's timing artifacts have not been substituted for the independently
+replayed PR #29 performance checkpoint, and no new numerical speed claim follows
+from observing job completion.
+
+## Combined continuation — 19 November 2026
+
+The [combined native record](native-combined-qualification.md) adds exact-source
+Linux results without replacing the earlier hosted observations:
+
+| Qualification | Result and source boundary |
+| --- | --- |
+| Full ordinary differential corpus | 5,540 passed, zero failed at `af0a281f2`, native tree `a3f37f8a4d2364757a3bebf476e530e6ddf4735a`, against declared Rust `5b7b37aef`. |
+| Full unwind corpus | 65 passed in each of TCC and GCC exception-table modes at native tree `7dbb7ac001f81c17adbbbd030573220dadfc079a`. The preceding two 64-pass/one-failure runs remain recorded; only the obsolete hashbrown panic source path changed between those binaries. |
+| Declared Unicode | All 1,112,064 scalar values match the declared Rust predicates and mappings on the combined source; const/runtime witnesses and generation provenance remain in the [Unicode record](unicode-semantics.md). Lexical NFC normalization remains a separate item. |
+| Partial destruction | Both unwind modes pass the six focused fixtures and 332 independently calculated finite destruction scenarios, including the final hook and double-panic abort. |
+| Unix socket ownership | 20 deterministic syscall cases in each mode match Rust; 57 simulated Apple helper controls pass. Actual macOS socket execution is not claimed. |
+| Owning checked request | 200 driver/codegen/type tests and seven independently repeated ownership controls pass; the prepared request carries the same checked representation into emission. This does not complete general imported semantic ownership. |
+
+Binary, library, fixture and harness hashes are recorded beside each result.
+Original failed outputs remain preserved. The callback repair, Unicode repair,
+SDK alignment and owning preparation changes have no new performance claim.
+The complete changed candidate still requires its hosted native sanitizer,
+daemon, source-built mixed and macOS gates, plus the remaining architecture and
+installable-package work. A local finite-domain proof or full fixture pass does
+not establish correctness for all Rust programs.

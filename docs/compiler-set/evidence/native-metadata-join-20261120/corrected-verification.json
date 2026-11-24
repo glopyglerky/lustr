@@ -1,0 +1,165 @@
+{
+  "schema": "native-metadata-join-hosted-attempt-v1",
+  "run_id": 44674502835,
+  "run_attempt": 1,
+  "job_id": 136083000805,
+  "run_url": "https://github.com/glopyglerky/lustr/actions/runs/44674502835",
+  "job_url": "https://github.com/glopyglerky/lustr/actions/runs/44674502835/job/136083000805",
+  "published_head": "974eb097ea9fc84a18c716fe0c2d469fdfcfab6c",
+  "actual_checkout": "f747dbd3bb20576fd5bc3185b2d7477f8e48278b",
+  "actual_source_tree": "948074da4b3b23ed25fa789b17a924555f24e4ca",
+  "native_source_tree": "bf933c382fd99e52dd2586ebc46f0d0aceaa71a8",
+  "candidate": {
+    "sha256": "6345a05078e470f6cbf365284a46c6deab1a0fd895b2eb72675c1dfcf01f5cfa",
+    "size": 258941752
+  },
+  "source_inputs": {
+    "files": 13085,
+    "gitlinks": 1,
+    "before_after_verification_passed": true,
+    "original_manifest_sha256": "27f9fde8c360090c17085c064eb971298bce7e898715e9ae6ff4e1d17fcf7f09"
+  },
+  "built_qualifier_rustc_tinycc_digests_rechecked": true,
+  "metadata_campaign": {
+    "passed": true,
+    "functional_passed": true,
+    "exec_trace_qualified": true,
+    "named_controls": [
+      "compiler-trap-control",
+      "explicit-native-backend-context",
+      "missing-emitted-instance",
+      "duplicate-emitted-instance",
+      "foreign-emitted-instance",
+      "malformed-emitted-symbol",
+      "duplicate-emitted-symbol",
+      "duplicate-definition",
+      "duplicate-call-edge",
+      "foreign-call-edge",
+      "empty-rlib-link-members",
+      "duplicate-rlib-link-member",
+      "malformed-rlib-link-member",
+      "missing-object-member",
+      "duplicate-object-member",
+      "native-record-object-and-archive-join",
+      "original-metadata-root",
+      "direct-and-function-value-results",
+      "stronger-mitigation-refused",
+      "private-call",
+      "private-function-value",
+      "wrong-argument-type",
+      "wrong-arity",
+      "wrong-function-value-type",
+      "invalid-private-body",
+      "good-artifact-preserved-on-publication-failure",
+      "valid-recovery",
+      "empty-version-refused",
+      "different-version-refused",
+      "exact-version-context",
+      "changed-receipt-refused"
+    ],
+    "runtime_result_assertions": 262152,
+    "candidate_invocations": [
+      {
+        "name": "accepted",
+        "status": 0,
+        "phase": "complete",
+        "execution_trace_complete": true,
+        "process_attempts": 6,
+        "original_report_sha256": "713cd559fa75ca4f154beb9fb2442ea8f048fb54cfe7d918c71d5020e164afc2"
+      },
+      {
+        "name": "invalid-private-body",
+        "status": 1,
+        "phase": "native-prepare",
+        "execution_trace_complete": true,
+        "process_attempts": 1,
+        "original_report_sha256": "83cc1108539d75e437a5bb6d4e1e8e7d72d4b6c11ebb77c23a95c937a0c74e07"
+      },
+      {
+        "name": "publication-failure",
+        "status": 1,
+        "phase": "publication",
+        "execution_trace_complete": true,
+        "process_attempts": 6,
+        "original_report_sha256": "92792c40119cab97b0a1253cedc105a4999d324a90d7dbd9c59030e851fc49cd"
+      },
+      {
+        "name": "valid-recovery",
+        "status": 0,
+        "phase": "complete",
+        "execution_trace_complete": true,
+        "process_attempts": 6,
+        "original_report_sha256": "e4b970892ccf6fab86b37960ecbadc1d072159caa7cb8406ed63bbb501e4a5b4"
+      },
+      {
+        "name": "empty-version-refused",
+        "status": 1,
+        "phase": "setup",
+        "execution_trace_complete": true,
+        "process_attempts": 1,
+        "original_report_sha256": "a44d0e5ff73a118c785a8de838a6a2726933b593e228e936be38d00f5ad3ad07"
+      },
+      {
+        "name": "different-version-refused",
+        "status": 1,
+        "phase": "setup",
+        "execution_trace_complete": true,
+        "process_attempts": 1,
+        "original_report_sha256": "a44d0e5ff73a118c785a8de838a6a2726933b593e228e936be38d00f5ad3ad07"
+      },
+      {
+        "name": "exact-version-context",
+        "status": 0,
+        "phase": "complete",
+        "execution_trace_complete": true,
+        "process_attempts": 6,
+        "original_report_sha256": "9244f2f00b7fc525ef1616455c237a61cd8941cb6d28292f131cfbf216c69544"
+      },
+      {
+        "name": "changed-receipt-refused",
+        "status": 1,
+        "phase": "setup",
+        "execution_trace_complete": true,
+        "process_attempts": 1,
+        "original_report_sha256": "3f9e059b8144b6a997a15f06207ae3bdaf68e83b8155b9b46ff2a98966c938e6"
+      }
+    ],
+    "compiler_traps_unused": true,
+    "evaluator_control_tests_passed": 11,
+    "artifact_sha256": "6b055e2cc857a68423f01e9a7c83910ff1ea5cb6d6e5a7fde4d64c12a789750b",
+    "original_source_sha256": "c88b4bbcdc31261137f1c98a7ed706202ffcd687fd6d60a5f73fc818cd5236ba",
+    "sdk_receipt_sha256": "4e400b263bf9923616dea44ead2d77213703177d3bfaf6becd6a19a4c5a657a7",
+    "evaluator_source_sha256": "cfd6623a034498bb356fcc2803e639e5f3e0e0f8aa4b7ff918f265f1aa3327a4"
+  },
+  "qualified_scope": "This fixed flat ASCII/LF no_std safe nongeneric u64 library, native scalar bodies/local calls, Linux x86-64, edition2024, abort panic, opt0/debug0, Clang research emitter; original Rust metadata root and ordinary --extern Rust caller, direct/function-value execution and the named negative controls.",
+  "full_compiler_qualification": false,
+  "retained_public_integration": false,
+  "speed_qualification": false,
+  "all_programs_in_admitted_scope_qualified": false,
+  "other_ci_jobs_qualified_by_this_record": false,
+  "records_archive": {
+    "path": "corrected-records.tar.gz",
+    "sha256": "9d716c2e037a540c05496339b32bcb272213a225f7d4b624e76099cd48c100d3",
+    "size": 2283632,
+    "files": 188
+  },
+  "records_inventory": {
+    "path": "corrected-inventory.json",
+    "sha256": "dc28c2f36672cc46e643ff57fac1fc456d59e4d98ac89cdd92d1b0beb54399f8"
+  },
+  "source_boundary": "This record qualifies the recorded executable/source tree for this fixed campaign. Later source, broad CI, general Rust metadata and compiler-wide portability/performance require their own evidence.",
+  "github_source_binding": [
+    {
+      "commit": "974eb097ea9fc84a18c716fe0c2d469fdfcfab6c",
+      "tree": "948074da4b3b23ed25fa789b17a924555f24e4ca",
+      "record_path": "corrected-attempt/github-commits/974eb097ea9fc84a18c716fe0c2d469fdfcfab6c.json",
+      "sha256": "5789be293c818a6f29630e8edf2fcafab1052758cd85703d1e0125d9d1498930"
+    },
+    {
+      "commit": "f747dbd3bb20576fd5bc3185b2d7477f8e48278b",
+      "tree": "948074da4b3b23ed25fa789b17a924555f24e4ca",
+      "record_path": "corrected-attempt/github-commits/f747dbd3bb20576fd5bc3185b2d7477f8e48278b.json",
+      "sha256": "0fa5e8b29403f013b010eea23bf193da2c64df3f766b29c0a155d77a1f464729"
+    }
+  ]
+}

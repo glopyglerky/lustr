@@ -1,0 +1,7 @@
+
+running 2 tests
+test daemon::tests::product_daemon_has_one_attempt_for_errors_panics_and_executed_results ... ok
+test daemon::tests::product_daemon_preserves_real_retained_edits_and_next_request_recovery ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 414 filtered out; finished in 0.15s
+

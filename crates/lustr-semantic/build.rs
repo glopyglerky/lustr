@@ -8,14 +8,16 @@ fn main() {
     println!("cargo:rerun-if-env-changed=RUSTC");
     let rustc = std::env::var_os("RUSTC").expect("Cargo must set RUSTC");
     let query = |args: &[&str]| {
-        let output = Command::new(&rustc).args(args).output().expect("query build compiler");
-        assert!(output.status.success(), "build compiler query failed");
+        // Cargo adds rustc-dev's link stubs to its loader search path. The SDK
+        // compiler must use its own runtime loader paths for these queries.
+        let output = Command::new(&rustc).env_remove("LD_LIBRARY_PATH").args(args).output().expect("query build compiler");
+        assert!(output.status.success(), "build compiler query {args:?} failed: {}", String::from_utf8_lossy(&output.stderr));
         String::from_utf8(output.stdout).expect("build compiler response must be UTF-8")
     };
     let version = query(&["-vV"]);
     assert!(
         version.lines().any(|line| line == format!("commit-hash: {COMMIT}")),
-        "lustr-semantic requires nightly-2026-11-05, rustc commit {COMMIT}; got {version}"
+        "independent Rust inspection oracle requires rustc commit {COMMIT}; got {version}"
     );
     let host = version.lines().find_map(|line| line.strip_prefix("host: ")).expect("compiler host");
     let release = version.lines().find_map(|line| line.strip_prefix("release: ")).expect("compiler release");
@@ -28,6 +30,7 @@ fn main() {
     // rustc-dev supplies rustc_driver as a dynamic library. The probe is an
     // installed host tool, so it must also find that compiler's shared runtime.
     if host.contains("linux") || host.contains("darwin") {
+        println!("cargo:rustc-link-arg=-Wl,-rpath,$ORIGIN/../lib");
         for directory in [sysroot.join("lib"), sysroot.join("lib/rustlib").join(host).join("lib")] {
             let directory = directory.to_str().expect("toolchain location must be UTF-8");
             assert!(!directory.contains(['\n', '\r', ',']), "unsupported toolchain path for linker rpath");

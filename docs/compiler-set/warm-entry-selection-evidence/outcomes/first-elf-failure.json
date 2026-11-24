@@ -1,0 +1,37 @@
+[
+  {
+    "diagnostics": "{\"selection_cache\":\"ineligible\"}\n",
+    "exit": 0,
+    "label": "prime-0",
+    "stderr": "",
+    "stdout": "{\"elapsed_ns\":70720849,\"manifest\":\"<INITIAL_ELF_PROBE>/project/Cargo.toml\",\"phase\":\"selection\",\"success\":true,\"target\":\"unknown-tool-review\"}\n"
+  },
+  {
+    "diagnostics": "{\"selection_cache\":\"miss\"}\n",
+    "exit": 0,
+    "label": "prime-1",
+    "stderr": "",
+    "stdout": "{\"elapsed_ns\":56256123,\"manifest\":\"<INITIAL_ELF_PROBE>/project/Cargo.toml\",\"phase\":\"selection\",\"success\":true,\"target\":\"unknown-tool-review\"}\n"
+  },
+  {
+    "diagnostics": "{\"selection_cache\":\"hit\"}\n",
+    "exit": 0,
+    "label": "prime-2",
+    "stderr": "",
+    "stdout": "{\"elapsed_ns\":513179,\"manifest\":\"<INITIAL_ELF_PROBE>/project/Cargo.toml\",\"phase\":\"selection\",\"success\":true,\"target\":\"unknown-tool-review\"}\n"
+  },
+  {
+    "diagnostics": "{\"selection_cache\":\"hit\"}\n",
+    "exit": 0,
+    "label": "candidate-after-external-state-change",
+    "stderr": "",
+    "stdout": "{\"elapsed_ns\":668822,\"manifest\":\"<INITIAL_ELF_PROBE>/project/Cargo.toml\",\"phase\":\"selection\",\"success\":true,\"target\":\"unknown-tool-review\"}\n"
+  },
+  {
+    "diagnostics": "{\"selection_cache\":\"ineligible\"}\n",
+    "exit": 2,
+    "label": "uncached-after-external-state-change",
+    "stderr": "external tool state rejects metadata\n",
+    "stdout": "{\"elapsed_ns\":1144215,\"error\":\"Cargo rejected the package or manifest selection\",\"phase\":\"selection\",\"success\":false}\n"
+  }
+]

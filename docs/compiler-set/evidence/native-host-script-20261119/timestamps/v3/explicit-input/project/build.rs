@@ -1,0 +1,1 @@
+fn main() { let t = std::fs::metadata("watched").unwrap().modified().unwrap().duration_since(std::time::UNIX_EPOCH).unwrap().as_secs(); println!("cargo::rerun-if-changed=watched"); println!("cargo::rustc-env=SEEN={t}"); }

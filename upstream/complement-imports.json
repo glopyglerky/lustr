@@ -1,0 +1,502 @@
+{
+  "schema": "lustr-complement-imports-v1",
+  "rust_source": "5b7b37aefcb5b2fba3c2392bc9065b9e4602d494",
+  "full_rust_coverage": false,
+  "release_status": "unavailable",
+  "imports": [
+    {
+      "id": "identifier-normalization",
+      "missing_capability": "Rust identifier NFC semantics at the declared compiler version",
+      "status": "implemented-partial",
+      "owner": "Lustr native lexer",
+      "semantic_boundary": "identifier and lifetime canonical names; original source spans and literal bytes retained",
+      "upstream_rust_source": "5b7b37aefcb5b2fba3c2392bc9065b9e4602d494",
+      "upstream_paths": {
+        "compiler/rustc_parse/src/lexer/mod.rs": "a4544945c1beae414bc684e017bdcb0eb817cc2318316adddc72920a02a18421",
+        "compiler/rustc_ast_pretty/src/pprust/state.rs": "5dec2aac97fcf576138e6b8c3579bd4e5b91fb1e9323a469166b566789041076",
+        "compiler/rustc_span/src/symbol.rs": "d570a196be56ba01b1ac141fc5a9ab581b044ae6960dafff9ffb394a47ba640f"
+      },
+      "source_dependencies": {
+        "unicode-normalization": {
+          "version": "0.1.25",
+          "crate_sha256": "5fd4f6878c9cb28d874b009da9e8d183b5abc80117c40bbd187a1fde336be6e8",
+          "upstream_vcs_commit": "5a69b3bafb625caccdec7871a42bed0d9a6604d1"
+        },
+        "tinyvec": {
+          "version": "1.10.0",
+          "crate_sha256": "bfa5fdc3bce6191a1dbc8c02d5c8bffcf557bafa17c124c5264a458f1b0613fa",
+          "upstream_vcs_commit": "3c613ad020738e6fb49e207ff51d38e403bb98ed"
+        },
+        "tinyvec_macros": {
+          "version": "0.1.1",
+          "crate_sha256": "1f3ccbac311fea05f86f61904b462b55fb3df8837a366dfc601a0161d0532f20",
+          "upstream_vcs_commit": "860c23a09d91c8b9203134a81de7888b7191d5f2"
+        }
+      },
+      "dependency_edges": [
+        [
+          "unicode-normalization",
+          "tinyvec"
+        ],
+        [
+          "tinyvec",
+          "tinyvec_macros"
+        ]
+      ],
+      "targets": "native compiler hosts; exact compiled target still requires qualification",
+      "features": {
+        "unicode-normalization": [
+          "default"
+        ],
+        "tinyvec": [
+          "alloc"
+        ],
+        "tinyvec_macros": []
+      },
+      "adapter": "compiler/native/src/lexer.rs",
+      "licenses": "compiler/native/licenses/identifier-normalization",
+      "excluded_duplicate_phases": [
+        "complete rustc parser",
+        "macro expansion",
+        "name resolution",
+        "type checking",
+        "code generation"
+      ],
+      "qualification": "compiler/native/unicode-semantics.json and docs/compiler-set/identifier-normalization.md; source-bound evidence only"
+    },
+    {
+      "id": "declared-sdk-unicode-data",
+      "missing_capability": "One declared standard-library Unicode meaning for native constant and runtime evaluation",
+      "status": "implemented-partial",
+      "owner": "Lustr native Unicode operations",
+      "semantic_boundary": "shared generated predicate/case/escape data",
+      "upstream_rust_source": "5b7b37aefcb5b2fba3c2392bc9065b9e4602d494",
+      "upstream_paths": [
+        "library/core/src/unicode"
+      ],
+      "generated_inputs": {
+        "compiler/native/src/unicode_data.rs": "19692251b2b66785911239bb96896a1fea64f5e1643b6e850896b6eb1fa05df3",
+        "compiler/native/src/runtime/unicode_table.h": "3ed00af6ecc047de68b800ded7006ae8eef3fd68364101cfa61a7574b51bf6e5",
+        "compiler/native/src/runtime/case_tables.h": "8388d8bf830301c51b814b450ab2018f58a2c10f7831069ceb1efc4beb22282a",
+        "compiler/native/src/runtime/escape_table.h": "243c2081962b704de8779e80339795765aabbff89508392a91ee359c79a7aa54",
+        "compiler/native/src/xid_table.rs": "77ab11c1239e3c6d66abb629baad403ed48ca95a7ea1e99c3407ab95d83fceda",
+        "compiler/native/LICENSE-UNICODE": "f5062c9a188d81dfe66b56db4182dcf9e4b17c0d9b0d311a8e20b3a1b075c443"
+      },
+      "dependency_edges": [],
+      "targets": "native compiler and C runtime targets; exact host/runtime qualification remains separate",
+      "features": {},
+      "adapter": "compiler/native/tools/gen_unicode_semantics.rs",
+      "licenses": [
+        "compiler/native/LICENSE-UNICODE"
+      ],
+      "excluded_duplicate_phases": [
+        "complete rustc frontend",
+        "complete rustc code generator"
+      ],
+      "qualification": "compiler/native/unicode-semantics.json; exhaustive scalar comparison is data qualification, not full Rust coverage"
+    },
+    {
+      "status": "implemented-partial",
+      "upstream_rust_source": "5b7b37aefcb5b2fba3c2392bc9065b9e4602d494",
+      "targets": "x86_64-unknown-linux-gnu only; edition 2024; represented scalar O0/no embedded bitcode requests; linked output requires no debug, leaf libraries accept abort or unwind, dependent libraries/executables require abort; metadata-only checks accept the default dev profile",
+      "features": {
+        "native": [
+          "exclusive-native"
+        ],
+        "encoder": [
+          "core",
+          "alloc"
+        ]
+      },
+      "excluded_duplicate_phases": [
+        "Rust parsing",
+        "macro expansion",
+        "name resolution",
+        "type checking",
+        "body lowering",
+        "native function compilation",
+        "complete rustc driver"
+      ],
+      "qualification": "Public scalar campaign passed at 514dfe1ef8b49160bf5c09458981768fbf4f2386 in run 45073103551/job 137364264163; source/artifact verification and the separately identified profile-default repair are recorded in docs/compiler-set/evidence/compiler-review-20261122/README.md. The source-bound repair build and runtime campaigns passed; no full-Rust or speed claim.",
+      "id": "native-scalar-metadata",
+      "missing_capability": "Genuine Rust metadata and symbol identity for the completed native scalar-library graph",
+      "owner": "Original Rust metadata serializer after native completion",
+      "semantic_boundary": "Only native completed scalar declarations and actual native emitted instances; full source ownership remains native",
+      "upstream_paths": [
+        "crates/lustr-metadata-encoder/source-slices.json"
+      ],
+      "dependency_edges": [
+        [
+          "lustr-metadata-encoder",
+          "md-5"
+        ],
+        [
+          "lustr-metadata-encoder",
+          "twox-hash"
+        ]
+      ],
+      "adapter": "crates/lustr-metadata-encoder/src/lib.rs",
+      "licenses": [
+        "crates/lustr-metadata-encoder/LICENSE-MIT",
+        "crates/lustr-metadata-encoder/LICENSE-APACHE"
+      ]
+    },
+    {
+      "status": "implemented-partial",
+      "upstream_rust_source": "5b7b37aefcb5b2fba3c2392bc9065b9e4602d494",
+      "targets": "x86_64-unknown-linux-gnu only; edition 2024; represented scalar O0/no embedded bitcode requests; linked output requires no debug, leaf libraries accept abort or unwind, dependent libraries/executables require abort; metadata-only checks accept the default dev profile",
+      "features": {
+        "native": [
+          "exclusive-native"
+        ],
+        "encoder": [
+          "core",
+          "alloc"
+        ]
+      },
+      "excluded_duplicate_phases": [
+        "Rust parsing",
+        "macro expansion",
+        "name resolution",
+        "type checking",
+        "body lowering",
+        "native function compilation",
+        "complete rustc driver"
+      ],
+      "qualification": "Public scalar campaign passed at 514dfe1ef8b49160bf5c09458981768fbf4f2386 in run 45073103551/job 137364264163; source/artifact verification and the separately identified profile-default repair are recorded in docs/compiler-set/evidence/compiler-review-20261122/README.md. The source-bound repair build and runtime campaigns passed; no full-Rust or speed claim.",
+      "id": "native-scalar-artifact-host",
+      "missing_capability": "Public Cargo outputs, original metadata wrappers, SDK data and owned retained publication",
+      "owner": "Shared retained library artifact host",
+      "semantic_boundary": "One native continuation; original ELF metadata wrappers and qualified tool operations; no full compiler SDK or qualifier linked into product",
+      "upstream_paths": [
+        "compiler/rustc_codegen_ssa/src/back/metadata.rs",
+        "compiler/rustc_interface/src/passes.rs",
+        "compiler/rustc_errors/src/json.rs",
+        "compiler/rustc_target/src/callconv/mod.rs",
+        "compiler/rustc_ty_utils/src/abi.rs"
+      ],
+      "dependency_edges": [
+        [
+          "native-library-host",
+          "lustr-metadata-sdk"
+        ],
+        [
+          "native-library-host",
+          "lustr-metadata-encoder"
+        ],
+        [
+          "native-library-host",
+          "object"
+        ],
+        [
+          "native-library-host",
+          "llvm-ar"
+        ],
+        [
+          "native-library-host",
+          "llvm-objcopy"
+        ]
+      ],
+      "adapter": "crates/lustr-native-core/src/public_library.rs",
+      "licenses": [
+        "crates/lustr-native-core/LICENSE-LLVM",
+        "crates/lustr-metadata-encoder/LICENSE-MIT",
+        "crates/lustr-metadata-encoder/LICENSE-APACHE"
+      ]
+    },
+    {
+      "id": "native-libtest-runtime",
+      "missing_capability": "The real Cargo test harness, including argument handling, filtering, concurrent execution and test output reporting",
+      "owner": "Installed native Cargo test runtime",
+      "semantic_boundary": "Lust parses, checks, lowers and emits the test bodies and captures their native panic payloads. Pinned Rust libtest owns harness execution policy and reporting.",
+      "upstream_rust_source": "5b7b37aefcb5b2fba3c2392bc9065b9e4602d494",
+      "upstream_paths": [
+        "library/test/src/lib.rs",
+        "library/test/src/types.rs",
+        "library/test/src/test_result.rs",
+        "compiler/rustc_builtin_macros/src/test.rs",
+        "compiler/rustc_lint_defs/src/builtin.rs"
+      ],
+      "upstream_source_sha256": {
+        "library/test/src/lib.rs": "89c07ab60c9659523ad524976b7d6a4a4505b9fc68db37b3f6cb3efe0de15a42",
+        "library/test/src/types.rs": "5ab210d47c63884da6a081146f53ada66d3a980f64df2548be2713732ff1f019",
+        "library/test/src/test_result.rs": "0f3a442ae37936a8e1ff3d954113dfa0b95171b33345a8ece71e1e87aefb7368",
+        "compiler/rustc_builtin_macros/src/test.rs": "f26f895561f7143380c03bd3ca58bf7688963b1c0eb79318974ccee75aa64549",
+        "compiler/rustc_lint_defs/src/builtin.rs": "5cca157d1bc6d9dab99f93e193e1ca43d5ad0b715f661acc5c4fd4ebb33679a4"
+      },
+      "dependency_edges": [
+        [
+          "native-test-runtime",
+          "libtest"
+        ],
+        [
+          "libtest",
+          "std"
+        ]
+      ],
+      "targets": [
+        "x86_64-unknown-linux-gnu"
+      ],
+      "features": [
+        "linked only for supported native Cargo unit and integration tests",
+        "panic=unwind"
+      ],
+      "adapter": "tools/native-test-runtime.rs",
+      "licenses": [
+        "crates/lustr-metadata-encoder/LICENSE-MIT",
+        "crates/lustr-metadata-encoder/LICENSE-APACHE"
+      ],
+      "excluded_duplicate_phases": [
+        "Rust parsing",
+        "macro expansion",
+        "name resolution",
+        "type checking",
+        "body lowering",
+        "native function compilation",
+        "complete rustc driver"
+      ],
+      "qualification": "Ordinary dependency-free binary cargo test and test --no-run passed. Existing libtest runs native tests with ignored tests and expected string panic matching. Extended output capture is covered by the installed compiler contract. General Rust return types, dependent test targets and full diagnostic parity remain open."
+    },
+    {
+      "id": "host-proc-macro-compiler",
+      "missing_capability": "Cargo's executable host procedural macro crate artifacts",
+      "status": "implemented-partial",
+      "owner": "Pinned Rust host procedural macro compiler",
+      "semantic_boundary": "Actual host-target ProcMacro compilation, validated on parsed Rust options before source compilation",
+      "upstream_rust_source": "5b7b37aefcb5b2fba3c2392bc9065b9e4602d494",
+      "upstream_paths": {
+        "compiler/rustc/src/main.rs": "569fe611f1bb59109dea96f0206ae9d87675b533d0f5e7a47980764195e0076a",
+        "compiler/rustc_driver_impl/src/lib.rs": "28d3ed858c3db58e159cfe6a6e6e47fa15b64fe354e565a7c94ef24b563c7b44",
+        "compiler/rustc_interface/src/interface.rs": "374372a8fa5c5b46ad6d98db08c4b3791808618495ab93f4ed2a34b0719b9cc2"
+      },
+      "dependency_edges": [
+        [
+          "host-proc-macro-compiler",
+          "rustc_driver"
+        ],
+        [
+          "host-proc-macro-compiler",
+          "rustc_interface"
+        ],
+        [
+          "host-proc-macro-compiler",
+          "rustc_session"
+        ],
+        [
+          "host-proc-macro-compiler",
+          "rustc_structures"
+        ],
+        [
+          "rustc_driver",
+          "matching LLVM and Rust SDK sysroot"
+        ]
+      ],
+      "targets": "x86_64-unknown-linux-gnu host",
+      "features": [
+        "rustc_private in the separate host tool"
+      ],
+      "adapter": "tools/host-proc-macro.rs",
+      "licenses": [
+        "MIT",
+        "Apache-2.0"
+      ],
+      "excluded_duplicate_phases": [
+        "ordinary native consumer compilation uses Lust"
+      ],
+      "qualification": "Cargo provider artifact, independent pinned Rust consumer execution, and rejection of a regular binary in the host tool"
+    },
+    {
+      "id": "external-scalar-interface",
+      "missing_capability": "Read scalar declarations from Rust metadata outside the native encoding subset",
+      "status": "implemented-partial",
+      "owner": "Pinned Rust metadata loader and declaration queries",
+      "semantic_boundary": "Check-only scalar declarations from an actual Cargo metadata input with installed SDK dependencies. The original Rust loader resolves dependencies in Cargo's search paths; a graph outside the scalar interface stays with the pinned compiler.",
+      "upstream_rust_source": "5b7b37aefcb5b2fba3c2392bc9065b9e4602d494",
+      "upstream_paths": {
+        "compiler/rustc_metadata/src/rmeta/decoder.rs": "40d024ce058a7e363e192ac11f783c9d91e182ce0d7e3147e1e926f2073db0e2",
+        "compiler/rustc_metadata/src/locator.rs": "3e91bea232fdf8b8b01858bb55fb923f63f8c3ea66071cfc8eda9e9cebb9d758",
+        "compiler/rustc_metadata/src/creader.rs": "5ad69fef2068ce2cff4a1ab21659359270770e4ee69fa840558a29a3fb706539",
+        "compiler/rustc_middle/src/queries.rs": "e6d27d3e01b5a726d69b7ee54bcdd0db46114d13d80579e2cb2e617e34db1028"
+      },
+      "dependency_edges": [
+        ["external-scalar-interface", "existing host Rust driver component"],
+        ["existing host Rust driver component", "matching LLVM and Rust SDK sysroot"]
+      ],
+      "targets": "x86_64-unknown-linux-gnu host",
+      "features": ["standalone metadata, nongeneric safe Rust integer signatures"],
+      "adapter": "tools/host-crate-interface.rs",
+      "licenses": ["MIT", "Apache-2.0"],
+      "excluded_duplicate_phases": ["consumer parsing", "consumer type checking", "consumer lowering and emission"],
+      "qualification": "Standalone shared native checks and dependency edit controls. Installed Cargo checking and linker integration are separately qualified."
+    },
+    {
+      "id": "freestanding-executable-composition",
+      "missing_capability": "Freestanding and static library linking, and Rust coroutine analysis and lowering for ordinary Cargo units",
+      "status": "implemented-partial",
+      "owner": "Lust native item compiler and pinned Rust executable driver",
+      "semantic_boundary": "Lust checks and emits closed bodies with represented integer signatures from the original Rust source map in one object, resolving the needed original local type alias declarations alongside those bodies. The original Rust call ABI, primitive identities, layouts and argument extension agree with the native object before linking. Narrow arguments reuse the unextended Rust library export convention. For normalized spans the native compiler checks the on-disk byte identity before using the parsed text. The pinned Rust prelude and test expander supply ordinary root test attributes when no other macro can bind that name. The original Rust driver handles complementary source, metadata, dependency info and link.",
+      "upstream_rust_source": "5b7b37aefcb5b2fba3c2392bc9065b9e4602d494",
+      "upstream_paths": {
+        "compiler/rustc_driver_impl/src/lib.rs": "28d3ed858c3db58e159cfe6a6e6e47fa15b64fe354e565a7c94ef24b563c7b44",
+        "compiler/rustc_ast/src/ast.rs": "13053c386dec39816df998586d040d63380072f97d0d409df9e7826ae5fce75c",
+        "compiler/rustc_ast_lowering/src/item.rs": "6a7af08a9f408c2d1bd864b2e099775581a4df23ab1d16cbaa68399bb55bb3be",
+        "compiler/rustc_ast_ir/src/lib.rs": "78e0296201acd1ad1f15870dec3bad3e931a9dd2b8cb16bcfb47a7dcd545e6b6",
+        "compiler/rustc_hir/src/hir.rs": "e93d807c5339a759acf501e85adf8d09e440a4c23127cf091676eab9e01eb385",
+        "compiler/rustc_target/src/callconv/mod.rs": "7b8b918bf607528e5fbaae1d596e7e448e1625e2439d0689672dc129a15ea8fd",
+        "compiler/rustc_feature/src/builtin_attrs.rs": "e8c1ca1a554fbdf37ab6af86c59419c99c6437549f1698fc32986b5c5eb9fdcc",
+        "compiler/rustc_codegen_ssa/src/traits/backend.rs": "ac80cf5b0725433dd731359b2b306f7b0b2502694c88aef9105078e0b43b8e44",
+        "compiler/rustc_codegen_ssa/src/lib.rs": "553ea81c827f9493025c7987114323f7292e992acfe05878e0a6415e0b7a969c",
+        "compiler/rustc_errors/src/lib.rs": "01f82a2a6a608485cb93ac78cfd3bc6aad9f2aa3ae154d74c31fa43504bfde93",
+        "compiler/rustc_interface/src/callbacks.rs": "535bbcb8285b434a21cc5ed25c2bda3d3638161e1bc9e780b6dac4b7f270923d",
+        "compiler/rustc_interface/src/queries.rs": "895925b776a1d68985faaf77f335e6956f0d4dc09c9d39332351da5bc7bdb8eb",
+        "compiler/rustc_interface/src/util.rs": "a72d09c63337f969f489d5ef4f8ac4266c0516c6126603b34be05500dbf6f90e",
+        "compiler/rustc_interface/src/passes.rs": "8ee543fb7a03b80cbd95a58c57a134215d97218afa6551ecc0bd70f02fe75fbc",
+        "compiler/rustc_session/src/config.rs": "20518f46c9a57d05f1353c1fcc2b3f8108b09c99efd87d6f009b71254441dcaf",
+        "compiler/rustc_builtin_macros/src/source_util.rs": "800e0f9277ade2a55cf35bae7b42276d4ea5e8d1e33da9b94064ace8586f2b48",
+        "compiler/rustc_span/src/lib.rs": "9682c3b7d227039f040afff82aae4d2fd8133692bc9ef84f0974323f8a0acca0",
+        "compiler/rustc_builtin_macros/src/test.rs": "f26f895561f7143380c03bd3ca58bf7688963b1c0eb79318974ccee75aa64549",
+        "compiler/rustc_builtin_macros/src/standard_library_imports.rs": "5b7dcce14ba82562155de2caf21a14f7e96c6a49286bc509d813ef63461128c2",
+        "compiler/rustc_resolve/src/ident.rs": "06fe56fd4fbba547519ca71b0727c5aa2f658eba1834797751c136dbbb72c9c6",
+        "library/std/src/prelude/v1.rs": "55355b2a275997afb57bf6f7c37718786fc1ba8edb6dd003bd3c306d153e1dd2",
+        "library/core/src/prelude/v1.rs": "ce64d1454ad46c78243f9122cb8c0f44cb64eb21f27ed37354bb6f4a735d7321",
+        "compiler/rustc_codegen_ssa/src/back/link.rs": "0cfbc38cf0c66133b3f7dc10bd558d1fb4773fc1c09054c48a32bc694902a191",
+        "compiler/rustc_codegen_llvm/src/debuginfo/mod.rs": "b82f4245aa0712ae14dc215688bb934a0f36c3156638977ef371a89f746e0e88",
+        "compiler/rustc_codegen_llvm/src/debuginfo/metadata.rs": "15d3cfb46344bce21f6645832c6718cafebb130c3f83ad4475d5cc086ca438e7",
+        "compiler/rustc_codegen_llvm/src/lib.rs": "c45084d828a300d94700752fb3f523c3fc1411e0def9eccaf3672479dc548c13"
+      },
+      "dependency_edges": [
+        ["freestanding-executable-composition", "existing host Rust driver component"],
+        ["existing host Rust driver component", "matching LLVM and Rust SDK sysroot"],
+        ["freestanding-executable-composition", "in-process Lust semantics and TinyCC"]
+      ],
+      "targets": "x86_64-unknown-linux-gnu host and target",
+      "features": ["Freestanding Cargo binary with no_std, no_main, panic=abort and explicit static relocation and link", "Cargo static library with Rust semantics and an independently linkable C entry", "Typed native parser capability handoff for unrepresented Rust syntax, including async, unsafe and FFI"],
+      "adapter": "tools/host-freestanding.rs",
+      "licenses": ["MIT", "Apache-2.0"],
+      "excluded_duplicate_phases": ["Rust analysis and code generation of selected native bodies", "Rust expansion, semantic analysis and emission on verified closed freestanding body edits"],
+      "qualification": "Installed Cargo tests compare compiler status, generated ELF, original-source diagnostics and actual program exit with pinned Rust. The retained freestanding test exercises successful reuse, signature invalidation, native rejection, diagnostics, corrupt snapshots and reads of root source bytes. Ordinary host requests preserve full Rust debug information, release optimization, and the existing Rust test harness in the mixed path. Their tests require actual native symbols and Rust debug addresses, including release with full debug information. Retained Rust link inputs cover freestanding O0 and closed ordinary executables with stable source coordinates. A Cargo unit can also reuse a native LLVM object with identical generated IR, verified Clang options and loader inputs, and intact object bytes. A corrupt record takes fresh native emission. The original linker still runs."
+    },
+    {
+      "id": "proc-macro-expansion",
+      "missing_capability": "Execute a selected host procedural macro and pass its tokens to native checking",
+      "status": "implemented-partial",
+      "owner": "Pinned Rust Analyzer worker with Lustr's native expansion context",
+      "semantic_boundary": "Cargo-selected host artifacts loaded by a request-scoped worker, source token trees and distinct hygiene sites, represented call-site identifiers, literals, punctuation spacing and visible output groups, and observed Cargo dependency inputs. The original Rust producer records procedural attribute exports with the artifact digest if the worker is installed. Packages without the optional worker assign host macro requests to the original Rust context before reading native span receipts. Direct written imports and attributes with established bindings also select that context before executing macros. If later preparation discovers a missing operation after running a native procedural macro, that request reports incomplete integration without repeating expansion.",
+      "upstream_rust_source": "5b7b37aefcb5b2fba3c2392bc9065b9e4602d494",
+      "upstream_paths": {
+        "src/tools/rust-analyzer/crates/proc-macro-api/src/lib.rs": "2e2dceb85444dd2e07377183855e7c47e4e2eae2b87280fc8417e4f1e8e33a87",
+        "src/tools/rust-analyzer/crates/proc-macro-api/src/process.rs": "182402087192311c205bc355fefade5dcfebf842f581efc5f16d142656003ce0",
+        "src/tools/rust-analyzer/crates/proc-macro-api/src/bidirectional_protocol.rs": "6885548c53940fe944c75a3f8ea4255862b161abe3c3ab9c37996a252a66ed80",
+        "src/tools/rust-analyzer/crates/proc-macro-api/src/bidirectional_protocol/msg.rs": "41c453c9992fd0a62ea83eefc6159cec83f49c88bed6292284e62e27d66e27f0",
+        "src/tools/rust-analyzer/crates/proc-macro-srv/src/token_stream.rs": "ce142608f7ad9bbd1380e425d3284c91a7a504f9ee5d5760dde87fde2286d4d1",
+        "src/tools/rust-analyzer/crates/proc-macro-srv/src/lib.rs": "e27065d259e94c20a309347eb133b81677041907d014bbee1d75afc09c5fa104",
+        "src/tools/rust-analyzer/crates/proc-macro-srv/src/server_impl/rust_analyzer_span.rs": "467f2140fa1ed0b81d4b848b72616ec1d6b21086a81671982088966edafc6576",
+        "src/tools/rust-analyzer/crates/proc-macro-srv-cli/src/main.rs": "6c580ce94a71f9cb1e7b506d260d28532757f07ea252bf1b0044737b2ff9677c",
+        "src/tools/rust-analyzer/crates/proc-macro-srv-cli/src/main_loop.rs": "d06832759b1135dca3ad1b5139a1850283d6c1b335f2ac831e7ca2daa5c8ef0f",
+        "src/tools/rust-analyzer/crates/syntax-bridge/src/lib.rs": "9c41440ff557f40f0480397375f1d0d2b357cb288c1c30f203e7b1b881b2094a",
+        "src/tools/rust-analyzer/crates/span/src/hygiene.rs": "49df630a5a23fae699568d6e53928d3081f6f17ba827334c68b6f5e261e38b5c",
+        "compiler/rustc_expand/src/base.rs": "23f513fe11bab27c7b4c9d2c55acf1af702a480e522240e7ed79900e11f13d92",
+        "compiler/rustc_expand/src/proc_macro_server.rs": "af97126cf80003d963f231e87da36a35df63eaba355366393178f8ac3dc50a72",
+        "compiler/rustc_attr_ir/src/data_structures.rs": "6b61fd75a4a88bb80dfdcc71bdb5325c9083bfa99f5bf03baa9c19250a0852ba",
+        "compiler/rustc_builtin_macros/src/proc_macro_harness.rs": "fe874513e66ffed418d2a80cdaef110d595bc80b3e817c04f83e0ff24300c4b9",
+        "compiler/rustc_metadata/src/rmeta/encoder.rs": "7f740fbaf9e81f4d518a95eeab485059c4f1a88c636df3104af03ec2817f5b73"
+      },
+      "dependency_edges": [
+        ["lustr-expand-proc-macro", "proc-macro-api"],
+        ["lustr-expand-proc-macro", "paths"],
+        ["lustr-expand-proc-macro", "span"],
+        ["lustr-expand-proc-macro", "syntax-bridge"],
+        ["lustr-expand-proc-macro", "tt"],
+        ["proc-macro-srv-cli", "proc-macro-api"],
+        ["proc-macro-srv-cli", "proc-macro-srv"],
+        ["proc-macro-srv", "matching Rust SDK"]
+      ],
+      "targets": "x86_64-unknown-linux-gnu host",
+      "features": ["source-aware bidirectional protocol", "in-rust-tree"],
+      "adapter": "crates/lustr-native-core/src/public_macro_import.rs",
+      "licenses": ["MIT", "Apache-2.0", "Pinned Rust source notices and component lockfiles"],
+      "excluded_duplicate_phases": ["consumer parsing, resolution, checking, code generation and link remain native"],
+      "qualification": "Default Cargo check and run with an observed source-reading function-like macro, and tracked input, failure and repair histories. Wider token, hygiene, macro forms and elapsed performance remain open.",
+      "closure_sha256": {
+        "upstream/proc-macro-expansion.patch": "a7f4f05d73321d640fd131211e53f532c84c27c13cc7aaba3ba27828d6a1a004",
+        "tools/proc-macro-expansion/client/Cargo.toml": "7b0709ed816f2f215df9b5f787d26239e96b33bc43384a51b56c4451927f9a52",
+        "tools/proc-macro-expansion/client/Cargo.lock": "db15c149da01521cf567dc9733c6aafc3f11075218f919235c6153e8e688e45f",
+        "tools/proc-macro-expansion/server/Cargo.toml": "204413094ed7bc3abf672d35902583a948801ead82c323799ce80e92490d2753",
+        "tools/proc-macro-expansion/server/Cargo.lock": "d48eddcebfdb746ef0a0e957d6f5cbb7e647798e98c247614b43672ec283ab99"
+      }
+    }
+  ],
+  "research_components": [
+    {
+      "path": "crates/lustr-native-core/src/upstream_definitions.rs",
+      "scope": "internal shared definition and owned emission experiments under upstream-semantic feature",
+      "dependency": "complete rustc_private SDK graph at declared rust_source",
+      "production_admitted": false,
+      "required_for": "tools/qualify-shared-upstream.py validates actual provider identity, native consumer ownership, ABI and terminal imported-emission failures",
+      "blocking_reason": "dependency closure is whole rustc_driver; selective source replacement and complete semantic ownership are unfinished"
+    },
+    {
+      "path": "crates/lustr-semantic",
+      "scope": "independent pinned original-Rust oracle with full compiler SDK analysis, code generation and artifact checks; never product compilation or Lustr coverage",
+      "dependency": "complete rustc_private SDK graph; no lustr-mixed executable target",
+      "production_admitted": false,
+      "required_for": "independent genuine Rust metadata/ABI/artifact observations and source-bound inspection experiments; not a complementary product compiler",
+      "blocking_reason": "not a selective complementary source implementation"
+    },
+    {
+      "path": "crates/lustr-native-metadata-qualification",
+      "scope": "Separate original one-shot qualifier and actual retained native Session/TinyCC to selective metadata/archive candidate; no public compiler route",
+      "dependency": "existing native qualifier sources, selective metadata encoder/SDK loader, object writer and pinned LLVM object/archive utilities; no rustc_private dependency or compiler invocation",
+      "source_inventory": "crates/lustr-native-metadata-qualification/source-slices.json",
+      "production_admitted": false,
+      "public_retained_integration": false,
+      "required_for": "actual ordinary Rust-consumer acceptance, runtime results, privacy/signature refusal and independent exec trace for the bounded native metadata join",
+      "blocking_reason": "This independent research executable is not the public compiler route. Its one-shot and retained campaigns remain qualified only at their original sources; the public caller uses the shared artifact service separately. Wider Rust obligations and measured compiler speed remain unfinished.",
+      "qualification_record": "docs/compiler-set/evidence/native-metadata-join-20261120/README.md",
+      "retained_native_caller_authored": true,
+      "retained_native_qualification": "Retained research passed at fab59023b9635f2c5e5d03d29b44865839dc3eba; see docs/compiler-set/evidence/retained-metadata-correction-20261120/runtime-success-fab59023.json. This does not qualify a later research executable or the public caller."
+    }
+  ],
+  "not_imported": [
+    "general trait solver",
+    "general Rust metadata encoder beyond the bounded scalar source slices",
+    "full Rust compiler source"
+  ],
+  "guard_scope": "structural source and public entry constraints only; source inventories do not prove minimal dependency closure or semantic exclusivity",
+  "selective_components": [
+    {
+      "path": "crates/lustr-metadata-encoder",
+      "scope": "standalone core-plus-alloc serializer for completed native scalar-library records and source-bound full/stub metadata variants",
+      "dependency": "selective pinned Rust encoding/identity/schema operations and source-owned stable-hash/ODHT writer slices; md-5 and twox-hash with std disabled",
+      "source_inventory": "crates/lustr-metadata-encoder/source-slices.json",
+      "production_admitted": false,
+      "native_caller_committed": true,
+      "required_for": "serialization of genuine native completed definitions and actual emitted instances without whole-consumer Rust analysis",
+      "blocking_reason": "The bounded public scalar campaign passed at 514dfe1e. Wider Rust completion, default-profile executable/debug support and measured compiler speed remain unqualified. The separate profile/default and SDK-construction repairs pass their source-bound build, runtime and frame campaigns; see the audit record. Full replacement admission remains unavailable.",
+      "native_caller_path": "crates/lustr-native-metadata-qualification",
+      "public_retained_integration": true,
+      "qualification_record": "docs/compiler-set/evidence/compiler-review-20261122/README.md",
+      "retained_native_caller_authored": true,
+      "retained_native_qualification": "Public retained scalar campaign passed at 514dfe1ef8b49160bf5c09458981768fbf4f2386 in run 45073103551/job 137364264163. Earlier research remains source-bound; subsequent repairs require separate exact-source qualification.",
+      "public_native_caller_path": "crates/lustr-native-core/src/public_library.rs",
+      "production_source_authored": true
+    },
+    {
+      "path": "crates/lustr-metadata-sdk",
+      "scope": "standalone host adapter for construction-qualified pinned SDK receipts",
+      "dependency": "lustr-metadata-encoder, std filesystem/path services, serde_json and sha2; excluded from the encoder core dependency graph",
+      "source_inventory": "crates/lustr-metadata-encoder/source-slices.json",
+      "production_admitted": false,
+      "native_caller_committed": true,
+      "required_for": "immutable ordered core/compiler_builtins context loaded once outside repeated consumer compilation",
+      "blocking_reason": "The bounded public scalar campaign passed at 514dfe1e. Wider Rust completion, target/profile coverage and measured compiler speed remain unqualified. The separate profile/default and SDK-construction repairs pass their source-bound build, runtime and frame campaigns; see the audit record. Full replacement admission remains unavailable.",
+      "native_caller_path": "crates/lustr-native-metadata-qualification",
+      "public_retained_integration": true,
+      "qualification_record": "docs/compiler-set/evidence/compiler-review-20261122/README.md",
+      "retained_native_caller_authored": true,
+      "retained_native_qualification": "Public retained scalar campaign passed at 514dfe1ef8b49160bf5c09458981768fbf4f2386 in run 45073103551/job 137364264163. Earlier research remains source-bound; subsequent repairs require separate exact-source qualification.",
+      "public_native_caller_path": "crates/lustr-native-core/src/public_library.rs",
+      "production_source_authored": true
+    }
+  ]
+}

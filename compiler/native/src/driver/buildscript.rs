@@ -1,4 +1,8 @@
-// Build-script refresh checks (docs/ARCH.md section 1.1). Lust does not
+// Product host scripts use `native`: Cargo supplies an exact unit plan, the
+// ordinary native pipeline compiles the original script, and one owned run
+// publishes checked outputs. Legacy Cargo/rustc replay is non-product only.
+//
+// Upstream build-script refresh checks (docs/ARCH.md section 1.1). Lust does not
 // compile `build.rs`; Cargo compiles and runs it (the probe's `cargo
 // check`), and the driver reads the recorded output. A record is valid
 // only while everything its run read still holds (`Record::holds`): the
@@ -23,6 +27,13 @@ use crate::intern::FxHasher;
 use std::hash::{Hash, Hasher};
 use std::path::{Path, PathBuf};
 
+#[cfg(feature = "exclusive-native")]
+mod native;
+#[cfg(feature = "exclusive-native")]
+pub use native::outputs as outputs_native;
+#[cfg(feature = "exclusive-native")]
+pub(crate) use native::cfg_directive;
+
 /// The env a build script check runs under: the requesting client's
 /// whole env (`protocol::Client::env`), or None for this process's own
 /// env (one-shot compiles, where this process is the client, and tests).
@@ -43,7 +54,7 @@ fn cargo_vars(env: ClientEnv) -> Vec<(String, String)> {
     let keep = |k: &str| {
         (k.starts_with("CARGO_") && !k.starts_with("CARGO_TERM_") && k != "CARGO_MAKEFLAGS")
             || k.starts_with("RUSTC")
-            || matches!(k, "RUSTFLAGS" | "RUSTDOCFLAGS" | "RUSTUP_TOOLCHAIN")
+            || matches!(k, "RUSTFLAGS" | "RUSTDOCFLAGS" | "RUSTUP_TOOLCHAIN" | "__CARGO_TEMPORARY_BUILD_DIR_NEW_LAYOUT_OPT_OUT")
     };
     let mut vars: Vec<(String, String)> = match env {
         Some(env) => env.iter().filter(|(k, _)| keep(k)).cloned().collect(),
@@ -69,7 +80,7 @@ pub struct BuildOutput {
 /// Parses build script stdout into `BuildOutput`.
 pub fn parse_output(text: &str) -> BuildOutput {
     let mut out = BuildOutput::default();
-    for line in text.lines() {
+    for line in text.lines().map(str::trim) {
         let Some(rest) = line.strip_prefix("cargo:") else { continue };
         let rest = rest.strip_prefix(':').unwrap_or(rest);
         let Some((key, value)) = rest.split_once('=') else { continue };
@@ -90,7 +101,8 @@ pub fn parse_output(text: &str) -> BuildOutput {
 
 /// One recorded build-script run: what its outputs depend on, re-checked
 /// per session, and the outputs consumers read. Stored as text lines in
-/// the disk cache dir (magic `LBS4`; `LBS3` lacked the script's compile,
+/// the disk cache dir (magic `LBS5`; `LBS4` could silently accept missing
+/// Cargo output as empty directives; `LBS3` lacked the script's compile,
 /// and `LBS2` the script's other sources, the manifests, a rerun-if-changed
 /// dir's files, Cargo's default package files, the setup and the OUT_DIR
 /// re-check); W-DRIVER
@@ -357,7 +369,7 @@ impl Record {
     /// fails to read back is a miss, never a wrong answer.
     fn encode(&self) -> Vec<u8> {
         let p = |p: &Path| esc(&p.to_string_lossy());
-        let mut s = String::from("LBS4\n");
+        let mut s = String::from("LBS5\n");
         s.push_str(&format!("script {}\n", p(&self.script)));
         for (path, h) in &self.sources {
             s.push_str(&format!("src {h} {}\n", p(path)));
@@ -406,7 +418,7 @@ impl Record {
     /// Reads bytes written by `encode`. None on any malformed line.
     fn decode(text: &str) -> Option<Record> {
         let mut lines = text.lines();
-        if lines.next()? != "LBS4" {
+        if lines.next()? != "LBS5" {
             return None;
         }
         let (mut script, mut setup, mut output_hash) = (None, None, None);
@@ -543,6 +555,14 @@ impl Refresh {
 /// check stays cheap. One record per manifest dir serves every client: a
 /// client whose `rerun-if-env-changed` values or Cargo vars differ from
 /// the record's re-runs the script, as Cargo would from its shell.
+#[cfg(feature = "exclusive-native")]
+pub fn refresh(manifest_dir: &Path, _cache_dir: &Path, _env: ClientEnv) -> Refresh {
+    if build_script_for(manifest_dir).is_none() { return Refresh::None; }
+    let error = "Lustr build-script integration is incomplete; product helpers do not delegate compilation to rustc or Cargo".to_string();
+    Refresh::Failed { hash: hash_parts(&[b"failed", error.as_bytes()]), error }
+}
+
+#[cfg(not(feature = "exclusive-native"))]
 pub fn refresh(manifest_dir: &Path, cache_dir: &Path, env: ClientEnv) -> Refresh {
     let Some(script) = build_script_for(manifest_dir) else { return Refresh::None };
     if let Some(rec) = fresh_record(manifest_dir, cache_dir, &script, env) {
@@ -563,6 +583,7 @@ pub fn refresh(manifest_dir: &Path, cache_dir: &Path, env: ClientEnv) -> Refresh
 /// say), the script's compile is replayed: the same binary means the same
 /// run, so the record takes the new sources (and any var the compile now
 /// reads) and stands.
+#[cfg(not(feature = "exclusive-native"))]
 fn fresh_record(manifest_dir: &Path, cache_dir: &Path, script: &Path, env: ClientEnv) -> Option<Record> {
     let path = record_path(cache_dir, manifest_dir);
     let mut rec = std::fs::read_to_string(&path).ok().and_then(|t| Record::decode(&t))?;
@@ -611,6 +632,7 @@ fn source_hashes(mut sources: Vec<PathBuf>, script: &Path) -> Vec<(PathBuf, u64)
 /// vars Cargo set, and with rustc as Cargo gave it to the script when the
 /// compile named a bare `rustc`: the binary's hash, and the sources and
 /// vars the compile read (its dep-info). None when it fails.
+#[cfg(not(feature = "exclusive-native"))]
 fn replay(c: &Compile, rustc: Option<&Path>, script: &Path, cache_dir: &Path, env: ClientEnv) -> Option<(u64, Vec<PathBuf>, Vec<String>)> {
     let nanos = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map_or(0, |d| d.subsec_nanos());
     let scratch = cache_dir.join(format!("buildscript-replay-{}-{nanos:x}", std::process::id()));
@@ -672,6 +694,11 @@ pub struct Outputs {
     pub rustc_cfg: Vec<String>,
     pub rustc_check_cfg: Vec<String>,
     pub rustc_env: Vec<(String, String)>,
+    /// A native script's OUT_DIR cannot change while the consumer still reads
+    /// its generated inputs. The checked continuation owns this lease through
+    /// checking and emission; clones share the same lock, without reacquiring it.
+    #[cfg(feature = "exclusive-native")]
+    lease: Option<std::sync::Arc<std::fs::File>>,
 }
 
 /// The current outputs of the build script of `manifest_dir`: the
@@ -680,6 +707,13 @@ pub struct Outputs {
 /// has no build script. An Err means a script exists but its run
 /// failed; the caller must not compile the crate without its outputs.
 /// `env` is the requesting client's env, as for `refresh`.
+#[cfg(feature = "exclusive-native")]
+pub fn outputs(manifest_dir: &Path, _cache_dir: &Path, _env: ClientEnv) -> Result<Option<Outputs>, String> {
+    if build_script_for(manifest_dir).is_none() { return Ok(None); }
+    Err("Lustr build-script integration is incomplete; product helpers do not delegate compilation to rustc or Cargo".into())
+}
+
+#[cfg(not(feature = "exclusive-native"))]
 pub fn outputs(manifest_dir: &Path, cache_dir: &Path, env: ClientEnv) -> Result<Option<Outputs>, String> {
     let Some(script) = build_script_for(manifest_dir) else { return Ok(None) };
     let rec = match fresh_record(manifest_dir, cache_dir, &script, env) {
@@ -817,16 +851,55 @@ fn cargo_error(stderr: &str) -> String {
     lines.join(" ")
 }
 
+/// Read Cargo's saved stdout for the exact OUT_DIR it reported. The declared
+/// Cargo source c07ac2c4 uses `run/stdout` beside `out` in the new layout;
+/// the compatibility layout uses a sibling `output`. In both layouts Cargo's
+/// `root-output` records the original OUT_DIR. Match Cargo's relocation rule:
+/// substitute that old path in each directive value with the current OUT_DIR
+/// (custom_build.rs, BuildOutput::parse and prev_build_output). Missing stdout
+/// or two possible layouts is a failure, never silently empty cfg/env output.
+fn recorded_output(out_dir: &Path) -> Result<String, String> {
+    let parent = out_dir.parent().ok_or("Cargo OUT_DIR has no parent")?;
+    let current = out_dir.to_str().ok_or("Cargo OUT_DIR is not UTF-8")?;
+    let candidates = [parent.join("output"), parent.join("run/stdout")];
+    let mut found = None;
+    for path in candidates {
+        let bytes = match std::fs::read(&path) {
+            Ok(text) => text,
+            Err(error) if error.kind() == std::io::ErrorKind::NotFound => continue,
+            Err(error) => return Err(format!("cannot read Cargo build-script output {}: {error}", path.display())),
+        };
+        let origin = path.parent().unwrap().join("root-output");
+        // Cargo also uses the current OUT_DIR when root-output cannot be read.
+        let previous = std::fs::read_to_string(&origin).unwrap_or_else(|_| current.to_owned());
+        let mut text = String::new();
+        // Cargo ignores non-UTF-8 lines and trims script output before parsing.
+        // Preserve these rules even when unrelated diagnostics contain bytes.
+        for line in bytes.split(|byte| *byte == b'\n').filter_map(|line| std::str::from_utf8(line).ok()).map(str::trim) {
+            if !line.starts_with("cargo:") { continue; }
+            let Some((key, value)) = line.split_once('=') else { continue };
+            text.push_str(key);
+            text.push('=');
+            text.push_str(&value.replace(&previous, current));
+            text.push('\n');
+        }
+        if found.replace(text).is_some() {
+            return Err("ambiguous Cargo build-script output layouts for the same OUT_DIR".into());
+        }
+    }
+    found.ok_or_else(|| format!("Cargo build-script output is missing for OUT_DIR {}", out_dir.display()))
+}
+
 /// Runs the build script through Cargo and builds a fresh record.
 /// `cargo check` already runs build scripts; its JSON messages name
-/// the OUT_DIR, and the script's stdout sits in the sibling `output`
-/// file Cargo keeps next to it. With `-vv`, Cargo also prints the
+/// the OUT_DIR, and `recorded_output` reads its saved stdout. With `-vv`, Cargo also prints the
 /// script's compile and run with the vars it set: the compile names its
 /// dep-info (the script crate's sources, the vars it read) and the run
 /// names rustc. The run is the cheap probe of `resolve::probe` (rustc runs
 /// only for build scripts and proc macros). Cargo runs with the client's
 /// whole `env` (Cargo passes its env on to the script), plus the vars the
 /// probe command sets for itself.
+#[cfg(not(feature = "exclusive-native"))]
 fn run_through_cargo(manifest_dir: &Path, script: &Path, cache_dir: &Path, env: ClientEnv) -> Result<Record, String> {
     // Cargo decides script freshness by mtime; an input edited within
     // the same filesystem timestamp tick as the last run can look
@@ -891,8 +964,7 @@ fn run_through_cargo(manifest_dir: &Path, script: &Path, cache_dir: &Path, env: 
     let Some(out_dir_path) = out_dir.filter(|d| !d.as_os_str().is_empty()) else {
         return Err("cargo check ran no build script for this manifest".to_string());
     };
-    let output_file = out_dir_path.parent().map(|p| p.join("output"));
-    let text = output_file.as_deref().and_then(|p| std::fs::read_to_string(p).ok()).unwrap_or_default();
+    let text = recorded_output(&out_dir_path)?;
     let parsed = parse_output(&text);
     // This package's script compile and run, as Cargo printed them.
     let printed = printed_commands(&stderr);
@@ -903,7 +975,7 @@ fn run_through_cargo(manifest_dir: &Path, script: &Path, cache_dir: &Path, env: 
         printed.iter().find(|(vars, argv)| ours(vars) && argv.windows(2).any(|w| w[0] == "--crate-name" && w[1] == "build_script_build"));
     let run = printed.iter().find(|(vars, argv)| {
         ours(vars)
-            && argv.first().is_some_and(|p| Path::new(p).file_name().is_some_and(|f| f.to_string_lossy().starts_with("build-script-")))
+            && argv.first().is_some_and(|p| Path::new(p).file_name().is_some_and(|f| f == "build_script_build" || f.to_string_lossy().starts_with("build-script-")))
     });
     let rustc = run.and_then(|(vars, _)| vars.iter().find(|(k, _)| k == "RUSTC")).map(|(_, v)| PathBuf::from(v));
     let dep = compile.and_then(|(_, argv)| compile_dep_info(argv, script));
@@ -960,6 +1032,43 @@ fn run_through_cargo(manifest_dir: &Path, script: &Path, cache_dir: &Path, env: 
 mod tests {
     use super::*;
 
+    #[test]
+    fn saved_stdout_tracks_cargo_relocation_and_requires_one_layout() {
+        let root = std::env::temp_dir().join(format!("lust-buildscript-layout-{}", std::process::id()));
+        std::fs::create_dir(&root).unwrap();
+        for (name, relative) in [("legacy", "output"), ("current", "run/stdout")] {
+            let unit = root.join(name);
+            let out = unit.join("out");
+            let stdout = unit.join(relative);
+            std::fs::create_dir_all(&out).unwrap();
+            std::fs::create_dir_all(stdout.parent().unwrap()).unwrap();
+            assert!(recorded_output(&out).unwrap_err().contains("missing"));
+            std::fs::write(&stdout, b"\xff non-UTF-8 noise\n  cargo::rustc-cfg=actual  \n").unwrap();
+            assert_eq!(parse_output(&recorded_output(&out).unwrap()).rustc_cfg, ["actual"]);
+            let binding = stdout.parent().unwrap().join("root-output");
+            std::fs::write(&binding, out.as_os_str().as_encoded_bytes()).unwrap();
+            assert_eq!(parse_output(&recorded_output(&out).unwrap()).rustc_cfg, ["actual"]);
+            std::fs::write(&stdout, "").unwrap();
+            assert_eq!(recorded_output(&out).unwrap(), "", "a bound empty script output is valid");
+            let old = unit.join("previous-out");
+            std::fs::write(&stdout, format!("cargo::rustc-env=BS_OUT={}/generated.rs\n", old.display())).unwrap();
+            std::fs::write(&binding, old.as_os_str().as_encoded_bytes()).unwrap();
+            assert_eq!(parse_output(&recorded_output(&out).unwrap()).rustc_env,
+                [("BS_OUT".into(), format!("{}/generated.rs", out.display()))]);
+        }
+        let unit = root.join("ambiguous");
+        let out = unit.join("out");
+        std::fs::create_dir_all(unit.join("run")).unwrap();
+        std::fs::create_dir(&out).unwrap();
+        for relative in ["output", "run/stdout"] {
+            let path = unit.join(relative);
+            std::fs::write(&path, "").unwrap();
+            std::fs::write(path.parent().unwrap().join("root-output"), out.as_os_str().as_encoded_bytes()).unwrap();
+        }
+        assert!(recorded_output(&out).unwrap_err().contains("ambiguous"));
+        std::fs::remove_dir_all(root).unwrap();
+    }
+
     /// Both directive spellings parse, and unrecorded keys are ignored.
     #[test]
     fn output_directives_parse() {
@@ -1014,7 +1123,9 @@ mod tests {
             output,
             compile: None,
         };
-        let back = Record::decode(&String::from_utf8(rec.encode()).unwrap()).unwrap();
+        let encoded = String::from_utf8(rec.encode()).unwrap();
+        assert!(Record::decode(&encoded.replacen("LBS5", "LBS4", 1)).is_none(), "a legacy certificate may describe silently lost directives");
+        let back = Record::decode(&encoded).unwrap();
         assert_eq!(
             (back.sources.clone(), back.inputs.clone(), back.setup, back.output_hash),
             (rec.sources.clone(), rec.inputs.clone(), rec.setup, rec.output_hash)
@@ -1022,6 +1133,7 @@ mod tests {
         assert_eq!((back.out_dir.clone(), back.output.clone()), (rec.out_dir.clone(), rec.output.clone()));
         let cache = dir.join("cache");
         assert_eq!(back.holds(&cache, Some(&base)), Holds::All, "unchanged inputs hold");
+        assert_eq!(back.holds(&cache, Some(&with("__CARGO_TEMPORARY_BUILD_DIR_NEW_LAYOUT_OPT_OUT", "1"))), Holds::No);
         // Env values come from the client's env, not this process's.
         assert_eq!(back.holds(&cache, Some(&with("LUST_BS_TEST_ENV", "1"))), Holds::No, "a client with the var set is stale");
         assert_eq!(back.holds(&cache, Some(&with("LUST_BS_TEST_ENV", ""))), Holds::No, "set to empty is not unset");
@@ -1049,6 +1161,7 @@ mod tests {
     /// re-runs exactly when something it read changed, and only then. The
     /// script appends a line to a log at each run.
     #[test]
+    #[cfg(not(feature = "exclusive-native"))]
     fn script_reruns_when_what_it_read_changes() {
         let root = std::env::temp_dir().join(format!("lust-buildscript-cargo-{}", std::process::id()));
         let _ = std::fs::remove_dir_all(&root);

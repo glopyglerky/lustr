@@ -2,7 +2,7 @@
 # Client tests: daemon autostart, the whole-request disk cache, and the release
 # handoff to Cargo/rustc. Run after `cargo build --release`.
 #   autostart: fresh dir, first build cold and standalone, second build served
-#              by the daemon (its binary loads libbase.so). Plus LUST_NO_DAEMON,
+#              by the daemon (its binary loads an immutable native base). Plus LUST_NO_DAEMON,
 #              a 4-way start race, a held daemon lock (no second daemon), and the
 #              idle timeout.
 #   temp:      the daemon temp dir dies with the daemon (SIGTERM, SIGINT, socket
@@ -72,10 +72,9 @@ cleanup() {
 }
 trap cleanup EXIT
 
-# loads_base <exe> : true when <exe> loads libbase.so, so a daemon built it. ldd output is
-# captured first: `ldd | grep -q` under pipefail fails when grep exits at the match and ldd
-# takes SIGPIPE on its next line (the `race` flake: the binary was right, the check was not).
-loads_base() { local out; out=$(ldd "$1" 2>/dev/null) && [[ $out == *libbase* ]]; }
+# Inspect actual Mach-O or ELF metadata. A missing tool, malformed binary or
+# wrong base is a failure even when the assertion expects a standalone build.
+check_base() { local name=$1 out; shift; if out=$(python3 "$root/scripts/native_dependencies.py" "$@" 2>&1); then ok "$name"; else bad "$name" "$out"; fi; }
 wait_socket() { # wait_socket <dir> : true when the daemon socket appears
   local i
   for i in $(seq 1 100); do [ -S "$(sock "$1")" ] && return 0; sleep 0.05; done
@@ -97,19 +96,11 @@ fresh() { # fresh <name> : a new dir with a hello.rs, prints its path
 d=$(fresh autostart); daemon_dirs+=("$d")
 (cd "$d" && "$lust" build hello.rs -o h1) >/dev/null 2>&1
 check "autostart: first build ok" test -x "$d/h1"
-if loads_base "$d/h1"; then
-  bad "autostart: first build is standalone" "loads libbase.so, so a daemon built it"
-else
-  ok "autostart: first build is standalone (cold)"
-fi
+check_base "autostart: first build is standalone (cold)" "$d/h1" --absent
 check "autostart: first build runs" test "$("$d/h1")" = "hello 42"
 check "autostart: daemon socket appears" wait_socket "$d"
 (cd "$d" && "$lust" build hello.rs -o h2) >/dev/null 2>&1
-if loads_base "$d/h2"; then
-  ok "autostart: second build served by the daemon"
-else
-  bad "autostart: second build served by the daemon" "no libbase.so in ldd output"
-fi
+check_base "autostart: second build served by the daemon" "$d/h2" --base-dir "$d/.lust-cache/bases" --owner "$(cat "$(sock "$d").lock")"
 check "autostart: second build runs" test "$("$d/h2")" = "hello 42"
 check "autostart: log file in cache dir" test -s "$d/.lust-cache/daemon.log"
 stop_daemon "$d"; sleep 0.3
@@ -134,11 +125,7 @@ printf two >"$d/data.txt"
 out2=$(cd "$d" && "$lust" run hello.rs 2>&1)
 check "warmedit: warm v2 sees new line and included file" test "$out2" = "3 two"
 (cd "$d" && LUST_NO_DAEMON=1 "$lust" build hello.rs -o hnd) >/dev/null 2>&1
-if loads_base "$d/hnd"; then
-  bad "LUST_NO_DAEMON: live daemon not used" "loads libbase.so, so the daemon built it"
-else
-  ok "LUST_NO_DAEMON: live daemon not used"
-fi
+check_base "LUST_NO_DAEMON: live daemon not used" "$d/hnd" --absent
 stop_daemon "$d"; sleep 0.3
 
 d=$(fresh race); daemon_dirs+=("$d")
@@ -149,7 +136,7 @@ for p in "${pids[@]}"; do wait "$p" || race_rc=1; done
 check "race: 4 concurrent first commands pass" test $race_rc -eq 0
 check "race: one daemon socket serves after" wait_socket "$d"
 (cd "$d" && "$lust" build hello.rs -o h) >/dev/null 2>&1
-if loads_base "$d/h"; then ok "race: warm build after the race"; else bad "race: warm build after the race" "no libbase.so"; fi
+check_base "race: warm build after the race" "$d/h" --base-dir "$d/.lust-cache/bases" --owner "$(cat "$(sock "$d").lock")"
 stop_daemon "$d"; sleep 0.3
 
 # The lock file is the single-daemon guarantee: whoever holds its flock owns the socket.

@@ -1,0 +1,241 @@
+{
+  "schema": "lustr-daemon-status-verification-v1",
+  "observed_date": "2026-11-19",
+  "base_commit": "5cd40fd313503d4a4fc935ee47ca7c05fce1471a",
+  "upstream_reference": "240e08d91d4aed0299639f6f11fd522912b248f9",
+  "native_tree": "87733d0513b953487fe22d2d401abe54e85309d9",
+  "necessity": "The shared decoder accepted status 256 or 512. Current Unix clients pass that integer to process::exit, whose low byte is zero. A malformed nonzero daemon status could be reported as successful compilation. Status 257 could become unrelated status 1.",
+  "change": "Validate status with u8::try_from before representing it as i32. Preserve 0..255 and all existing framing, ownership and terminal-failure behavior. No compiler rerun or complementary implementation was added.",
+  "compiler": {
+    "source": "5b7b37aefcb5b2fba3c2392bc9065b9e4602d494",
+    "rustc_sha256": "ca9d833d09469a534ca1449e71ca9961608409cdb257df96cf8035338fac28de",
+    "rustc_identity": "rustc 1.102.0-nightly (5b7b37aef 2026-11-08)\nbinary: rustc\ncommit-hash: 5b7b37aefcb5b2fba3c2392bc9065b9e4602d494\ncommit-date: 2026-11-08\nhost: x86_64-unknown-linux-gnu\nrelease: 1.102.0-nightly\nLLVM version: 23.1.5\n"
+  },
+  "compiled_inputs": {
+    "compiler/native/src/protocol.rs": {
+      "git_blob": "37040b0ae8f82698ea05ba33e8cce21c033ebbdd",
+      "sha256": "d75f400aee13e3bae3526a7a184850f914f922008fd0a2c448e189563f662e77"
+    },
+    "compiler/native/src/client.rs": {
+      "git_blob": "5a9cfb3f385dc3bbd827935e7afddde2bd4fec8e",
+      "sha256": "3d40b5098ca671e4b25d7a7a6a694e6876a7e7241a4989fe5715ac7bd2c0776c"
+    },
+    "src/main.rs": {
+      "git_blob": "794b4d1c6d5d99e57174638ac0c74de215024e7f",
+      "sha256": "ab7b63322fcfa9b74edf5afe2c1e8bb7fd5a0a7c048039bfc60d4c1ee356cb16"
+    },
+    "src/lib.rs": {
+      "git_blob": "8ef942b9fcc82ed1417a8ab859294f054c6c8612",
+      "sha256": "bce8a5629beea2074da04f257c937c3548f62496f958e3c20ab2d6821b6a9bff"
+    },
+    "src/host_runtime.rs": {
+      "git_blob": "748da275aba3250ca351c72dc850c771d63e4a1c",
+      "sha256": "8ebc63c1ac92252816cd2dd092c5b0fad528c1d3a0f479b3889a6b7204f0c223"
+    },
+    "tests/compiler_contract.rs": {
+      "git_blob": "2d9e5dfad46df844619aefbafca356a652b7e186",
+      "sha256": "8426cb1f623005ecbfa02e5c897ee5365e0e02ba0f0ccbdef45014cd0a77c496"
+    },
+    "tools/test-exclusive-entry.py": {
+      "git_blob": "981483ba11ecfec0c004b0300129047cfcc47c65",
+      "sha256": "8d95ad7c00193164d4bba08252ead95684eb824da25f8a1ae80a28f26edf670f"
+    }
+  },
+  "build_scope": {
+    "kind": "Focused direct rustc compilation of actual shared protocol, thin client, public entry and test targets; not the guarded product constructor.",
+    "test_build_identity": "0000000000000000",
+    "dependencies": "Public-entry and contract builds reused the individually hashed dependency rmeta/rlib artifacts accepted by the pinned SDK. Their source was not rebuilt during this focused check. Current root library, entry, thin client and test targets were compiled freshly. No native core or native library was rebuilt.",
+    "initial_setup_failures": [
+      "First public-entry compile exit 1 because only a metadata stub was supplied from split rlib output.",
+      "Second compile exit 1 because only rmeta was supplied without its rlib.",
+      "Third compile supplied both actual dependency artifacts and succeeded."
+    ],
+    "full_package_qualification": false
+  },
+  "artifact_sha256": {
+    "protocol-final": "ed14e392685380a009f1c4d8641fc9f3936813398ff7b58eb3c3411ed9ef84cc",
+    "restored-decoder-tests": "18bd23bda97f891eede64d28b045b7b579c26f1b0146026b495effcdc8300517",
+    "lust-client": "9f01f81bae7b55f332e97931ca356d1d77e8fd1120987909df2fe3605412e9df",
+    "lustr": "18697af9413015dadc72a1272e6d9ca721eaa5044acdfe82267da547b4a30282",
+    "liblustr_compiler.rlib": "02f8f01b221daac423b962afb363a77bfcfc4752796ed59d30a2c1c567c53a5a",
+    "entry-tests": "cb87bebe104da8fa08db7d6888711da50cc1d3c05af3577caada6b097a85b496",
+    "contract-tests": "96d70a49eb5e525f1f96c8fd0384229a26fda2e01b8aa55e70e0ff934d39e848"
+  },
+  "checks": {
+    "original_decoder_negative": {
+      "exit": 101,
+      "failed": 1,
+      "meaning": "Actual candidate protocol and controls with only the decoder expression restored to its original i32 conversion. The new negative control fails because 256 is admitted. This is a focused restored-defect control, not a rebuilt historical package.",
+      "source_sha256": "469f8b4fd1fa0bf136e6a534b29ee0fc6ceec5da87cbf2a76d176e6607b237fa"
+    },
+    "shared_protocol": {
+      "exit": 0,
+      "passed": 22,
+      "invalid_ordinary_and_mixed_statuses": [
+        256,
+        257,
+        512,
+        2147483647
+      ],
+      "positive_ordinary_statuses": [
+        0,
+        1,
+        2,
+        3,
+        101,
+        128,
+        134,
+        137,
+        143,
+        255
+      ]
+    },
+    "fresh_public_entry_tests": {
+      "exit": 0,
+      "passed": 34,
+      "ignored_child_fixture": 1
+    },
+    "fresh_contract_test_target": {
+      "exit": 0,
+      "passed": 23,
+      "ignored_installed_package_tests": 5
+    },
+    "public_process_controls": {
+      "exit": 0,
+      "passed": 37,
+      "scope": "Synthetic helper children check the real freshly compiled public entry; native signal remains SIGTERM, with one execution and no retry. They do not prove Rust language coverage."
+    },
+    "required_socket_contract": {
+      "exit": 101,
+      "failed": 1,
+      "failure": "UnixListener::bind returned EPERM before the first exchange. No real daemon exchange or new installed-package success is claimed.",
+      "new_hosted_cases": [
+        256,
+        512,
+        257
+      ],
+      "hosted_required": true,
+      "package_usage": "An existing package supplied only the core-file metadata used to form the expected test wire identity. The test stopped before any compiler or helper invocation."
+    }
+  },
+  "review": "Independent review found no blocker and required explicit positive failed-test and conventional signal-style exit-code coverage; those cases are included. Raw signal propagation is a separate process path and passed its synthetic public-entry control.",
+  "cost_analysis": "The decoder already performed one integer representability check. This changes its bound from i32 to u8 and adds no new lookup, allocation, source scan, compiler pass or subprocess. No latency measurement or speedup is claimed.",
+  "logs": [
+    {
+      "path": "original-decoder-negative.stdout.gz",
+      "original_sha256": "036f0ae58b323f0eb34fdbb6d9c6d1bc4f27246cd99831534d7181c538018431",
+      "stored_sha256": "e6e239d8344ba1b47bdfe53c7fba6ec18977afbf354252013d924eb0d4976d27",
+      "decoded_sha256": "036f0ae58b323f0eb34fdbb6d9c6d1bc4f27246cd99831534d7181c538018431"
+    },
+    {
+      "path": "original-decoder-negative.stderr.gz",
+      "original_sha256": "09719a9a68304c008b85c59e949de1eef60e3f71553085dfdfaad56472d8fc8e",
+      "stored_sha256": "124f107073e678893299ef74489052852f4568c4ec0249190a54f30915d4a64f",
+      "decoded_sha256": "5d4dee5b0afccd75a2eee3bfc4965b171d143d206c3433da3bcffe4af68f7d23"
+    },
+    {
+      "path": "protocol-tests.stdout.gz",
+      "original_sha256": "9ff5541f2d8bd03bc55c13bd6c780a29ec5b7ccb416bed0a865bb99a1399fcb4",
+      "stored_sha256": "edd078d69ee47bb1bd01446d38d35970a50ecf562ae450775cc6d346783df583",
+      "decoded_sha256": "9ff5541f2d8bd03bc55c13bd6c780a29ec5b7ccb416bed0a865bb99a1399fcb4"
+    },
+    {
+      "path": "protocol-tests.stderr.gz",
+      "original_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stored_sha256": "f61f27bd17de546264aa58f40f3aafaac7021e0ef69c17f6b1b4cd7664a037ec",
+      "decoded_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "entry-tests-attempt3.stdout.gz",
+      "original_sha256": "abc4d11917b3e607f2bf42090b1b17513f24eaab5d9cadaa9bf2ab3c9f198a20",
+      "stored_sha256": "f2f40f703c27f9927c71417ecdc8b3052ca0ac4027e00666ea6aafc1e069f306",
+      "decoded_sha256": "abc4d11917b3e607f2bf42090b1b17513f24eaab5d9cadaa9bf2ab3c9f198a20"
+    },
+    {
+      "path": "entry-tests-attempt3.stderr.gz",
+      "original_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stored_sha256": "f61f27bd17de546264aa58f40f3aafaac7021e0ef69c17f6b1b4cd7664a037ec",
+      "decoded_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "contract-tests-attempt3.stdout.gz",
+      "original_sha256": "8ea2615754364a8cc7d3ee069c02d1bc9bd521e5edb99324443651ef6036b7ab",
+      "stored_sha256": "ca69beffb0e9a8b5b6f6e03d9d4776b1043a6c398dbe3809f7730504cf49e21a",
+      "decoded_sha256": "8ea2615754364a8cc7d3ee069c02d1bc9bd521e5edb99324443651ef6036b7ab"
+    },
+    {
+      "path": "contract-tests-attempt3.stderr.gz",
+      "original_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stored_sha256": "f61f27bd17de546264aa58f40f3aafaac7021e0ef69c17f6b1b4cd7664a037ec",
+      "decoded_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "entry-compile.stderr.gz",
+      "original_sha256": "886697e75a8e0e3615e5c0974c246e1e49ccb52957986accd6a4f16672b4fb43",
+      "stored_sha256": "0ff5e96daa7dbc1c4cc9e49a6f70c64ee52f2714f6ba2854dbad3129bafb0b6f",
+      "decoded_sha256": "886697e75a8e0e3615e5c0974c246e1e49ccb52957986accd6a4f16672b4fb43"
+    },
+    {
+      "path": "entry-compile-attempt2.stderr.gz",
+      "original_sha256": "09c199ef8ee0523e5d93e934f06e8277edb385f367b1a809c4a285168541b566",
+      "stored_sha256": "fd6206447188842ea5cc89713e4a13ad866318c039ee57c86cc0e8d0438834f5",
+      "decoded_sha256": "09c199ef8ee0523e5d93e934f06e8277edb385f367b1a809c4a285168541b566"
+    },
+    {
+      "path": "required-socket.stdout.gz",
+      "original_sha256": "8ffcfe6a0bac75435fb93a1cc987f8e86474baa935e4857d22327386cdf4d349",
+      "stored_sha256": "c12694d7071cd91a43463986f2b29aafe0d1322b77491449506d6669a7790107",
+      "decoded_sha256": "8ffcfe6a0bac75435fb93a1cc987f8e86474baa935e4857d22327386cdf4d349"
+    },
+    {
+      "path": "required-socket.stderr.gz",
+      "original_sha256": "8f37b5b4bd245d3cfa6a589e306656de14842675669e1445c861b073ef35294d",
+      "stored_sha256": "25710d182f8e5d3a412c28549d6edb9aa8e58ad7925d1e0f421c4111a50d1960",
+      "decoded_sha256": "8f37b5b4bd245d3cfa6a589e306656de14842675669e1445c861b073ef35294d"
+    },
+    {
+      "path": "exclusive-entry-controls.json",
+      "original_sha256": "fd9ca0a43f4ce0783b324f8a540bf4e106efe387b4c70fdbfb5df418a3bc5df8",
+      "stored_sha256": "b8142bc03991be5db1771315684e7f377e87f8bfe2dcbe820fbc2965dc2641b5"
+    }
+  ],
+  "full_rust_coverage": false,
+  "performance_qualified": false,
+  "no_std_qualified": false,
+  "socket_independent_retained_compiler": false,
+  "release_admission": false,
+  "reused_dependency_artifacts": {
+    "libblock_buffer-a1fa8153824ca697.rlib": "d76ed33444f52f081e076242ccdb443f05695d3e92ad0b33907d7c18b491182e",
+    "libblock_buffer-a1fa8153824ca697.rmeta": "a1a52694a0068de4463df05da49a3e7320a53ed8051dad82ebd9433bef8bf26a",
+    "libcfg_if-f578df7bec3f8039.rlib": "f16cf8500f42bf6e266d3a2fbd4bfd6e02b42316d9b50d80e8ce5f48a14d19e9",
+    "libcfg_if-f578df7bec3f8039.rmeta": "a4b4dc48d80d7b6faf17d1aae18b1ebaf3101dd18d1d3f01b9a75b6791dc1f07",
+    "libconst_oid-93d2470d9744bb12.rlib": "45e1eef8c9ce26c2127d40e181fb03f47936c99d786644493cc674c32d8e650d",
+    "libconst_oid-93d2470d9744bb12.rmeta": "c5f9e4cb44152bc1ce0f8a3ba74254cb81b6f255a0cce314536d6c727e6404eb",
+    "libcpufeatures-3581b4d384546a9f.rlib": "5f83756705efbafdbf3aebb4209e225e275df7bf7121e483192735b7fd60c3e5",
+    "libcpufeatures-3581b4d384546a9f.rmeta": "4e7d6c24f457be9272a26a965a8599e019fa1cf9d6ae84dbcb2bd435ef2a19e6",
+    "libcrypto_common-54dd04a8f1f4bc3e.rlib": "6fdcc16c1daa890cd09940771e228fefe884b52e2bcdb6d4593d3e6fbe94b186",
+    "libcrypto_common-54dd04a8f1f4bc3e.rmeta": "f63beaf6ce6ba7fcc03ecb5fde8ffa772627b3a87bf9da671b87313b37288b4e",
+    "libdigest-9bcf77fc1d432122.rlib": "52048dc8552b93241fee82eef4f0df8dc4baec194804bdd3db6a7463e0f59d36",
+    "libdigest-9bcf77fc1d432122.rmeta": "d9bc2cda964b7b0480bb6f822a3f2610a5f0d993444e4700056954553333bf90",
+    "libhybrid_array-55dd6e38d0c9f109.rlib": "917942027293664bb3c21b7f6ec6f58ff2f60f48bdf678f9a1f02b774145d1e5",
+    "libhybrid_array-55dd6e38d0c9f109.rmeta": "7f662f73637ca0b14bb89cc7734828d0ec3d2466e0cb4546f6f43fe83d0ba67d",
+    "libitoa-1da1330258cc3ba0.rlib": "7e9304d919a831ab01632c21cf52cb14a13fec5b0301e2f4de2cc222e91b5b63",
+    "libitoa-1da1330258cc3ba0.rmeta": "dbe5615d83af1cd9bbf290e46f54f09a437d9844123cabcfa21bd4378e607e22",
+    "libmemchr-f0873e45d5bb7305.rlib": "1a5d5e1f0bbb792e3009c16baaa58a3b98c90d672537dc430d9b3d1a4a15a7b9",
+    "libmemchr-f0873e45d5bb7305.rmeta": "4ad52ba6f43bedc9140e329b4cea1d00606ec50b177386a919e0b371b7bd198f",
+    "libserde_core-4e08b5a8c61caf8f.rlib": "20ca3f53a5492bc6e51211e5bf6990d93ccb4788d7dcc6a84d6d6cc297eb7be0",
+    "libserde_core-4e08b5a8c61caf8f.rmeta": "876c94024913f36034a8597702c65c86b1e1a91fa4309f88653d47d982577d0a",
+    "libserde_json-6b805ddb942bf48b.rlib": "99c058998c447f42fbf84fd41725b88d95b5ab4e40164f36e0450fef0f6ce4aa",
+    "libserde_json-6b805ddb942bf48b.rmeta": "1ba2cc5724d16a5822ca10913951d4ba1ec853efd6902ba44191809bc75ad655",
+    "libsha2-58071776cab3bbf5.rlib": "8ef68f1fd33472f19f629929d1710a5e21446646f3750fdf288800dc7498cd88",
+    "libsha2-58071776cab3bbf5.rmeta": "2beb2ecfceda891d6c3e35ab8616c5e4e6a2515b84c7ffe1bad9d4e44c57cb60",
+    "libtypenum-f8505dba18979860.rlib": "625130b405a327b7cbb0f23cfd01dad539df74aea51ac1aa63f3e40abf24651b",
+    "libtypenum-f8505dba18979860.rmeta": "933a60ac19648c0c1f2fb31d16e26c51fb71c48a54adfdd08114d2ca959a540b",
+    "libzmij-1760fa5599485a8d.rlib": "3f8fb418f17502a6f22dccb0d32fc4dc9134f50e01ca8d7a82273c40c7255cfd",
+    "libzmij-1760fa5599485a8d.rmeta": "67f797399e72f7b244731c551ed205fbf0035de2664ff5eb67261b7ce7a7614f"
+  },
+  "command_record": {
+    "path": "commands.json",
+    "sha256": "9794799b7434d294ed85188a909abd5543193a51b7084c2ddfdb9b009c14336e"
+  }
+}

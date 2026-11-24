@@ -45,7 +45,7 @@ impl Duration {
         } else {
             let secs = match secs.checked_add((nanos / NANOS_PER_SEC) as u64) {
                 Some(s) => s,
-                None => panic!("overflow in Duration::new"), //@ core/src/time.rs:201:18
+                None => panic!("adding carry-over seconds from nanoseconds should not exceed u64::MAX"), //@ core/src/time.rs:283:18
             };
             let nanos = nanos % NANOS_PER_SEC;
             Duration { secs, nanos }
@@ -86,14 +86,14 @@ impl Duration {
 
     pub const fn from_hours(hours: u64) -> Duration {
         if hours > u64::MAX / (SECS_PER_MINUTE * MINS_PER_HOUR) {
-            panic!("overflow in Duration::from_hours"); //@ core/src/time.rs:424:13
+            panic!("overflow in Duration::from_hours"); //@ core/src/time.rs:512:13
         }
         Duration::from_secs(hours * MINS_PER_HOUR * SECS_PER_MINUTE)
     }
 
     pub const fn from_mins(mins: u64) -> Duration {
         if mins > u64::MAX / SECS_PER_MINUTE {
-            panic!("overflow in Duration::from_mins"); //@ core/src/time.rs:452:13
+            panic!("overflow in Duration::from_mins"); //@ core/src/time.rs:542:13
         }
         Duration::from_secs(mins * SECS_PER_MINUTE)
     }
@@ -224,14 +224,14 @@ impl Duration {
     pub fn from_secs_f64(secs: f64) -> Duration {
         match Duration::try_from_secs_f64(secs) {
             Ok(v) => v,
-            Err(e) => panic!("{}", e), //@ core/src/time.rs:962:23
+            Err(e) => panic!("{}", e), //@ core/src/time.rs:1052:23
         }
     }
 
     pub fn from_secs_f32(secs: f32) -> Duration {
         match Duration::try_from_secs_f32(secs) {
             Ok(v) => v,
-            Err(e) => panic!("{}", e), //@ core/src/time.rs:999:23
+            Err(e) => panic!("{}", e), //@ core/src/time.rs:1089:23
         }
     }
 
@@ -373,7 +373,7 @@ impl Duration {
 impl core::ops::Add for Duration {
     type Output = Duration;
     fn add(self, rhs: Duration) -> Duration {
-        self.checked_add(rhs).expect("overflow when adding durations") //@ core/src/time.rs:1257:31
+        self.checked_add(rhs).expect("adding durations should not exceed u64::MAX") //@ core/src/time.rs:1397:31
     }
 }
 
@@ -386,7 +386,7 @@ impl core::ops::AddAssign for Duration {
 impl core::ops::Sub for Duration {
     type Output = Duration;
     fn sub(self, rhs: Duration) -> Duration {
-        self.checked_sub(rhs).expect("overflow when subtracting durations") //@ core/src/time.rs:1277:31
+        self.checked_sub(rhs).expect("subtracting durations should not be negative") //@ core/src/time.rs:1417:31
     }
 }
 
@@ -399,7 +399,7 @@ impl core::ops::SubAssign for Duration {
 impl core::ops::Mul<u32> for Duration {
     type Output = Duration;
     fn mul(self, rhs: u32) -> Duration {
-        self.checked_mul(rhs).expect("overflow when multiplying duration by scalar") //@ core/src/time.rs:1297:31
+        self.checked_mul(rhs).expect("multiplying duration by scalar should not exceed u64::MAX") //@ core/src/time.rs:1437:31
     }
 }
 
@@ -420,7 +420,7 @@ impl core::ops::Div<u32> for Duration {
     type Output = Duration;
     #[track_caller]
     fn div(self, rhs: u32) -> Duration {
-        self.checked_div(rhs).expect("divide by zero error when dividing duration by scalar")
+        self.checked_div(rhs).expect("divisor should not be zero")
     }
 }
 

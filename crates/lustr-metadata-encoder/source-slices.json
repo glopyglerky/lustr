@@ -1,0 +1,1104 @@
+{
+  "schema": "lustr-original-source-slices-v1",
+  "revision": "5b7b37aefcb5b2fba3c2392bc9065b9e4602d494",
+  "sources": [
+    {
+      "destination": "src/upstream/int_overflow.rs",
+      "source": "compiler/rustc_serialize/src/int_overflow.rs",
+      "source_sha256": "8ac274897ec3ddbb6265b96829df9d21ed4670b8d2b3b9d4de155ce24a7259ed",
+      "sections": [
+        "DebugStrictAdd",
+        "impl_debug_strict_add"
+      ],
+      "adaptation": "Only the encoder-required addition helper; subtraction is not imported.",
+      "semantic_owner": "required metadata serializer dependency",
+      "necessity": "Required for encoding completed native scalar-library facts consumed by the shared retained native artifact service and separate research qualifier. See README.md for the admitted record scope and excluded closures."
+    },
+    {
+      "destination": "src/upstream/leb128.rs",
+      "source": "compiler/rustc_serialize/src/leb128.rs",
+      "source_sha256": "3323ed9adf7b14a8e5214e569a7c211c5099327d17066c63606920b6575abf55",
+      "sections": [
+        "max_leb128_len",
+        "largest_max_leb128_len",
+        "impl_write_unsigned_leb128",
+        "impl_write_signed_leb128"
+      ],
+      "adaptation": "Encoder-only extraction; decoder and its dependencies are excluded; module import adjusted.",
+      "semantic_owner": "required metadata serializer dependency",
+      "necessity": "Required for encoding completed native scalar-library facts consumed by the shared retained native artifact service and separate research qualifier. See README.md for the admitted record scope and excluded closures."
+    },
+    {
+      "destination": "src/upstream/codec.rs",
+      "source": "compiler/rustc_serialize/src/serialize.rs",
+      "source_sha256": "e3a1208be1cddade8b4de2ca7776be03e8f96621c42dc311a1fa46fc20995c57",
+      "sections": [
+        "Encoder scalar/string/byte methods",
+        "STR_SENTINEL",
+        "BYTE_STR_SENTINEL"
+      ],
+      "adaptation": "Only scalar/string encoding interface; hash-map ordering and all decoder/collection adapters are excluded.",
+      "semantic_owner": "required metadata serializer dependency",
+      "necessity": "Required for encoding completed native scalar-library facts consumed by the shared retained native artifact service and separate research qualifier. See README.md for the admitted record scope and excluded closures."
+    },
+    {
+      "destination": "src/upstream/mem_encoder.rs",
+      "source": "compiler/rustc_serialize/src/opaque/mem_encoder.rs",
+      "source_sha256": "2ac5315770b11c0d7dc45aa8769d96dee66fb71286116e7ca10a7872c1aee206",
+      "sections": [
+        "MemEncoder",
+        "write_leb128",
+        "impl Encoder for MemEncoder"
+      ],
+      "adaptation": "Module imports adjusted; generic Encodable specialization and unused fixed-size wrapper excluded.",
+      "semantic_owner": "required metadata serializer dependency",
+      "necessity": "Required for encoding completed native scalar-library facts consumed by the shared retained native artifact service and separate research qualifier. See README.md for the admitted record scope and excluded closures."
+    },
+    {
+      "destination": "src/upstream/schema.rs",
+      "source": "compiler/rustc_metadata/src/rmeta/mod.rs",
+      "source_sha256": "d6d5d627a4876ddd5d371c2260f0d68303f1e483a5209fcace3893765bfd5948",
+      "sections": [
+        "define_tables! field order",
+        "CrateRoot field order",
+        "METADATA_HEADER v12"
+      ],
+      "adaptation": "Schema names/order extracted exactly; TyCtxt-bound semantic payload types are replaced by the checked native adapter, not imported.",
+      "semantic_owner": "required metadata serializer dependency",
+      "necessity": "Required for encoding completed native scalar-library facts consumed by the shared retained native artifact service and separate research qualifier. See README.md for the admitted record scope and excluded closures."
+    },
+    {
+      "destination": "src/identity.rs",
+      "source": "compiler/rustc_span/src/def_id.rs",
+      "source_sha256": "6f40f30da61a682ceb75898f2b021bff0c75e438824f9860d612043ce3168b1e",
+      "sections": [
+        "StableCrateId::new"
+      ],
+      "adaptation": "Create original Rust crate identity from actual name, metadata and pinned cfg_version. One original metadata argument is already sorted and unique; forced mutable environment versions are excluded from this seam.",
+      "semantic_owner": "metadata definition identity",
+      "necessity": "Required for encoding completed native scalar-library facts consumed by the shared retained native artifact service and separate research qualifier. See README.md for the admitted record scope and excluded closures."
+    },
+    {
+      "destination": "src/identity.rs",
+      "source": "compiler/rustc_hir_id/src/definitions.rs",
+      "source_sha256": "c7671deb7d71875550849144d257d9a2ef5bde6ed2dad57b9dbdfab999e21913",
+      "sections": [
+        "DefPathData",
+        "DefKey::compute_stable_hash",
+        "Definitions::new",
+        "Definitions::allocate"
+      ],
+      "adaptation": "Keep all DefPathData discriminants, original parent/name/disambiguator hash and root hash. Native IDs are mapped, never cast. Collisions fail. Only actual flat ordinary function definitions are allocated.",
+      "semantic_owner": "metadata definition identity",
+      "necessity": "Required for encoding completed native scalar-library facts consumed by the shared retained native artifact service and separate research qualifier. See README.md for the admitted record scope and excluded closures."
+    },
+    {
+      "destination": "src/identity.rs",
+      "source": "compiler/rustc_hashes/src/lib.rs",
+      "source_sha256": "ecb7777ffca8e89ad7056cc864771983a3eb4384049d739fbd5b562ed2d53850",
+      "sections": [
+        "Hash64",
+        "impl FromStableHash for Hash64"
+      ],
+      "adaptation": "Preserve the first-word stable-hash conversion without importing unrelated compiler tables.",
+      "semantic_owner": "required identity dependency",
+      "necessity": "Required for encoding completed native scalar-library facts consumed by the shared retained native artifact service and separate research qualifier. See README.md for the admitted record scope and excluded closures."
+    },
+    {
+      "destination": "src/identity.rs",
+      "source": "compiler/rustc_symbol_mangling/src/v0.rs",
+      "source_sha256": "f26c3b2bd0a18147b2f359489810302d90616b5aa19c4ae78903f9573dc138c6",
+      "sections": [
+        "V0SymbolMangler::push_disambiguator_fixed_len",
+        "V0SymbolMangler::path_append_ns",
+        "Printer::print_crate_name",
+        "Printer::print_path_with_simple",
+        "push_ident"
+      ],
+      "adaptation": "Specialize to actual flat ValueNs Item instances with no generic arguments. Preserve original fixed-width crate disambiguator and ASCII identifier operations. No export_name attribute is fabricated.",
+      "semantic_owner": "metadata/object symbol identity",
+      "necessity": "Required for encoding completed native scalar-library facts consumed by the shared retained native artifact service and separate research qualifier. See README.md for the admitted record scope and excluded closures."
+    },
+    {
+      "destination": "src/identity.rs",
+      "source": "compiler/rustc_data_structures/src/base_n.rs",
+      "source_sha256": "090d62952cb4515c9de66489d6ce0e0f3cd5c3becd7e8e2c2bf39d119d4f9890",
+      "sections": [
+        "ToBaseN::to_base_fixed_len",
+        "ToBaseN::to_base"
+      ],
+      "adaptation": "Specialize original arithmetic to the u64/base62 disambiguator used above.",
+      "semantic_owner": "required symbol dependency",
+      "necessity": "Required for encoding completed native scalar-library facts consumed by the shared retained native artifact service and separate research qualifier. See README.md for the admitted record scope and excluded closures."
+    },
+    {
+      "destination": "src/upstream/odht_writer.rs",
+      "source": "compiler/rustc_hir_id/src/def_path_hash_map.rs",
+      "source_sha256": "0522049def17b2652dc8219fbcab1a69b1bad41e68d9c6f1330613f83efd1c16",
+      "sections": [
+        "Config"
+      ],
+      "adaptation": "Preserve original u64/u32 on-disk map configuration in the required ODHT writer-only extraction; mapped identities retain original layout.",
+      "semantic_owner": "required definition-map dependency",
+      "necessity": "Required for encoding completed native scalar-library facts consumed by the shared retained native artifact service and separate research qualifier. See README.md for the admitted record scope and excluded closures."
+    },
+    {
+      "destination": "src/table.rs",
+      "source": "compiler/rustc_metadata/src/rmeta/table.rs",
+      "source_sha256": "5573eb11e1141d3c5c6cb54ed1e8908b2e6d4d5ed871d525691ba09b50951039",
+      "sections": [
+        "TableBuilder::set",
+        "TableBuilder::encode",
+        "encode_interleaved",
+        "trailing_zeros"
+      ],
+      "adaptation": "Preserve sparse/dense threshold, widths, bitmap/base indexes and interleaved fixed-size lazy records. Replace generic IndexVec with bounded mapped-index Vec; all supported row encodings fit original sixteen-byte maximum.",
+      "semantic_owner": "metadata serialization",
+      "necessity": "Required for encoding completed native scalar-library facts consumed by the shared retained native artifact service and separate research qualifier. See README.md for the admitted record scope and excluded closures."
+    },
+    {
+      "destination": "src/encode.rs",
+      "source": "compiler/rustc_metadata/src/rmeta/encoder.rs",
+      "source_sha256": "7f740fbaf9e81f4d518a95eeab485059c4f1a88c636df3104af03ec2817f5b73",
+      "sections": [
+        "EncodeContext::emit_lazy_distance",
+        "EncodeContext::lazy",
+        "EncodeContext::lazy_array",
+        "SpanEncoder",
+        "SpanData::encode",
+        "EncodeContext::encode_symbol_or_byte_symbol",
+        "EncodeContext::encode_def_path_table",
+        "EncodeContext::encode_def_ids",
+        "EncodeContext::encode_info_for_mod",
+        "EncodeContext::encode_exported_symbols",
+        "EncodeContext::encode_hygiene",
+        "EncodeContext::encode_source_map",
+        "EncodeContext::encode_crate_root",
+        "with_encode_metadata_header",
+        "encode_metadata CrateHeader stub branch",
+        "with_encode_metadata_header tracked-option SVH supplement"
+      ],
+      "adaptation": "Use native completion records instead of semantic query access. Keep original scalar serialization and complete v12 schema. No consumer TyCtxt, Rust parser/checker/MIR or analysis success override exists. Text/offset symbol encoding has no predefined Rust interner IDs. Native checked source/request/object/SDK identities replace the HIR supplement in the original metadata hash algorithm. Wider types/declarations/attributes/profiles remain unintegrated. Split layout retains a full standalone metadata record and emits only the original CrateHeader stub in the archive, with unhashed position zero and the same full SVH. The unstable embedding Option<bool> is represented as absent/true/false in the native supplement; no second native analysis or separate stub hash is used.",
+      "semantic_owner": "metadata serialization of Lust-owned completed facts",
+      "necessity": "Required for encoding completed native scalar-library facts consumed by the shared retained native artifact service and separate research qualifier. See README.md for the admitted record scope and excluded closures."
+    },
+    {
+      "destination": "src/encode.rs",
+      "source": "compiler/rustc_type_ir/src/serialize.rs",
+      "source_sha256": "07e8822b0085cf70451933d283108f9c4675160e65ca30af10b3793a273d3d4f",
+      "sections": [
+        "impl_binder_encode_decode",
+        "Encodable for Binder<I,GenericArgs>"
+      ],
+      "adaptation": "Preserve bound-vars-before-value encoding; bound variables and generic args are actually absent in the private completed scope.",
+      "semantic_owner": "required scalar signature encoding",
+      "necessity": "Required for encoding completed native scalar-library facts consumed by the shared retained native artifact service and separate research qualifier. See README.md for the admitted record scope and excluded closures."
+    },
+    {
+      "destination": "src/encode.rs",
+      "source": "compiler/rustc_type_ir/src/ty_kind.rs",
+      "source_sha256": "8973a42d1f7f600090e57a78a8aa5ad5e5a219741dc9d78f318c6083246c69f4",
+      "sections": [
+        "TyKind",
+        "FnSig",
+        "FnSigKind"
+      ],
+      "adaptation": "Use original Uint(U64)/FnDef discriminants and safe Rust packed signature fields from native primitive signatures. No fake TypeckResults or typed bodies are constructed.",
+      "semantic_owner": "required scalar type encoding",
+      "necessity": "Required for encoding completed native scalar-library facts consumed by the shared retained native artifact service and separate research qualifier. See README.md for the admitted record scope and excluded closures."
+    },
+    {
+      "destination": "src/encode.rs",
+      "source": "compiler/rustc_ast_ir/src/lib.rs",
+      "source_sha256": "78e0296201acd1ad1f15870dec3bad3e931a9dd2b8cb16bcfb47a7dcd545e6b6",
+      "sections": [
+        "UintTy"
+      ],
+      "adaptation": "Preserve original UintTy::U64 ordinal.",
+      "semantic_owner": "required scalar type encoding",
+      "necessity": "Required for encoding completed native scalar-library facts consumed by the shared retained native artifact service and separate research qualifier. See README.md for the admitted record scope and excluded closures."
+    },
+    {
+      "destination": "src/encode.rs",
+      "source": "compiler/rustc_abi/src/extern_abi.rs",
+      "source_sha256": "89e07c83cf6a79dbe68ad2d013efdb04f07f7c31d4ab70d7e95e5cfbad7ddf6f",
+      "sections": [
+        "abi_impls",
+        "ExternAbi::as_packed"
+      ],
+      "adaptation": "Preserve original packed Rust ABI value in FnSigKind; actual artifact convention requires downstream runtime qualification.",
+      "semantic_owner": "required scalar ABI representation",
+      "necessity": "Required for encoding completed native scalar-library facts consumed by the shared retained native artifact service and separate research qualifier. See README.md for the admitted record scope and excluded closures."
+    },
+    {
+      "destination": "src/encode.rs",
+      "source": "compiler/rustc_middle/src/ty/generics.rs",
+      "source_sha256": "50af849cd9489f758d8dbe3e9b49f71c1603280652eb38fb09831ee667980c8a",
+      "sections": [
+        "Generics",
+        "GenericClauses"
+      ],
+      "adaptation": "Preserve original field sequence for actually empty generic/where/lifetime records. Wider obligations cannot be admitted by supplying defaults.",
+      "semantic_owner": "required declaration encoding",
+      "necessity": "Required for encoding completed native scalar-library facts consumed by the shared retained native artifact service and separate research qualifier. See README.md for the admitted record scope and excluded closures."
+    },
+    {
+      "destination": "src/encode.rs",
+      "source": "compiler/rustc_middle/src/middle/codegen_fn_attrs.rs",
+      "source_sha256": "3bf664a6681ef8c0991dae37da128c2b3ce67560fb81d0ffe893f046d741acab",
+      "sections": [
+        "CodegenFnAttrs",
+        "CodegenFnAttrs::new",
+        "SanitizerFnAttrs::default"
+      ],
+      "adaptation": "Original attribute field order/defaults apply only because native completion establishes no attributes and requested profile admits no overriding mode.",
+      "semantic_owner": "required declaration encoding",
+      "necessity": "Required for encoding completed native scalar-library facts consumed by the shared retained native artifact service and separate research qualifier. See README.md for the admitted record scope and excluded closures."
+    },
+    {
+      "destination": "src/encode.rs",
+      "source": "compiler/rustc_attr_ir/src/encode_cross_crate.rs",
+      "source_sha256": "75822b55d4aee20495d6fdca87bd810ba6d5a382ce0f36f56411d6ca3b16ccfb",
+      "sections": [
+        "AttributeKind::encode_cross_crate"
+      ],
+      "adaptation": "Original NoStd=>No explains its absent cross-crate payload. Original no_std source/core semantics are retained, never rewritten to no_core.",
+      "semantic_owner": "required root-attribute policy",
+      "necessity": "Required for encoding completed native scalar-library facts consumed by the shared retained native artifact service and separate research qualifier. See README.md for the admitted record scope and excluded closures."
+    },
+    {
+      "destination": "src/encode.rs",
+      "source": "compiler/rustc_codegen_ssa/src/back/symbol_export.rs",
+      "source_sha256": "75e01be382f01e791e71d7ede5bc8f3430902b4efebf269f50aead67bd7d0f1f",
+      "sections": [
+        "reachable_non_generics_helper",
+        "exported_non_generic_symbols_provider_local",
+        "exported_non_generic_symbols_helper",
+        "exported_generic_symbols_provider_local"
+      ],
+      "adaptation": "Specialize original filters to completed ordinary nonconst nongeneric Item functions at actual opt0. Public effective visibility determines link exports. Link input still requires actual emitted instances for every definition. The original provider guards return no exports for metadata-only requests, which carry checked declarations but no emission inputs.",
+      "semantic_owner": "shared symbol-export service",
+      "necessity": "Required for encoding completed native scalar-library facts consumed by the shared retained native artifact service and separate research qualifier. See README.md for the admitted record scope and excluded closures."
+    },
+    {
+      "destination": "src/encode.rs",
+      "source": "compiler/rustc_resolve/src/late/weak_lang_items.rs",
+      "source_sha256": "ad42f79421494be53258e42570877f91c2c162ade987fa317a514cb1c941cc42",
+      "sections": [
+        "check_crate"
+      ],
+      "adaptation": "Retain the original EhPersonality absence record for the completed no_std leaf and pinned core/builtins closure. The paired original Rust readers verify that these artifacts have no personality definition.",
+      "semantic_owner": "Bounded shared crate metadata for original weak language item absence",
+      "necessity": "The pinned Rust loader carries missing weak language items into downstream checks and linking. Absence of a definition does not mean absence of that metadata record."
+    },
+    {
+      "destination": "src/encode.rs",
+      "source": "compiler/rustc_attr_ir/src/lang_items.rs",
+      "source_sha256": "f1aae4e6441ad2cf7958eac9298472d905e56751efc95f92b821d4fbb3763056",
+      "sections": [
+        "LangItem::EhPersonality"
+      ],
+      "adaptation": "Encode the observed pinned EhPersonality ordinal with the existing metadata scalar encoding.",
+      "semantic_owner": "Bounded Rust language item wire identity",
+      "necessity": "The original CrateRoot missing array must carry the exact pinned discriminator."
+    },
+    {
+      "destination": "src/encode.rs",
+      "source": "compiler/rustc_macros/src/serialize.rs",
+      "source_sha256": "d66ecd236e201c1e80f3a04ba0d32ef6600ce6d4f6c81b4506111bab84700bd5",
+      "sections": [
+        "Encodable enum discriminator"
+      ],
+      "adaptation": "Use the original single-byte discriminator for LangItem, whose pinned variant count is below 255.",
+      "semantic_owner": "Bounded Rust language item discriminator encoding",
+      "necessity": "The record must preserve the original Rust encoding width as well as the discriminator value."
+    },
+    {
+      "destination": "src/encode.rs",
+      "source": "compiler/rustc_passes/src/check_export.rs",
+      "source_sha256": "9f60f3670082473b04c95987594f2008d78c0b530b3c07393ad9306326b7f154",
+      "sections": [
+        "exportable_items_provider_local"
+      ],
+      "adaptation": "Original sdylib-only guard makes exportable_items empty for this actual rlib request, independently of ordinary Rust symbol exports.",
+      "semantic_owner": "required crate metadata policy",
+      "necessity": "Required for encoding completed native scalar-library facts consumed by the shared retained native artifact service and separate research qualifier. See README.md for the admitted record scope and excluded closures."
+    },
+    {
+      "destination": "src/encode.rs",
+      "source": "compiler/rustc_mir_transform/src/cross_crate_inline.rs",
+      "source_sha256": "0b5db10a20998a4d9bec83ee91e376d79414c124a05b43c8605d6d4720c05ec0",
+      "sections": [
+        "cross_crate_inlinable"
+      ],
+      "adaptation": "Actual requested opt0, no MIR inlining/always-encode override and nonconst/noninline/non-generic functions do not require encoded MIR. No compiler flag is rewritten.",
+      "semantic_owner": "required metadata MIR policy",
+      "necessity": "Required for encoding completed native scalar-library facts consumed by the shared retained native artifact service and separate research qualifier. See README.md for the admitted record scope and excluded closures."
+    },
+    {
+      "destination": "src/encode.rs",
+      "source": "compiler/rustc_mir_transform/src/ffi_unwind_calls.rs",
+      "source_sha256": "c3f083c0eb82ec2256d3f186a7719c31c528497d53371da3321d5509ec2767f9",
+      "sections": [
+        "required_panic_strategy"
+      ],
+      "adaptation": "An actual abort request requires Some(Abort). An unwind-profile check of a completed scalar crate has no required panic strategy because the admitted declarations and checked call graph contain no FFI-unwind calls or panic runtime.",
+      "semantic_owner": "required panic metadata policy",
+      "necessity": "Required for encoding completed native scalar-library facts consumed by the shared retained native artifact service and separate research qualifier. See README.md for the admitted record scope and excluded closures."
+    },
+    {
+      "destination": "src/encode.rs",
+      "source": "compiler/rustc_span/src/hygiene.rs",
+      "source_sha256": "86a49903b158f4547665773e03d83791a819f60fac616fd413ffdeca2d1471da",
+      "sections": [
+        "HygieneData::new",
+        "ExpnData",
+        "ExpnData::default"
+      ],
+      "adaptation": "Encode actual root expansion record and original zero root expansion hash. Macro/non-root context completion remains excluded.",
+      "semantic_owner": "required source hygiene encoding",
+      "necessity": "Required for encoding completed native scalar-library facts consumed by the shared retained native artifact service and separate research qualifier. See README.md for the admitted record scope and excluded closures."
+    },
+    {
+      "destination": "src/encode.rs",
+      "source": "compiler/rustc_span/src/lib.rs",
+      "source_sha256": "9682c3b7d227039f040afff82aae4d2fd8133692bc9ef84f0974323f8a0acca0",
+      "sections": [
+        "RealFileName",
+        "RealFileName::update_for_crate_metadata",
+        "SourceFile::encode",
+        "SourceFile::normalized_byte_pos",
+        "StableSourceFileId::from_filename_for_export",
+        "normalize_newlines",
+        "SpanData"
+      ],
+      "adaptation": "Preserve the actual source path, working directory and raw byte hash. Adapt the original CRLF cumulative positions to safe string slices and encode normalized spans and line differences while keeping the original byte length. Standalone carriage return and BOM normalization remain outside the represented inputs. POSIX absolute Unicode path component hashing is implemented with core string slices and differentially checked against the original host Path/OsStr identities.",
+      "semantic_owner": "required source provenance encoding",
+      "necessity": "Required for encoding completed native scalar-library facts consumed by the shared retained native artifact service and separate research qualifier. See README.md for the admitted record scope and excluded closures."
+    },
+    {
+      "destination": "src/encode.rs",
+      "source": "compiler/rustc_data_structures/src/stable_hash.rs",
+      "source_sha256": "57fa93d5c9f60748ddcac08e27fdc620fbcde7e21609aedbb126aca139bcac44",
+      "sections": [
+        "StableHash for Path",
+        "StableHash for Option",
+        "StableHash for OsStr"
+      ],
+      "adaptation": "Preserve original source-file identity path boundary tags and option values. Declared host is Linux.",
+      "semantic_owner": "required source identity dependency",
+      "necessity": "Required for encoding completed native scalar-library facts consumed by the shared retained native artifact service and separate research qualifier. See README.md for the admitted record scope and excluded closures."
+    },
+    {
+      "destination": "src/encode.rs",
+      "source": "compiler/rustc_macros/src/stable_hash.rs",
+      "source_sha256": "e3fbe1d4f34d22ba13eecd66788d5ed8ba8f77c52a7f01aa40b3fdad9eef2173",
+      "sections": [
+        "stable_hash_discriminant"
+      ],
+      "adaptation": "Preserve original u8 syntactic enum tags in source-file identity. No procedural macro/compiler syntax dependency is imported.",
+      "semantic_owner": "required identity encoding rule",
+      "necessity": "Required for encoding completed native scalar-library facts consumed by the shared retained native artifact service and separate research qualifier. See README.md for the admitted record scope and excluded closures."
+    },
+    {
+      "destination": "src/encode.rs",
+      "source": "compiler/rustc_middle/src/middle/exported_symbols.rs",
+      "source_sha256": "491b57fb30dca667e0ad974024c6572831bee3a8110d39529dce3f36064c80ac",
+      "sections": [
+        "ExportedSymbol",
+        "SymbolExportInfo"
+      ],
+      "adaptation": "Preserve original exported-symbol enum and field order. Backend helpers are tracked separately from source definitions.",
+      "semantic_owner": "required symbol serialization",
+      "necessity": "Required for encoding completed native scalar-library facts consumed by the shared retained native artifact service and separate research qualifier. See README.md for the admitted record scope and excluded closures."
+    },
+    {
+      "destination": "src/encode.rs",
+      "source": "compiler/rustc_structures/src/sanitizer_set.rs",
+      "source_sha256": "246a878c8e95d71c5aab923fccddba6f05d9c1451835981ad89c8c02ed038248",
+      "sections": [
+        "SanitizerSet(u16)"
+      ],
+      "adaptation": "Preserve original fixed-width u16 serialization for the actually empty sanitizer set; no sanitizer implementation is imported or claimed.",
+      "semantic_owner": "required declaration encoding",
+      "necessity": "Actual ordinary function CodegenFnAttrs serialization; no attribute or sanitizer mode is admitted by defaulting an unsupported request."
+    },
+    {
+      "destination": "src/lib.rs",
+      "source": "compiler/rustc_codegen_ssa/src/back/rmeta_link.rs",
+      "source_sha256": "e9649cc0c67a119a7156a876268714921139cdb4286f73dd54b7813aa3b396b4",
+      "sections": [
+        "RmetaLink::encode"
+      ],
+      "adaptation": "Preserve original vector/string encoding and end marker for actual emitted archive member names. Native library declarations are absent only under the completed native scope. Hosted archive IO, caches and unrelated target logic stay outside this codec.",
+      "semantic_owner": "required original rlib link metadata",
+      "necessity": "Actual Rust consumer linker reads lib.rmeta-link to distinguish real emitted Rust object members."
+    },
+    {
+      "destination": "src/extern_metadata.rs",
+      "source": "compiler/rustc_codegen_ssa/src/back/rmeta_link.rs",
+      "source_sha256": "e9649cc0c67a119a7156a876268714921139cdb4286f73dd54b7813aa3b396b4",
+      "sections": [
+        "RmetaLink::decode"
+      ],
+      "adaptation": "Read the original object inventory and end marker for the admitted native-library-free format. Require the named objects to match the physical archive members.",
+      "semantic_owner": "Pinned scalar metadata reader",
+      "necessity": "The native executable linker must use the actual object members that the original Rust archive describes."
+    },
+    {
+      "destination": "src/encode.rs",
+      "source": "compiler/rustc_interface/src/util.rs",
+      "source_sha256": "a72d09c63337f969f489d5ef4f8ac4266c0516c6126603b34be05500dbf6f90e",
+      "sections": [
+        "add_target_modifiers"
+      ],
+      "adaptation": "Always encode the synthetic TargetFeatures record. For the actual fixed hard-float x86_64 Linux request, no target-CPU/feature override exists and no ABI-modifier feature is enabled; encode an explicit empty value, not an absent record.",
+      "necessity": "Original Rust consumer checks actual target/ABI modifiers even when no modifier CLI option was specified. The first genuine caller failed on the missing synthetic record.",
+      "semantic_owner": "shared target ABI metadata"
+    },
+    {
+      "destination": "src/encode.rs",
+      "source": "compiler/rustc_session/src/options.rs",
+      "source_sha256": "9ac7d7de14cbef1624c9998593b081000dcd496413d2bb3643aac2bd1c9c7e69",
+      "sections": [
+        "TargetModifier",
+        "OptionsTargetModifiers",
+        "Options::gather_target_modifiers"
+      ],
+      "adaptation": "Preserve original record field order and synthetic TargetFeatures enum ordinal after UnstableOptions and CodegenOptions. No command-line parser or option database is imported.",
+      "necessity": "Original Rust consumer checks actual target/ABI modifiers even when no modifier CLI option was specified. The first genuine caller failed on the missing synthetic record.",
+      "semantic_owner": "shared target ABI metadata"
+    },
+    {
+      "destination": "src/encode.rs",
+      "source": "compiler/rustc_target/src/target_features.rs",
+      "source_sha256": "7853e606403f95dbc7ee4481ba96a109d04c109c664cd381f1683c1a57956e7a",
+      "sections": [
+        "Stability::is_target_modifier",
+        "X86_FEATURES",
+        "Target::abi_required_features"
+      ],
+      "adaptation": "The only x86 target-modifier feature is soft-float, incompatible with the represented default x86_64 hard-float ABI. Preserve this exact source-bound rule without querying a compiler during a user request.",
+      "necessity": "Original Rust consumer checks actual target/ABI modifiers even when no modifier CLI option was specified. The first genuine caller failed on the missing synthetic record.",
+      "semantic_owner": "shared target ABI metadata"
+    },
+    {
+      "destination": "src/encode.rs",
+      "source": "compiler/rustc_session/src/options/mitigation_coverage.rs",
+      "source_sha256": "f68e225dc7f52808f64016b4f1af765d13a8882883817df537e4d61fbeab2610",
+      "sections": [
+        "DeniedPartialMitigationLevel",
+        "denied_partial_mitigations!",
+        "Session::gather_enabled_denied_partial_mitigations",
+        "DeniedPartialMitigation"
+      ],
+      "adaptation": "Preserve both original sorted mitigation records and their enum/field serialization order. The closed request has StackProtector(None) and ControlFlowGuard(Enabled(false)); absence is not substituted for a disabled setting.",
+      "semantic_owner": "metadata mitigation context",
+      "necessity": "Required by the original reader when comparing the native library with an ordinary Rust consumer; prevents an absent-record mismatch without suppressing diagnostics."
+    },
+    {
+      "destination": "src/encode.rs",
+      "source": "compiler/rustc_target/src/spec/mod.rs",
+      "source_sha256": "6a606de618b8e30ed9cdb9e449b581cea5c7ba461338e26251aa5dce0131ff99",
+      "sections": [
+        "StackProtector"
+      ],
+      "adaptation": "Retain original StackProtector::None discriminant for the actual closed request; no target implementation is imported.",
+      "semantic_owner": "metadata mitigation context",
+      "necessity": "Required by the original reader when comparing the native library with an ordinary Rust consumer; prevents an absent-record mismatch without suppressing diagnostics."
+    },
+    {
+      "destination": "src/encode.rs",
+      "source": "compiler/rustc_session/src/options.rs",
+      "source_sha256": "9ac7d7de14cbef1624c9998593b081000dcd496413d2bb3643aac2bd1c9c7e69",
+      "sections": [
+        "control_flow_guard default",
+        "stack_protector default"
+      ],
+      "adaptation": "Bind the serialized disabled values to the original options defaults. The native request admits no mitigation override.",
+      "semantic_owner": "metadata mitigation context",
+      "necessity": "Required by the original reader when comparing the native library with an ordinary Rust consumer; prevents an absent-record mismatch without suppressing diagnostics."
+    },
+    {
+      "destination": "src/encode.rs",
+      "source": "compiler/rustc_session/src/session.rs",
+      "source_sha256": "cf93aa2f3af4a4be00930d9c1078c17a91add82ac6206e38e3fee74c724e93a8",
+      "sections": [
+        "Session::stack_protector"
+      ],
+      "adaptation": "Original target support branch yields None for the represented unmodified stack-protector request.",
+      "semantic_owner": "metadata mitigation context",
+      "necessity": "Required by the original reader when comparing the native library with an ordinary Rust consumer; prevents an absent-record mismatch without suppressing diagnostics."
+    },
+    {
+      "destination": "src/encode.rs",
+      "source": "compiler/rustc_metadata/src/rmeta/mod.rs",
+      "source_sha256": "d6d5d627a4876ddd5d371c2260f0d68303f1e483a5209fcace3893765bfd5948",
+      "sections": [
+        "CrateHeader field order"
+      ],
+      "adaptation": "Preserve target, crate name, proc-macro flag and stub flag in their original order for both full and stub headers; no compiler metadata decoder is imported.",
+      "semantic_owner": "required metadata artifact and hash identity",
+      "necessity": "Represent the actual pinned Cargo split-metadata request without changing native body ownership or invoking another compiler."
+    },
+    {
+      "destination": "src/encode.rs",
+      "source": "compiler/rustc_session/src/options.rs",
+      "source_sha256": "9ac7d7de14cbef1624c9998593b081000dcd496413d2bb3643aac2bd1c9c7e69",
+      "sections": [
+        "CodegenOptions::embed_metadata TRACKED",
+        "UnstableOptions::embed_metadata TRACKED",
+        "hash_opt TRACKED_NO_CRATE_HASH exclusion",
+        "Options::lint_opts",
+        "Options::json_unused_externs"
+      ],
+      "adaptation": "Admit only the actual unstable -Z option and distinguish its absent/true/false values in the native metadata supplement. The separate stable -C channel remains unrepresented. Forced lint and JSON emission do not join the crate-hash identity. The full option parser, session and tracking machinery are not imported.",
+      "semantic_owner": "required metadata artifact and hash identity",
+      "necessity": "Represent the actual pinned Cargo split-metadata request without changing native body ownership or invoking another compiler."
+    },
+    {
+      "destination": "src/encode.rs",
+      "source": "compiler/rustc_session/src/session.rs",
+      "source_sha256": "cf93aa2f3af4a4be00930d9c1078c17a91add82ac6206e38e3fee74c724e93a8",
+      "sections": [
+        "Session::embed_metadata"
+      ],
+      "adaptation": "Specialize the original effective default to the admitted unstable-only channel: absent and explicit true embed full metadata, false uses the matching stub. Preserve tracked request distinctions outside native semantic state.",
+      "semantic_owner": "required metadata artifact and hash identity",
+      "necessity": "Represent the actual pinned Cargo split-metadata request without changing native body ownership or invoking another compiler."
+    },
+    {
+      "source": "compiler/rustc_metadata/src/rmeta/decoder.rs",
+      "source_sha256": "40d024ce058a7e363e192ac11f783c9d91e182ce0d7e3147e1e926f2073db0e2",
+      "destination": "src/extern_metadata.rs",
+      "sections": [
+        "MetadataBlob root and unhashed root",
+        "LazyDecoder",
+        "decode_symbol_or_byte_symbol",
+        "get_module_children"
+      ],
+      "adaptation": "Read the original root, ordered lazy offsets, symbol forms and module children within validated slice bounds.",
+      "semantic_owner": "Pinned scalar metadata reader",
+      "necessity": "Required to resolve actual Cargo check dependencies in the existing native checker without a source replay or compiler subprocess."
+    },
+    {
+      "source": "compiler/rustc_metadata/src/rmeta/table.rs",
+      "source_sha256": "5573eb11e1141d3c5c6cb54ed1e8908b2e6d4d5ed871d525691ba09b50951039",
+      "destination": "src/extern_metadata.rs",
+      "sections": [
+        "LazyTable::get",
+        "FixedSizeEncoding for LazyArray"
+      ],
+      "adaptation": "Read original dense and sparse fixed entries with bounds checks and interleaved lazy array fields.",
+      "semantic_owner": "Pinned scalar metadata reader",
+      "necessity": "Required to resolve actual Cargo check dependencies in the existing native checker without a source replay or compiler subprocess."
+    },
+    {
+      "source": "compiler/rustc_middle/src/ty/codec.rs",
+      "source_sha256": "710365af0e2b74fef24e4daaca45fab6899251f785598e085a8d61c76a20ce3c",
+      "destination": "src/extern_metadata.rs",
+      "sections": [
+        "TYPE_SHORTHAND_OFFSET",
+        "TyKind decoder"
+      ],
+      "adaptation": "Read the pinned primitive integer tags and the original backwards shorthand to their direct representation.",
+      "semantic_owner": "Pinned scalar metadata reader",
+      "necessity": "Required to resolve actual Cargo check dependencies in the existing native checker without a source replay or compiler subprocess."
+    },
+    {
+      "source": "compiler/rustc_ast_ir/src/lib.rs",
+      "source_sha256": "78e0296201acd1ad1f15870dec3bad3e931a9dd2b8cb16bcfb47a7dcd545e6b6",
+      "destination": "src/lib.rs",
+      "sections": [
+        "IntTy",
+        "UintTy"
+      ],
+      "adaptation": "Preserve all pinned signed and unsigned integer discriminants for checked signatures. Linked artifacts still require the represented direct ABI.",
+      "semantic_owner": "Native completed scalar signatures and pinned metadata codec",
+      "necessity": "Publish and read the actual parameter and result types for admitted integer ABI calls."
+    },
+    {
+      "source": "compiler/rustc_type_ir/src/ty_kind.rs",
+      "source_sha256": "8973a42d1f7f600090e57a78a8aa5ad5e5a219741dc9d78f318c6083246c69f4",
+      "destination": "src/lib.rs",
+      "sections": [
+        "TyKind Int and Uint discriminants"
+      ],
+      "adaptation": "Select original signed and unsigned type tags from the checked native signature.",
+      "semantic_owner": "Native completed scalar signatures and pinned metadata codec",
+      "necessity": "The original Rust metadata reader must distinguish signedness and pointer-sized identities across crates."
+    },
+    {
+      "source": "compiler/rustc_middle/src/middle/resolve.rs",
+      "source_sha256": "8a2df16bb3b5dcc113f4534ff5582595bc8dd50a741d6e59ddb0555378f1760f",
+      "destination": "src/extern_metadata.rs",
+      "sections": [
+        "ModChild",
+        "Reexport"
+      ],
+      "adaptation": "Decode the single restricted implicit core binding when present. Other unrepresented reexports are refused.",
+      "semantic_owner": "Pinned scalar metadata reader",
+      "necessity": "Required to resolve actual Cargo check dependencies in the existing native checker without a source replay or compiler subprocess."
+    },
+    {
+      "source": "compiler/rustc_span/src/symbol.rs",
+      "source_sha256": "d570a196be56ba01b1ac141fc5a9ab581b044ae6960dafff9ffb394a47ba640f",
+      "destination": "src/upstream/predefined_symbols.rs",
+      "sections": [
+        "pinned Keywords and Symbols inventories"
+      ],
+      "adaptation": "Extract the pinned predefined symbol strings in the generated interner order.",
+      "semantic_owner": "Pinned scalar metadata reader",
+      "necessity": "Actual Rust metadata encodes interned names such as call, core and compiler_builtins by their predefined indices."
+    },
+    {
+      "source": "compiler/rustc_macros/src/symbols.rs",
+      "source_sha256": "270cd2d8dfdd91c6de5eaa2ba0e8ceac6af747aef4af2bf0294fd31a95f5a682",
+      "destination": "src/upstream/predefined_symbols.rs",
+      "sections": [
+        "pre-interned keyword/symbol order",
+        "generated digits and ASCII letters",
+        "deferred env symbols"
+      ],
+      "adaptation": "Keep the macro's generated order and bind its deferred CFG_RELEASE to the pinned SDK value 1.102.0-nightly.",
+      "semantic_owner": "Pinned scalar metadata reader",
+      "necessity": "Metadata symbol indices must identify the same string as the original Rust compiler even when a crate describes a function named by the predefined table."
+    },
+    {
+      "destination": "src/extern_metadata.rs",
+      "source": "compiler/rustc_attr_ir/src/lang_items.rs",
+      "source_sha256": "f1aae4e6441ad2cf7958eac9298472d905e56751efc95f92b821d4fbb3763056",
+      "sections": [
+        "LangItem::Sized",
+        "LangItem::MetaSized"
+      ],
+      "adaptation": "Decode these pinned Rust metadata records into the existing native projection interface without depending on TyCtxt.",
+      "semantic_owner": "pinned Rust metadata reader",
+      "necessity": "Resolve size trait definition identities from the authenticated core artifact."
+    },
+    {
+      "destination": "src/extern_metadata.rs",
+      "source": "compiler/rustc_type_ir/src/region_kind.rs",
+      "source_sha256": "143509bd6aa7768eb48e400a3e12f7c66d58d585f16cbaa76110de233e83eef5",
+      "sections": [
+        "RegionKind::ReEarlyParam"
+      ],
+      "adaptation": "Decode these pinned Rust metadata records into the existing native projection interface without depending on TyCtxt.",
+      "semantic_owner": "pinned Rust metadata reader",
+      "necessity": "Read the real early-bound lifetime index and symbol of the selected associated value."
+    },
+    {
+      "destination": "src/extern_metadata.rs",
+      "source": "compiler/rustc_type_ir/src/ty_kind.rs",
+      "source_sha256": "8973a42d1f7f600090e57a78a8aa5ad5e5a219741dc9d78f318c6083246c69f4",
+      "sections": [
+        "TyKind::Ref",
+        "TyKind::Alias",
+        "AliasTyKind::Projection"
+      ],
+      "adaptation": "Decode these pinned Rust metadata records into the existing native projection interface without depending on TyCtxt.",
+      "semantic_owner": "pinned Rust metadata reader",
+      "necessity": "Recognize the declared projection and shared integer reference in its original metadata representation."
+    },
+    {
+      "destination": "src/extern_metadata.rs",
+      "source": "compiler/rustc_type_ir/src/predicate_kind.rs",
+      "source_sha256": "a43dd7bd5855b3ab011e99190cc4900c69f2a93d76715c17401b8cc672dbe9bf",
+      "sections": [
+        "ClauseKind::TypeOutlives",
+        "ClauseKind::Trait"
+      ],
+      "adaptation": "Decode these pinned Rust metadata records into the existing native projection interface without depending on TyCtxt.",
+      "semantic_owner": "pinned Rust metadata reader",
+      "necessity": "Validate the declared Self outlives clause and implicit size bounds before the native resolver reads a projection."
+    },
+    {
+      "destination": "src/extern_metadata.rs",
+      "source": "compiler/rustc_middle/src/ty/generics.rs",
+      "source_sha256": "50af849cd9489f758d8dbe3e9b49f71c1603280652eb38fb09831ee667980c8a",
+      "sections": [
+        "Generics",
+        "GenericParamDef",
+        "GenericParamDefKind::Lifetime"
+      ],
+      "adaptation": "Decode these pinned Rust metadata records into the existing native projection interface without depending on TyCtxt.",
+      "semantic_owner": "pinned Rust metadata reader",
+      "necessity": "Join the associated declaration and assignment with their distinct parent-relative lifetime slots."
+    },
+    {
+      "destination": "src/extern_metadata.rs",
+      "source": "compiler/rustc_middle/src/ty/assoc.rs",
+      "source_sha256": "1f4255a3ad1874107d7e484f1508ccddd879a2e5b07ce95caccf8cd070d7ed34",
+      "sections": [
+        "AssocContainer"
+      ],
+      "adaptation": "Decode these pinned Rust metadata records into the existing native projection interface without depending on TyCtxt.",
+      "semantic_owner": "pinned Rust metadata reader",
+      "necessity": "Validate the associated assignment's exact original trait-item identity."
+    },
+    {
+      "destination": "src/extern_metadata.rs",
+      "source": "compiler/rustc_middle/src/ty/mod.rs",
+      "source_sha256": "3be9c99d7f701a865fbfb455db084d209fdda6662aee56910f43dba012dd117a",
+      "sections": [
+        "ImplTraitHeader",
+        "VariantDef",
+        "VariantDiscr"
+      ],
+      "adaptation": "Decode these pinned Rust metadata records into the existing native projection interface without depending on TyCtxt.",
+      "semantic_owner": "pinned Rust metadata reader",
+      "necessity": "Read the positive concrete impl and its unit receiver from the pinned original representation."
+    },
+    {
+      "destination": "src/encode_projection.rs",
+      "source": "compiler/rustc_metadata/src/rmeta/encoder.rs",
+      "source_sha256": "7f740fbaf9e81f4d518a95eeab485059c4f1a88c636df3104af03ec2817f5b73",
+      "sections": [
+        "encode_def_ids",
+        "encode_info_for_adt",
+        "encode_info_for_assoc_item",
+        "encode_traits",
+        "encode_impls"
+      ],
+      "adaptation": "Encode the original pinned metadata record layouts from the one completed native provider declaration inventory.",
+      "semantic_owner": "checked projection provider metadata",
+      "necessity": "Record the real unit receiver, trait, associated bounds, implementation and early lifetimes for original Rust consumers and the native retained resolver."
+    },
+    {
+      "destination": "src/encode_projection.rs",
+      "source": "compiler/rustc_middle/src/ty/mod.rs",
+      "source_sha256": "3be9c99d7f701a865fbfb455db084d209fdda6662aee56910f43dba012dd117a",
+      "sections": [
+        "TyCtxt::repr_options_of",
+        "ImplTraitHeader",
+        "VariantDef"
+      ],
+      "adaptation": "Encode the original pinned metadata record layouts from the one completed native provider declaration inventory.",
+      "semantic_owner": "checked projection provider metadata",
+      "necessity": "Record the real unit receiver, trait, associated bounds, implementation and early lifetimes for original Rust consumers and the native retained resolver."
+    },
+    {
+      "destination": "src/encode_projection.rs",
+      "source": "compiler/rustc_data_structures/src/fingerprint.rs",
+      "source_sha256": "b34cbc70955dd34efe762559bf5704908a4f93a3f9d6efb88de2f91c9a26127f",
+      "sections": [
+        "Fingerprint::to_smaller_hash"
+      ],
+      "adaptation": "Encode the original pinned metadata record layouts from the one completed native provider declaration inventory.",
+      "semantic_owner": "checked projection provider metadata",
+      "necessity": "Record the real unit receiver, trait, associated bounds, implementation and early lifetimes for original Rust consumers and the native retained resolver."
+    },
+    {
+      "destination": "src/encode_projection.rs",
+      "source": "compiler/rustc_hir_id/src/definitions.rs",
+      "source_sha256": "c7671deb7d71875550849144d257d9a2ef5bde6ed2dad57b9dbdfab999e21913",
+      "sections": [
+        "DefPathData",
+        "DefKey::compute_stable_hash"
+      ],
+      "adaptation": "Encode the original pinned metadata record layouts from the one completed native provider declaration inventory.",
+      "semantic_owner": "checked projection provider metadata",
+      "necessity": "Record the real unit receiver, trait, associated bounds, implementation and early lifetimes for original Rust consumers and the native retained resolver."
+    },
+    {
+      "destination": "src/encode_projection.rs",
+      "source": "compiler/rustc_hir_analysis/src/collect/resolve_bound_vars.rs",
+      "source_sha256": "874c20e0aff400cd3390f5a6f1a99c0eb98c94433b211f16adae4d9d928ca450",
+      "sections": [
+        "object_lifetime_default"
+      ],
+      "adaptation": "Encode Empty for the actual checked trait Self with no trait-wide outlives predicate.",
+      "semantic_owner": "checked projection provider metadata",
+      "necessity": "Independent Rust lifetime resolution requires the trait-wide default while reading a qualified associated type."
+    }
+  ],
+  "dependencies": [
+    {
+      "name": "rustc-stable-hash",
+      "version": "0.1.2",
+      "necessity": "Original StableCrateId/DefPathHash/SourceFile identity arithmetic; no consumer semantics.",
+      "role": "source-owned core namespace extraction; unchanged crate dev-only oracle"
+    },
+    {
+      "name": "odht",
+      "version": "0.3.1",
+      "necessity": "Original DefPathHashMap on-disk format consumed by pinned decoder.",
+      "role": "source-owned writer-only extraction; unchanged crate dev-only byte/decoder oracle"
+    },
+    {
+      "name": "twox-hash",
+      "version": "2.1.2",
+      "features": [
+        "alloc",
+        "xxhash3_128"
+      ],
+      "necessity": "Original v12 metadata SVH algorithm.",
+      "default_features": false,
+      "role": "core+alloc serializer dependency"
+    },
+    {
+      "name": "md-5",
+      "version": "0.10.6",
+      "necessity": "Original default source-file hash encoded with exact checked bytes.",
+      "default_features": false,
+      "role": "core+alloc serializer dependency"
+    },
+    {
+      "name": "serde_json",
+      "version": "1.0.154",
+      "necessity": "Decode construction receipt in host adapter; absent from serializer production graph.",
+      "role": "separate lustr-metadata-sdk host crate only"
+    },
+    {
+      "name": "sha2",
+      "version": "0.11.1",
+      "necessity": "Verify receipt/artifact identities in host adapter; absent from serializer production graph.",
+      "role": "separate lustr-metadata-sdk host crate only"
+    }
+  ],
+  "excluded_compiler_closure": [
+    "rustc_driver",
+    "rustc_interface",
+    "rustc_parse",
+    "rustc_expand",
+    "rustc_ast_lowering",
+    "rustc_hir_analysis",
+    "rustc_hir_typeck",
+    "rustc_borrowck",
+    "rustc_mir_build",
+    "rustc_mir_transform execution",
+    "rustc_codegen_llvm",
+    "rustc_middle query system"
+  ],
+  "registry_sources": [
+    {
+      "package": "rustc-stable-hash",
+      "version": "0.1.2",
+      "source": "src/lib.rs",
+      "source_sha256": "732f294d3218247ec05d4c97faebbe8216e0c79fb7c713fc795db40ebedbc5c2",
+      "destination": "src/upstream/stable_hash/mod.rs",
+      "adaptation": "Replace std names with core names and crate-local module paths; retain hashing algorithm. Exclude unused nightly extensions and external test-module declarations. Original crate remains an independent dev-only differential oracle.",
+      "necessity": "Required original stable crate/definition/source-file identities and native semantic fingerprint, without a std dependency.",
+      "semantic_owner": "required metadata identity dependency",
+      "pinned_rust_lock_checksum": "781442f29170c5c93b7185ad559492601acdc71d5bb0706f5868094f45cfcd08",
+      "license_files": [
+        "src/upstream/stable_hash/LICENSE-MIT",
+        "src/upstream/stable_hash/LICENSE-APACHE"
+      ]
+    },
+    {
+      "package": "rustc-stable-hash",
+      "version": "0.1.2",
+      "source": "src/int_overflow.rs",
+      "source_sha256": "3a5e3ff4de386defc281622a3f59d3236d38fb42345392e94170dbfb7b226fc9",
+      "destination": "src/upstream/stable_hash/int_overflow.rs",
+      "adaptation": "Replace std names with core names and crate-local module paths; retain hashing algorithm. Exclude unused nightly extensions and external test-module declarations. Original crate remains an independent dev-only differential oracle.",
+      "necessity": "Required original stable crate/definition/source-file identities and native semantic fingerprint, without a std dependency.",
+      "semantic_owner": "required metadata identity dependency",
+      "pinned_rust_lock_checksum": "781442f29170c5c93b7185ad559492601acdc71d5bb0706f5868094f45cfcd08",
+      "license_files": [
+        "src/upstream/stable_hash/LICENSE-MIT",
+        "src/upstream/stable_hash/LICENSE-APACHE"
+      ]
+    },
+    {
+      "package": "rustc-stable-hash",
+      "version": "0.1.2",
+      "source": "src/sip128.rs",
+      "source_sha256": "bb161847ce20d12f259f5e8a1be984cb4ddd4010c89836b928a4ab8708cf4e43",
+      "destination": "src/upstream/stable_hash/sip128.rs",
+      "adaptation": "Replace std names with core names and crate-local module paths; retain hashing algorithm. Exclude unused nightly extensions and external test-module declarations. Original crate remains an independent dev-only differential oracle.",
+      "necessity": "Required original stable crate/definition/source-file identities and native semantic fingerprint, without a std dependency.",
+      "semantic_owner": "required metadata identity dependency",
+      "pinned_rust_lock_checksum": "781442f29170c5c93b7185ad559492601acdc71d5bb0706f5868094f45cfcd08",
+      "license_files": [
+        "src/upstream/stable_hash/LICENSE-MIT",
+        "src/upstream/stable_hash/LICENSE-APACHE"
+      ]
+    },
+    {
+      "package": "rustc-stable-hash",
+      "version": "0.1.2",
+      "source": "src/stable_hasher.rs",
+      "source_sha256": "9de0f4d669362dcc2b77d38b45760b285d3db8ed091d3e6a2d4a98cdfc1756b7",
+      "destination": "src/upstream/stable_hash/stable_hasher.rs",
+      "adaptation": "Replace std names with core names and crate-local module paths; retain hashing algorithm. Exclude unused nightly extensions and external test-module declarations. Original crate remains an independent dev-only differential oracle.",
+      "necessity": "Required original stable crate/definition/source-file identities and native semantic fingerprint, without a std dependency.",
+      "semantic_owner": "required metadata identity dependency",
+      "pinned_rust_lock_checksum": "781442f29170c5c93b7185ad559492601acdc71d5bb0706f5868094f45cfcd08",
+      "license_files": [
+        "src/upstream/stable_hash/LICENSE-MIT",
+        "src/upstream/stable_hash/LICENSE-APACHE"
+      ]
+    },
+    {
+      "package": "odht",
+      "version": "0.3.1",
+      "source": "src/lib.rs",
+      "source_sha256": "46e57754376968caaad59c5a1889a9fef481615d35882dfaf599c1ee47142eda",
+      "destination": "src/upstream/odht_writer.rs",
+      "sections": [
+        "HashTableOwned::default",
+        "HashTableOwned::insert",
+        "HashTableOwned::grow",
+        "slots_needed",
+        "Factor"
+      ],
+      "adaptation": "Writer-only specialization for original metadata u64/u32 configuration and default 87 percent load factor. Preserve original header, integer sizing, UnHashFn, original target group query and canonical probe order, insertion and growth order. Safe byte slices replace generic pointer views; omit decoder, external storage, unrelated hash configurations and unrelated APIs. Original crate remains an independent dev-only byte and decoder oracle.",
+      "necessity": "Required DefPathHash on-disk map with core+alloc only.",
+      "semantic_owner": "required metadata definition-map dependency",
+      "pinned_rust_lock_checksum": "5a518809ac14b25b569624d0268eba1e88498f71615893dca57982bed7621abb",
+      "license_files": [
+        "src/upstream/odht/LICENSE-MIT",
+        "src/upstream/odht/LICENSE-APACHE"
+      ]
+    },
+    {
+      "package": "odht",
+      "version": "0.3.1",
+      "source": "src/memory_layout.rs",
+      "source_sha256": "bb6bed0b35fd18755fbc6787b511a1359cfa4b65a6d3c8d9580e0a6898a5c209",
+      "destination": "src/upstream/odht_writer.rs",
+      "sections": [
+        "Header",
+        "Header::initialize",
+        "allocate",
+        "init_in_place"
+      ],
+      "adaptation": "Writer-only specialization for original metadata u64/u32 configuration and default 87 percent load factor. Preserve original header, integer sizing, UnHashFn, original target group query and canonical probe order, insertion and growth order. Safe byte slices replace generic pointer views; omit decoder, external storage, unrelated hash configurations and unrelated APIs. Original crate remains an independent dev-only byte and decoder oracle.",
+      "necessity": "Required DefPathHash on-disk map with core+alloc only.",
+      "semantic_owner": "required metadata definition-map dependency",
+      "pinned_rust_lock_checksum": "5a518809ac14b25b569624d0268eba1e88498f71615893dca57982bed7621abb",
+      "license_files": [
+        "src/upstream/odht/LICENSE-MIT",
+        "src/upstream/odht/LICENSE-APACHE"
+      ]
+    },
+    {
+      "package": "odht",
+      "version": "0.3.1",
+      "source": "src/raw_table.rs",
+      "source_sha256": "75a39c4a4410ea45b8c2f7f74f47f29aa174c40bb3c3d1fd53428912275301f3",
+      "destination": "src/upstream/odht_writer.rs",
+      "sections": [
+        "ProbeSeq",
+        "RawTableMut::insert",
+        "RawIter"
+      ],
+      "adaptation": "Writer-only specialization for original metadata u64/u32 configuration and default 87 percent load factor. Preserve original header, integer sizing, UnHashFn, original target group query and canonical probe order, insertion and growth order. Safe byte slices replace generic pointer views; omit decoder, external storage, unrelated hash configurations and unrelated APIs. Original crate remains an independent dev-only byte and decoder oracle.",
+      "necessity": "Required DefPathHash on-disk map with core+alloc only.",
+      "semantic_owner": "required metadata definition-map dependency",
+      "pinned_rust_lock_checksum": "5a518809ac14b25b569624d0268eba1e88498f71615893dca57982bed7621abb",
+      "license_files": [
+        "src/upstream/odht/LICENSE-MIT",
+        "src/upstream/odht/LICENSE-APACHE"
+      ]
+    },
+    {
+      "package": "odht",
+      "version": "0.3.1",
+      "source": "src/unhash.rs",
+      "source_sha256": "c13d599cd9d54475b5d6512ef11308f69e1dd165e704de1ee206a20f8e8952c3",
+      "destination": "src/upstream/odht_writer.rs",
+      "sections": [
+        "UnHashFn::hash"
+      ],
+      "adaptation": "Writer-only specialization for original metadata u64/u32 configuration and default 87 percent load factor. Preserve original header, integer sizing, UnHashFn, original target group query and canonical probe order, insertion and growth order. Safe byte slices replace generic pointer views; omit decoder, external storage, unrelated hash configurations and unrelated APIs. Original crate remains an independent dev-only byte and decoder oracle.",
+      "necessity": "Required DefPathHash on-disk map with core+alloc only.",
+      "semantic_owner": "required metadata definition-map dependency",
+      "pinned_rust_lock_checksum": "5a518809ac14b25b569624d0268eba1e88498f71615893dca57982bed7621abb",
+      "license_files": [
+        "src/upstream/odht/LICENSE-MIT",
+        "src/upstream/odht/LICENSE-APACHE"
+      ]
+    },
+    {
+      "package": "odht",
+      "version": "0.3.1",
+      "source": "src/swisstable_group_query/mod.rs",
+      "source_sha256": "9813e31bb0cc870aee9462899e46e8a8b60064e719729e1da12038c3eda54983",
+      "destination": "src/upstream/odht_groups/mod.rs",
+      "adaptation": "Preserve original applicable SSE2 core intrinsics or original word fallback and build-time target selection. Replace only std namespace with core; write target cfg directly instead of cfg-if and omit unused no_simd feature/test closure.",
+      "necessity": "Keep the original fast match/empty operation in the required DefPathHash writer without adding std or per-request detection.",
+      "semantic_owner": "required metadata definition-map dependency",
+      "pinned_rust_lock_checksum": "5a518809ac14b25b569624d0268eba1e88498f71615893dca57982bed7621abb",
+      "license_files": [
+        "src/upstream/odht/LICENSE-MIT",
+        "src/upstream/odht/LICENSE-APACHE"
+      ]
+    },
+    {
+      "package": "odht",
+      "version": "0.3.1",
+      "source": "src/swisstable_group_query/sse2.rs",
+      "source_sha256": "56331addbe5e364907ea3992fed5c6b33f0d86f1aef10f7ef94df6c285f7bec2",
+      "destination": "src/upstream/odht_groups/sse2.rs",
+      "adaptation": "Preserve original applicable SSE2 core intrinsics or original word fallback and build-time target selection. Replace only std namespace with core; write target cfg directly instead of cfg-if and omit unused no_simd feature/test closure.",
+      "necessity": "Keep the original fast match/empty operation in the required DefPathHash writer without adding std or per-request detection.",
+      "semantic_owner": "required metadata definition-map dependency",
+      "pinned_rust_lock_checksum": "5a518809ac14b25b569624d0268eba1e88498f71615893dca57982bed7621abb",
+      "license_files": [
+        "src/upstream/odht/LICENSE-MIT",
+        "src/upstream/odht/LICENSE-APACHE"
+      ]
+    },
+    {
+      "package": "odht",
+      "version": "0.3.1",
+      "source": "src/swisstable_group_query/no_simd.rs",
+      "source_sha256": "e58c4e1aed09ac8f2ade2e8f9e62444764459b56da4dd2a732df168338e61763",
+      "destination": "src/upstream/odht_groups/no_simd.rs",
+      "adaptation": "Preserve original applicable SSE2 core intrinsics or original word fallback and build-time target selection. Replace only std namespace with core; write target cfg directly instead of cfg-if and omit unused no_simd feature/test closure.",
+      "necessity": "Keep the original fast match/empty operation in the required DefPathHash writer without adding std or per-request detection.",
+      "semantic_owner": "required metadata definition-map dependency",
+      "pinned_rust_lock_checksum": "5a518809ac14b25b569624d0268eba1e88498f71615893dca57982bed7621abb",
+      "license_files": [
+        "src/upstream/odht/LICENSE-MIT",
+        "src/upstream/odht/LICENSE-APACHE"
+      ]
+    }
+  ],
+  "no_std_scope": {
+    "crate": "lustr-metadata-encoder",
+    "qualification_target": "x86_64-unknown-none",
+    "does_not_establish": [
+      "new metadata output target",
+      "compiler-wide no_std",
+      "socket-independent retained compiler"
+    ]
+  },
+  "integration_status": {
+    "production_admitted": false,
+    "native_caller_committed": true,
+    "native_caller_path": "crates/lustr-native-metadata-qualification",
+    "public_retained_integration": true,
+    "qualification": "Bounded public scalar campaign passed at 514dfe1ef8b49160bf5c09458981768fbf4f2386 in run 45073103551/job 137364264163. See docs/compiler-set/evidence/compiler-review-20261122/README.md for exact source/artifact verification and the separately qualified profile/default and SDK-construction repairs. No broader Rust, release or performance admission.",
+    "retained_native_caller_authored": true,
+    "retained_native_qualification": "Public retained scalar integration is qualified only for the declared campaign at 514dfe1ef8b49160bf5c09458981768fbf4f2386. Earlier retained research remains tied to its original source; subsequent repairs require their own exact-source evidence.",
+    "public_native_caller_path": "crates/lustr-native-core/src/public_library.rs",
+    "production_source_authored": true
+  },
+  "adapted_sources_sha256": {
+    "src/encode.rs": "928f314bf20568ee0b37d46975f808ad5749d223d1f1defe7dd8a39d25d7f186",
+    "src/encode_projection.rs": "15864ab3bf6aca54020e503cfb5b782bbd1a16d66f45bc84111ae4fa64116d48",
+    "src/extern_metadata.rs": "fba900b9d714e3fdab380c363f5b532269d8bff385f75cea34d50d73a5fd910a",
+    "src/identity.rs": "4d153100f5cfe9de796082d708518bd0d2cb4180fd17fffa9a84bd9b6b389f9f",
+    "src/lib.rs": "371e468c44e8b0a87b6702b58e13dfe3686117654534c403b5b23efe249435b2",
+    "src/sdk.rs": "1ca10fbf946d09bc2af225c18b287d31ddd84b7162148d4339293970db0dc930",
+    "src/table.rs": "5ad2fa46decc550bfd5f7d23cc051c7087d4ef1f5b361b154630c122097c92bb",
+    "src/upstream/codec.rs": "916922c930d3dc46c7003d65d920b6c84efa780ac5b0c06eec1586ead0216a7a",
+    "src/upstream/int_overflow.rs": "bf1667be8b077b770ecc1850c3bc141dc685f4b3f2470009dc2e062ef08ca0ae",
+    "src/upstream/leb128.rs": "3a5bc031e24e6921459738a7ba7fa1fd5e7ba451cda266b0229030e19f278206",
+    "src/upstream/mem_encoder.rs": "cb923af10331cd9276ee1fc53154e9143641d5cc33d52b7395294e10d3ee482c",
+    "src/upstream/odht_groups/mod.rs": "bdf7febea06ccfce4b811ccfa2fb42a8c44dae4d026fd295e88914a7f650702c",
+    "src/upstream/odht_groups/no_simd.rs": "33b762703b243ddfafb476a8d8dd9ed0b51f76a0064479c04281aa424a420fc8",
+    "src/upstream/odht_groups/sse2.rs": "fefdd6206bf34baa386e96f266d2563b2f510ec5b19f7094bd15170c7dca58b4",
+    "src/upstream/odht_writer.rs": "5c1576ded925774ed16ad941220b20bffc728a3317560802541ca1f352a285b9",
+    "src/upstream/predefined_symbols.rs": "ed7963c315a7e9ac5a51a206cc68a78e4a741291d344c74bab1dbf1fde7cf645",
+    "src/upstream/schema.rs": "e39619e06eec3bc83a7742ca7b98b4c47b33c715e0831e2875656ea14fc3acba",
+    "src/upstream/stable_hash/int_overflow.rs": "51262ddb4bc75d68e9c5ed8410a6fd7e33aa01f1b38e7eeff2ae5ece429eac46",
+    "src/upstream/stable_hash/mod.rs": "24ea97cebdc3ef18601f980bd636b37b26bc43fd23c0c1c0fb384a2fbddb927b",
+    "src/upstream/stable_hash/sip128.rs": "b49461f4c6dc199916dc63b7ba5e79878cfef16010b6ba5db3c2fd33fdb9ffc6",
+    "src/upstream/stable_hash/stable_hasher.rs": "7f4a8bdfa52ddc4dc943442cc9500db1577d81244dfc86f1637539d219dd0684"
+  }
+}

@@ -1,0 +1,10 @@
+{
+  "files_sha256": {
+    "capture-benchmark-host.py": "39d5c016d16a55ada0968b1cce2e0cb01d2319204e2011e13b32b7e262c30d57",
+    "report-mixed-performance.py": "5f3fe49eb7898854b41fd76b7b643adcf8a72c1e434127fec67404005712e8a5",
+    "report-three-way-performance.py": "6b9453a5a295ed850a1f19bd2316daa191ddac76b397048611a0bcca674d2212",
+    "run-upstream-slice-benchmark.py": "ad7c4e2f74629ecf46c6c8e30bc2c7d62d5a22c8db37e6e346575c5edf3eb4c3"
+  },
+  "scope": "Unmodified frozen original tools. Use replay modes for evidence verification; no new timing campaign is recorded here.",
+  "source_revision": "43a7e07d32929309fc6e402d7bca6b5673e186a2"
+}

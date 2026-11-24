@@ -1,0 +1,306 @@
+{
+  "schema": 1,
+  "scope": "Focused combined-tree anti-regression verification of compiler construction, evidence evaluators, retired acquisition and historical replay. No full compiler build or new performance campaign.",
+  "source_commit": "f87647d66c4c95b8d51a6baa7dc000f4c888e6e9",
+  "source_tree": "91d1d5a8e56cc93b490f53b41c65f21a3cbbe1c4",
+  "baseline": {
+    "local_commit": "f8fa2dee04e1c02f110ed9d725cda21c0b750e22",
+    "public_commit": "ea26fe16636d390763257a19c19df3db992cdbcb",
+    "tree": "9151b9c3c8fac46e2afc76ef0f2b9fc51a6a803f",
+    "relation": "Identical source trees; public commit is the PR #33 publication baseline."
+  },
+  "source_inputs": "source-snapshot.json",
+  "normalization": "record-projections.json",
+  "preservation": "preservation.json",
+  "results": {
+    "structural_admission": {
+      "passed": true,
+      "receipt": "structural-admission.json"
+    },
+    "release_admission": {
+      "expected_terminal_refusal": true,
+      "full_rust_coverage": false,
+      "receipt": "release-refusal.json"
+    },
+    "exclusive_mutations": {
+      "product": 41,
+      "metadata": 11,
+      "inventory": 8,
+      "retired_policy": 4,
+      "inspection_passthrough": 3,
+      "moving_donor_pin_rejected": true,
+      "benign_manifest_changes_admitted": true,
+      "receipt": "exclusive-mutations.json"
+    },
+    "actual_entry_admission": {
+      "native_feature_controls": 4,
+      "constructor_controls": 12,
+      "receipt": "actual-build-policy.json",
+      "scope": "Compiles actual build script and constructor, then uses executable child sentinels. Does not build the product compiler."
+    },
+    "capability_evaluator": {
+      "passed": 24,
+      "receipt": "capability-controls.json"
+    },
+    "retired_acquisition": {
+      "passed": 3,
+      "receipt": "retirement-controls.json"
+    },
+    "workflow_inputs": {
+      "passed": 5,
+      "receipt": "workflow-controls.json",
+      "final_checker_sha256": "b5a79a6a1de61fa66d0d7301ed776416c953585780459bedc1141577a7870f58",
+      "scope": "Local path-trigger/context regression checks; no claim that hosted workflows executed this tree."
+    },
+    "warm_applicability": {
+      "passed": 21,
+      "receipt": "warm-applicability-controls.json"
+    },
+    "performance_assessor": {
+      "passed": 25,
+      "receipt": "assessment-controls.json",
+      "scope": "Arithmetic and evidence-admission controls only; no measured compiler speed claim."
+    },
+    "historical_slice": {
+      "first_run_passed": 17,
+      "first_run_skipped_class": "UpstreamDiagnosticTests: no default rustc available",
+      "first_receipt": "historical-slice-controls.json",
+      "explicit_pinned_renderer_controls_passed": 5,
+      "explicit_pinned_receipt": "upstream-renderer-pinned-controls.json",
+      "scope": "Historical synthetic/replay controls and an actual extracted upstream renderer. Initial skipped-class record is retained."
+    },
+    "retained_inventory": {
+      "passed": 6,
+      "receipt": "retained-inventory-controls.json"
+    },
+    "cargo_gate": {
+      "gate_controls_passed": 4,
+      "real_child_refusal_controls_passed": 3,
+      "skipped": 0,
+      "receipt": "cargo-gate-controls.json"
+    },
+    "archived_performance": {
+      "timings_replayed": 360,
+      "comparisons_replayed": 15,
+      "receipt": "historical-archive-replay.json",
+      "replay_build_receipt": "historical-replay-build.json",
+      "scope": "Original public archive verification. No private originals decrypted and no application compilation/timing was repeated."
+    }
+  },
+  "documentation_review": {
+    "source_commit": "f87647d66c4c95b8d51a6baa7dc000f4c888e6e9",
+    "review": "Independent read-only actual-tree review reported all 396 indexed Markdown hashes, 639 local file links, 15 heading links and 279 protected Markdown identities consistent. No Markdown is added by this evidence commit.",
+    "inventory": "docs/compiler-set/documentation-disposition.json"
+  },
+  "retained_original_failures": "The CI audit index retains the original missing-cache failure, before-fix controls, and the tiny-study refusal caused by absent local PSI files. This combined verification does not supersede or requalify those histories.",
+  "limits": [
+    "Selective complementary coverage, the joined native metadata caller and full Rust replacement remain incomplete; release admission stays false.",
+    "No current near-stock Lust, near-stock complementary or overall speedup claim is established by these finite controls.",
+    "The protected engine still uses std, native host libraries and Unix retained transport. No transport/retention equivalence is claimed.",
+    "The independent semantic research oracle full runtime suite was not rerun; its unavailable older SDK and source scope remain disclosed in the earlier construction audit.",
+    "The CI retained oracle suite has 58 prior controls whose runner/test/inventory/tool hashes match this tree. Only the six changed-inventory controls were rerun here.",
+    "No default branch merge, package release or hosted-workflow success is asserted."
+  ],
+  "artifacts": {
+    "actual-build-policy.json": {
+      "bytes": 613,
+      "sha256": "431a55448c1b7befa64dc49e3dbef3483047807d2e0f74884c1b2efa9115fcb7"
+    },
+    "actual-build-policy.stderr": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "actual-build-policy.stdout": {
+      "bytes": 8960,
+      "sha256": "dffb5fc332152c6adedb0b8b9155f5ed90d7821a17a098a904774a36dc673bd1"
+    },
+    "assessment-controls.json": {
+      "bytes": 584,
+      "sha256": "f8f21af10f6121c2996174a9b61fbb8773bdb0d3e3bb51b4ebeea2df3ebae775"
+    },
+    "assessment-controls.stderr": {
+      "bytes": 3966,
+      "sha256": "4a4ea0f4a4cc6f19ce9fabe9ddf2fa1346bf42adee4825a47e4b86136bdfab58"
+    },
+    "assessment-controls.stdout": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "capability-controls.json": {
+      "bytes": 577,
+      "sha256": "115d587c2053a68f5faf5521977a842ff9c5cdaf5ca488623215e2d5495f2a69"
+    },
+    "capability-controls.stderr": {
+      "bytes": 3481,
+      "sha256": "08cf6eae4ae3f90bd21d2fed98c4bf3089bfc0a59b9f3d1e3d47452b0c0f7833"
+    },
+    "capability-controls.stdout": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "cargo-gate-controls.json": {
+      "bytes": 937,
+      "sha256": "ef9e4a5cd14bbf7347b08fe0c32923d9edbecc65f202e00cab7c0765a123228a"
+    },
+    "cargo-gate-controls.stderr": {
+      "bytes": 1116,
+      "sha256": "4bf38b56f323b66ee71776a8eb48d11ed41eda5a403ac71d8ca4da8141a5c48f"
+    },
+    "cargo-gate-controls.stdout": {
+      "bytes": 755,
+      "sha256": "d9bb536390234b40552bf05d0466fd5532a18bdd13f352162f053b2fb01f0068"
+    },
+    "exclusive-mutations.json": {
+      "bytes": 572,
+      "sha256": "e44ea74dfe41e425b2377a0c1c60e78108f4e83c95f013b38d25c6cceef7d256"
+    },
+    "exclusive-mutations.stderr": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "exclusive-mutations.stdout": {
+      "bytes": 315,
+      "sha256": "d3b928adb1cf2a8e4e3c16a295adc5fe13ea2e6fa7158a7f810f1faa74b03e83"
+    },
+    "historical-archive-replay.json": {
+      "bytes": 653,
+      "sha256": "07b191c1f086dbc9f16e51cef4491f7b31bd3529e3108027b8af8e03f5d35669"
+    },
+    "historical-archive-replay.stderr": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "historical-archive-replay.stdout": {
+      "bytes": 430,
+      "sha256": "b399a325121750bc7d8d361c173a8cc36529ea8258e6be094f71755837ddc5e3"
+    },
+    "historical-replay-build.json": {
+      "bytes": 909,
+      "sha256": "9e292472a9fd44dd410f06dd267aab8c7bbb93941ea222bbfa0ab00489f0611e"
+    },
+    "historical-replay-build.stderr": {
+      "bytes": 136,
+      "sha256": "3f3a58600e7701c7e0feb6c7fe1e2e935e21639fe58bf10dfb75d3e84489bab3"
+    },
+    "historical-replay-build.stdout": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "historical-slice-controls.json": {
+      "bytes": 583,
+      "sha256": "0b5cdfb64071ba30e37feec8123f04ce531928f3115efe85253490b93abe6cee"
+    },
+    "historical-slice-controls.stderr": {
+      "bytes": 129,
+      "sha256": "1102e0532d59c09615881924f67def8e2cc2d9ffd1df0f87b0788026cadbd3d3"
+    },
+    "historical-slice-controls.stdout": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "preservation.json": {
+      "bytes": 2636,
+      "sha256": "3563ab3cfb029eedd79886560685ec71ad9c1313840a334749d5ec5c3a463ba2"
+    },
+    "python-group.json": {
+      "bytes": 7549,
+      "sha256": "97a7f8e0214c0ca4c9495aa566073482fd14dab650713ed48a983b3fa8b77b52"
+    },
+    "record-projections.json": {
+      "bytes": 16223,
+      "sha256": "5ab7089a79ecc31bd4a257ee55f70a594c2301747b18a541e4cff7d20a924062"
+    },
+    "release-refusal.json": {
+      "bytes": 577,
+      "sha256": "cef06cd7057c978383e7643127a457ca7ae7411ecaaa8249f8036e0d26c5c6bf"
+    },
+    "release-refusal.stderr": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "release-refusal.stdout": {
+      "bytes": 447,
+      "sha256": "65d5fe87bb63c06c7251335cba84c2878563cac92656a242e64c0b72cebb282e"
+    },
+    "retained-inventory-controls.json": {
+      "bytes": 615,
+      "sha256": "525f7fcc0c2d5e477701a7e78af481fd68fe3aef0609e89c907a76eabb3e1d98"
+    },
+    "retained-inventory-controls.stderr": {
+      "bytes": 942,
+      "sha256": "1dcb551faba2dd00986d936f71308f6782354fb031a7469bbc6e2cae02b0f1a7"
+    },
+    "retained-inventory-controls.stdout": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "retirement-controls.json": {
+      "bytes": 577,
+      "sha256": "b4834f62a20a6b7b62a8e08ad3ea86ad7974a4f93d3e93720ec9d5b8dff0fecd"
+    },
+    "retirement-controls.stderr": {
+      "bytes": 617,
+      "sha256": "aebf9e54ae87f0c98222a2dbc60682adfbf04f1933bcebe9294837e2662c8a7b"
+    },
+    "retirement-controls.stdout": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "rust-group.json": {
+      "bytes": 2997,
+      "sha256": "7bdad862fbbc2932f01170a8561237bf4a1b14e9ae1f4c7e2f3c1b34723d61ba"
+    },
+    "source-snapshot.json": {
+      "bytes": 8097,
+      "sha256": "439c99a2e5b7119e7097c53c0bd1f97331d636821340b067cbcdd8d9a5d91785"
+    },
+    "structural-admission.json": {
+      "bytes": 570,
+      "sha256": "6a7396e1f4e8347316d979eba68ff23bd7443429b60c1f342e1b4f250e0a5994"
+    },
+    "structural-admission.stderr": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "structural-admission.stdout": {
+      "bytes": 322,
+      "sha256": "29e8b9779114dec7438f6aaf42b4fb57b351c9c122aeb0dcd5e1368f12b1c69e"
+    },
+    "upstream-renderer-pinned-controls.json": {
+      "bytes": 681,
+      "sha256": "2ff0da5465a80dd698885086ffd9d7d625333dfb55e8b8308930c69af37dc11c"
+    },
+    "upstream-renderer-pinned-controls.stderr": {
+      "bytes": 904,
+      "sha256": "5fdf6e015878c2dd42695143197d887cab2ed88ba9a820ad970627f23e69b895"
+    },
+    "upstream-renderer-pinned-controls.stdout": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "warm-applicability-controls.json": {
+      "bytes": 583,
+      "sha256": "7701a7b9eb821bdca813b6928395694a903f45af7e158ab4eba895ff3e220484"
+    },
+    "warm-applicability-controls.stderr": {
+      "bytes": 3170,
+      "sha256": "aad7dd4d55ccc82ccf3fc8263b147e6e8ad9c6ff4f2d5be4d9b9f4d6063f761f"
+    },
+    "warm-applicability-controls.stdout": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "workflow-controls.json": {
+      "bytes": 570,
+      "sha256": "3592d4aef59ebffc80f594c489330ec20f0483ce13088256c6e78dea3a3d8192"
+    },
+    "workflow-controls.stderr": {
+      "bytes": 904,
+      "sha256": "b8056118d88bc7003c5b5cccd9f216fc73033738da5c6576867522fe611b77b4"
+    },
+    "workflow-controls.stdout": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    }
+  }
+}

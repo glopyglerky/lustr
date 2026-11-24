@@ -1,0 +1,14 @@
+[
+  {
+    "exit": 0,
+    "label": "target-directory-baseline",
+    "stderr": "",
+    "stdout": "{\"elapsed_ns\":84848315,\"manifest\":\"<REVIEW_WORKSPACE>/warm-review/baseline-counterexamples/project/Cargo.toml\",\"phase\":\"selection\",\"success\":true,\"target\":\"first\"}\n"
+  },
+  {
+    "exit": 0,
+    "label": "target-replaced-by-file",
+    "stderr": "",
+    "stdout": "{\"elapsed_ns\":47043892,\"manifest\":\"<REVIEW_WORKSPACE>/warm-review/baseline-counterexamples/project/Cargo.toml\",\"phase\":\"selection\",\"success\":true,\"target\":\"first\"}\n"
+  }
+]

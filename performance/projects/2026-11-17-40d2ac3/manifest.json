@@ -1,0 +1,88 @@
+{
+  "campaign_conclusion": "passed",
+  "checkout": "3b4b0bd67401085129d26be1afbd20e96c9b9d02",
+  "comparisons": 5,
+  "encrypted_artifact": 14336433890,
+  "files": {
+    "README.md": {
+      "bytes": 7664,
+      "sha256": "1a4035edfb97595216544e482755608a3893589c320a38103e98e4d54149c70c"
+    },
+    "artifacts/encrypted-original.zip": {
+      "bytes": 1243199,
+      "sha256": "9562ee5fec44311d7a278885b74889b163a2d4196468a33584399c6f47a7fa03"
+    },
+    "artifacts/public-original.zip": {
+      "bytes": 32384,
+      "sha256": "666c19ddfaa87b197419f419735e3806b0562ec2facfbd6cb4b2bdde768bea32"
+    },
+    "github-artifacts.json": {
+      "bytes": 3416,
+      "sha256": "25a4c3a8bfc5292f86d0ea1b4a47bc460c15464d8ab808675d3c2730badd9532"
+    },
+    "github-jobs-at-completion.json": {
+      "bytes": 19584,
+      "sha256": "dead861fed140997152ce8e3e289a1f05d48a428abcfb4091240d36606018800"
+    },
+    "public/README.md": {
+      "bytes": 3365,
+      "sha256": "c5f54636e538d5335f3e71504ce3fe73c9fee2b757bb7fbd15e8b22884bb2b05"
+    },
+    "public/SHA256SUMS": {
+      "bytes": 389,
+      "sha256": "c5d186e5a6bb3a79fe8d46b81898dad1fac2725cc390410f43491fc112b53d3c"
+    },
+    "public/campaign.json": {
+      "bytes": 2438,
+      "sha256": "1a7413a373e41ba3e6227fc0076e23c81e2b56370b733b11580e8130115436cd"
+    },
+    "public/host.json": {
+      "bytes": 2270,
+      "sha256": "1109afbfd74fbef4ea2a19038f40de62835906830ed50cd7d42863025d6b0577"
+    },
+    "public/replay.json": {
+      "bytes": 7416,
+      "sha256": "daa18bc1b5e2a459e089a2a90a3f17a360e62052ccf83f79cd0300fe5b52b7aa"
+    },
+    "public/samples.json": {
+      "bytes": 288795,
+      "sha256": "b02b936cb42663164358d89e30c13a80d648dce69a195e2aad23d6d132e24a0c"
+    },
+    "recovery/initial-extraction.json": {
+      "bytes": 51,
+      "sha256": "bbe8ffd1724af587926ca6e02be57438f97d216c0f973354bb76eb8788912a91"
+    },
+    "recovery/receipt.json": {
+      "bytes": 1670,
+      "sha256": "c576960abab02ee26877eae52621374453177661ebac777c74a9465b69ef3ff2"
+    },
+    "recovery/replay-build.json": {
+      "bytes": 725,
+      "sha256": "16bc8bc3bfc53eb86b59a62aabd4442d3a1f1a3175e91b3037d88204aaa9d67a"
+    },
+    "recovery/result.json": {
+      "bytes": 1828,
+      "sha256": "9ce02c2d8cc627a89f34253f3ed1066cd9c38324e372f314af9b208226fa7abd"
+    },
+    "retention/receipt.json": {
+      "bytes": 1262,
+      "sha256": "841ca8e594074539503551489345c8cb6bd3fabb1a7b54786558763ed6543f6f"
+    },
+    "retention/status.json": {
+      "bytes": 511,
+      "sha256": "9324a644b21541dbc18ed65b46677c0d10e7ea0dc6f6fb7daa82c4a18ad7a731"
+    },
+    "timings.csv": {
+      "bytes": 21090,
+      "sha256": "89a53063edcb82e1951b26210935bd7879b1d5cb73446aed4c2f202a66dc02c6"
+    }
+  },
+  "head": "40d2ac3f0b71abaa1e73cd366d8c43f8eb4d4581",
+  "job": 134084163908,
+  "overall_job_conclusion": "failure-separate-profile-trace-framing",
+  "public_artifact": 14336054692,
+  "run": 44096292176,
+  "schema": "lustr-committed-project-evidence-v1",
+  "timed_commands": 120,
+  "tree": "78318c4b01f8eb6f9518ea331efe69f0c457b1ce"
+}

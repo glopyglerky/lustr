@@ -1,0 +1,31 @@
+{
+  "published_head": "7c3d095fa8971a4c38aa0edf62e8fcfd7a51589a",
+  "source_git_blob": "1149799bbd7880715ed6aa4753c3d9c36fecdaad",
+  "source_sha256": "94acc8580cb963295c032485f69f4d8a86d0757c11fff5c68119f6857c63511c",
+  "historical_introduction": "47371e9143392d9de52eb32c82e8437ca4d37f77",
+  "checks": {
+    "original_guard": {
+      "argv": [
+        "python3",
+        "tools/check-exclusive-coverage.py"
+      ],
+      "exit": 0
+    },
+    "published_references": {
+      "argv": [
+        "git",
+        "grep",
+        "-n",
+        "-E",
+        "mixed_entry|full_rust_only",
+        "7c3d095fa8971a4c38aa0edf62e8fcfd7a51589a",
+        "--",
+        "crates",
+        "src",
+        "tools",
+        ".github"
+      ],
+      "exit": 0
+    }
+  }
+}

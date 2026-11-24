@@ -1,0 +1,19 @@
+{
+  "schema": "lustr-original-failure-log-preservation-v1",
+  "log_bytes_unchanged": true,
+  "normalization": "None. Generic original sandbox build paths remain only in original failure logs for exact byte preservation. Compact verification results contain no absolute workspace paths.",
+  "files": {
+    "mixed-admission-build-enospc.stderr": {
+      "sha256": "8b9118d5a5e3722bb2f6e2a224874e985e2663d5559ed0ab36f2e9e3f57a7229",
+      "bytes": 30714,
+      "original_label": "logs/mixed-admission-product-tests.stderr",
+      "scope": "environment failure before test or fixture execution"
+    },
+    "range-fixture-setup-enospc.stderr": {
+      "sha256": "c73bf76ff238edffcee51eebd39d277bac46e2d10de3992899b231593a6a8c82",
+      "bytes": 445,
+      "original_label": "logs/final-range-fixture.stderr",
+      "scope": "environment failure before test or fixture execution"
+    }
+  }
+}

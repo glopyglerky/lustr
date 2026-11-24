@@ -1,0 +1,71 @@
+{
+  "schema": 1,
+  "prior_integration_commit": "9c4580f9823dea67a613f43c6bc9baec61efe5a9",
+  "prior_guard_sha256": "980364e8b7e5de8d5919b80f0ebfbb64ae9ed6220d080732c521eb7bd20d1f94",
+  "scope": "derive required no-delegation feature from actual constructor CLI selections; no runtime or compiler-source change",
+  "case": {
+    "mutation": "Cargo.toml source-native-runtime becomes an empty feature instead of enabling exclusive-native",
+    "prior_guard_admitted": true,
+    "current_guard_rejected": true,
+    "failures": [
+      "Cargo.toml: constructor feature closure omits exclusive-native"
+    ]
+  },
+  "actual_constructor_features": {
+    "lustr-compiler": [
+      "source-native-runtime"
+    ],
+    "lust": [
+      "exclusive-native"
+    ],
+    "lustr-native-core": [
+      "exclusive-native"
+    ]
+  },
+  "required_derived_product_feature": "exclusive-native",
+  "source_sha256": {
+    "tools/check-exclusive-coverage.py": "a1b4c9377670627a27925ed07809476e1899e1e9d832ccce563e117b24c3f967",
+    "tools/test-exclusive-coverage-guard.py": "86caf1f2472d2ab86e6c4fc9103a8033342ee61ecfa2c9a0264939117bc21dc5",
+    "tools/build-native-toolchain.rs": "b62369a4530322e516b2bb8e211d960b975119146ed7ab2f5148224aefe98ada"
+  },
+  "commands": [
+    {
+      "command": [
+        "python3",
+        "tools/check-exclusive-coverage.py"
+      ],
+      "status": 0,
+      "streams": {
+        "stdout": {
+          "path": "feature-closure-guard.stdout",
+          "sha256": "29e8b9779114dec7438f6aaf42b4fb57b351c9c122aeb0dcd5e1368f12b1c69e"
+        },
+        "stderr": {
+          "path": "feature-closure-guard.stderr",
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        }
+      }
+    },
+    {
+      "command": [
+        "python3",
+        "tools/test-exclusive-coverage-guard.py"
+      ],
+      "status": 0,
+      "streams": {
+        "stdout": {
+          "path": "feature-closure-controls.stdout",
+          "sha256": "d3b928adb1cf2a8e4e3c16a295adc5fe13ea2e6fa7158a7f810f1faa74b03e83"
+        },
+        "stderr": {
+          "path": "feature-closure-controls.stderr",
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        }
+      }
+    }
+  ],
+  "limitations": [
+    "These controls prove source-graph admission, not compiler semantics or package performance.",
+    "The combined integration tree will run actual constructor admission controls after all evaluator changes are integrated."
+  ]
+}

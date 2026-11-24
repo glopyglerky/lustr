@@ -1,0 +1,36 @@
+request-key=9716b9c7daacf698 retained=false
+full-rust-direct=1
+request-key=9716b9c7daacf698 retained=false
+request-key=9716b9c7daacf698 retained=false
+request-key=9716b9c7daacf698 retained=false
+request-key=4b91e6028f45fff2 retained=false
+full-rust-direct=1
+frontend=1
+native-definitions=0
+request-key=f7df80fbf61ea7b7 retained=false
+frontend=1
+lustr mixed native: 2 function(s) generated in retained Lust session
+
+native-admitted-definition=choose
+lustr mixed native: 2 function(s) generated in retained Lust session
+
+native-admitted-definition=signed_rotation
+lustr mixed native: 2 function(s) generated in retained Lust session
+
+native-admitted-definition=arithmetic
+lustr mixed native: 2 function(s) generated in retained Lust session
+
+native-admitted-definition=kernel
+lustr mixed native: 2 function(s) generated in retained Lust session
+
+native-admitted-definition=rotation
+lustr mixed native: 2 function(s) generated in retained Lust session
+
+native-admitted-definition=nested::kernel
+native-definitions=6
+native-definition-omitted=_RNvCs75ITawXndTq_9mixed_app6choose
+native-definition-omitted=_RNvCs75ITawXndTq_9mixed_app15signed_rotation
+native-definition-omitted=_RNvCs75ITawXndTq_9mixed_app10arithmetic
+native-definition-omitted=_RNvCs75ITawXndTq_9mixed_app6kernel
+native-definition-omitted=_RNvCs75ITawXndTq_9mixed_app8rotation
+native-definition-omitted=_RNvNtCs75ITawXndTq_9mixed_app6nested6kernel

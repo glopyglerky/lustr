@@ -226,7 +226,8 @@ pub fn hash_token(h: &mut impl Hasher, tok: &Token, strings: &[String]) {
     std::mem::discriminant(&tok.tok).hash(h);
     tok.span.ctxt.0.hash(h);
     match tok.tok {
-        Tok::Ident(s) | Tok::Reserved(s) | Tok::Lifetime(s) => s.0.hash(h),
+        Tok::Ident(s, raw) | Tok::Lifetime(s, raw) => { s.0.hash(h); raw.hash(h); }
+        Tok::Reserved(s) => s.0.hash(h),
         Tok::Int(v, suffix, _) => {
             v.hash(h);
             suffix.map(|s| s as u8).hash(h);
@@ -290,7 +291,7 @@ pub fn span_hash_tts(trees: &[Tt], base: u32) -> u64 {
 
 /// True when a token can be one segment of a macro path.
 fn is_seg_tok(tok: Tok) -> bool {
-    matches!(tok, Tok::Ident(_) | Tok::SelfUpper | Tok::SelfLower | Tok::Crate | Tok::Super)
+    matches!(tok, Tok::Ident(_, _) | Tok::SelfUpper | Tok::SelfLower | Tok::Crate | Tok::Super)
 }
 
 /// The token at `trees[i]` when it is a plain token.
@@ -304,7 +305,7 @@ pub fn tok_at(trees: &[Tt], i: usize) -> Option<Token> {
 /// The name a path-segment token stands for, as a string.
 pub fn seg_text(tok: Tok, interner: &Interner) -> Option<String> {
     Some(match tok {
-        Tok::Ident(s) => interner.get(s).to_string(),
+        Tok::Ident(s, _) => interner.get(s).to_string(),
         Tok::SelfUpper => "Self".to_string(),
         Tok::SelfLower => "self".to_string(),
         Tok::Crate => "crate".to_string(),
@@ -318,7 +319,7 @@ pub fn seg_text(tok: Tok, interner: &Interner) -> Option<String> {
 /// wild), so keywords count, as they do in rustc's matcher.
 pub fn meta_sym(tok: Tok, interner: &Interner) -> Option<Sym> {
     match tok {
-        Tok::Ident(s) => Some(s),
+        Tok::Ident(s, _) => Some(s),
         Tok::As
         | Tok::Break
         | Tok::Const
@@ -362,7 +363,7 @@ pub fn meta_sym(tok: Tok, interner: &Interner) -> Option<Sym> {
 /// The symbol a path-segment token stands for.
 pub fn seg_sym(tok: Tok, interner: &Interner) -> Option<Sym> {
     match tok {
-        Tok::Ident(s) => Some(s),
+        Tok::Ident(s, _) => Some(s),
         _ => seg_text(tok, interner).map(|text| interner.intern(&text)),
     }
 }
@@ -372,8 +373,9 @@ pub fn seg_sym(tok: Tok, interner: &Interner) -> Option<Sym> {
 pub fn tok_text(tok: &Tok, strings: &[String], interner: &Interner) -> String {
     use Tok::*;
     match tok {
-        Ident(s) | Reserved(s) => return interner.get(*s).to_string(),
-        Lifetime(s) => return format!("'{}", interner.get(*s)),
+        Ident(s, raw) => return if *raw { format!("r#{}", interner.get(*s)) } else { interner.get(*s).to_string() },
+        Reserved(s) => return interner.get(*s).to_string(),
+        Lifetime(s, raw) => return format!("'{}{}", if *raw { "r#" } else { "" }, interner.get(*s)),
         // Literals print as written (see `lexer::lit_text`).
         Int(..) | Float(_) | Str(..) | DocStr(_) | ByteStr(_) | ByteChar(_) | Char(..) => {
             return crate::lexer::lit_text(tok, strings).unwrap_or_default().into_owned();
@@ -527,7 +529,7 @@ pub struct MacroDef {
 fn template_pos_sensitive(trees: &[Tt], interner: &Interner) -> bool {
     trees.iter().enumerate().any(|(i, t)| match t {
         Tt::Tok(tok) => {
-            matches!(tok.tok, Tok::Ident(s2) if matches!(interner.get(s2), "stringify" | "line" | "column" | "file"))
+            matches!(tok.tok, Tok::Ident(s2, _) if matches!(interner.get(s2), "stringify" | "line" | "column" | "file"))
                 && tok_at(trees, i + 1).map(|n| n.tok) == Some(Tok::Bang)
         }
         Tt::Delim(_, inner, _) => template_pos_sensitive(inner, interner),
@@ -619,6 +621,22 @@ pub fn compile_ast_macro(def: &MacroRulesDef, exported: bool, strings: &[String]
     compile_macro(def.name, def.name_span, &body, exported, def.span, strings, interner)
 }
 
+/// A procedural macro provider bound to validated host artifacts for this expansion.
+pub trait ProceduralMacros: Send + Sync {
+    fn expand(&self, call: &Call, ctx: &ExpandCtx<'_>, strings: &mut Vec<String>)
+        -> Option<Result<ProceduralExpansion, Diag>>;
+
+    fn exports_attribute(&self, _alias: &str, _name: &str) -> bool { false }
+    fn has_attributes(&self) -> bool { false }
+    fn has_crate_alias(&self, _alias: &str) -> bool { false }
+}
+
+pub struct ProceduralExpansion {
+    pub tokens: Vec<Tt>,
+    pub environment: Vec<(String, Option<String>)>,
+    pub paths: Vec<std::path::PathBuf>,
+}
+
 /// The driver facts expansion needs: who interns, which file this is
 /// (for `file!` and relative `include!`), the file's text (for `line!`
 /// and `column!`), and the cfg environment.
@@ -640,6 +658,8 @@ pub struct ExpandCtx<'a> {
     /// the rustc process. Empty off the Cargo path (single file, std).
     pub cargo_env: Vec<(String, String)>,
     pub src: &'a str,
+    /// The native source-map entry that owns `src`.
+    pub source_file: Option<crate::diag::FileId>,
     pub cfg: builtin::CfgEnv,
     /// The module path (from the crate root) of the file being expanded.
     /// Empty for a crate root file and for single-file programs. The
@@ -657,6 +677,7 @@ pub struct ExpandCtx<'a> {
     /// resolves only through one of these, as rustc reads `::name` as an
     /// extern crate. Empty off the Cargo path.
     pub extern_crates: Vec<Sym>,
+    pub(crate) procedural_macros: Option<&'a dyn ProceduralMacros>,
     /// The requesting client's env and shown paths (`for_file` gives `ClientView::PROCESS`).
     pub client: &'a ClientView,
 }
@@ -674,11 +695,20 @@ pub struct ClientView {
     /// the shown dir joined with the rest, as rustc shows paths relative
     /// to the root path it was given. None shows paths as they are.
     pub shown_root: Option<(std::path::PathBuf, std::path::PathBuf)>,
+    pub stdin_origin: Option<std::sync::Arc<StdinOrigin>>,
+}
+
+/// Keep the path used for module lookup separate from the reported source name.
+#[derive(Debug)]
+pub struct StdinOrigin {
+    pub root: std::path::PathBuf,
+    pub display: String,
+    pub doctest_offset: Option<isize>,
 }
 
 impl ClientView {
     /// This process's env, paths shown as they are.
-    pub const PROCESS: ClientView = ClientView { env: None, shown_root: None };
+    pub const PROCESS: ClientView = ClientView { env: None, shown_root: None, stdin_origin: None };
 
     /// The value of env var `name` for `env!` and `option_env!`.
     pub fn env_var(&self, name: &str) -> Option<String> {
@@ -710,10 +740,12 @@ impl<'a> ExpandCtx<'a> {
             real_path: file_path.to_path_buf(),
             cargo_env: Vec::new(),
             src,
-            cfg: builtin::CfgEnv { test, debug_assertions: true, facts: Vec::new(), panic_unwind: false },
+            source_file: None,
+            cfg: builtin::CfgEnv { test, debug_assertions: true, facts: Vec::new(), panic_unwind: false, core_prelude: false, explicit_std: false },
             module_path: Vec::new(),
             crate_name: None,
             extern_crates: Vec::new(),
+            procedural_macros: None,
             client: &ClientView::PROCESS,
         }
     }
@@ -742,6 +774,9 @@ pub enum Dep {
         path: std::path::PathBuf,
         hash: u64,
     },
+    /// A proc macro explicitly tracked this path. It may name an absent
+    /// entry or a directory, so this record makes no claim about bytes read.
+    TrackedPath(std::path::PathBuf),
     Env {
         name: String,
         value: Option<String>,
@@ -785,6 +820,7 @@ fn dep_bytes_hash(bytes: &[u8]) -> u64 {
 pub fn deps_stale_with(deps: &[Dep], env: &dyn Fn(&str) -> Option<String>) -> bool {
     deps.iter().any(|dep| match dep {
         Dep::File { path, hash } => std::fs::read(path).map_or(true, |bytes| dep_bytes_hash(&bytes) != *hash),
+        Dep::TrackedPath(_) => true,
         Dep::Env { name, value } => env(name) != *value,
         Dep::Position | Dep::Shown { .. } | Dep::Dropped { .. } => false,
     })
@@ -1017,11 +1053,13 @@ fn crate_name_facts(tokens: &[Token], ctx: &ExpandCtx, root: bool) -> (Vec<Sym>,
         match t.tok {
             Tok::LBrace | Tok::LParen | Tok::LBracket => depth += 1,
             Tok::RBrace | Tok::RParen | Tok::RBracket => depth = depth.saturating_sub(1),
-            Tok::Ident(s) if matches!(interner.get(s), "std" | "core" | "alloc") || ctx.extern_crates.contains(&s) => {
+            Tok::Ident(s, _) if matches!(interner.get(s), "std" | "core" | "alloc")
+                || ctx.extern_crates.contains(&s)
+                || ctx.procedural_macros.is_some_and(|provider| provider.has_crate_alias(interner.get(s))) => {
                 let prev = i.checked_sub(1).map(|j| tokens[j].tok);
                 let next = tokens.get(i + 1).map(|n| n.tok);
                 let binds = matches!(prev, Some(Tok::Mod | Tok::As | Tok::Struct | Tok::Enum | Tok::Trait | Tok::Type))
-                    || prev == Some(Tok::Ident(union))
+                    || matches!(prev, Some(Tok::Ident(s, _)) if s == union)
                     || (prev == Some(Tok::PathSep) && matches!(next, Some(Tok::Semi | Tok::Comma | Tok::RBrace)) && in_use_tree(tokens, i));
                 if binds && !shadowed.contains(&s) {
                     shadowed.push(s);
@@ -1045,10 +1083,10 @@ pub fn needs_expansion(tokens: &[Token], interner: &Interner) -> bool {
     let macro_rules = interner.intern("macro_rules");
     for (i, t) in tokens.iter().enumerate() {
         match t.tok {
-            Tok::Ident(s) if s == macro_rules => return true,
+            Tok::Ident(s, _) if s == macro_rules => return true,
             // A name a use tree binds: a leaf before `;`, `,` or `}`, or
             // the name after `as`.
-            Tok::Ident(s)
+            Tok::Ident(s, _)
                 if builtin::is_passthrough(interner.get(s))
                     && i > 0
                     && (tokens[i - 1].tok == Tok::As
@@ -1093,7 +1131,7 @@ fn in_use_tree(tokens: &[Token], i: usize) -> bool {
     for j in (0..i).rev() {
         match tokens[j].tok {
             Tok::Use => return tokens.get(j + 1).is_none_or(|t| t.tok != Tok::Lt),
-            Tok::Ident(_) | Tok::PathSep | Tok::Comma | Tok::LBrace | Tok::RBrace | Tok::As | Tok::Star | Tok::Crate | Tok::Super => {}
+            Tok::Ident(_, _) | Tok::PathSep | Tok::Comma | Tok::LBrace | Tok::RBrace | Tok::As | Tok::Star | Tok::Crate | Tok::Super => {}
             Tok::SelfLower | Tok::Underscore => {}
             _ => return false,
         }
@@ -1103,9 +1141,9 @@ fn in_use_tree(tokens: &[Token], i: usize) -> bool {
 
 /// The name a worklist seed defines (`macro_rules! name`), if it reads.
 fn seed_name(seed: &MacroSeed, interner: &Interner) -> Option<Sym> {
-    let at = seed.tokens.iter().position(|t| matches!(t.tok, Tok::Ident(s) if interner.get(s) == "macro_rules"))?;
+    let at = seed.tokens.iter().position(|t| matches!(t.tok, Tok::Ident(s, _) if interner.get(s) == "macro_rules"))?;
     match (seed.tokens.get(at + 1).map(|t| t.tok), seed.tokens.get(at + 2).map(|t| t.tok)) {
-        (Some(Tok::Bang), Some(Tok::Ident(s))) => Some(s),
+        (Some(Tok::Bang), Some(Tok::Ident(s, _))) => Some(s),
         _ => None,
     }
 }
@@ -1235,6 +1273,7 @@ pub struct Expander<'a> {
     /// `include!` swaps these.
     cur_file: String,
     cur_real: std::path::PathBuf,
+    cur_anonymous: bool,
     cur_src: String,
     /// The file id of the tokens being expanded (the first input token's),
     /// so `assert_msg` can tell a macro body in this file from one in
@@ -1377,6 +1416,8 @@ impl<'a> Expander<'a> {
             module: ctx.module_path.clone(),
             cur_file: ctx.file_path.clone(),
             cur_real: ctx.real_path.clone(),
+            cur_anonymous: ctx.module_path.is_empty() && ctx.client.stdin_origin.as_ref()
+                .is_some_and(|origin| origin.doctest_offset.is_none() && origin.root == ctx.real_path),
             cur_src: ctx.src.to_string(),
             root_file: None,
             shadowed_crates: Vec::new(),
@@ -1425,7 +1466,7 @@ impl<'a> Expander<'a> {
 
     /// An identifier tree for `name` at `span`.
     pub fn ident_tree(&mut self, name: &str, span: Span) -> Tt {
-        Tt::Tok(Token { tok: Tok::Ident(self.ctx.interner.intern(name)), span })
+        Tt::Tok(Token { tok: Tok::Ident(self.ctx.interner.intern(name), false), span })
     }
 
     /// Folds one dependency read into the running deps hash.
@@ -1457,6 +1498,7 @@ impl<'a> Expander<'a> {
 
     /// The current file as `file!` shows it, recorded as a `Dep::Shown`.
     pub fn read_dep_shown(&mut self) -> String {
+        if self.cur_anonymous { return "<anon>".into(); }
         let path = self.cur_file.clone();
         let shown = self.ctx.client.shown(&path);
         self.fold_dep("shown", shown.as_bytes());
@@ -1489,7 +1531,9 @@ impl<'a> Expander<'a> {
         let upto = lo.min(src.len());
         let line = src[..upto].iter().filter(|&&b| b == b'\n').count() as u32 + 1;
         let line_start = src[..upto].iter().rposition(|&b| b == b'\n').map_or(0, |p| p + 1);
-        let col = self.cur_src[line_start..upto].chars().count() as u32 + 1;
+        let prefix = &self.cur_src[line_start..upto];
+        let prefix = if line_start == 0 { prefix.strip_prefix('\u{feff}').unwrap_or(prefix) } else { prefix };
+        let col = prefix.chars().count() as u32 + 1;
         (line, col)
     }
 
@@ -1552,7 +1596,7 @@ pub fn splice_placeholders(trees: Vec<Tt>, name: &str, replacement: &[Tt], inter
     let mut out = Vec::new();
     for tree in trees {
         match tree {
-            Tt::Tok(t) if matches!(t.tok, Tok::Ident(s) if interner.get(s) == name) => out.extend(replacement.iter().cloned()),
+            Tt::Tok(t) if matches!(t.tok, Tok::Ident(s, _) if interner.get(s) == name) => out.extend(replacement.iter().cloned()),
             Tt::Delim(d, inner, span) => out.push(Tt::Delim(d, splice_placeholders(inner, name, replacement, interner), span)),
             other => out.push(other),
         }
@@ -1707,7 +1751,7 @@ impl SeedReach {
         let mut always = Vec::new();
         for (i, seed) in seeds.iter().enumerate() {
             for w in seed.tokens.windows(3) {
-                if let (Tok::Ident(m), Tok::Bang, Tok::Ident(n)) = (w[0].tok, w[1].tok, w[2].tok)
+                if let (Tok::Ident(m, _), Tok::Bang, Tok::Ident(n, _)) = (w[0].tok, w[1].tok, w[2].tok)
                     && m == macro_rules
                 {
                     let text = interner.get(n);
@@ -1727,7 +1771,7 @@ pub fn stream_idents(toks: &[Token], interner: &Interner) -> Option<Vec<Sym>> {
     let include = interner.intern("include");
     let mut out: Vec<Sym> = Vec::new();
     for t in toks {
-        if let Tok::Ident(s) = t.tok {
+        if let Tok::Ident(s, _) = t.tok {
             if s == include {
                 return None;
             }
@@ -1756,7 +1800,7 @@ pub fn reach_seeds<'s>(lists: [&SeedReach; 2], own: &[Token], sources: impl Into
     let mut seen: FxMap<Sym, ()> = FxMap::default();
     let mut todo: Vec<Sym> = Vec::new();
     for t in own {
-        if let Tok::Ident(s) = t.tok {
+        if let Tok::Ident(s, _) = t.tok {
             if s == include {
                 return every();
             }
@@ -1795,7 +1839,11 @@ fn expand_macros(lexed: Lexed, ctx: &ExpandCtx, seeds: &[MacroSeed], extra: &[Ma
     if let Some(d) = delimiter_error(&lexed.tokens) {
         return Err(d);
     }
-    if !needs_expansion(&lexed.tokens, ctx.interner) && !seeds_bind_parser_name(&lexed.tokens, seeds, extra, ctx.interner) {
+    // Parser-handled macros still need normal name resolution in core's prelude.
+    let has_attributes = ctx.procedural_macros.is_some_and(|provider| provider.has_attributes());
+    if !ctx.cfg.core_prelude && !has_attributes && !needs_expansion(&lexed.tokens, ctx.interner)
+        && !seeds_bind_parser_name(&lexed.tokens, seeds, extra, ctx.interner)
+    {
         return Ok((lexed, Vec::new()));
     }
     let (trees, _) = build_trees(&lexed.tokens);
@@ -1815,6 +1863,9 @@ fn expand_macros(lexed: Lexed, ctx: &ExpandCtx, seeds: &[MacroSeed], extra: &[Ma
         st.seed_macro(&extra[i])?;
     }
     let tts: Vec<Tt> = trees.iter().map(tt_from_tree).collect();
+    if has_attributes {
+        st.preflight_host_attributes(&tts)?;
+    }
     // Only the crate root's `#![recursion_limit]` counts, as in rustc,
     // where a module's copy is an unused attribute.
     let limit = if ctx.module_path.is_empty() { scan_recursion_limit(&tts, &st.strings, ctx.interner)? } else { None };
@@ -1950,7 +2001,7 @@ fn atomic_shaped(trees: &[Tt]) -> bool {
     fn place_tok(tok: Tok) -> bool {
         matches!(
             tok,
-            Tok::Ident(_)
+            Tok::Ident(_, _)
                 | Tok::SelfUpper
                 | Tok::SelfLower
                 | Tok::Crate
@@ -1962,7 +2013,7 @@ fn atomic_shaped(trees: &[Tt]) -> bool {
                 | Tok::Lt
                 | Tok::Gt
                 | Tok::Comma
-                | Tok::Lifetime(_)
+                | Tok::Lifetime(_, _)
         )
     }
     // A call or index shape: place tokens, then one trailing group.
@@ -1974,7 +2025,7 @@ fn atomic_shaped(trees: &[Tt]) -> bool {
         return true;
     }
     trees.iter().all(|t| match t {
-        Tt::Tok(tok) => matches!(tok.tok, Tok::Ident(_) | Tok::SelfUpper | Tok::SelfLower | Tok::Dot | Tok::PathSep | Tok::Int(..)),
+        Tt::Tok(tok) => matches!(tok.tok, Tok::Ident(_, _) | Tok::SelfUpper | Tok::SelfLower | Tok::Dot | Tok::PathSep | Tok::Int(..)),
         Tt::Delim(Delim::Bracket, _, _) => true,
         _ => false,
     })
@@ -2037,7 +2088,7 @@ fn flatten_final(trees: &[Tt], out: &mut Vec<Token>) {
 impl builtin::CfgRead for Expander<'_> {
     fn ident_text(&self, tok: Tok) -> Option<String> {
         match tok {
-            Tok::Ident(s) => Some(self.ctx.interner.get(s).to_string()),
+            Tok::Ident(s, _) => Some(self.ctx.interner.get(s).to_string()),
             _ => seg_text(tok, self.ctx.interner),
         }
     }
@@ -2050,6 +2101,85 @@ impl builtin::CfgRead for Expander<'_> {
 }
 
 impl<'a> Expander<'a> {
+    /// Find written procedural attribute operations before executing any
+    /// external macro. Bare imports need a closed module name scope.
+    fn preflight_host_attributes(&mut self, trees: &[Tt]) -> Result<(), Diag> {
+        let Some(provider) = self.ctx.procedural_macros else { return Ok(()) };
+        let mut closed_scope = self.ctx.module_path.is_empty();
+        let mut imported_attribute = None;
+        let mut cursor = 0;
+        let required = |span| Diag::new("L0809", span, "Rust procedural attribute requires macro expansion", "")
+            .requiring_rust_complement();
+        while cursor < trees.len() {
+            let mut enabled = true;
+            let mut conditional_attributes = false;
+            let mut namespace_effects = false;
+            let mut qualified = None;
+            while let Some(attr) = attr_at(trees, cursor, self.ctx.interner) {
+                cursor = attr.end;
+                match attr.path.as_str() {
+                    "cfg" => enabled &= builtin::eval_cfg(&attr.inner, &self.ctx.cfg, self, attr.span)?,
+                    "cfg_attr" => conditional_attributes = true,
+                    "test" | "doc" | "no_std" => {}
+                    path => {
+                        let absolute = path.starts_with("::");
+                        let path = path.strip_prefix("::").unwrap_or(path);
+                        if !attr.inner_attr
+                            && let Some((alias, name)) = path.split_once("::")
+                            && !matches!(alias, "rustfmt" | "clippy")
+                            && provider.exports_attribute(alias, name)
+                            && (absolute || !self.shadowed_crates.iter().any(|&sym| self.ctx.interner.get(sym) == alias))
+                        {
+                            qualified = Some((absolute, attr.span));
+                        } else {
+                            namespace_effects = true;
+                        }
+                    }
+                }
+            }
+            if enabled && !conditional_attributes && let Some((absolute, span)) = qualified {
+                if absolute {
+                    return Err(required(span));
+                }
+                imported_attribute = Some(span);
+            }
+            if enabled {
+                closed_scope &= !namespace_effects && !conditional_attributes;
+            }
+            if let Some((_, content, end)) = use_span_at(trees, cursor) {
+                if enabled && !conditional_attributes {
+                    let path = &trees[content..end - 1];
+                    closed_scope &= !implicit_use_bindings(path);
+                    for (segments, leading, imported) in collect_use_sites(path, &[], self.ctx.interner) {
+                        // The actual import leaves include nested groups and
+                        // renames whose names can shadow the host crate.
+                        closed_scope &= !provider.has_crate_alias(self.ctx.interner.get(imported));
+                        if let [alias, name] = segments.as_slice()
+                            && provider.exports_attribute(&alias.text, &name.text)
+                        {
+                            if leading {
+                                return Err(required(name.span));
+                            }
+                            if !self.shadowed_crates.contains(&alias.sym) {
+                                imported_attribute = Some(name.span);
+                            }
+                        }
+                    }
+                }
+                cursor = end;
+            } else if let Some(end) = item_end(trees, cursor, self.ctx.interner) {
+                cursor = end;
+            } else {
+                // A macro or unknown item could declare a local crate name.
+                return Ok(());
+            }
+        }
+        if closed_scope && let Some(span) = imported_attribute {
+            return Err(required(span));
+        }
+        Ok(())
+    }
+
     /// Finds macro definitions and module-level `use` items anywhere in
     /// the file before the main walk. Path forms (`crate::name!`) and
     /// imports apply to a whole module, not from a text point, so uses
@@ -2121,7 +2251,7 @@ impl<'a> Expander<'a> {
                 exported = false;
                 cfg_off = false;
                 if tok_at(trees, i).map(|t| t.tok) == Some(Tok::Mod)
-                    && matches!(tok_at(trees, i + 1).map(|t| t.tok), Some(Tok::Ident(_)))
+                    && matches!(tok_at(trees, i + 1).map(|t| t.tok), Some(Tok::Ident(_, _)))
                     && matches!(trees.get(i + 2), Some(Tt::Delim(Delim::Brace, _, _)))
                 {
                     let sym = tok_at(trees, i + 1).and_then(|t| seg_sym(t.tok, st.ctx.interner));
@@ -2408,7 +2538,7 @@ impl<'a> Expander<'a> {
         let gdepth = globs.iter().map(|&(_, d, _)| d).max();
         let module_idx = self.module_imports.get(&(self.module.clone(), name)).copied();
         let exported_idx = if self.module.is_empty() { self.exported.get(&name).copied() } else { None };
-        let std_outer = builtin::is_prelude_macro(name_text);
+        let std_outer = self.prelude_macro(name_text);
         let def_expn = |i: u32| self.def_expn.get(i as usize).copied().unwrap_or(0);
         // rustc reads textual scope first: a textual definition is the
         // answer whenever there is one, and a different macro a `use` or
@@ -2531,7 +2661,7 @@ impl<'a> Expander<'a> {
                     // input is in the prescan's root table before its
                     // expansion runs: the call found X itself, and X may
                     // not shadow the std macro from outside its expansion.
-                    if c.def == x.def && x.expn != 0 && !self.expn_within(c.expn, x.expn) && builtin::is_prelude_macro(text) {
+                    if c.def == x.def && x.expn != 0 && !self.expn_within(c.expn, x.expn) && self.prelude_macro(text) {
                         return Err(Diag::new(
                             "L0507",
                             c.span,
@@ -2645,13 +2775,19 @@ impl<'a> Expander<'a> {
     /// extern crate `println` (E0433).
     fn builtin_call_path(&self, segs: &[Seg], leading_colon: bool) -> bool {
         if segs.len() == 1 {
-            return !leading_colon;
+            return !leading_colon && (!self.ctx.cfg.core_prelude || builtin::is_core_prelude_macro(&segs[0].text));
         }
         let texts: Vec<&str> = segs.iter().map(|s| s.text.as_str()).collect();
-        if self.shadowed_crates.contains(&segs[0].sym) || (texts[0] == "alloc" && !self.alloc_extern) {
+        if self.shadowed_crates.contains(&segs[0].sym) || (texts[0] == "alloc" && !self.alloc_extern)
+            || (texts[0] == "std" && self.ctx.cfg.core_prelude && !self.ctx.cfg.explicit_std)
+        {
             return false;
         }
         builtin::std_macro_path(&texts)
+    }
+
+    fn prelude_macro(&self, name: &str) -> bool {
+        if self.ctx.cfg.core_prelude { builtin::is_core_prelude_macro(name) } else { builtin::is_prelude_macro(name) }
     }
 
     /// Resolves a macro call path to a definition index. This is the
@@ -3021,7 +3157,7 @@ pub fn macro_rules_at(trees: &[Tt], i: usize, interner: &Interner) -> Option<Def
         return None;
     }
     let name_tok = tok_at(trees, i + 2)?;
-    let Tok::Ident(name) = name_tok.tok else { return None };
+    let Tok::Ident(name, _) = name_tok.tok else { return None };
     match trees.get(i + 3) {
         Some(Tt::Delim(d, _, group_span)) => {
             let mut end = i + 4;
@@ -3140,7 +3276,7 @@ fn starts_item(trees: &[Tt], interner: &Interner) -> bool {
             }
             Some(Tok::Const) => {
                 // `const fn` is a qualified fn; `const NAME` is the item.
-                if matches!(tok_at(trees, i + 1).map(|t| t.tok), Some(Tok::Ident(_) | Tok::Underscore)) {
+                if matches!(tok_at(trees, i + 1).map(|t| t.tok), Some(Tok::Ident(_, _) | Tok::Underscore)) {
                     return true;
                 }
                 i += 1;
@@ -3475,7 +3611,7 @@ fn ends_operand(out: &[Tt]) -> bool {
         Some(Tt::Delim(d, _, _)) => *d != Delim::Brace,
         Some(Tt::Frag(k, _, _)) => matches!(k, FragKind::Expr | FragKind::Expr2021 | FragKind::Path | FragKind::Literal | FragKind::Ty),
         Some(Tt::Tok(t)) => match t.tok {
-            Tok::Ident(_)
+            Tok::Ident(_, _)
             | Tok::Int(..)
             | Tok::Float(_)
             | Tok::Str(..)
@@ -3520,7 +3656,7 @@ fn decl_params(out: &[Tt]) -> bool {
         let Some(open) = open else { return false };
         e = open;
     }
-    e >= 2 && matches!(out[e - 1], Tt::Tok(Token { tok: Tok::Ident(_), .. })) && matches!(tok_at(out, e - 2).map(|t| t.tok), Some(Tok::Fn | Tok::Struct))
+    e >= 2 && matches!(out[e - 1], Tt::Tok(Token { tok: Tok::Ident(_, _), .. })) && matches!(tok_at(out, e - 2).map(|t| t.tok), Some(Tok::Fn | Tok::Struct))
 }
 
 /// True when the top level of `trees[s..]` has `tok`.
@@ -3611,10 +3747,10 @@ fn generics_open(out: &[Tt], interner: &Interner) -> bool {
     let n = out.len();
     match tok_at(out, n.wrapping_sub(1)).map(|t| t.tok) {
         Some(Tok::Impl | Tok::For) => true,
-        Some(Tok::Ident(_)) => match tok_at(out, n.wrapping_sub(2)).map(|t| t.tok) {
+        Some(Tok::Ident(_, _)) => match tok_at(out, n.wrapping_sub(2)).map(|t| t.tok) {
             Some(Tok::Fn | Tok::Struct | Tok::Enum | Tok::Trait | Tok::Type) => true,
             // `union` is a contextual keyword.
-            Some(t @ Tok::Ident(_)) => seg_text(t, interner).as_deref() == Some("union"),
+            Some(t @ Tok::Ident(_, _)) => seg_text(t, interner).as_deref() == Some("union"),
             _ => false,
         },
         _ => false,
@@ -3655,7 +3791,7 @@ fn block_like_start(trees: &[Tt], s: usize) -> bool {
         Some(Tt::Tok(t)) => match t.tok {
             Tok::If | Tok::Match | Tok::Loop | Tok::While | Tok::For => true,
             Tok::Unsafe | Tok::Const => brace_at(s + 1),
-            Tok::Lifetime(_) => tok_at(trees, s + 1).map(|t| t.tok) == Some(Tok::Colon) && block_like_start(trees, s + 2),
+            Tok::Lifetime(_, _) => tok_at(trees, s + 1).map(|t| t.tok) == Some(Tok::Colon) && block_like_start(trees, s + 2),
             _ => false,
         },
         _ => false,
@@ -3675,7 +3811,7 @@ fn block_like_end(trees: &[Tt], s: usize) -> Option<usize> {
     }
     match tok_at(trees, s)?.tok {
         Tok::Unsafe | Tok::Const | Tok::Loop => brace_at(s + 1).then_some(s + 2),
-        Tok::Lifetime(_) if tok_at(trees, s + 1).map(|t| t.tok) == Some(Tok::Colon) => block_like_end(trees, s + 2),
+        Tok::Lifetime(_, _) if tok_at(trees, s + 1).map(|t| t.tok) == Some(Tok::Colon) => block_like_end(trees, s + 2),
         Tok::Match | Tok::While => Some(body_brace(trees, s + 1)? + 1),
         Tok::For => {
             // The pattern runs to the first top-level `in`.
@@ -3717,7 +3853,7 @@ fn body_brace(trees: &[Tt], mut j: usize) -> Option<usize> {
                     j = (j + 1..trees.len()).find(|&k| trees[k].is_tok(Tok::Eq))? + 1;
                     operand = true;
                 }
-                Tok::If | Tok::Match | Tok::Loop | Tok::While | Tok::For | Tok::Unsafe | Tok::Const | Tok::Lifetime(_)
+                Tok::If | Tok::Match | Tok::Loop | Tok::While | Tok::For | Tok::Unsafe | Tok::Const | Tok::Lifetime(_, _)
                     if operand && block_like_start(trees, j) =>
                 {
                     j = block_like_end(trees, j)?;
@@ -3732,7 +3868,7 @@ fn body_brace(trees: &[Tt], mut j: usize) -> Option<usize> {
                     j = generics_end(trees, j + 1, trees.len())?;
                     operand = false;
                 }
-                Tok::Ident(_)
+                Tok::Ident(_, _)
                 | Tok::Reserved(_)
                 | Tok::Int(..)
                 | Tok::Float(_)
@@ -3740,7 +3876,7 @@ fn body_brace(trees: &[Tt], mut j: usize) -> Option<usize> {
                 | Tok::ByteStr(_)
                 | Tok::ByteChar(_)
                 | Tok::Char(..)
-                | Tok::Lifetime(_)
+                | Tok::Lifetime(_, _)
                 | Tok::True
                 | Tok::False
                 | Tok::SelfLower
@@ -3802,7 +3938,7 @@ fn expr_stmt_has_top_op(trees: &[Tt], s: usize, e: usize, mut operand: bool) -> 
             Tt::Delim(..) | Tt::Frag(..) => operand = false,
             Tt::Tok(t) => match t.tok {
                 Tok::Return | Tok::Break | Tok::Pipe | Tok::OrOr | Tok::Move | Tok::Async | Tok::Static if operand => return false,
-                Tok::If | Tok::Match | Tok::Loop | Tok::While | Tok::For | Tok::Unsafe | Tok::Const | Tok::Lifetime(_)
+                Tok::If | Tok::Match | Tok::Loop | Tok::While | Tok::For | Tok::Unsafe | Tok::Const | Tok::Lifetime(_, _)
                     if operand && block_like_start(trees, j) =>
                 {
                     let Some(end) = block_like_end(trees, j) else { return true };
@@ -3954,7 +4090,7 @@ impl<'a> Expander<'a> {
             }
             // An inline module: its body is its own macro scope and path.
             if tok_at(&trees, i).map(|t| t.tok) == Some(Tok::Mod)
-                && matches!(tok_at(&trees, i + 1).map(|t| t.tok), Some(Tok::Ident(_)))
+                && matches!(tok_at(&trees, i + 1).map(|t| t.tok), Some(Tok::Ident(_, _)))
                 && matches!(trees.get(i + 2), Some(Tt::Delim(Delim::Brace, _, _)))
             {
                 let (name_sym, name_ok) = match tok_at(&trees, i + 1) {
@@ -4006,7 +4142,7 @@ impl<'a> Expander<'a> {
             // the worklist passes it written definitions only.
             if item_list
                 && tok_at(&trees, i).map(|t| t.tok) == Some(Tok::Mod)
-                && matches!(tok_at(&trees, i + 1).map(|t| t.tok), Some(Tok::Ident(_)))
+                && matches!(tok_at(&trees, i + 1).map(|t| t.tok), Some(Tok::Ident(_, _)))
                 && tok_at(&trees, i + 2).map(|t| t.tok) == Some(Tok::Semi)
                 && let Some(span) = self.expanded_textual_span()
             {
@@ -4642,6 +4778,9 @@ impl<'a> Expander<'a> {
     /// that name (`std::vec`, `core::panic`).
     fn std_builtin_macro(&self, segs: &[Seg]) -> Option<Sym> {
         let path: Vec<&str> = segs.iter().map(|s| s.text.as_str()).collect();
+        if self.ctx.cfg.core_prelude && !self.ctx.cfg.explicit_std && path.first() == Some(&"std") {
+            return None;
+        }
         if crate::ty::lang::std_path_kind(&path) != Some(crate::ty::lang::StdPathKind::Macro) {
             return None;
         }
@@ -4832,6 +4971,23 @@ impl<'a> Expander<'a> {
             let def = self.defs[idx as usize].clone();
             return self.transcribe_call(&def, call, depth);
         }
+        if let Some(provider) = self.ctx.procedural_macros
+            && let [krate, _] = call.segs.as_slice()
+            && (call.leading_colon || !self.shadowed_crates.contains(&krate.sym))
+            && let Some(result) = provider.expand(call, self.ctx, &mut self.strings)
+        {
+            let expansion = result?;
+            for (name, value) in &expansion.environment {
+                self.read_dep_env(name, value.as_deref());
+            }
+            for path in expansion.paths {
+                let dep = Dep::TrackedPath(path);
+                if !self.deps.contains(&dep) {
+                    self.deps.push(dep);
+                }
+            }
+            return Ok(expansion.tokens);
+        }
         // A plain name bound by a std macro import rename expands
         // exactly as the canonical builtin name.
         let alias = if call.segs.len() == 1 && !call.leading_colon { self.builtin_alias_of(call.segs[0].sym) } else { None };
@@ -4839,7 +4995,7 @@ impl<'a> Expander<'a> {
             Some(canon) => self.ctx.interner.get(canon).to_string(),
             None => call.name_text().to_string(),
         };
-        if self.builtin_call_path(&call.segs, call.leading_colon) {
+        if alias.is_some() || self.builtin_call_path(&call.segs, call.leading_colon) {
             // A builtin counts depth as rustc's expansion of it does (see
             // `builtin::rustc_depth`): its arguments expand `args` levels
             // down, so a token builtin's own one-level-down expansions
@@ -4866,9 +5022,9 @@ impl<'a> Expander<'a> {
                 // the parser owns only the plain builtin spellings.
                 if let Some(canon) = alias
                     && let Some(Tt::Tok(tok)) = out.first_mut()
-                    && matches!(tok.tok, Tok::Ident(_))
+                    && let Tok::Ident(_, raw) = tok.tok
                 {
-                    tok.tok = Tok::Ident(canon);
+                    tok.tok = Tok::Ident(canon, raw);
                 }
                 let written_lit = is_str_lit_arg(&call.inner);
                 let msg = if name == "assert" { builtin::assert_message(self, &call.inner, call.span)? } else { Vec::new() };
@@ -5229,6 +5385,16 @@ fn collect_use_sites(trees: &[Tt], prefix: &[Seg], interner: &Interner) -> Vec<(
     out
 }
 
+// Globs and `use module::{self}` can bind a crate alias without an
+// explicit named leaf in collect_use_sites.
+fn implicit_use_bindings(trees: &[Tt]) -> bool {
+    trees.iter().enumerate().any(|(index, tree)| match tree {
+        Tt::Delim(Delim::Brace, group, _) => implicit_use_bindings(group),
+        _ => tree.is_tok(Tok::Star) || tree.is_tok(Tok::SelfLower)
+            && trees.get(index + 1).is_none_or(|next| !next.is_tok(Tok::PathSep)),
+    })
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -5319,7 +5485,7 @@ mod tests {
         let ctx = ExpandCtx::for_file(&interner, &known, std::path::Path::new("test.rs"), src, false);
         let out = expand_lexed(lexed, &ctx).expect("expansion");
         let tmps: Vec<CtxtId> =
-            out.tokens.iter().filter(|t| matches!(t.tok, Tok::Ident(s) if interner.get(s) == "tmp")).map(|t| t.span.ctxt).collect();
+            out.tokens.iter().filter(|t| matches!(t.tok, Tok::Ident(s, _) if interner.get(s) == "tmp")).map(|t| t.span.ctxt).collect();
         assert_eq!(tmps.len(), 4, "caller let, macro let, macro use, caller arg");
         assert_eq!(tmps[0], CtxtId::ROOT, "caller's own binding");
         assert_ne!(tmps[1], CtxtId::ROOT, "macro-introduced binding has the expansion context");

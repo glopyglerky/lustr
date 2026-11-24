@@ -1,0 +1,166 @@
+{
+  "schema": "lustr.unicode-repair-verification",
+  "version": 1,
+  "date": "2026-11-18",
+  "source": {
+    "local_source_revision": "d871e1a8faa37c880fcdaaa3d82c2db6cc5f1297",
+    "complete_tree": "a7c16b8a85e90d67b38311c9fcb5c7107f2a5379",
+    "native_tree": "3f06df424396323febeb1ebfbb8d72b40dd9a6d8",
+    "compiler_input_sha256": {
+      "compiler/native/src/unicode.rs": "83e7fe05dc0afae510b78b0f56d4cf773720dea2ec9123437a160c38da8836de",
+      "compiler/native/src/unicode_data.rs": "19692251b2b66785911239bb96896a1fea64f5e1643b6e850896b6eb1fa05df3",
+      "compiler/native/src/check/any.rs": "936bccd4e780b814b2ee487b13b36e3ba0762f76b631a76fad1066eda2b3bf72",
+      "compiler/native/src/check/mod.rs": "8ea4d0e891da6f1145e5f50b7c104f68235893c77f2dc6af9561fec42008247e",
+      "compiler/native/src/lexer.rs": "4fa49a1d8d33a59df2b357c5d8822e41cd85c4a11fa73ad8db8be7c4b162345e",
+      "compiler/native/src/main.rs": "bb1039c6f30061d8acbb8af59e90ffdef24c965ed71f11338739e155444fc958",
+      "compiler/native/src/parser.rs": "94818f7a4572a0fac26d1f03597ced4834b3563c7d677ff65c1c3ace5e77d429",
+      "compiler/native/src/ty/consteval.rs": "3204e6a1eb89c78fdec1508663118d847fb79ba668129a3138a1afb0d3a575a6",
+      "compiler/native/src/runtime/unicode_table.h": "3ed00af6ecc047de68b800ded7006ae8eef3fd68364101cfa61a7574b51bf6e5",
+      "compiler/native/src/runtime/escape_table.h": "243c2081962b704de8779e80339795765aabbff89508392a91ee359c79a7aa54",
+      "compiler/native/src/runtime/case_tables.h": "8388d8bf830301c51b814b450ab2018f58a2c10f7831069ceb1efc4beb22282a",
+      "compiler/native/src/xid_table.rs": "77ab11c1239e3c6d66abb629baad403ed48ca95a7ea1e99c3407ab95d83fceda",
+      "crates/lustr-native-core/src/native_modules.rs": "57f12de3e3a1398e64a98ce3f51d90ced2e2519af9b6bf0fd9ae265fe9f617e2"
+    },
+    "post_qualification_source_changes": "Only historical-generator comments changed after this qualification source; compiler inputs remained identical."
+  },
+  "native": {
+    "host": "x86_64-unknown-linux-gnu",
+    "profile": "gate",
+    "build_id": "0182ba4476830b1a",
+    "core_sha256": "ecb92eea8718eaeeeba789fa7237506dc28d3ab44bd796ab8456dba8734672be",
+    "client_sha256": "c87452980fe7223390e650cc0f39b4804b9f440e306315641aad2681377b6f2f"
+  },
+  "cold_qualification": {
+    "schema": 1,
+    "rust_source": "5b7b37aefcb5b2fba3c2392bc9065b9e4602d494",
+    "rustc_vV": "rustc 1.102.0-nightly (5b7b37aef 2026-11-08)\nbinary: rustc\ncommit-hash: 5b7b37aefcb5b2fba3c2392bc9065b9e4602d494\ncommit-date: 2026-11-08\nhost: x86_64-unknown-linux-gnu\nrelease: 1.102.0-nightly\nLLVM version: 23.1.5\n",
+    "identities": {
+      "native_core_sha256": "ecb92eea8718eaeeeba789fa7237506dc28d3ab44bd796ab8456dba8734672be",
+      "rustc_sha256": "ca9d833d09469a534ca1449e71ca9961608409cdb257df96cf8035338fac28de"
+    },
+    "scalar_values": 1112064,
+    "comparisons": [
+      {
+        "fixture": "compiler/native/tests/pass/unicode_const_runtime_semantics.rs",
+        "fixture_sha256": "845bac5c75ac68951acb0e8c569ad0309ed71480e309b14ae3554d7196c4f010",
+        "bytes": 31,
+        "sha256": "eb6cf2759dbd1616cc0ebb73297300d23b3c103f740dbc1ba9df4850b077ba36",
+        "byte_for_byte_equal": true
+      },
+      {
+        "fixture": "compiler/native/tools/unicode_runtime_exact.rs",
+        "fixture_sha256": "e73dce88e4ed7797f9136a0aa21e1f69ce7d8880bd6546aa3654a7bc90c0c0ba",
+        "bytes": 114666345,
+        "sha256": "d8d2c58bf07f1acd5faadb78b78c9b732e79d5e6d4a019b7ce620e6cbb0ed69b",
+        "byte_for_byte_equal": true
+      }
+    ],
+    "commands": 13,
+    "limits": [
+      "Direct cold compilation; retained behavior is covered by the separate native test.",
+      "Unicode data and exercised operations only; not a proof of all Rust semantics.",
+      "No timing or release-admission claim."
+    ]
+  },
+  "independent_data_verification": {
+    "scalar_values": 1112064,
+    "stdout": "PASS 1112064 scalar values: 7 predicates, debug escaping, XID start/continue, combining classes, canonical decomposition; 961 composition pairs and all decomposition-pair exclusions\n",
+    "runtime_comparison_uses_direct_byte_equality": true,
+    "hash_only_comparison": false
+  },
+  "retained_session": {
+    "test": "unicode::tests::unicode_semantics_survive_retained_body_and_constant_edits",
+    "passed": 1,
+    "failed": 0,
+    "scenarios": [
+      "cold",
+      "unchanged",
+      "body edit",
+      "constant edit",
+      "revert"
+    ],
+    "test_log_sha256": "d290f6367bd54e7934c9de02ee486cec004f6309b9d9ff6c0d34e0858b3c4658",
+    "daemon_socket_used": false,
+    "source_identity_matches_cold_compiler": true
+  },
+  "focused_differential_fixtures": [
+    {
+      "fixture": "unicode_props",
+      "source_sha256": "5f74d2dd3f59386056af84650c69919ecf0db693017901ee5188fe2942a43216",
+      "bytes": 1346,
+      "stdout_sha256": "a85420f88ca407a5b32c667b1128a98568214b7ca1efdf8918a84da903dfd33f",
+      "same": true
+    },
+    {
+      "fixture": "unicode_props_hash",
+      "source_sha256": "f68662c528f0a470b30856def6fade326b2154b4ebda5a0e5b83c8f70da28b7d",
+      "bytes": 180,
+      "stdout_sha256": "0a44bed50c6401ee35b38453129c0ae3700b4e23eff719c865d2a0be5b822369",
+      "same": true
+    },
+    {
+      "fixture": "char_case_iterators",
+      "source_sha256": "ab2012fc879609a606a8e1b6a37b3fdfa0be03bc2d1a6e855e57cdbfeb1f4a75",
+      "bytes": 301,
+      "stdout_sha256": "7ce16b16b2c8a2f72a507d5d001f7f506921961ec09e9581e89279f9ea6aae82",
+      "same": true
+    },
+    {
+      "fixture": "str_unicode_case",
+      "source_sha256": "115aeb889cbe3eb3025e5a2d9f68bf718dc5c0b03d3dba5778cfb732a705acff",
+      "bytes": 952,
+      "stdout_sha256": "c3e1932378237c0661ce71e4aab97feb3d96e0b7d3bfcadb9f68e2457929916f",
+      "same": true
+    },
+    {
+      "fixture": "fmt_debug_escapes",
+      "source_sha256": "bf0c122c227bad86129460228c92dd45a92deb0f31ae8117e50d370ca123080a",
+      "bytes": 175,
+      "stdout_sha256": "c1d82b645a813ae83439602d7bf38ff2468f3f5d185fc70ed71e5fd4734aefa0",
+      "same": true
+    },
+    {
+      "fixture": "unicode_idents",
+      "source_sha256": "b859b139077c7072ca9269c54716a5d2b2c138795763f20c70efcbe9fd2ca279",
+      "bytes": 12,
+      "stdout_sha256": "bc58cf05cefa0835c425d992bc1ccb9b39411bd56280db5695b2ddd24490db5a",
+      "same": true
+    },
+    {
+      "fixture": "unicode_const_runtime_semantics",
+      "source_sha256": "845bac5c75ac68951acb0e8c569ad0309ed71480e309b14ae3554d7196c4f010",
+      "bytes": 31,
+      "stdout_sha256": "eb6cf2759dbd1616cc0ebb73297300d23b3c103f740dbc1ba9df4850b077ba36",
+      "same": true
+    }
+  ],
+  "regression_red": {
+    "build_exit": 0,
+    "runtime_exit": 101,
+    "stdout": "",
+    "stderr": "\nthread 'main' (29) panicked at $FIXTURE:11:5:\nassertion `left == right` failed\n  left: true\n right: false\nnote: run with `RUST_BACKTRACE=1` environment variable to display a backtrace\n"
+  },
+  "generation_rejects_other_sdk": {
+    "exit": 1,
+    "stdout": "",
+    "stderr": "gen-unicode: expected Rust source 5b7b37aefcb5b2fba3c2392bc9065b9e4602d494, got b940084d7eb6a299eb4bfeb8e34901bc051e7ac4\n",
+    "table_hashes_unchanged": true
+  },
+  "older_build_sdk_control": {
+    "builder": "rustc 1.99.0 (b940084d7 2026-09-28)",
+    "stdout": "host (17, 0, 0); target (18, 0, 0); new lower/upper true true\n",
+    "scope": "The actual shared Unicode Rust module compiled with Rust1.99; not a full compiler rebuild with that SDK."
+  },
+  "commands_sanitized": [
+    "python3 tools/qualify-native-unicode.py --native-core \"$NATIVE/lust-core\" --rustc \"$SDK/bin/rustc\" --output \"$NEW_EVIDENCE\"",
+    "cargo test --manifest-path compiler/native/Cargo.toml --locked --offline --profile gate --bin lust-core unicode_semantics_survive_retained -- --test-threads=1"
+  ],
+  "limits": [
+    "Linux x86_64 native gate build, no new macOS or Windows runtime evidence.",
+    "The current mixed scalar ABI still excludes these Unicode operations; these results repair the standalone native implementation and its retained state.",
+    "All finite Unicode scalar values were checked for the named properties and contexts; this is not a formal proof of every arbitrary program or all Rust semantics.",
+    "Full compiler integration, other Rust1.102 library/diagnostic semantics, and complete-package release/performance qualification remain separate.",
+    "No frozen baseline, original oracle or historical failed result changed."
+  ],
+  "raw_evidence": "Full commands, compiler/program outputs, binaries and finite-domain byte streams retained separately; only sanitized summaries are committed."
+}

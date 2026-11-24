@@ -1,5 +1,11 @@
 # Native entry selection and lifecycle contracts
 
+> Historical conditional arguments for the recorded entry implementation.
+> The [exclusive coverage cleanup](../exclusive-coverage-cleanup.md) removes
+> compiler fallback and changes package identities. Preserve applicable target
+> selection and lifecycle reasoning, but reassess it against the current source;
+> the fallback arguments below do not authorize a retired route.
+
 These are conditional program arguments, with executable regression checks.
 They do not prove full Rust coverage, compiler equivalence, memory safety or
 performance. The protected upstream compiler implementations are unchanged.
@@ -30,6 +36,19 @@ not a proof of the artifact's semantics or source immutability.
 Selectors are read only from option positions. Values consumed by other options
 cannot become selectors. Cargo owns package-spec syntax and dependency/lockfile
 resolution; synthetic Lust package strings are not parsed as Cargo identities.
+
+For the bounded selection cache, the successful fresh path remains the only
+writer and establishes the same unique member of C. A versioned compact record
+can memoize that member if the complete request/input snapshot digest agrees
+and every target-source binding still agrees. Under the cache's admitted
+single-package, dependency-free grammar and unchanged tool/input assumptions,
+these are the same inputs to the deterministic filter, so the previously
+validated member remains unique. The full selected package and target values
+are retained for fallback's artifact checks. This extends the argument with
+the cryptographic digest's collision-resistance assumption and trust in the
+private cache's sole successful writer; it does not authenticate records
+against a malicious owner. The stored metadata digest records provenance and
+is not itself a uniqueness proof.
 
 ## Foreground child ownership
 

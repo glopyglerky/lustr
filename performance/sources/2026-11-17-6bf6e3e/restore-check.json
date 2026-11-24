@@ -1,0 +1,16 @@
+{
+  "schema": "lustr-exact-source-restore-v1",
+  "head": "6bf6e3e3384a99fbaeab2c66aa7c97bc73231996",
+  "checkout": "5a3c5666a16d46629a4787e37ca9b20e65720ccc",
+  "tree": "02652f033e84c0957dd2b99eb562db8171289e50",
+  "prerequisite_source": "fresh bare single-branch local clone using --no-local --filter=blob:none and a one-command upload-pack filter setting; no GitHub network access",
+  "prior_attempt": "Unfiltered local clone could not read historical object 4c705a6565ef8102a70aa3523217264c062b8740 from the partial source object store; the successful filtered clone retains the exact commits and trees required for inventory verification. No object repair or source substitution was performed.",
+  "merge_absent_before_bundle": true,
+  "merge_absence_check": "git cat-file --batch-all-objects --batch-check=%(objectname), before bundle import; no lazy object lookup",
+  "restored_commit_bytes_match_original": true,
+  "source_entries": 13521,
+  "source_inventory_command": "git --no-replace-objects ls-tree -r -z --full-tree 5a3c5666a16d46629a4787e37ca9b20e65720ccc",
+  "source_inventory_sha256": "9f58fdd772d9a6622e2e9c72e58bfdd75f98a0c28e8d19d0e7daa485157c1623",
+  "source_inventory_matches_original": true,
+  "scope": "Isolated recovery of exact Git commit/tree and complete blob-ID inventory from a local prerequisite clone; no new compiler execution, individual source-blob rehash, independent remote authentication or original binary recovery."
+}

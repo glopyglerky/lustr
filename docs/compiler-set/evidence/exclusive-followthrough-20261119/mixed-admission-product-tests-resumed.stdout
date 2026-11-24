@@ -1,0 +1,18 @@
+
+running 13 tests
+test daemon::tests::mixed_admission_daemon_keeps_internal_failure_and_panic_without_retry ... ok
+test driver::compile::tests::mixed_admission::admitted_output_error_is_failure_and_preserves_existing_bytes ... ok
+test driver::compile::tests::mixed_admission::check_retains_lowered_proof_without_generating_c ... ok
+test driver::compile::tests::mixed_admission::emits_from_the_same_checked_state_and_keeps_reuse ... ok
+test driver::compile::tests::mixed_admission::integer32_native_objects_match_wide_integer_oracles_after_retained_edits ... ok
+test driver::compile::tests::mixed_admission::lust_supported_runtime_and_wide_types_remain_integration_gaps ... ok
+test driver::compile::tests::mixed_admission::missing_definition_and_invalid_rust_are_failures ... ok
+test driver::compile::tests::mixed_admission::narrow_native_returns_match_exact_modular_oracles ... ok
+test driver::compile::tests::mixed_admission::target_and_request_bridge_gaps_do_not_establish_a_complement ... ok
+test driver::compile::tests::mixed_admission::wrong_session_is_a_failure_not_a_bridge_gap ... ok
+test protocol::tests::mixed_admission_wire_errors_are_not_retryable_misses ... ok
+test protocol::tests::mixed_admission_wire_keeps_ordinary_response_bytes ... ok
+test protocol::tests::mixed_admission_wire_roundtrips_all_outcomes ... ok
+
+test result: ok. 13 passed; 0 failed; 0 ignored; 0 measured; 403 filtered out; finished in 1.96s
+

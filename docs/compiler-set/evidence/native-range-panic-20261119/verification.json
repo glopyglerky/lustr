@@ -1,0 +1,75 @@
+{
+  "schema": "lustr-range-panic-qualification-v1",
+  "reviewed_base_commit": "ec99578d51c93674af3a1bcf9c182f4ad4b17d89",
+  "reviewed_base_tree": "e12027bdacd70dbd27efc4ce23d74d9cdc5625b6",
+  "before_native_tree": "a5223b8045f75660281342bf547769fc1b098725",
+  "after_native_tree": "64975e04ec220dc16642ecd63f7b4429149cc9ce",
+  "source_change": "compiler/native/src/runtime/core.c: return after every failed range-bound panic",
+  "fixture": "compiler/native/tests/pass/std_declared_source_locations.rs",
+  "fixture_sha256": "46fc580a1140015fd013a0f2efa2a63ba25285abb44e45637e31d21be374e49b",
+  "oracle": {
+    "commit": "5b7b37aefcb5b2fba3c2392bc9065b9e4602d494",
+    "version": "rustc 1.102.0-nightly (5b7b37aef 2026-11-08)\nbinary: rustc\ncommit-hash: 5b7b37aefcb5b2fba3c2392bc9065b9e4602d494\ncommit-date: 2026-11-08\nhost: x86_64-unknown-linux-gnu\nrelease: 1.102.0-nightly\nLLVM version: 23.1.5\n",
+    "unmatched_stable_attempt": "Stable 1.99 produced different declared source paths and lines and was excluded; its stdout is preserved separately."
+  },
+  "construction": {
+    "profile": "dev",
+    "features": [
+      "exclusive-native"
+    ],
+    "offline": true,
+    "locked": true,
+    "jobs": 2,
+    "helper_identity": "lustr-exclusive-native-v1\nbuild=3d56112fccf3a9df\n",
+    "client_sha256": "f57c205eb10847cf623fa31830f1c8fa1ab85f3581beb1fff3e35a03653aeaf6",
+    "core_sha256": "258855adad34735b6967659396d3371071e0b0eb6f81054171a499fc2a5f8b47"
+  },
+  "helper_controls": {
+    "cases": 2205,
+    "invalid_cases": 1505,
+    "before_failures": 1505,
+    "after_failures": 0,
+    "before": "helper-before.json",
+    "after": "helper-after.json"
+  },
+  "generated_program": {
+    "after_native_exit": 0,
+    "oracle_exit": 0,
+    "oracle_stdout_equal": true,
+    "before_after_stdout_equal": true,
+    "after_native_sha256": "db4c3d776ca0f1bff22c82e4d36d07372ff6109fca19115ca1e40704b6b269d8"
+  },
+  "allocation_observation": {
+    "method": "GNU linker wrap of malloc, calloc, realloc, free over the actual generated program; independent fixed-storage observer",
+    "tracker_sha256": "efa480d7bbb3dba9f85cfed3378a001b1a3c71e880b1ef0e4520b26f251bfbb4",
+    "before_outstanding_allocations": 6,
+    "before_outstanding_bytes": 1303,
+    "after_outstanding_allocations": 5,
+    "after_outstanding_bytes": 1266,
+    "removed_allocation_bytes": 37,
+    "after_includes_ubsan": true,
+    "after_ubsan_diagnostics": false,
+    "before_binary_sha256": "dc04b6539274f27978dbeb525bd591c9f148222f50013837788de9daf76549d7",
+    "after_binary_sha256": "2f17c3fc86e3cdf6a6e6bad408755c75fa81d1813d96ac2d4eccce85c8642d7a",
+    "limits": "Lifetime accounting is not reachability analysis. Five other outstanding runtime allocations remain unchanged. It does not replace LeakSanitizer."
+  },
+  "hosted_predecessor_failures": [
+    {
+      "job_url": "https://github.com/glopyglerky/lustr/actions/runs/44493776529/job/135455703707",
+      "failure": "std_declared_source_locations: LeakSanitizer reports 37 bytes in one allocation",
+      "result": "5546 passed, 1 failed"
+    },
+    {
+      "job_url": "https://github.com/glopyglerky/lustr/actions/runs/44493776529/job/135455703043",
+      "failure": "odd-path warm daemon response truncated or oversized",
+      "result": "84 passed, 1 failed",
+      "repair_claim": false
+    }
+  ],
+  "limits": [
+    "Local LeakSanitizer could not inspect the process under executor ptrace; the unchanged hosted sanitizer gate remains required.",
+    "Local Unix-domain socket creation is denied with EPERM; no local daemon or macOS execution claim.",
+    "No performance measurement or full compiler coverage claim. The changed returns run only after a range check has already panicked.",
+    "The final combined source integration patch must bind this change together with other reviewed work before publication."
+  ]
+}

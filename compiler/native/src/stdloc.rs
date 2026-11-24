@@ -2,12 +2,12 @@
 //
 // rustc reports a panic that std raises in its own code (no
 // `#[track_caller]` chain up to the user's call) at std's file, line, and
-// column, e.g. `/rustc/<hash>/library/alloc/src/collections/vec_deque/mod.rs:2564:9`.
+// column, e.g. `/rustc/<hash>/library/alloc/src/collections/vec_deque/mod.rs:2614:9`.
 // lust's std source is its own text, so its lines are not std's. Each
 // such panic site in library/{core,alloc,std} carries std's location as a
 // marker comment at the end of the line where the site starts:
 //
-//     panic!("index out of bounds"); //@ alloc/src/collections/vec_deque/mod.rs:2564:9
+//     panic!("index out of bounds"); //@ alloc/src/collections/vec_deque/mod.rs:2614:9
 //
 // cgen's `loc` reports the marker's location for every panic site on that
 // line of a fn without `#[track_caller]` (a `#[track_caller]` fn reports its
@@ -56,11 +56,12 @@ pub const STD_FILES: &[&str] = &[
     "alloc/src/io/read.rs",
     "alloc/src/io/impls.rs",
     "core/src/io/borrowed_buf.rs",
-    "alloc/src/rc.rs",
-    "alloc/src/sync.rs",
+    "alloc/src/rcs/rc.rs",
+    "alloc/src/rcs/arc.rs",
     "core/src/str/mod.rs",
     "std/src/os/unix/fs.rs",
     "alloc/src/str.rs",
+    "alloc/src/io/buffered/bufwriter.rs",
 ];
 
 /// One marker: an index into `STD_FILES` with std's line and column, a

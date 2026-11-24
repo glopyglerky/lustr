@@ -114,11 +114,16 @@ pub struct Diag {
     pub fix: String,
     pub labels: Vec<Label>,
     pub edits: Vec<Edit>,
+    pub(crate) rust_complement: bool,
 }
 
 impl Diag {
     pub fn new(code: &'static str, span: Span, message: impl Into<String>, fix: impl Into<String>) -> Diag {
-        Diag { code, severity: "error", message: message.into(), span, fix: fix.into(), labels: Vec::new(), edits: Vec::new() }
+        Diag { code, severity: "error", message: message.into(), span, fix: fix.into(), labels: Vec::new(), edits: Vec::new(), rust_complement: false }
+    }
+    pub(crate) fn requiring_rust_complement(mut self) -> Diag {
+        self.rust_complement = true;
+        self
     }
     /// Adds a labeled secondary span.
     pub fn with_label(mut self, span: Span, text: impl Into<String>) -> Diag {
@@ -207,7 +212,7 @@ impl LineIndex {
     pub fn new(src: &str) -> LineIndex {
         // `match_indices` with a char pattern uses memchr, which is much faster than a byte loop.
         let mut starts = Vec::with_capacity(src.len() / 32);
-        starts.push(0);
+        starts.push(if src.starts_with('\u{feff}') { 3 } else { 0 });
         starts.extend(src.match_indices('\n').map(|(i, _)| i as u32 + 1));
         let mut wide = Vec::new();
         wide_chars(src, 0, &mut wide);
@@ -226,6 +231,10 @@ impl LineIndex {
     /// The index after an edit replaced `old[a..old_b]` with `new[a..new_b]`: line starts before
     /// the edit are kept, starts inside it are recomputed, and starts after it are shifted.
     pub fn splice(&self, new: &str, a: usize, old_b: usize, new_b: usize) -> LineIndex {
+        let start = if new.starts_with('\u{feff}') { 3 } else { 0 };
+        if self.starts[0] != start || a < start as usize {
+            return Self::new(new);
+        }
         let delta = new_b as i64 - old_b as i64;
         let keep = self.starts.partition_point(|&s| s as usize <= a);
         let mut starts = Vec::with_capacity(self.starts.len() + 16);
@@ -242,8 +251,8 @@ impl LineIndex {
     }
 
     pub fn line_col(&self, offset: u32) -> (u32, u32) {
-        let line = self.starts.partition_point(|&s| s <= offset) - 1;
-        (line as u32 + 1, offset - self.starts[line] + 1)
+        let line = self.starts.partition_point(|&s| s <= offset).saturating_sub(1);
+        (line as u32 + 1, offset.saturating_sub(self.starts[line]) + 1)
     }
     /// 1-based line and display column of byte `offset`: rustc's
     /// `col_display + 1`, where a tab counts 4 and each char its width.
@@ -251,7 +260,7 @@ impl LineIndex {
         let (line, col) = self.line_col(offset);
         let start = self.starts[line as usize - 1];
         let lo = self.wide.partition_point(|&(o, _)| o < start);
-        let hi = self.wide.partition_point(|&(o, _)| o < offset);
+        let hi = self.wide.partition_point(|&(o, _)| o < offset).max(lo);
         let extra: i32 = self.wide_sum[hi] - self.wide_sum[lo];
         (line, (col as i32 + extra).max(1) as u32)
     }
@@ -560,6 +569,7 @@ pub fn text_hash(src: &str) -> u64 {
 pub struct SourceMap {
     files: Vec<std::sync::Arc<SourceFile>>,
     expansions: std::sync::Arc<Vec<Expansion>>,
+    doctest: Option<(FileId, isize)>,
 }
 
 impl SourceMap {
@@ -593,6 +603,12 @@ impl SourceMap {
     /// The number of files in the map.
     pub fn file_count(&self) -> usize {
         self.files.len()
+    }
+    /// Compare the source snapshots, ignoring their diagnostic expansion tables.
+    pub(crate) fn same_sources(&self, other: &Self) -> bool {
+        self.files.len() == other.files.len() && self.files.iter().zip(&other.files).all(|(a, b)| {
+            std::sync::Arc::ptr_eq(a, b) || (a.path == b.path && a.text == b.text)
+        })
     }
     /// The text of `file`, when the map keeps it (multi-file crates).
     pub fn text(&self, file: FileId) -> Option<&str> {
@@ -633,6 +649,15 @@ impl SourceMap {
     /// 1-based line and column of a span's first byte.
     pub fn line_col(&self, span: Span) -> (u32, u32) {
         self.lines(span.file).line_col(span.lo)
+    }
+    /// Apply Rustdoc's offset when reporting diagnostics for its generated source.
+    /// Snippets, source macros and emitted code still use the original line index.
+    pub(crate) fn set_doctest_offset(&mut self, file: FileId, offset: isize) {
+        self.doctest = Some((file, offset));
+    }
+    fn diagnostic_line(&self, file: FileId, line: u32) -> usize {
+        let offset = self.doctest.filter(|&(id, _)| id == file).map_or(0, |(_, offset)| offset);
+        (line as usize).saturating_add_signed(offset)
     }
     /// 1-based line and display column of a span's first byte (panic
     /// locations; see `LineIndex::line_display_col`). No token starts on
@@ -683,6 +708,8 @@ impl SourceMap {
 fn span_json(map: &SourceMap, span: Span) -> String {
     let (line, col) = map.line_col(span);
     let (end_line, end_col) = map.line_col_at(span.file, span.hi);
+    let line = map.diagnostic_line(span.file, line);
+    let end_line = map.diagnostic_line(span.file, end_line);
     format!(
         "{{\"start\":{},\"end\":{},\"line\":{},\"col\":{},\"end_line\":{},\"end_col\":{}}}",
         span.lo, span.hi, line, col, end_line, end_col
@@ -804,6 +831,7 @@ pub fn render(diags: &mut [Diag], map: &SourceMap, src: &str, json: bool, max_er
         let span = map.call_site(d.span);
         let path = map.path(span.file);
         let (line, col) = map.line_col(span);
+        let line = map.diagnostic_line(span.file, line);
         if json {
             let mut labels = String::new();
             for (i, l) in d.labels.iter().enumerate() {
@@ -813,6 +841,8 @@ pub fn render(diags: &mut [Diag], map: &SourceMap, src: &str, json: bool, max_er
                 let ls = map.call_site(l.span);
                 let (ll, lc) = map.line_col(ls);
                 let (el, ec) = map.line_col_at(ls.file, ls.hi);
+                let ll = map.diagnostic_line(ls.file, ll);
+                let el = map.diagnostic_line(ls.file, el);
                 let _ = write!(
                     labels,
                     "{{\"start\":{},\"end\":{},\"line\":{},\"col\":{},\"end_line\":{},\"end_col\":{},\"label\":{}}}",
@@ -860,6 +890,7 @@ pub fn render(diags: &mut [Diag], map: &SourceMap, src: &str, json: bool, max_er
             for l in &d.labels {
                 let ls = map.call_site(l.span);
                 let (ll, lc) = map.line_col(ls);
+                let ll = map.diagnostic_line(ls.file, ll);
                 let lpath = map.path(ls.file);
                 let _ = writeln!(out, "  ::: {lpath}:{ll}:{lc}");
                 push_snippet(&mut out, map.text(ls.file).unwrap_or(src), map, ls, Some(&l.text));
@@ -1024,4 +1055,56 @@ mod tests {
         assert!(out.contains(r#""file":"b.rs""#), "{out}");
         assert!(out.contains(r#""span":{"start":3,"end":4,"line":2,"col":2,"end_line":2,"end_col":3}"#), "{out}");
     }
+}
+
+
+/// Rust-compatible transport for the actual native diagnostics. This does not
+/// reinterpret a diagnostic as a compiler-selection signal or re-read source.
+#[cfg(feature="exclusive-native")]
+pub(crate) fn cargo_message(message:&str)->String {
+    serde_json::json!({"$message_type":"diagnostic","message":message,"code":null,
+        "level":"error","spans":[],"children":[],"rendered":message}).to_string()+"\n"
+}
+#[cfg(feature="exclusive-native")]
+pub(crate) fn render_cargo(diags:&mut [Diag],map:&SourceMap,src:&str,max_errors:usize)->String {
+    use serde_json::{Value,json};
+    fn span_value(map:&SourceMap,span:Span,primary:bool,label:Option<&str>,replacement:Option<&str>,auto:bool)->Value {
+        let span=map.call_site(span);
+        let (line,col)=map.line_col(span);
+        let (end_line,end_col)=map.line_col_at(span.file,span.hi);
+        let source=map.text(span.file).unwrap_or("");
+        let text:Vec<_>=source.lines().enumerate().filter_map(|(n,text)| {
+            let n=n as u32+1;
+            (n>=line&&n<=end_line).then(||json!({"text":text,
+                "highlight_start":if n==line{col}else{1},
+                "highlight_end":if n==end_line{end_col}else{text.chars().count() as u32+1}}))
+        }).collect();
+        json!({"file_name":map.path(span.file),"byte_start":span.lo,"byte_end":span.hi,
+            "line_start":line,"line_end":end_line,"column_start":col,"column_end":end_col,
+            "is_primary":primary,"text":text,"label":label,"suggested_replacement":replacement,
+            "suggestion_applicability":replacement.map(|_|if auto{"MachineApplicable"}else{"MaybeIncorrect"}),
+            "expansion":null})
+    }
+    diags.sort_by(|a,b|diag_order(map,a,b));
+    let shown=if max_errors==0{diags.len()}else{max_errors.min(diags.len())};
+    let mut output=String::new();
+    for d in &diags[..shown] {
+        let mut spans=vec![span_value(map,d.span,true,None,None,false)];
+        spans.extend(d.labels.iter().map(|l|span_value(map,l.span,false,Some(&l.text),None,false)));
+        let mut suggestions=Vec::new();
+        for edit in &d.edits {
+            suggestions.push(span_value(map,Span{lo:edit.start,hi:edit.end,..d.span},true,None,Some(&edit.replacement),edit.auto));
+        }
+        let children=if d.fix.is_empty(){Vec::new()}else{vec![json!({"message":d.fix,"code":null,"level":"help",
+            "spans":suggestions,"children":[],"rendered":null})]};
+        let rendered=render(&mut [d.clone()],map,src,false,0);
+        output.push_str(&json!({"$message_type":"diagnostic","message":d.message,
+            "code":{"code":d.code,"explanation":null},"level":d.severity,
+            "spans":spans,"children":children,"rendered":rendered}).to_string());
+        output.push('\n');
+    }
+    if shown<diags.len() {
+        output.push_str(&cargo_message(&format!("{} additional native diagnostics omitted by the requested limit",diags.len()-shown)));
+    }
+    output
 }

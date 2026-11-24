@@ -1,0 +1,78 @@
+{
+  "schema": "lustr-original-odht-simd-control-v1",
+  "base_commit": "4f6a85d16eb73335e419b1c3eccb025b492176b3",
+  "source_inputs": {
+    "crates/lustr-metadata-encoder/Cargo.lock": "906e28e2d1fd5f53b5118c7f49c34d124352b1e99d05720c5d9fb371705cb4ec",
+    "crates/lustr-metadata-encoder/Cargo.toml": "0f63faa420b6c2e1ec91739f61f7ee77ee874233399ed8e744783325168493c2",
+    "crates/lustr-metadata-encoder/LICENSE-APACHE": "62c7a1e35f56406896d7aa7ca52d0cc0d272ac022b5d2796e7d6905db8a3636a",
+    "crates/lustr-metadata-encoder/LICENSE-MIT": "b71bd43a069ca0641a9ecfe585ca7b3c53b5cc1608f8b68321168698e28b5ea1",
+    "crates/lustr-metadata-encoder/README.md": "a8c2b11dc85a9e60daa081b908a93419c7acac358b245fa01348932b19df66d4",
+    "crates/lustr-metadata-encoder/source-slices.json": "422c77c40e3016f4793f6c8212be37cea5a84b36276fd2f8fb6fdf62731a97e0",
+    "crates/lustr-metadata-encoder/src/encode.rs": "09d0fcafb6244eb16f99921d59504eeab44dada56491249e7e19aedf990b529c",
+    "crates/lustr-metadata-encoder/src/identity.rs": "995799a9938d78fd5c800a1d28af4039f4e5868cea71536d0f70b2fc3643724d",
+    "crates/lustr-metadata-encoder/src/lib.rs": "c1a2804a784bddf83b81592fcf3a71318453b10562fd5ce0e793791e55d354e0",
+    "crates/lustr-metadata-encoder/src/sdk.rs": "a088d99b04d3046c52830699b15c960e849d84d1a101c52df68b1aaeb64898b6",
+    "crates/lustr-metadata-encoder/src/table.rs": "5ad2fa46decc550bfd5f7d23cc051c7087d4ef1f5b361b154630c122097c92bb",
+    "crates/lustr-metadata-encoder/src/upstream/codec.rs": "916922c930d3dc46c7003d65d920b6c84efa780ac5b0c06eec1586ead0216a7a",
+    "crates/lustr-metadata-encoder/src/upstream/int_overflow.rs": "bf1667be8b077b770ecc1850c3bc141dc685f4b3f2470009dc2e062ef08ca0ae",
+    "crates/lustr-metadata-encoder/src/upstream/leb128.rs": "3a5bc031e24e6921459738a7ba7fa1fd5e7ba451cda266b0229030e19f278206",
+    "crates/lustr-metadata-encoder/src/upstream/mem_encoder.rs": "cb923af10331cd9276ee1fc53154e9143641d5cc33d52b7395294e10d3ee482c",
+    "crates/lustr-metadata-encoder/src/upstream/odht/LICENSE-APACHE": "62c7a1e35f56406896d7aa7ca52d0cc0d272ac022b5d2796e7d6905db8a3636a",
+    "crates/lustr-metadata-encoder/src/upstream/odht/LICENSE-MIT": "23f18e03dc49df91622fe2a76176497404e46ced8a715d9d2b67a7446571cca3",
+    "crates/lustr-metadata-encoder/src/upstream/odht_groups/mod.rs": "bdf7febea06ccfce4b811ccfa2fb42a8c44dae4d026fd295e88914a7f650702c",
+    "crates/lustr-metadata-encoder/src/upstream/odht_groups/no_simd.rs": "33b762703b243ddfafb476a8d8dd9ed0b51f76a0064479c04281aa424a420fc8",
+    "crates/lustr-metadata-encoder/src/upstream/odht_groups/sse2.rs": "fefdd6206bf34baa386e96f266d2563b2f510ec5b19f7094bd15170c7dca58b4",
+    "crates/lustr-metadata-encoder/src/upstream/odht_writer.rs": "5c1576ded925774ed16ad941220b20bffc728a3317560802541ca1f352a285b9",
+    "crates/lustr-metadata-encoder/src/upstream/schema.rs": "f4fa9e98dd16ba8293115a96cc8b087e6bb4627add637a29b786241e5f055dcb",
+    "crates/lustr-metadata-encoder/src/upstream/stable_hash/LICENSE-APACHE": "62c7a1e35f56406896d7aa7ca52d0cc0d272ac022b5d2796e7d6905db8a3636a",
+    "crates/lustr-metadata-encoder/src/upstream/stable_hash/LICENSE-MIT": "23f18e03dc49df91622fe2a76176497404e46ced8a715d9d2b67a7446571cca3",
+    "crates/lustr-metadata-encoder/src/upstream/stable_hash/int_overflow.rs": "51262ddb4bc75d68e9c5ed8410a6fd7e33aa01f1b38e7eeff2ae5ece429eac46",
+    "crates/lustr-metadata-encoder/src/upstream/stable_hash/mod.rs": "24ea97cebdc3ef18601f980bd636b37b26bc43fd23c0c1c0fb384a2fbddb927b",
+    "crates/lustr-metadata-encoder/src/upstream/stable_hash/sip128.rs": "b49461f4c6dc199916dc63b7ba5e79878cfef16010b6ba5db3c2fd33fdb9ffc6",
+    "crates/lustr-metadata-encoder/src/upstream/stable_hash/stable_hasher.rs": "7f4a8bdfa52ddc4dc943442cc9500db1577d81244dfc86f1637539d219dd0684"
+  },
+  "source_unchanged": true,
+  "rustc_sha256": "ca9d833d09469a534ca1449e71ca9961608409cdb257df96cf8035338fac28de",
+  "cargo_sha256": "da29c2a9ff7f85bda5587e9c974e05c9e2a7196377e54466f6e9d6f9e00b2530",
+  "environment": {
+    "CARGO_HOME": "/workspace/scratch/9d482ba2ab85/sdk/cargo",
+    "CARGO_TARGET_DIR": "/workspace/scratch/9d482ba2ab85/metadata-encoder-build/target",
+    "CARGO_BUILD_BUILD_DIR": "/workspace/scratch/9d482ba2ab85/metadata-encoder-build/build",
+    "CARGO_BUILD_JOBS": "2",
+    "CARGO_INCREMENTAL": "0",
+    "RUSTC": "/workspace/scratch/9d482ba2ab85/sdk/rustup/toolchains/nightly-2026-11-09-x86_64-unknown-linux-gnu/bin/rustc"
+  },
+  "commands": [
+    {
+      "name": "core-no-std",
+      "command": [
+        "/workspace/scratch/9d482ba2ab85/sdk/rustup/toolchains/nightly-2026-11-09-x86_64-unknown-linux-gnu/bin/cargo",
+        "check",
+        "--lib",
+        "--target",
+        "x86_64-unknown-none",
+        "--locked",
+        "--offline"
+      ],
+      "cwd": "crates/lustr-metadata-encoder",
+      "returncode": 0,
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderr_sha256": "a488a856bccd029ee9879dbf2151654b9aabf30f410a8b1902b01ac5cf46f981"
+    },
+    {
+      "name": "core-oracles",
+      "command": [
+        "/workspace/scratch/9d482ba2ab85/sdk/rustup/toolchains/nightly-2026-11-09-x86_64-unknown-linux-gnu/bin/cargo",
+        "test",
+        "--lib",
+        "--locked",
+        "--offline"
+      ],
+      "cwd": "crates/lustr-metadata-encoder",
+      "returncode": 0,
+      "stdout_sha256": "ecafc99bd291061bb98e219f142eb163a7ef8acabb0251c5552a858b5f209a07",
+      "stderr_sha256": "cefadaf6fa0ca56f546b806558463afdf65ab4119773bfd6588b3b72a7517da9"
+    }
+  ],
+  "scope": "original SSE2/group and word fallback source operations; no latency measurement, wider target qualification or compiler completion claim"
+}

@@ -1,0 +1,755 @@
+{
+  "created_unix_ns": 1795012624520600775,
+  "environment": {
+    "CARGO_BUILD_BUILD_DIR": "<DIAGNOSTIC_WORKSPACE>/warm-selector-deferred-spans/intermediates",
+    "CARGO_HOME": "<DIAGNOSTIC_WORKSPACE>/warm-selector-deferred-spans/cargo-home",
+    "CARGO_NET_OFFLINE": "true",
+    "CARGO_TARGET_DIR": "<DIAGNOSTIC_WORKSPACE>/warm-selector-deferred-spans/target",
+    "CARGO_TERM_COLOR": "never",
+    "HOME": "<DIAGNOSTIC_WORKSPACE>/warm-selector-deferred-spans/home",
+    "LANG": "C",
+    "LC_ALL": "C",
+    "LUSTR_PROFILE_SELECTION_DETAIL": "1",
+    "LUST_CACHE_DIR": "<DIAGNOSTIC_WORKSPACE>/warm-selector-deferred-spans/cache",
+    "PATH": "<DIAGNOSTIC_WORKSPACE>/warm-selector-package/bin:/usr/local/bin:/usr/bin:/bin",
+    "TMPDIR": "<DIAGNOSTIC_WORKSPACE>/warm-selector-deferred-spans/tmp",
+    "TZ": "UTC",
+    "__CARGO_TEMPORARY_BUILD_DIR_NEW_LAYOUT_OPT_OUT": "1"
+  },
+  "fixture_files": {
+    "Cargo.lock": "c5434c43e4444dfa56406c42904fa75cac4190c5870447a98c9b239edf795278",
+    "Cargo.toml": "89d7f2243354b127dcc2d2e7fe0c0f14ed2a6087db998ab6bde9559a3db6fda8",
+    "src/bench_driver.rs": "7aac8c3afe9690e86a0003d724df8dc8726a149ef81a1be7443795fb2b6f99c2",
+    "src/diag.rs": "80959fc732bc5926597c71f17b875e89b33dd5ca87b871bf13097330fab908f9",
+    "src/diagnostics/catalog.rs": "0096ef898e2f85256549e9a8071cf743be2dddbc15c6bb35730b69fea3957014",
+    "src/diagnostics/effect_catalog.rs": "cec5cbc0dccbd0c123794db97103ab52704ddf0c105071bce8c73db66dba930b",
+    "src/diagnostics/mod.rs": "7b0a05d61cb0cec175da3092bb072fb036a7d8e25047896d24fad3555f64d6cc",
+    "src/flags_macros.rs": "2ef2974a7504f352f9a5f0f6ec2edf25f6ca65148b0f0b5dddc2d811fefae7d8",
+    "src/frontend/bundled.rs": "1dcc293fc80dcdd644105c363e47da7be09dd5f9ff012addf17b2743b1aab94d",
+    "src/frontend/bundled/embed.rs": "f21dd117190ae2acda0d330b57fbaeebe0aa4c5c1b3ba76a17e061698d871eda",
+    "src/frontend/core_bfs.rs": "65382892ec12bea00dc43861d99d3f439cdb67b3de4b76ef1608f0ffd365e5a9",
+    "src/frontend/core_binarysearch.rs": "62aa703818c432d72befac1628ba0acda657a6ea5536bbc7c88c5d014e6ba104",
+    "src/frontend/core_context.rs": "e9720f854f81be45e0a66cf2a87a7825ff8ae6c49f6f6415a28dcfcab0b59d43",
+    "src/frontend/core_nodemodules.rs": "c74a162b0cf08fc57a50c135d3cc32848ee72207bbfd18667a0b5946c5df095f",
+    "src/frontend/core_workgroup.rs": "ef0d2591139212e57cae55a32b3c22fadca4c337c1238812f3f6b7fdfa8a7bc7",
+    "src/frontend/json.rs": "273e62eb26136d5cfd28daad6fcc7aca550b510dae9993dadc561126b8ebbf9a",
+    "src/frontend/json_ext.rs": "dea03ccdf28df7268648944ca76afcdb8568c5786ba97c6feafb5b78b8e61264",
+    "src/frontend/json_indexmap.rs": "72e7d29611cdb381898d02da2c738b655080b1d7539afe2eb13aa2e37eec0e01",
+    "src/frontend/nativepath.rs": "b6694890bef5ef49cc352ae4a84b80f760ef10a434b6c919550c823e2e463f70",
+    "src/frontend/osutil.rs": "9cf8c14333bd5be8a4148f44daa4862a1082be1bf3635e97f39ecd921631ed7e",
+    "src/frontend/semver.rs": "722411ecd267ac6e0df932a15b212b262f0ec247d2e3cb21f4d48a711aeee162",
+    "src/frontend/stringutil_ls.rs": "87064d52e9f3e578d9ae6cfbe9afca0781da1566fecb8f92dc386d78688ebd07",
+    "src/frontend/tspath/extension.rs": "9248b5ce7e82c15a3583df11ca94fdabde47a09355b52ceab98a3d6d4284fa2e",
+    "src/frontend/tspath/mod.rs": "a522edfc2386af6c20d7cfc929cf0b5efcea46b2e362c1a9e5ae48f2b8a9e6ea",
+    "src/frontend/tspath/path.rs": "133b18e6a224e436476c2af8904dfe8c682bc43947b9ed2777a182bcb3300401",
+    "src/frontend/util_prelude.rs": "07c37744dcc43f273a97847e058b7214203c790b0a22436de7f8efe997921bd8",
+    "src/frontend/vfs/cachedvfs.rs": "50f4da61415ec68c5edbf18c8241fd5f6413bfba8efa95d292d76c5df94718e0",
+    "src/frontend/vfs/mod.rs": "41cf299331b206aa5d8e72fc2ba27023499cc5e17b7dae34cf65a47a75066e19",
+    "src/frontend/vfs/mod_impl.rs": "ef948e66914b57e206694434e591a62597fa2a54a47b3711d7d89cf6aba544db",
+    "src/frontend/vfs/osvfs.rs": "2ad07e2e8fbaa29b1c1415012f009164e38a182b26bbb32bfe66a44dc62312a3",
+    "src/frontend/vfs/trackingvfs.rs": "e146b276bcee2c0a682cc47939a02968439f3d982043d5cce202d7589e5c126a",
+    "src/frontend/vfs/vfsmatch.rs": "3a18738b01d69cba27757063a91b5fa31e4fa9c847bfaaba8a3878f46a2cf75e",
+    "src/frontend/vfs/walkdir.rs": "78809128e29aa389767168d4a4b96af5e3848eee8519851fbfbe4c7472a6b8f0",
+    "src/frontend/vfs/wrapvfs.rs": "535cf5a1b2138ce624a8219c9a1af897b62d06c1a1c89a21fe2abb6214d1f151",
+    "src/gopanic.rs": "0e898605e5270619a805c05e3d69047226740ed541ab4d03bf2c9e6b4aa0d0ce",
+    "src/gostring.rs": "b6ef984a55cedfa835e773051f1a9b7192a5b66ad5c4bb15a9552e098194bdff",
+    "src/jsnum.rs": "e78bb6ca58596d93c166495534557c270cb244e3756c37fa28b18956f3aca153",
+    "src/jsonrpc/baseproto.rs": "f5262e6f1aecd7f5ae8726c16207285bb4b9b6a230ba6ca17987fff86c6910a3",
+    "src/jsonrpc/jsonrpc.rs": "b3d9f66570733c1b2e32b5b1cb0cf4ffeb8b600eb2911f39d7363c7fcb01fb2a",
+    "src/jsonrpc/mod.rs": "09cfc5f87f13159934f4ffa7b1aeb8b13ff86ddbb849e6d16841ede70c48cd9f",
+    "src/slice_main.rs": "4629b2176efbe0ee0237ff52cb57141e079de7a95289383ceab002f5de1dd1dd",
+    "src/support.rs": "3e413f47416f698ea5d510feba0e4e7639cf325e160ec791ebf27024c04914ef",
+    "src/util_prelude.rs": "d658de5180a3e1bca7eef868bea5b519eed21c1d16b02b6045019b36638de3b6"
+  },
+  "gate_order": [
+    "profiled-prime-tools",
+    "original-prime-tools",
+    "original-before",
+    "3primes",
+    "8excluded",
+    "96measured",
+    "original-after"
+  ],
+  "helpers": {
+    "original": {
+      "path": "<DIAGNOSTIC_WORKSPACE>/warm-selector-original-build/target/release/profile-native-preflight",
+      "sha256": "1ae4fc668636506c26b12e33ebea0068b3b43f05e12ded58c18bae16d9758b44"
+    },
+    "profiled": {
+      "path": "<DIAGNOSTIC_WORKSPACE>/warm-selector-profile-build/target/release/profile-native-preflight",
+      "sha256": "114fa50ee39b67e42d43ecd1d4bbdc19c7915097fed5274f9f0f353ff8fbbca0"
+    }
+  },
+  "limits": [
+    "Reduced real package has no liblustr_native_core.so; exact layout/receipt captured.",
+    "Instrumentation calls a clock and thread-local counter for every span; no stage output or dynamic formatting until full::select returns.",
+    "Nested inclusive stages must not be summed. Residual uses only disjoint top-level capture/load/diagnostic spans.",
+    "No trace/stats diagnostic path is enabled during measured helper calls.",
+    "Uninstrumented fresh-Cargo before/after observations supply complete Selection equivalence, not a timing reference."
+  ],
+  "native_args": [
+    "check",
+    "<DIAGNOSTIC_WORKSPACE>/warm-selector-deferred-spans/fixture/src/slice_main.rs",
+    "--manifest-path",
+    "<DIAGNOSTIC_WORKSPACE>/warm-selector-deferred-spans/fixture/Cargo.toml",
+    "--bin",
+    "slice",
+    "--offline",
+    "--locked",
+    "--target",
+    "x86_64-unknown-linux-gnu",
+    "-C",
+    "panic=unwind",
+    "-C",
+    "overflow-checks=on",
+    "-C",
+    "debug-assertions=on"
+  ],
+  "package": "<DIAGNOSTIC_WORKSPACE>/warm-selector-package",
+  "package_inventory": [
+    {
+      "link": "<DIAGNOSTIC_WORKSPACE>/warm-rustup/toolchains/nightly-2026-11-09-x86_64-unknown-linux-gnu/bin/cargo",
+      "lstat_mode": 41471,
+      "path": "bin/cargo",
+      "resolved": "<DIAGNOSTIC_WORKSPACE>/warm-rustup/toolchains/nightly-2026-11-09-x86_64-unknown-linux-gnu/bin/cargo",
+      "sha256": "da29c2a9ff7f85bda5587e9c974e05c9e2a7196377e54466f6e9d6f9e00b2530",
+      "stat": {
+        "ctime_ns": 1795012258501477159,
+        "dev": 27,
+        "gid": 1000,
+        "ino": 951782,
+        "mode": 33261,
+        "mtime_ns": 1795012258397478243,
+        "size": 36722856,
+        "uid": 1000
+      }
+    },
+    {
+      "link": "<DIAGNOSTIC_WORKSPACE>/warm-rustup/toolchains/nightly-2026-11-09-x86_64-unknown-linux-gnu/bin/rust-gdb",
+      "lstat_mode": 41471,
+      "path": "bin/rust-gdb",
+      "resolved": "<DIAGNOSTIC_WORKSPACE>/warm-rustup/toolchains/nightly-2026-11-09-x86_64-unknown-linux-gnu/bin/rust-gdb",
+      "sha256": "7054a508ece38b5bb81860e8ddbcd62021fab6432026789970ebbba8b84f6163",
+      "stat": {
+        "ctime_ns": 1795012287977172130,
+        "dev": 27,
+        "gid": 1000,
+        "ino": 951902,
+        "mode": 33261,
+        "mtime_ns": 1795012283433219022,
+        "size": 1413,
+        "uid": 1000
+      }
+    },
+    {
+      "link": "<DIAGNOSTIC_WORKSPACE>/warm-rustup/toolchains/nightly-2026-11-09-x86_64-unknown-linux-gnu/bin/rust-gdbgui",
+      "lstat_mode": 41471,
+      "path": "bin/rust-gdbgui",
+      "resolved": "<DIAGNOSTIC_WORKSPACE>/warm-rustup/toolchains/nightly-2026-11-09-x86_64-unknown-linux-gnu/bin/rust-gdbgui",
+      "sha256": "bc60613775a098e59b49fa4584cea73631697fe1456c44284c337d6700340315",
+      "stat": {
+        "ctime_ns": 1795012287978141222,
+        "dev": 27,
+        "gid": 1000,
+        "ino": 951927,
+        "mode": 33261,
+        "mtime_ns": 1795012283629216999,
+        "size": 2160,
+        "uid": 1000
+      }
+    },
+    {
+      "link": "<DIAGNOSTIC_WORKSPACE>/warm-rustup/toolchains/nightly-2026-11-09-x86_64-unknown-linux-gnu/bin/rust-lldb",
+      "lstat_mode": 41471,
+      "path": "bin/rust-lldb",
+      "resolved": "<DIAGNOSTIC_WORKSPACE>/warm-rustup/toolchains/nightly-2026-11-09-x86_64-unknown-linux-gnu/bin/rust-lldb",
+      "sha256": "f9c40edb1b5943ce8dc18d1d1e9fc62e49486a0229bf655affee52e968c19168",
+      "stat": {
+        "ctime_ns": 1795012287978149764,
+        "dev": 27,
+        "gid": 1000,
+        "ino": 951903,
+        "mode": 33261,
+        "mtime_ns": 1795012283433219022,
+        "size": 1371,
+        "uid": 1000
+      }
+    },
+    {
+      "link": null,
+      "lstat_mode": 33261,
+      "path": "bin/rustc-full",
+      "resolved": "<DIAGNOSTIC_WORKSPACE>/warm-selector-package/bin/rustc-full",
+      "sha256": "72add85d62b0d4b4b6a22b1a3cc779f7eb445425ce6b42a2178b38462bcb5e78",
+      "stat": {
+        "ctime_ns": 1795012467687327772,
+        "dev": 27,
+        "gid": 1000,
+        "ino": 1065641,
+        "mode": 33261,
+        "mtime_ns": 1795012397232053528,
+        "size": 1630376,
+        "uid": 1000
+      }
+    },
+    {
+      "link": "<DIAGNOSTIC_WORKSPACE>/warm-rustup/toolchains/nightly-2026-11-09-x86_64-unknown-linux-gnu/bin/rustc",
+      "lstat_mode": 41471,
+      "path": "bin/rustc-reference",
+      "resolved": "<DIAGNOSTIC_WORKSPACE>/warm-rustup/toolchains/nightly-2026-11-09-x86_64-unknown-linux-gnu/bin/rustc",
+      "sha256": "ca9d833d09469a534ca1449e71ca9961608409cdb257df96cf8035338fac28de",
+      "stat": {
+        "ctime_ns": 1795012287978189764,
+        "dev": 27,
+        "gid": 1000,
+        "ino": 951906,
+        "mode": 33261,
+        "mtime_ns": 1795012283433219022,
+        "size": 646208,
+        "uid": 1000
+      }
+    },
+    {
+      "link": "<DIAGNOSTIC_WORKSPACE>/warm-rustup/toolchains/nightly-2026-11-09-x86_64-unknown-linux-gnu/bin/rustdoc",
+      "lstat_mode": 41471,
+      "path": "bin/rustdoc",
+      "resolved": "<DIAGNOSTIC_WORKSPACE>/warm-rustup/toolchains/nightly-2026-11-09-x86_64-unknown-linux-gnu/bin/rustdoc",
+      "sha256": "631825ada1565bad37c9ccab5cc9a339dbfb4b132697cc8ebd7ad336be638644",
+      "stat": {
+        "ctime_ns": 1795012287978199358,
+        "dev": 27,
+        "gid": 1000,
+        "ino": 951905,
+        "mode": 33261,
+        "mtime_ns": 1795012283433219022,
+        "size": 12626568,
+        "uid": 1000
+      }
+    },
+    {
+      "link": "<DIAGNOSTIC_WORKSPACE>/warm-rustup/toolchains/nightly-2026-11-09-x86_64-unknown-linux-gnu/lib/libLLVM-23-rust-1.102.0-nightly.so",
+      "lstat_mode": 41471,
+      "path": "lib/libLLVM-23-rust-1.102.0-nightly.so",
+      "resolved": "<DIAGNOSTIC_WORKSPACE>/warm-rustup/toolchains/nightly-2026-11-09-x86_64-unknown-linux-gnu/lib/libLLVM-23-rust-1.102.0-nightly.so",
+      "sha256": "c1473b5e610614991e7836a5221a271b0b899ac79ec1b758479907ccfbb8a7da",
+      "stat": {
+        "ctime_ns": 1795012287978199358,
+        "dev": 27,
+        "gid": 1000,
+        "ino": 951940,
+        "mode": 33188,
+        "mtime_ns": 1795012285705195574,
+        "size": 44,
+        "uid": 1000
+      }
+    },
+    {
+      "link": "<DIAGNOSTIC_WORKSPACE>/warm-rustup/toolchains/nightly-2026-11-09-x86_64-unknown-linux-gnu/lib/libLLVM.so.23.1-rust-1.102.0-nightly",
+      "lstat_mode": 41471,
+      "path": "lib/libLLVM.so.23.1-rust-1.102.0-nightly",
+      "resolved": "<DIAGNOSTIC_WORKSPACE>/warm-rustup/toolchains/nightly-2026-11-09-x86_64-unknown-linux-gnu/lib/libLLVM.so.23.1-rust-1.102.0-nightly",
+      "sha256": "5b12901d3a06a2eca8eae8e0781f678a6b2213740e2754f90dc22aef3f23dc21",
+      "stat": {
+        "ctime_ns": 1795012287978239028,
+        "dev": 27,
+        "gid": 1000,
+        "ino": 951953,
+        "mode": 33188,
+        "mtime_ns": 1795012287861173322,
+        "size": 208283952,
+        "uid": 1000
+      }
+    },
+    {
+      "link": "<DIAGNOSTIC_WORKSPACE>/warm-rustup/toolchains/nightly-2026-11-09-x86_64-unknown-linux-gnu/lib/librustc_driver-f21b5e769b80ce6a.so",
+      "lstat_mode": 41471,
+      "path": "lib/librustc_driver-f21b5e769b80ce6a.so",
+      "resolved": "<DIAGNOSTIC_WORKSPACE>/warm-rustup/toolchains/nightly-2026-11-09-x86_64-unknown-linux-gnu/lib/librustc_driver-f21b5e769b80ce6a.so",
+      "sha256": "ace7e2aa6ae11ca4c9b1edaf70701fc9390de38dd86bcf16bb8f22d5e658bd72",
+      "stat": {
+        "ctime_ns": 1795012287978273108,
+        "dev": 27,
+        "gid": 1000,
+        "ino": 951936,
+        "mode": 33188,
+        "mtime_ns": 1795012285701195614,
+        "size": 164782176,
+        "uid": 1000
+      }
+    },
+    {
+      "link": null,
+      "lstat_mode": 33188,
+      "path": "lib/lustr-selection-tools.txt",
+      "resolved": "<DIAGNOSTIC_WORKSPACE>/warm-selector-package/lib/lustr-selection-tools.txt",
+      "sha256": "4a1273486a71d21d30fd475785b1a55fbc234c46249d3755d7a27aa17bc86c4c",
+      "stat": {
+        "ctime_ns": 1795012468295321843,
+        "dev": 27,
+        "gid": 1000,
+        "ino": 1065648,
+        "mode": 33188,
+        "mtime_ns": 1795012468295321843,
+        "size": 746,
+        "uid": 1000
+      }
+    },
+    {
+      "kind": "directory",
+      "link": "<DIAGNOSTIC_WORKSPACE>/warm-rustup/toolchains/nightly-2026-11-09-x86_64-unknown-linux-gnu/lib/rustlib",
+      "path": "lib/rustlib"
+    }
+  ],
+  "receipt_sha256": {
+    "original": "b64bd46f83d5e48066f1d4a6b9c9ee9ce83a142b23058486fe68188aac4cad9d",
+    "package": "82b90f595032196575d25f766b020abc2d4d898530d8e5ace4fabc70efa6f473",
+    "profiled": "b62e33854968034f0b7d2a802414d509ad80b44220f02f81d1062380db6f5729"
+  },
+  "runner_sha256": "a103b300544890299c2859b8ae7b23184ebad696c4a866cbdd81b343df70d843",
+  "schedule": [
+    {
+      "index": 0,
+      "phase": "prime"
+    },
+    {
+      "index": 1,
+      "phase": "prime"
+    },
+    {
+      "index": 2,
+      "phase": "prime"
+    },
+    {
+      "index": 0,
+      "phase": "excluded"
+    },
+    {
+      "index": 1,
+      "phase": "excluded"
+    },
+    {
+      "index": 2,
+      "phase": "excluded"
+    },
+    {
+      "index": 3,
+      "phase": "excluded"
+    },
+    {
+      "index": 4,
+      "phase": "excluded"
+    },
+    {
+      "index": 5,
+      "phase": "excluded"
+    },
+    {
+      "index": 6,
+      "phase": "excluded"
+    },
+    {
+      "index": 7,
+      "phase": "excluded"
+    },
+    {
+      "index": 0,
+      "phase": "measured"
+    },
+    {
+      "index": 1,
+      "phase": "measured"
+    },
+    {
+      "index": 2,
+      "phase": "measured"
+    },
+    {
+      "index": 3,
+      "phase": "measured"
+    },
+    {
+      "index": 4,
+      "phase": "measured"
+    },
+    {
+      "index": 5,
+      "phase": "measured"
+    },
+    {
+      "index": 6,
+      "phase": "measured"
+    },
+    {
+      "index": 7,
+      "phase": "measured"
+    },
+    {
+      "index": 8,
+      "phase": "measured"
+    },
+    {
+      "index": 9,
+      "phase": "measured"
+    },
+    {
+      "index": 10,
+      "phase": "measured"
+    },
+    {
+      "index": 11,
+      "phase": "measured"
+    },
+    {
+      "index": 12,
+      "phase": "measured"
+    },
+    {
+      "index": 13,
+      "phase": "measured"
+    },
+    {
+      "index": 14,
+      "phase": "measured"
+    },
+    {
+      "index": 15,
+      "phase": "measured"
+    },
+    {
+      "index": 16,
+      "phase": "measured"
+    },
+    {
+      "index": 17,
+      "phase": "measured"
+    },
+    {
+      "index": 18,
+      "phase": "measured"
+    },
+    {
+      "index": 19,
+      "phase": "measured"
+    },
+    {
+      "index": 20,
+      "phase": "measured"
+    },
+    {
+      "index": 21,
+      "phase": "measured"
+    },
+    {
+      "index": 22,
+      "phase": "measured"
+    },
+    {
+      "index": 23,
+      "phase": "measured"
+    },
+    {
+      "index": 24,
+      "phase": "measured"
+    },
+    {
+      "index": 25,
+      "phase": "measured"
+    },
+    {
+      "index": 26,
+      "phase": "measured"
+    },
+    {
+      "index": 27,
+      "phase": "measured"
+    },
+    {
+      "index": 28,
+      "phase": "measured"
+    },
+    {
+      "index": 29,
+      "phase": "measured"
+    },
+    {
+      "index": 30,
+      "phase": "measured"
+    },
+    {
+      "index": 31,
+      "phase": "measured"
+    },
+    {
+      "index": 32,
+      "phase": "measured"
+    },
+    {
+      "index": 33,
+      "phase": "measured"
+    },
+    {
+      "index": 34,
+      "phase": "measured"
+    },
+    {
+      "index": 35,
+      "phase": "measured"
+    },
+    {
+      "index": 36,
+      "phase": "measured"
+    },
+    {
+      "index": 37,
+      "phase": "measured"
+    },
+    {
+      "index": 38,
+      "phase": "measured"
+    },
+    {
+      "index": 39,
+      "phase": "measured"
+    },
+    {
+      "index": 40,
+      "phase": "measured"
+    },
+    {
+      "index": 41,
+      "phase": "measured"
+    },
+    {
+      "index": 42,
+      "phase": "measured"
+    },
+    {
+      "index": 43,
+      "phase": "measured"
+    },
+    {
+      "index": 44,
+      "phase": "measured"
+    },
+    {
+      "index": 45,
+      "phase": "measured"
+    },
+    {
+      "index": 46,
+      "phase": "measured"
+    },
+    {
+      "index": 47,
+      "phase": "measured"
+    },
+    {
+      "index": 48,
+      "phase": "measured"
+    },
+    {
+      "index": 49,
+      "phase": "measured"
+    },
+    {
+      "index": 50,
+      "phase": "measured"
+    },
+    {
+      "index": 51,
+      "phase": "measured"
+    },
+    {
+      "index": 52,
+      "phase": "measured"
+    },
+    {
+      "index": 53,
+      "phase": "measured"
+    },
+    {
+      "index": 54,
+      "phase": "measured"
+    },
+    {
+      "index": 55,
+      "phase": "measured"
+    },
+    {
+      "index": 56,
+      "phase": "measured"
+    },
+    {
+      "index": 57,
+      "phase": "measured"
+    },
+    {
+      "index": 58,
+      "phase": "measured"
+    },
+    {
+      "index": 59,
+      "phase": "measured"
+    },
+    {
+      "index": 60,
+      "phase": "measured"
+    },
+    {
+      "index": 61,
+      "phase": "measured"
+    },
+    {
+      "index": 62,
+      "phase": "measured"
+    },
+    {
+      "index": 63,
+      "phase": "measured"
+    },
+    {
+      "index": 64,
+      "phase": "measured"
+    },
+    {
+      "index": 65,
+      "phase": "measured"
+    },
+    {
+      "index": 66,
+      "phase": "measured"
+    },
+    {
+      "index": 67,
+      "phase": "measured"
+    },
+    {
+      "index": 68,
+      "phase": "measured"
+    },
+    {
+      "index": 69,
+      "phase": "measured"
+    },
+    {
+      "index": 70,
+      "phase": "measured"
+    },
+    {
+      "index": 71,
+      "phase": "measured"
+    },
+    {
+      "index": 72,
+      "phase": "measured"
+    },
+    {
+      "index": 73,
+      "phase": "measured"
+    },
+    {
+      "index": 74,
+      "phase": "measured"
+    },
+    {
+      "index": 75,
+      "phase": "measured"
+    },
+    {
+      "index": 76,
+      "phase": "measured"
+    },
+    {
+      "index": 77,
+      "phase": "measured"
+    },
+    {
+      "index": 78,
+      "phase": "measured"
+    },
+    {
+      "index": 79,
+      "phase": "measured"
+    },
+    {
+      "index": 80,
+      "phase": "measured"
+    },
+    {
+      "index": 81,
+      "phase": "measured"
+    },
+    {
+      "index": 82,
+      "phase": "measured"
+    },
+    {
+      "index": 83,
+      "phase": "measured"
+    },
+    {
+      "index": 84,
+      "phase": "measured"
+    },
+    {
+      "index": 85,
+      "phase": "measured"
+    },
+    {
+      "index": 86,
+      "phase": "measured"
+    },
+    {
+      "index": 87,
+      "phase": "measured"
+    },
+    {
+      "index": 88,
+      "phase": "measured"
+    },
+    {
+      "index": 89,
+      "phase": "measured"
+    },
+    {
+      "index": 90,
+      "phase": "measured"
+    },
+    {
+      "index": 91,
+      "phase": "measured"
+    },
+    {
+      "index": 92,
+      "phase": "measured"
+    },
+    {
+      "index": 93,
+      "phase": "measured"
+    },
+    {
+      "index": 94,
+      "phase": "measured"
+    },
+    {
+      "index": 95,
+      "phase": "measured"
+    }
+  ],
+  "schema": "lustr-selector-deferred-span-plan-v1",
+  "scope": "Inclusive nested selector stage distributions only; no paired performance ratio, whole-command attribution or platform qualification.",
+  "source": {
+    "files": {
+      "compiler/native/src/protocol.rs": "4da4c32fb16b62f3819a3d774ef63b76e201e2414c3b4540b4a6ccb27133fe1c",
+      "src/full.rs": "22f6f508019deb74d2285b424d566fb043f51e48dc4590a6a2c94154c8d03ba4",
+      "src/host_runtime.rs": "8ebc63c1ac92252816cd2dd092c5b0fad528c1d3a0f479b3889a6b7204f0c223",
+      "src/owned_child.rs": "5c890f584d281e984405fce5a9810b8f5d2461e2dfedea173613c5813c4f5d20",
+      "src/selection_cache.rs": "cd029856297f3266feddd34ca019dae138ab7d38491c8b0ac2ad96c93b37b94d",
+      "tools/profile-native-preflight.rs": "b5d1e146df83df609b45979dd2f4b5a2eef0bda70f74e19d78cc4f142a8030a1",
+      "tools/selection-spans.rs": "78eefef46772ae53bad62438442b5305f335e74057df007347732a0d55f83a55",
+      "upstream/bluefe-core.pin": "73bd5e14a0d96979dccb1f89f145f6c1d9d947c8f4a192f0db64f6954f0218b6"
+    },
+    "revision": "1f26c898944e5e911becffc24be031e1d06dadf6",
+    "tree": "a766b464c62be6913482138e8b5128292931b060"
+  }
+}

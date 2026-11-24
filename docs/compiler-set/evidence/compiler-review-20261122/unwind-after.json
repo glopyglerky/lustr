@@ -1,0 +1,419 @@
+{
+  "schema": "lustr-native-unwind-frames-v1",
+  "passed": true,
+  "source_identity": [
+    "0cc0149f4b29e65fe40adcf9f59e42b7b11f23dd",
+    "af1ffe2bcb1d67c6288ad2fddf87238271af5b7a"
+  ],
+  "campaign_report_sha256": "bf5692f4e7f777418ed37cd95783591d614610c7d014b5c19f20c22823f8e193",
+  "evaluator_sha256": "5a118f118191ca64541deb0433f7489e124559a0399f2fec8c0461caffe5cfd2",
+  "gdb_sha256": "24a698c69ab1053b4bdfac5817c4855846f407b1d46265a92847280ef460e787",
+  "rust_source_debug_qualified": false,
+  "panic_cleanup_qualified": false,
+  "kind": "summary of retained original frame report; not original report bytes",
+  "published_same_tree_commit": "9185df0d2d284d08db4fb015f40c67667a6e398c",
+  "gdb_version": "GNU gdb (GDB) 17.2",
+  "original_report_sha256": "40105374e89d304df99768e1ce0ccb8e4f0936e8e2ec0bd40d9fb0def8396aaf",
+  "original_output_manifest_verified": true,
+  "original_output_file_count": 25,
+  "cases": [
+    {
+      "label": "cold",
+      "record_sha256": "d45c7332a0c735a72e8debfe0c6af5a5ae041f2bd3c9c209fd673d65da63580e",
+      "archive_sha256": "0831d788ebd867082b4fac653e53ba81d499d7bd6512edac9a586009a6a56087",
+      "binary_sha256": "e6d199ea3d2f33168bae5993ad33430557a63910002cc3f8177869f9bf4ebe77",
+      "source_sha256": "93a1bfbf6af8236fc6791f6b2eaf6e63ebf7e2ee9baf9aeb22fbfb8c15e880a3",
+      "mutation": {
+        "file_offset": 60367,
+        "before": 16,
+        "after": 127,
+        "operation": "DW_CFA_def_cfa_offset",
+        "binary_sha256": "b2907eef0c07d2c6bc098ec9d638335ef1b0b83b05710b9ef22905a4bd28570b"
+      },
+      "negative_control_rejected": true,
+      "stops": [
+        {
+          "name": "entry",
+          "offset": 0,
+          "passed": true,
+          "frames": [
+            {
+              "pc": 93824992317312,
+              "name": "_RNvCs3n8H3X0z52e_11unwind_leaf5limit",
+              "level": 0
+            },
+            {
+              "pc": 93824992317283,
+              "name": "_RNvCs3n8H3X0z52e_11unwind_leaf7project",
+              "level": 1
+            },
+            {
+              "pc": 93824992316911,
+              "name": "_RNvCs8mtIywMgq9G_11caller_cold4main",
+              "level": 2
+            }
+          ],
+          "selected_unwinders": [
+            {
+              "level": 0,
+              "name": "dwarf2"
+            },
+            {
+              "level": 1,
+              "name": "dwarf2"
+            },
+            {
+              "level": 2,
+              "name": "dwarf2"
+            },
+            {
+              "level": 3,
+              "name": "dwarf2"
+            }
+          ]
+        },
+        {
+          "name": "after-prologue",
+          "offset": 4,
+          "passed": true,
+          "frames": [
+            {
+              "pc": 93824992317316,
+              "name": "_RNvCs3n8H3X0z52e_11unwind_leaf5limit",
+              "level": 0
+            },
+            {
+              "pc": 93824992317283,
+              "name": "_RNvCs3n8H3X0z52e_11unwind_leaf7project",
+              "level": 1
+            },
+            {
+              "pc": 93824992316911,
+              "name": "_RNvCs8mtIywMgq9G_11caller_cold4main",
+              "level": 2
+            }
+          ],
+          "selected_unwinders": [
+            {
+              "level": 0,
+              "name": "dwarf2"
+            },
+            {
+              "level": 1,
+              "name": "dwarf2"
+            },
+            {
+              "level": 2,
+              "name": "dwarf2"
+            },
+            {
+              "level": 3,
+              "name": "dwarf2"
+            }
+          ]
+        },
+        {
+          "name": "return",
+          "offset": 40,
+          "passed": true,
+          "frames": [
+            {
+              "pc": 93824992317352,
+              "name": "_RNvCs3n8H3X0z52e_11unwind_leaf5limit",
+              "level": 0
+            },
+            {
+              "pc": 93824992317283,
+              "name": "_RNvCs3n8H3X0z52e_11unwind_leaf7project",
+              "level": 1
+            },
+            {
+              "pc": 93824992316911,
+              "name": "_RNvCs8mtIywMgq9G_11caller_cold4main",
+              "level": 2
+            }
+          ],
+          "selected_unwinders": [
+            {
+              "level": 0,
+              "name": "dwarf2"
+            },
+            {
+              "level": 1,
+              "name": "dwarf2"
+            },
+            {
+              "level": 2,
+              "name": "dwarf2"
+            },
+            {
+              "level": 3,
+              "name": "dwarf2"
+            }
+          ]
+        }
+      ],
+      "negative_observation": {
+        "entry": 93824992317312,
+        "stop": 93824992317316,
+        "frames": [
+          {
+            "pc": 93824992317316,
+            "name": "_RNvCs3n8H3X0z52e_11unwind_leaf5limit",
+            "level": 0
+          },
+          {
+            "pc": 24019198033115392,
+            "name": null,
+            "level": 1
+          },
+          {
+            "pc": 24019198096111616,
+            "name": null,
+            "level": 2
+          }
+        ],
+        "error": null,
+        "unwinder_trace": {
+          "selections": [
+            {
+              "level": 0,
+              "name": "dwarf2"
+            },
+            {
+              "level": 1,
+              "name": "amd64 prologue"
+            },
+            {
+              "level": 2,
+              "name": "amd64 prologue"
+            },
+            {
+              "level": 3,
+              "name": "amd64 prologue"
+            }
+          ],
+          "frames": [
+            {
+              "level": 0,
+              "type": "NORMAL_FRAME",
+              "name": "dwarf2",
+              "pc": 93824992317316
+            },
+            {
+              "level": 1,
+              "type": "NORMAL_FRAME",
+              "name": "amd64 prologue",
+              "pc": 24019198033115392
+            },
+            {
+              "level": 2,
+              "type": "NORMAL_FRAME",
+              "name": "amd64 prologue",
+              "pc": 24019198096111616
+            }
+          ]
+        }
+      }
+    },
+    {
+      "label": "edit",
+      "record_sha256": "4e4dd46cadfc341dfdc4e85bfe3cab67ef7714fa377595c6a236991aac04968d",
+      "archive_sha256": "74f08a69266c0f55d5d78b64e7ff56d4036632621c52cf4d0411aade418be8f9",
+      "binary_sha256": "6aa2c129b15a98259fd9ae06004cdb6a4ecd9adac42fa141e146c0d2e9ac0226",
+      "source_sha256": "5b0e139d80211b10d6e3d040d152f50879e398f8905d38032ceb1de53450fa3a",
+      "mutation": {
+        "file_offset": 60367,
+        "before": 16,
+        "after": 127,
+        "operation": "DW_CFA_def_cfa_offset",
+        "binary_sha256": "b22623446bf68c6f589b120346c67e416a8f5a0b6efaa720256f8239ddf469e7"
+      },
+      "negative_control_rejected": true,
+      "stops": [
+        {
+          "name": "entry",
+          "offset": 0,
+          "passed": true,
+          "frames": [
+            {
+              "pc": 93824992317312,
+              "name": "_RNvCs3n8H3X0z52e_11unwind_leaf5limit",
+              "level": 0
+            },
+            {
+              "pc": 93824992317283,
+              "name": "_RNvCs3n8H3X0z52e_11unwind_leaf7project",
+              "level": 1
+            },
+            {
+              "pc": 93824992316911,
+              "name": "_RNvCskcLzRL2SqBj_11caller_edit4main",
+              "level": 2
+            }
+          ],
+          "selected_unwinders": [
+            {
+              "level": 0,
+              "name": "dwarf2"
+            },
+            {
+              "level": 1,
+              "name": "dwarf2"
+            },
+            {
+              "level": 2,
+              "name": "dwarf2"
+            },
+            {
+              "level": 3,
+              "name": "dwarf2"
+            }
+          ]
+        },
+        {
+          "name": "after-prologue",
+          "offset": 4,
+          "passed": true,
+          "frames": [
+            {
+              "pc": 93824992317316,
+              "name": "_RNvCs3n8H3X0z52e_11unwind_leaf5limit",
+              "level": 0
+            },
+            {
+              "pc": 93824992317283,
+              "name": "_RNvCs3n8H3X0z52e_11unwind_leaf7project",
+              "level": 1
+            },
+            {
+              "pc": 93824992316911,
+              "name": "_RNvCskcLzRL2SqBj_11caller_edit4main",
+              "level": 2
+            }
+          ],
+          "selected_unwinders": [
+            {
+              "level": 0,
+              "name": "dwarf2"
+            },
+            {
+              "level": 1,
+              "name": "dwarf2"
+            },
+            {
+              "level": 2,
+              "name": "dwarf2"
+            },
+            {
+              "level": 3,
+              "name": "dwarf2"
+            }
+          ]
+        },
+        {
+          "name": "return",
+          "offset": 40,
+          "passed": true,
+          "frames": [
+            {
+              "pc": 93824992317352,
+              "name": "_RNvCs3n8H3X0z52e_11unwind_leaf5limit",
+              "level": 0
+            },
+            {
+              "pc": 93824992317283,
+              "name": "_RNvCs3n8H3X0z52e_11unwind_leaf7project",
+              "level": 1
+            },
+            {
+              "pc": 93824992316911,
+              "name": "_RNvCskcLzRL2SqBj_11caller_edit4main",
+              "level": 2
+            }
+          ],
+          "selected_unwinders": [
+            {
+              "level": 0,
+              "name": "dwarf2"
+            },
+            {
+              "level": 1,
+              "name": "dwarf2"
+            },
+            {
+              "level": 2,
+              "name": "dwarf2"
+            },
+            {
+              "level": 3,
+              "name": "dwarf2"
+            }
+          ]
+        }
+      ],
+      "negative_observation": {
+        "entry": 93824992317312,
+        "stop": 93824992317316,
+        "frames": [
+          {
+            "pc": 93824992317316,
+            "name": "_RNvCs3n8H3X0z52e_11unwind_leaf5limit",
+            "level": 0
+          },
+          {
+            "pc": 24019198033115392,
+            "name": null,
+            "level": 1
+          },
+          {
+            "pc": 24019198096111616,
+            "name": null,
+            "level": 2
+          }
+        ],
+        "error": null,
+        "unwinder_trace": {
+          "selections": [
+            {
+              "level": 0,
+              "name": "dwarf2"
+            },
+            {
+              "level": 1,
+              "name": "amd64 prologue"
+            },
+            {
+              "level": 2,
+              "name": "amd64 prologue"
+            },
+            {
+              "level": 3,
+              "name": "amd64 prologue"
+            }
+          ],
+          "frames": [
+            {
+              "level": 0,
+              "type": "NORMAL_FRAME",
+              "name": "dwarf2",
+              "pc": 93824992317316
+            },
+            {
+              "level": 1,
+              "type": "NORMAL_FRAME",
+              "name": "amd64 prologue",
+              "pc": 24019198033115392
+            },
+            {
+              "level": 2,
+              "type": "NORMAL_FRAME",
+              "name": "amd64 prologue",
+              "pc": 24019198096111616
+            }
+          ]
+        }
+      }
+    }
+  ]
+}

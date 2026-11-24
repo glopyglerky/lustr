@@ -1,0 +1,32 @@
+{
+  "argv": [
+    "/workspace/scratch/bf3e8280f86b/tooling/rustup/toolchains/nightly-2026-11-09-x86_64-unknown-linux-gnu/bin/cargo",
+    "build",
+    "--manifest-path",
+    "compiler/native/Cargo.toml",
+    "--features",
+    "exclusive-native",
+    "--bin",
+    "lust",
+    "--bin",
+    "lust-core",
+    "--locked",
+    "--offline"
+  ],
+  "env": {
+    "RUSTC": "/workspace/scratch/bf3e8280f86b/tooling/rustup/toolchains/nightly-2026-11-09-x86_64-unknown-linux-gnu/bin/rustc",
+    "CARGO_HOME": "/tmp/lustr-cargo-plan-build/cargo-home",
+    "CARGO_TARGET_DIR": "/tmp/lustr-cargo-plan-build/target",
+    "CARGO_BUILD_BUILD_DIR": "/tmp/lustr-cargo-plan-build/build",
+    "CARGO_INCREMENTAL": "0",
+    "CARGO_BUILD_JOBS": "2",
+    "LUST_TCC_HOME": "/workspace/scratch/102133405d21/tinycc-codesign-pic-build/install",
+    "CARGO_PROFILE_DEV_DEBUG": "0"
+  },
+  "unset": [
+    "RUSTC_WRAPPER",
+    "RUSTC_WORKSPACE_WRAPPER",
+    "LD_LIBRARY_PATH"
+  ],
+  "cwd": "/tmp/lustr-implementation-20261119"
+}

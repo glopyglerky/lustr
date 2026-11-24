@@ -1,5 +1,5 @@
 /* ---------- Panics (abort mode) ----------
-   Matches rustc 1.99 with -C panic=abort: the default hook prints
+   Matches the declared Rust source with -C panic=abort: the default hook prints
        \nthread '<name>' (<os tid>) panicked at <file>:<line>:<col>:\n<msg>\nnote: ...\n
    to stderr, then the process aborts (SIGABRT, shell status 134). Stdout
    is Rust's LineWriter (below): an abort loses the bytes it still holds. */
@@ -30,8 +30,8 @@ static unsigned long long lust_os_tid(void) {
 }
 
 /* Std source locations of panics that Rust raises inside std (no
-   track_caller), as rustc 1.99 prints them. */
-#define LUST_STD_SRC "/rustc/b940084d7eb6a299eb4bfeb8e34901bc051e7ac4/library/"
+   track_caller), from the declared Rust source. */
+#define LUST_STD_SRC "/rustc/5b7b37aefcb5b2fba3c2392bc9065b9e4602d494/library/"
 #endif
 
 /* ---------- Unwinding (panic=unwind, ARCH 7.2) ----------
@@ -100,6 +100,9 @@ typedef struct {
     /* While a custom hook runs: its panic's payload and location. */
     lust_dyn hook_payload;
     void *hook_loc;
+    /* A cleanup nounwind panic suppresses the default backtrace, including
+       when a custom hook forwards to a previously taken default hook. */
+    int32_t hook_no_backtrace;
     /* Mode 2: the innermost catch point, the innermost unwind in flight,
        and the unwind the last catch took. */
     struct lust_catch *top;
@@ -169,7 +172,19 @@ static int32_t lust_first_panic_take(void) {
 static void lust_cur_thread_name(const uint8_t **p, uint64_t *n);
 
 /* The default hook's text (std's default_hook) on the current thread. */
+#ifdef LUST_LIBTEST_CAPTURE
+void lustr_test_panic_message(const uint8_t *msg, size_t len, const char *file,
+                            size_t flen, uint32_t line, uint32_t col, uint64_t tid, int32_t note);
+#endif
 static void lust_default_hook(const uint8_t *msg, uint64_t len, const char *file, uint64_t flen, uint32_t line, uint32_t col, int32_t count) {
+#ifdef LUST_LIBTEST_CAPTURE
+    lust_unw_state *test_state = lust_unw_peek();
+    int32_t test_bt = test_state && test_state->hook_no_backtrace ? 0 : count >= 2 ? 3 : lust_bt_style();
+    if (test_bt <= 1) {
+        lustr_test_panic_message(msg, len, file, flen, line, col, lust_os_tid(), test_bt == 1 && lust_first_panic_take());
+        return;
+    }
+#endif
     const uint8_t *tn;
     uint64_t tl;
     lust_cur_thread_name(&tn, &tl);
@@ -177,7 +192,8 @@ static void lust_default_hook(const uint8_t *msg, uint64_t len, const char *file
             (const char *)msg);
     /* A panic while panicking prints a full backtrace in Rust; FIRST_PANIC
        is only taken when the style is Off. */
-    int32_t bt = count >= 2 ? 3 : lust_bt_style();
+    lust_unw_state *state = lust_unw_peek();
+    int32_t bt = state && state->hook_no_backtrace ? 0 : count >= 2 ? 3 : lust_bt_style();
     lust_bt_tail(bt, bt == 1 && lust_first_panic_take());
     fflush(stderr);
 }
@@ -200,7 +216,7 @@ static lust_Unit (*lust_hook_runner)(uint8_t can_unwind);
 /* Runs the hook for a panic starting with payload `ex` (message text
    `msg`), as std's rust_panic_with_hook: a panic inside the hook aborts
    at once; else the custom hook, or the default text. */
-static void lust_run_hook(lust_exc *ex, const uint8_t *msg, uint64_t len, const char *file, uint32_t line, uint32_t col, int32_t count, int32_t *in_hook) {
+static void lust_run_hook(lust_exc *ex, const uint8_t *msg, uint64_t len, const char *file, uint32_t line, uint32_t col, int32_t count, int32_t *in_hook, uint8_t can_unwind) {
     if (*in_hook) {
         fprintf(stderr, "panicked at %s:%u:%u:\n%.*s\nthread panicked while processing panic. aborting.\n", file, (unsigned)line, (unsigned)col, (int)len, (const char *)msg);
         fflush(stderr);
@@ -225,7 +241,7 @@ static void lust_run_hook(lust_exc *ex, const uint8_t *msg, uint64_t len, const 
         lust_unw_state *st = lust_unw_get();
         st->hook_payload = p;
         st->hook_loc = &loc;
-        lust_hook_runner(lust_unwind_mode ? 1 : 0);
+        lust_hook_runner(can_unwind);
         st->hook_loc = 0;
     } else {
         lust_default_hook(msg, len, file, strlen(file), line, col, count);
@@ -238,7 +254,7 @@ static void lust_run_hook(lust_exc *ex, const uint8_t *msg, uint64_t len, const 
 static void lust_abort_hooked(lust_exc *ex, const uint8_t *msg, uint64_t len, const char *file, uint32_t line, uint32_t col) {
     lust_unw_state *s = lust_unw_get();
     if (!s->in_hook) s->count++;
-    lust_run_hook(ex, msg, len, file, line, col, s->count, &s->in_hook);
+    lust_run_hook(ex, msg, len, file, line, col, s->count, &s->in_hook, 1);
     fflush(stderr);
     abort();
 }
@@ -249,7 +265,7 @@ static void lust_unw_raise_exc(lust_exc *ex, const uint8_t *msg, uint64_t len, c
     lust_unw_state *s = lust_unw_get();
     if (s->pending) return;
     if (!s->in_hook) s->count++;
-    lust_run_hook(ex, msg, len, file, line, col, s->count, &s->in_hook);
+    lust_run_hook(ex, msg, len, file, line, col, s->count, &s->in_hook, 1);
 #ifndef __TINYC__
     if (lust_unwind_mode == 2) lust_unw_eh_raise(s, ex);
 #endif
@@ -368,11 +384,23 @@ int32_t lust_unw_mine(void) LUST_BODY({
 /* A destructor that cleanup called ended with a new exception: Rust's
    nounwind "panic in a destructor during cleanup", then abort. */
 void lust_unw_cleanup_abort(void) LUST_BODY({
-    const uint8_t *tn;
-    uint64_t tl;
-    lust_cur_thread_name(&tn, &tl);
-    fprintf(stderr, "\nthread '%.*s' (%llu) panicked at " LUST_STD_SRC "core/src/panicking.rs:233:5:\npanic in a destructor during cleanup\nthread caused non-unwinding panic. aborting.\n",
-            (int)tl, (const char *)tn, lust_os_tid());
+    static const uint8_t msg[] = "panic in a destructor during cleanup";
+    lust_unw_state *s = lust_unw_get();
+    lust_exc ex = {0};
+    ex.kind = LUST_EXC_STR;
+    ex.s.ptr = (uint8_t *)msg;
+    ex.s.len = sizeof msg - 1;
+    /* Explicit propagation has the second destructor panic pending here.
+       Take it out of the generated hook's propagation path, as normal
+       cleanup does, so the final hook can run. The panic count stays:
+       thread::panicking() is true, and neither payload is dropped before
+       this required abort. Unwind-table mode has no pending exception. */
+    lust_exc pending;
+    (void)lust_unw_take(&pending);
+    if (!s->in_hook) s->count++;
+    s->hook_no_backtrace = 1;
+    lust_run_hook(&ex, msg, sizeof msg - 1, LUST_STD_SRC "core/src/panicking.rs", 233, 5, s->count, &s->in_hook, 0);
+    fprintf(stderr, "thread caused non-unwinding panic. aborting.\n");
     fflush(stderr);
     abort();
 })
@@ -520,6 +548,13 @@ static void lust_unw_take_any(lust_exc *ex) {
 }
 #endif
 
+/* The runtime-owned String vtable uses the same erased drop ABI as generated
+   glue. An object-pointer conversion belongs inside a correctly typed function;
+   casting lust_string_drop itself would make its indirect call undefined. */
+#ifdef LUST_IMPL
+static void lust_string_drop_erased(void *p) { lust_string_drop((lust_String *)p); }
+#endif
+
 /* Setup from main: the payload type ids (see lust_any_ids), and whether
    panics unwind. */
 void lust_unw_init(int32_t unwind, uint64_t str_lo, uint64_t str_hi, uint64_t string_lo, uint64_t string_hi) LUST_BODY({
@@ -535,7 +570,7 @@ void lust_unw_init(int32_t unwind, uint64_t str_lo, uint64_t str_hi, uint64_t st
     lust_vt_str[4] = 0;
     lust_vt_str[5] = (const void *)(uintptr_t)str_lo;
     lust_vt_str[6] = (const void *)(uintptr_t)str_hi;
-    lust_vt_string[0] = (const void *)lust_string_drop;
+    lust_vt_string[0] = (const void *)lust_string_drop_erased;
     lust_vt_string[1] = (const void *)(uintptr_t)sizeof(lust_String);
     lust_vt_string[2] = (const void *)(uintptr_t)8;
     lust_vt_string[3] = 0;
@@ -709,11 +744,12 @@ static const char *const lust_std_files[] = {
     LUST_STD_SRC "alloc/src/io/read.rs",
     LUST_STD_SRC "alloc/src/io/impls.rs",
     LUST_STD_SRC "core/src/io/borrowed_buf.rs",
-    LUST_STD_SRC "alloc/src/rc.rs",
-    LUST_STD_SRC "alloc/src/sync.rs",
+    LUST_STD_SRC "alloc/src/rcs/rc.rs",
+    LUST_STD_SRC "alloc/src/rcs/arc.rs",
     LUST_STD_SRC "core/src/str/mod.rs",
     LUST_STD_SRC "std/src/os/unix/fs.rs",
     LUST_STD_SRC "alloc/src/str.rs",
+    LUST_STD_SRC "alloc/src/io/buffered/bufwriter.rs",
 };
 #endif
 
@@ -865,7 +901,7 @@ void lust_panic_std_lit(const char *msg, const char *where) LUST_BODY({ lust_pan
 
 /* core 1.99's `BorrowedCursor::advance_checked` assert, as `io::copy`'s
    default `read_buf` hits it when `read` returns more than the buffer. */
-void lust_panic_read_buf_overrun(void) LUST_BODY({ lust_panic_std_kind(LUST_EXC_STR, "assertion failed: n <= init_unfilled", "core/src/io/borrowed_buf.rs:287:9"); })
+void lust_panic_read_buf_overrun(void) LUST_BODY({ lust_panic_std_kind(LUST_EXC_STR, "assertion failed: n <= init_unfilled", "core/src/io/borrowed_buf.rs:380:9"); })
 
 /* `panic_any(payload)`: the hook prints the payload's text, then it
    unwinds (abort mode: aborts). */
@@ -942,7 +978,7 @@ static void lust_out_raw(const uint8_t *p, uint64_t n) {
             else if (e == 0) lust_string_push_cstr(&s, "failed to write whole buffer");
             else { char b[32]; snprintf(b, sizeof b, " (os error %d)", e); lust_string_push_cstr(&s, strerror(e)); lust_string_push_cstr(&s, b); }
             lust_out_len = 0;
-            lust_panic_at(s.ptr, s.len, LUST_STD_SRC "std/src/io/stdio.rs", 1168, 9);
+            lust_panic_at(s.ptr, s.len, LUST_STD_SRC "std/src/io/stdio.rs", 1162, 9);
             return;
         }
         p += w;

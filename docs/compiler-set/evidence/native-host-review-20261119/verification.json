@@ -1,0 +1,40 @@
+{
+  "schema": "lustr-native-host-independent-review-v1",
+  "date": "2026-11-19",
+  "reviewed_native_source_sha256": "bd6109f50094e4f51045f08bfb0973f08678e5f602b596b669d17134dbd931ca",
+  "reviewed_cfg_source_sha256": "365c30bf756fdc3971ac0cc16451e569a278af75d8b69d8950464b40b7aff701",
+  "platform": "Linux",
+  "scope": "Read-only source review and narrow actual public one-shot controls; neither full compiler qualification nor a hosted retained campaign, guarded construction or performance assessment.",
+  "full_compiler_qualification": false,
+  "performance_claim": false,
+  "v2_source_built_package": {
+    "build": "a5d84827d9e89e28",
+    "binaries": {
+      "lustr": "8143227d44c38babb3ff3325e2a1fc71fb513252b251ad098d34145c00f66e11",
+      "lust": "951c79f2e5f092d366e0827e4e0fe393394d4b83b87279a847a8c8b4ac042eca",
+      "lust-core": "4dfef36f8f80e878fc4922879caab46b3cceabe478ae104120067a85d0bbd57b",
+      "cargo": "da29c2a9ff7f85bda5587e9c974e05c9e2a7196377e54466f6e9d6f9e00b2530"
+    }
+  },
+  "v3_source_built_package": {
+    "build": "0390b1143f2d2e93",
+    "binaries": {
+      "lustr": "13a749328496d3576a51eff7580e8aecfa47195ce42e2a03a91fcc4f11988a13",
+      "lust": "e45d63df37ba29f06c0b9928eb5672759fc6d17fabe0a8e3f1081e434e922290",
+      "lust-core": "21d8043046e5277a011854cc45ae9df89d8851928fd3a48cf4aa78de41647587",
+      "cargo": "da29c2a9ff7f85bda5587e9c974e05c9e2a7196377e54466f6e9d6f9e00b2530"
+    }
+  },
+  "v2_actual_commands": 30,
+  "v3_cache_commands": 16,
+  "v3_cache_cases": 2,
+  "v3_cache_passed": true,
+  "v3_compiled_host_executables_unchanged": true,
+  "timestamp_evidence_reference": "../native-host-script-20261119/timestamps/",
+  "timestamp_report_original_sha256": "643dcbf767040edbf3a6858e911ff996b7e8b24124e946872fca9d95910497ab",
+  "timestamp_scope": "Two original v2 mtime-only stale results and two corrected v3 paired runs are preserved by the source owner; this report cross-links that record rather than duplicating its raw streams.",
+  "self_write_scope": "Corrected native before\u2192after is package-v2 record evidence. The original immediate pinned Cargo run also returned before\u2192before. No Rust/native differential win is claimed for that original execution.",
+  "environment_scope": "Three selected compile/runtime environment witnesses on v2, including positive jobs=2; remaining differences are four unproved reliable-float cfg flags plus nine expected fixture/tool/output path fields, not complete Cargo environment equivalence.",
+  "archive_sha256": "6d6ad71ba78c55a657fd78baabe27399d18d911b09a334b5ee5623f03d16f382",
+  "archived_files": 239
+}

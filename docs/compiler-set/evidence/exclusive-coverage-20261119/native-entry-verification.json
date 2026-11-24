@@ -1,0 +1,6447 @@
+{
+  "schema": "lustr-exclusive-coverage-verification-v1",
+  "source": {
+    "commit": "cd775d996dde91c0c2f98c38fcc72e2ede2ffebf",
+    "tree": "5d0286e98954a29e006e13fdff1bdc0e8ee36727",
+    "native_tree": "a5223b8045f75660281342bf547769fc1b098725",
+    "clean": true,
+    "blobs": {
+      "src/main.rs": "794b4d1c6d5d99e57174638ac0c74de215024e7f",
+      "src/native_queries.rs": "a463811f147cf0f257f61794622f83e1f43dcb61",
+      "src/cargo_selection.rs": "8c83f7310ed2c31e069e1c695d42fd95e773e965",
+      "src/selection_cache.rs": "6e507110d8511c9fac38e0653d93e40685987974",
+      "src/native_link.rs": "84a41272d19c75c033a5f662499bafa4386069a6",
+      "build.rs": "08c57c5316a9644aefa5d849eac8fb4cd457b641",
+      "tools/build-native-toolchain.rs": "3a5a9fb9bca9c7f3cbaf39cddb0d68ede38a7d27",
+      "tools/test-exclusive-entry.py": "1597f5e53de5e75aa3793138dcefd09913222fce",
+      "tools/profile-native-preflight.rs": "042667e76f3d509b5e8cef7fd83cf00e28411dfa",
+      ".github/workflows/compiler-set.yml": "da257d72ed0677cd7927592e5582faf4a3c33697",
+      "upstream/complement-imports.json": "30e7b942962f3cef2a3db213c27c551c015125b8"
+    }
+  },
+  "scope": "Correction of product routing, native helper ownership, Cargo discovery, semantic environment and selection reuse. No full Rust coverage or performance qualification.",
+  "package": {
+    "profile": "debug",
+    "native_build_id": "b48307d68f2f2b4e",
+    "components_sha256": {
+      "bin/lustr": "e17d6411c1c7c0c48ad5991fd1d1b0ae253977106ff36028309d2bd39754820d",
+      "bin/lust": "a6c29f4003791c351c56edd0ebcd56d7846b90f93c753345ab06c877271f03a8",
+      "bin/lust-core": "bc2b0573ebbaa43f48b441afd58dee01e82c11e43e03a23df251133c0eb2603d",
+      "bin/cargo": "da29c2a9ff7f85bda5587e9c974e05c9e2a7196377e54466f6e9d6f9e00b2530",
+      "lib/liblustr_native_core.so": "1a2b0e1efb6d67791c4d3a44838b9d4141e9f3e9bb291f14e4e1ddbba06827d2",
+      "lib/lustr-native.id": "4d95f821cf34da57cb396de1d567542f4b3013dd8c50ca455aef6a8fbdbb1dc4",
+      "lib/lustr-selection-tools.txt": "e1bfccdbd2ae1a40d09a38d1e66abbb8741cf4d3702f52db4ee580474dcca81c"
+    },
+    "construction": {
+      "native_constructor_source": "e0304bc388a2e22d2d3c7a316692ac0e02856c0f",
+      "native_constructor_tree": "574b100c20adaa1313df9d413b80b45865025076",
+      "native_constructor_status": "passed with clean inputs",
+      "root_rebuild_source": "cd775d996dde91c0c2f98c38fcc72e2ede2ffebf",
+      "root_rebuild_status": "passed",
+      "unchanged_native_components_reused": true,
+      "earlier_package_preserved": true
+    },
+    "native_library_needed": [
+      "libm.so.6",
+      "libgcc_s.so.1",
+      "libc.so.6",
+      "ld-linux-x86-64.so.2"
+    ],
+    "retired_components_absent": [
+      "bin/rustc-full",
+      "bin/rustc-reference",
+      "bin/cargo-lustr",
+      "bin/rustdoc"
+    ],
+    "cargo_scope": "Pinned Cargo is a metadata utility for compiler-owned calls. Arbitrary direct Cargo compilation is not a qualified Lustr frontend and may honor caller-selected external compilers."
+  },
+  "entry": {
+    "schema": "lustr-exclusive-entry-controls-v2",
+    "status": "completed",
+    "entry_sha256": "e17d6411c1c7c0c48ad5991fd1d1b0ae253977106ff36028309d2bd39754820d",
+    "runner_sha256": "c1e94d10975748167390b9b04e3ed12e423b2198ef55f2d734a77a1cca3e5ced",
+    "controls": [
+      {
+        "case": "native-status-0",
+        "status": 0,
+        "children": [
+          "native"
+        ]
+      },
+      {
+        "case": "native-status-1",
+        "status": 1,
+        "children": [
+          "native"
+        ]
+      },
+      {
+        "case": "native-status-2",
+        "status": 2,
+        "children": [
+          "native"
+        ]
+      },
+      {
+        "case": "native-status-7",
+        "status": 7,
+        "children": [
+          "native"
+        ]
+      },
+      {
+        "case": "native-status-101",
+        "status": 101,
+        "children": [
+          "native"
+        ]
+      },
+      {
+        "case": "native-signal",
+        "status": -15,
+        "children": [
+          "native"
+        ]
+      },
+      {
+        "case": "release-delegation",
+        "status": 2,
+        "children": []
+      },
+      {
+        "case": "oracle-delegation",
+        "status": 2,
+        "children": []
+      },
+      {
+        "case": "profile-delegation",
+        "status": 2,
+        "children": []
+      },
+      {
+        "case": "metadata-complement",
+        "status": 2,
+        "children": []
+      },
+      {
+        "case": "engine-rustc",
+        "status": 2,
+        "children": []
+      },
+      {
+        "case": "engine-cranelift",
+        "status": 2,
+        "children": []
+      },
+      {
+        "case": "toolchain-selection",
+        "status": 2,
+        "children": []
+      },
+      {
+        "case": "bluefe-selection",
+        "status": 2,
+        "children": []
+      },
+      {
+        "case": "cargo-build",
+        "status": 2,
+        "children": []
+      },
+      {
+        "case": "native-test-retained",
+        "status": 0,
+        "children": [
+          "native-core"
+        ]
+      },
+      {
+        "case": "native-release-cc-retained",
+        "status": 0,
+        "children": [
+          "native-core"
+        ]
+      },
+      {
+        "case": "configured-wrapper-refused",
+        "status": 2,
+        "children": []
+      },
+      {
+        "case": "external-probe-mode-build-empty",
+        "status": 2,
+        "children": []
+      },
+      {
+        "case": "external-probe-mode-test-empty",
+        "status": 2,
+        "children": []
+      },
+      {
+        "case": "external-probe-mode-build-set",
+        "status": 2,
+        "children": []
+      },
+      {
+        "case": "external-probe-mode-test-set",
+        "status": 2,
+        "children": []
+      },
+      {
+        "case": "complete-cold-child-environment-preserved",
+        "status": 0,
+        "children": [
+          "native"
+        ]
+      },
+      {
+        "case": "native-spawn-failure-is-terminal",
+        "status": 2,
+        "children": []
+      },
+      {
+        "case": "native-library-identity-failure-is-terminal",
+        "status": 2,
+        "children": []
+      },
+      {
+        "case": "native-library-load-failure-is-terminal",
+        "status": 2,
+        "children": []
+      },
+      {
+        "case": "native-transport-failure-is-terminal",
+        "status": 3,
+        "children": []
+      },
+      {
+        "case": "query-refuses---emit=obj",
+        "status": 2,
+        "children": []
+      },
+      {
+        "case": "query-refuses--o",
+        "status": 2,
+        "children": []
+      },
+      {
+        "case": "query-refuses-<fixture>/main.rs",
+        "status": 2,
+        "children": []
+      },
+      {
+        "case": "query-refuses---target",
+        "status": 2,
+        "children": []
+      },
+      {
+        "case": "query-refuses-source-dependent-name",
+        "status": 2,
+        "children": []
+      },
+      {
+        "case": "query-refuses-nonempty-source",
+        "status": 2
+      },
+      {
+        "case": "dependency-host-probe",
+        "status": 2,
+        "children": [
+          "metadata"
+        ]
+      },
+      {
+        "case": "build-script-host-probe",
+        "status": 2,
+        "children": [
+          "metadata"
+        ]
+      },
+      {
+        "case": "proc-macro-host-probe",
+        "status": 2,
+        "children": [
+          "metadata"
+        ]
+      },
+      {
+        "case": "workspace-host-probe",
+        "status": 2,
+        "children": [
+          "metadata"
+        ]
+      },
+      {
+        "case": "real-native-build-and-run",
+        "status": 0,
+        "stdout": "42\n"
+      },
+      {
+        "case": "real-native-run-once",
+        "status": 0
+      },
+      {
+        "case": "real-native-test",
+        "status": 0
+      },
+      {
+        "case": "real-native-test-rejects-oracle-flag",
+        "status": 2
+      },
+      {
+        "case": "real-helper-refuses-lust--release",
+        "status": 2
+      },
+      {
+        "case": "real-helper-refuses-lust--rustc",
+        "status": 2
+      },
+      {
+        "case": "real-helper-probe-lust-empty",
+        "status": 2
+      },
+      {
+        "case": "real-helper-probe-lust-set",
+        "status": 2
+      },
+      {
+        "case": "real-helper-refuses-lust-core--release",
+        "status": 2
+      },
+      {
+        "case": "real-helper-refuses-lust-core--rustc",
+        "status": 2
+      },
+      {
+        "case": "real-helper-probe-lust-core-empty",
+        "status": 2
+      },
+      {
+        "case": "real-helper-probe-lust-core-set",
+        "status": 2
+      },
+      {
+        "case": "real-direct-semantic-environment-set",
+        "status": 0
+      },
+      {
+        "case": "real-direct-semantic-environment-unset",
+        "status": 0
+      },
+      {
+        "case": "real-native-cargo-feature-graph",
+        "status": 0,
+        "features": [
+          "default",
+          "leaf",
+          "nested"
+        ]
+      },
+      {
+        "case": "real-native-cargo-environment-unset",
+        "status": 0
+      },
+      {
+        "case": "real-native-cargo-environment-custom",
+        "status": 0
+      },
+      {
+        "case": "real-native-library-build",
+        "status": 0
+      },
+      {
+        "case": "real-native-library-reject",
+        "status": 1
+      },
+      {
+        "case": "real-retained-daemon",
+        "status": "unavailable",
+        "reason": "Operation not permitted"
+      }
+    ],
+    "daemon_required": false,
+    "scope": "synthetic entry failures and named real native witnesses; no whole-Rust or speed qualification",
+    "full_rust_coverage": false,
+    "native_helper_sha256": {
+      "lust": "a6c29f4003791c351c56edd0ebcd56d7846b90f93c753345ab06c877271f03a8",
+      "lust-core": "bc2b0573ebbaa43f48b441afd58dee01e82c11e43e03a23df251133c0eb2603d"
+    },
+    "raw_report_sha256": "bba0cca2a9ac18da813adc1de3886f13510b3eea64ed6024f3d259ec85cbdd98",
+    "passed": 56,
+    "unavailable": 1
+  },
+  "selection": {
+    "cache": {
+      "status": "passed",
+      "raw_report_sha256": "ff480922df7856568248d20a449d64fa5b9f0430618c208ac07f903780599ddc",
+      "profiler_sha256": "5933a97c67b183db48b3a9fc1fd2b5324a6c62577adf55e96272c0e8c79827f3",
+      "invocations": 156,
+      "assertions": [
+        {
+          "description": "real Cargo lockfile setup succeeds",
+          "passed": true
+        },
+        {
+          "description": "unchanged-request-seed preserves exit status",
+          "passed": true
+        },
+        {
+          "description": "unchanged-request-seed preserves target identity or rejection",
+          "passed": true
+        },
+        {
+          "description": "unchanged-request-seed preserves exact Cargo error output",
+          "passed": true
+        },
+        {
+          "description": "unchanged-request preserves exit status",
+          "passed": true
+        },
+        {
+          "description": "unchanged-request preserves target identity or rejection",
+          "passed": true
+        },
+        {
+          "description": "unchanged-request preserves exact Cargo error output",
+          "passed": true
+        },
+        {
+          "description": "unchanged-request observes hit",
+          "passed": true
+        },
+        {
+          "description": "source-body-edit preserves exit status",
+          "passed": true
+        },
+        {
+          "description": "source-body-edit preserves target identity or rejection",
+          "passed": true
+        },
+        {
+          "description": "source-body-edit preserves exact Cargo error output",
+          "passed": true
+        },
+        {
+          "description": "source-body-edit observes hit",
+          "passed": true
+        },
+        {
+          "description": "caller-directory-seed preserves exit status",
+          "passed": true
+        },
+        {
+          "description": "caller-directory-seed preserves target identity or rejection",
+          "passed": true
+        },
+        {
+          "description": "caller-directory-seed preserves exact Cargo error output",
+          "passed": true
+        },
+        {
+          "description": "caller-directory preserves exit status",
+          "passed": true
+        },
+        {
+          "description": "caller-directory preserves target identity or rejection",
+          "passed": true
+        },
+        {
+          "description": "caller-directory preserves exact Cargo error output",
+          "passed": true
+        },
+        {
+          "description": "caller-directory observes hit",
+          "passed": true
+        },
+        {
+          "description": "new-caller-config preserves exit status",
+          "passed": true
+        },
+        {
+          "description": "new-caller-config preserves target identity or rejection",
+          "passed": true
+        },
+        {
+          "description": "new-caller-config preserves exact Cargo error output",
+          "passed": true
+        },
+        {
+          "description": "new-caller-config observes ineligible",
+          "passed": true
+        },
+        {
+          "description": "manifest-directory-does-not-inherit-caller preserves exit status",
+          "passed": true
+        },
+        {
+          "description": "manifest-directory-does-not-inherit-caller preserves target identity or rejection",
+          "passed": true
+        },
+        {
+          "description": "manifest-directory-does-not-inherit-caller preserves exact Cargo error output",
+          "passed": true
+        },
+        {
+          "description": "manifest-directory-does-not-inherit-caller observes hit",
+          "passed": true
+        },
+        {
+          "description": "cargo-home-config.toml preserves exit status",
+          "passed": true
+        },
+        {
+          "description": "cargo-home-config.toml preserves target identity or rejection",
+          "passed": true
+        },
+        {
+          "description": "cargo-home-config.toml preserves exact Cargo error output",
+          "passed": true
+        },
+        {
+          "description": "cargo-home-config.toml observes ineligible",
+          "passed": true
+        },
+        {
+          "description": "cargo-home-config preserves exit status",
+          "passed": true
+        },
+        {
+          "description": "cargo-home-config preserves target identity or rejection",
+          "passed": true
+        },
+        {
+          "description": "cargo-home-config preserves exact Cargo error output",
+          "passed": true
+        },
+        {
+          "description": "cargo-home-config observes ineligible",
+          "passed": true
+        },
+        {
+          "description": "config-removed-seed preserves exit status",
+          "passed": true
+        },
+        {
+          "description": "config-removed-seed preserves target identity or rejection",
+          "passed": true
+        },
+        {
+          "description": "config-removed-seed preserves exact Cargo error output",
+          "passed": true
+        },
+        {
+          "description": "config-removed preserves exit status",
+          "passed": true
+        },
+        {
+          "description": "config-removed preserves target identity or rejection",
+          "passed": true
+        },
+        {
+          "description": "config-removed preserves exact Cargo error output",
+          "passed": true
+        },
+        {
+          "description": "config-removed observes hit",
+          "passed": true
+        },
+        {
+          "description": "same-size-mtime-lock-corruption preserves exit status",
+          "passed": true
+        },
+        {
+          "description": "same-size-mtime-lock-corruption preserves target identity or rejection",
+          "passed": true
+        },
+        {
+          "description": "same-size-mtime-lock-corruption preserves exact Cargo error output",
+          "passed": true
+        },
+        {
+          "description": "same-size-mtime-lock-corruption observes miss",
+          "passed": true
+        },
+        {
+          "description": "lock-restored-seed preserves exit status",
+          "passed": true
+        },
+        {
+          "description": "lock-restored-seed preserves target identity or rejection",
+          "passed": true
+        },
+        {
+          "description": "lock-restored-seed preserves exact Cargo error output",
+          "passed": true
+        },
+        {
+          "description": "lock-restored preserves exit status",
+          "passed": true
+        },
+        {
+          "description": "lock-restored preserves target identity or rejection",
+          "passed": true
+        },
+        {
+          "description": "lock-restored preserves exact Cargo error output",
+          "passed": true
+        },
+        {
+          "description": "lock-restored observes hit",
+          "passed": true
+        },
+        {
+          "description": "selected-target-renamed preserves exit status",
+          "passed": true
+        },
+        {
+          "description": "selected-target-renamed preserves target identity or rejection",
+          "passed": true
+        },
+        {
+          "description": "selected-target-renamed preserves exact Cargo error output",
+          "passed": true
+        },
+        {
+          "description": "selected-target-renamed observes miss",
+          "passed": true
+        },
+        {
+          "description": "manifest-restored-seed preserves exit status",
+          "passed": true
+        },
+        {
+          "description": "manifest-restored-seed preserves target identity or rejection",
+          "passed": true
+        },
+        {
+          "description": "manifest-restored-seed preserves exact Cargo error output",
+          "passed": true
+        },
+        {
+          "description": "manifest-restored preserves exit status",
+          "passed": true
+        },
+        {
+          "description": "manifest-restored preserves target identity or rejection",
+          "passed": true
+        },
+        {
+          "description": "manifest-restored preserves exact Cargo error output",
+          "passed": true
+        },
+        {
+          "description": "manifest-restored observes hit",
+          "passed": true
+        },
+        {
+          "description": "new-build-script preserves exit status",
+          "passed": true
+        },
+        {
+          "description": "new-build-script preserves target identity or rejection",
+          "passed": true
+        },
+        {
+          "description": "new-build-script preserves exact Cargo error output",
+          "passed": true
+        },
+        {
+          "description": "new-build-script observes miss",
+          "passed": true
+        },
+        {
+          "description": "build-script-remains-ineligible-for-store preserves exit status",
+          "passed": true
+        },
+        {
+          "description": "build-script-remains-ineligible-for-store preserves target identity or rejection",
+          "passed": true
+        },
+        {
+          "description": "build-script-remains-ineligible-for-store preserves exact Cargo error output",
+          "passed": true
+        },
+        {
+          "description": "build-script-remains-ineligible-for-store observes miss",
+          "passed": true
+        },
+        {
+          "description": "build-script-removed-seed preserves exit status",
+          "passed": true
+        },
+        {
+          "description": "build-script-removed-seed preserves target identity or rejection",
+          "passed": true
+        },
+        {
+          "description": "build-script-removed-seed preserves exact Cargo error output",
+          "passed": true
+        },
+        {
+          "description": "build-script-removed preserves exit status",
+          "passed": true
+        },
+        {
+          "description": "build-script-removed preserves target identity or rejection",
+          "passed": true
+        },
+        {
+          "description": "build-script-removed preserves exact Cargo error output",
+          "passed": true
+        },
+        {
+          "description": "build-script-removed observes hit",
+          "passed": true
+        },
+        {
+          "description": "new-discovered-target preserves exit status",
+          "passed": true
+        },
+        {
+          "description": "new-discovered-target preserves target identity or rejection",
+          "passed": true
+        },
+        {
+          "description": "new-discovered-target preserves exact Cargo error output",
+          "passed": true
+        },
+        {
+          "description": "new-discovered-target observes miss",
+          "passed": true
+        },
+        {
+          "description": "discovered-target-retained-seed preserves exit status",
+          "passed": true
+        },
+        {
+          "description": "discovered-target-retained-seed preserves target identity or rejection",
+          "passed": true
+        },
+        {
+          "description": "discovered-target-retained-seed preserves exact Cargo error output",
+          "passed": true
+        },
+        {
+          "description": "discovered-target-retained preserves exit status",
+          "passed": true
+        },
+        {
+          "description": "discovered-target-retained preserves target identity or rejection",
+          "passed": true
+        },
+        {
+          "description": "discovered-target-retained preserves exact Cargo error output",
+          "passed": true
+        },
+        {
+          "description": "discovered-target-retained observes hit",
+          "passed": true
+        },
+        {
+          "description": "discovered-target-removed preserves exit status",
+          "passed": true
+        },
+        {
+          "description": "discovered-target-removed preserves target identity or rejection",
+          "passed": true
+        },
+        {
+          "description": "discovered-target-removed preserves exact Cargo error output",
+          "passed": true
+        },
+        {
+          "description": "discovered-target-removed observes miss",
+          "passed": true
+        },
+        {
+          "description": "discovery-restored-seed preserves exit status",
+          "passed": true
+        },
+        {
+          "description": "discovery-restored-seed preserves target identity or rejection",
+          "passed": true
+        },
+        {
+          "description": "discovery-restored-seed preserves exact Cargo error output",
+          "passed": true
+        },
+        {
+          "description": "discovery-restored preserves exit status",
+          "passed": true
+        },
+        {
+          "description": "discovery-restored preserves target identity or rejection",
+          "passed": true
+        },
+        {
+          "description": "discovery-restored preserves exact Cargo error output",
+          "passed": true
+        },
+        {
+          "description": "discovery-restored observes hit",
+          "passed": true
+        },
+        {
+          "description": "unqualified-target-seed preserves exit status",
+          "passed": true
+        },
+        {
+          "description": "unqualified-target-seed preserves target identity or rejection",
+          "passed": true
+        },
+        {
+          "description": "unqualified-target-seed preserves exact Cargo error output",
+          "passed": true
+        },
+        {
+          "description": "unqualified-target preserves exit status",
+          "passed": true
+        },
+        {
+          "description": "unqualified-target preserves target identity or rejection",
+          "passed": true
+        },
+        {
+          "description": "unqualified-target preserves exact Cargo error output",
+          "passed": true
+        },
+        {
+          "description": "unqualified-target observes hit",
+          "passed": true
+        },
+        {
+          "description": "other-target-symlink-creates-ambiguity preserves exit status",
+          "passed": true
+        },
+        {
+          "description": "other-target-symlink-creates-ambiguity preserves target identity or rejection",
+          "passed": true
+        },
+        {
+          "description": "other-target-symlink-creates-ambiguity preserves exact Cargo error output",
+          "passed": true
+        },
+        {
+          "description": "other-target-symlink-creates-ambiguity observes miss",
+          "passed": true
+        },
+        {
+          "description": "explicit-bin-resolves-symlink-alias preserves exit status",
+          "passed": true
+        },
+        {
+          "description": "explicit-bin-resolves-symlink-alias preserves target identity or rejection",
+          "passed": true
+        },
+        {
+          "description": "explicit-bin-resolves-symlink-alias preserves exact Cargo error output",
+          "passed": true
+        },
+        {
+          "description": "explicit-bin-resolves-symlink-alias observes miss",
+          "passed": true
+        },
+        {
+          "description": "target-alias-restored-seed preserves exit status",
+          "passed": true
+        },
+        {
+          "description": "target-alias-restored-seed preserves target identity or rejection",
+          "passed": true
+        },
+        {
+          "description": "target-alias-restored-seed preserves exact Cargo error output",
+          "passed": true
+        },
+        {
+          "description": "target-alias-restored preserves exit status",
+          "passed": true
+        },
+        {
+          "description": "target-alias-restored preserves target identity or rejection",
+          "passed": true
+        },
+        {
+          "description": "target-alias-restored preserves exact Cargo error output",
+          "passed": true
+        },
+        {
+          "description": "target-alias-restored observes hit",
+          "passed": true
+        },
+        {
+          "description": "package-lock-replaced-by-directory preserves exit status",
+          "passed": true
+        },
+        {
+          "description": "package-lock-replaced-by-directory preserves target identity or rejection",
+          "passed": true
+        },
+        {
+          "description": "package-lock-replaced-by-directory preserves exact Cargo error output",
+          "passed": true
+        },
+        {
+          "description": "package-lock-replaced-by-directory observes ineligible",
+          "passed": true
+        },
+        {
+          "description": "package-lock-restored-seed preserves exit status",
+          "passed": true
+        },
+        {
+          "description": "package-lock-restored-seed preserves target identity or rejection",
+          "passed": true
+        },
+        {
+          "description": "package-lock-restored-seed preserves exact Cargo error output",
+          "passed": true
+        },
+        {
+          "description": "package-lock-restored preserves exit status",
+          "passed": true
+        },
+        {
+          "description": "package-lock-restored preserves target identity or rejection",
+          "passed": true
+        },
+        {
+          "description": "package-lock-restored preserves exact Cargo error output",
+          "passed": true
+        },
+        {
+          "description": "package-lock-restored observes hit",
+          "passed": true
+        },
+        {
+          "description": "unknown-cargo-option preserves exit status",
+          "passed": true
+        },
+        {
+          "description": "unknown-cargo-option preserves target identity or rejection",
+          "passed": true
+        },
+        {
+          "description": "unknown-cargo-option preserves exact Cargo error output",
+          "passed": true
+        },
+        {
+          "description": "unknown-cargo-option observes ineligible",
+          "passed": true
+        },
+        {
+          "description": "environment-context-change preserves exit status",
+          "passed": true
+        },
+        {
+          "description": "environment-context-change preserves target identity or rejection",
+          "passed": true
+        },
+        {
+          "description": "environment-context-change preserves exact Cargo error output",
+          "passed": true
+        },
+        {
+          "description": "environment-context-change observes miss",
+          "passed": true
+        },
+        {
+          "description": "environment-context-retained-seed preserves exit status",
+          "passed": true
+        },
+        {
+          "description": "environment-context-retained-seed preserves target identity or rejection",
+          "passed": true
+        },
+        {
+          "description": "environment-context-retained-seed preserves exact Cargo error output",
+          "passed": true
+        },
+        {
+          "description": "environment-context-retained preserves exit status",
+          "passed": true
+        },
+        {
+          "description": "environment-context-retained preserves target identity or rejection",
+          "passed": true
+        },
+        {
+          "description": "environment-context-retained preserves exact Cargo error output",
+          "passed": true
+        },
+        {
+          "description": "environment-context-retained observes hit",
+          "passed": true
+        },
+        {
+          "description": "original-context-retained-seed preserves exit status",
+          "passed": true
+        },
+        {
+          "description": "original-context-retained-seed preserves target identity or rejection",
+          "passed": true
+        },
+        {
+          "description": "original-context-retained-seed preserves exact Cargo error output",
+          "passed": true
+        },
+        {
+          "description": "original-context-retained preserves exit status",
+          "passed": true
+        },
+        {
+          "description": "original-context-retained preserves target identity or rejection",
+          "passed": true
+        },
+        {
+          "description": "original-context-retained preserves exact Cargo error output",
+          "passed": true
+        },
+        {
+          "description": "original-context-retained observes hit",
+          "passed": true
+        },
+        {
+          "description": "malformed-json has retained records to corrupt",
+          "passed": true
+        },
+        {
+          "description": "malformed-json preserves exit status",
+          "passed": true
+        },
+        {
+          "description": "malformed-json preserves target identity or rejection",
+          "passed": true
+        },
+        {
+          "description": "malformed-json preserves exact Cargo error output",
+          "passed": true
+        },
+        {
+          "description": "malformed-json observes miss",
+          "passed": true
+        },
+        {
+          "description": "malformed-json-recovered-seed preserves exit status",
+          "passed": true
+        },
+        {
+          "description": "malformed-json-recovered-seed preserves target identity or rejection",
+          "passed": true
+        },
+        {
+          "description": "malformed-json-recovered-seed preserves exact Cargo error output",
+          "passed": true
+        },
+        {
+          "description": "malformed-json-recovered preserves exit status",
+          "passed": true
+        },
+        {
+          "description": "malformed-json-recovered preserves target identity or rejection",
+          "passed": true
+        },
+        {
+          "description": "malformed-json-recovered preserves exact Cargo error output",
+          "passed": true
+        },
+        {
+          "description": "malformed-json-recovered observes hit",
+          "passed": true
+        },
+        {
+          "description": "checksum-mismatch has retained records to corrupt",
+          "passed": true
+        },
+        {
+          "description": "checksum-mismatch preserves exit status",
+          "passed": true
+        },
+        {
+          "description": "checksum-mismatch preserves target identity or rejection",
+          "passed": true
+        },
+        {
+          "description": "checksum-mismatch preserves exact Cargo error output",
+          "passed": true
+        },
+        {
+          "description": "checksum-mismatch observes miss",
+          "passed": true
+        },
+        {
+          "description": "checksum-mismatch-recovered-seed preserves exit status",
+          "passed": true
+        },
+        {
+          "description": "checksum-mismatch-recovered-seed preserves target identity or rejection",
+          "passed": true
+        },
+        {
+          "description": "checksum-mismatch-recovered-seed preserves exact Cargo error output",
+          "passed": true
+        },
+        {
+          "description": "checksum-mismatch-recovered preserves exit status",
+          "passed": true
+        },
+        {
+          "description": "checksum-mismatch-recovered preserves target identity or rejection",
+          "passed": true
+        },
+        {
+          "description": "checksum-mismatch-recovered preserves exact Cargo error output",
+          "passed": true
+        },
+        {
+          "description": "checksum-mismatch-recovered observes hit",
+          "passed": true
+        },
+        {
+          "description": "nonprivate-entry has retained records to corrupt",
+          "passed": true
+        },
+        {
+          "description": "nonprivate-entry preserves exit status",
+          "passed": true
+        },
+        {
+          "description": "nonprivate-entry preserves target identity or rejection",
+          "passed": true
+        },
+        {
+          "description": "nonprivate-entry preserves exact Cargo error output",
+          "passed": true
+        },
+        {
+          "description": "nonprivate-entry observes miss",
+          "passed": true
+        },
+        {
+          "description": "nonprivate-entry-recovered-seed preserves exit status",
+          "passed": true
+        },
+        {
+          "description": "nonprivate-entry-recovered-seed preserves target identity or rejection",
+          "passed": true
+        },
+        {
+          "description": "nonprivate-entry-recovered-seed preserves exact Cargo error output",
+          "passed": true
+        },
+        {
+          "description": "nonprivate-entry-recovered preserves exit status",
+          "passed": true
+        },
+        {
+          "description": "nonprivate-entry-recovered preserves target identity or rejection",
+          "passed": true
+        },
+        {
+          "description": "nonprivate-entry-recovered preserves exact Cargo error output",
+          "passed": true
+        },
+        {
+          "description": "nonprivate-entry-recovered observes hit",
+          "passed": true
+        },
+        {
+          "description": "unadmitted-manifest-syntax preserves exit status",
+          "passed": true
+        },
+        {
+          "description": "unadmitted-manifest-syntax preserves target identity or rejection",
+          "passed": true
+        },
+        {
+          "description": "unadmitted-manifest-syntax preserves exact Cargo error output",
+          "passed": true
+        },
+        {
+          "description": "unadmitted-manifest-syntax observes ineligible",
+          "passed": true
+        },
+        {
+          "description": "admitted-manifest-restored-seed preserves exit status",
+          "passed": true
+        },
+        {
+          "description": "admitted-manifest-restored-seed preserves target identity or rejection",
+          "passed": true
+        },
+        {
+          "description": "admitted-manifest-restored-seed preserves exact Cargo error output",
+          "passed": true
+        },
+        {
+          "description": "admitted-manifest-restored preserves exit status",
+          "passed": true
+        },
+        {
+          "description": "admitted-manifest-restored preserves target identity or rejection",
+          "passed": true
+        },
+        {
+          "description": "admitted-manifest-restored preserves exact Cargo error output",
+          "passed": true
+        },
+        {
+          "description": "admitted-manifest-restored observes hit",
+          "passed": true
+        },
+        {
+          "description": "projected-tools-seed preserves exit status",
+          "passed": true
+        },
+        {
+          "description": "projected-tools-seed preserves target identity or rejection",
+          "passed": true
+        },
+        {
+          "description": "projected-tools-seed preserves exact Cargo error output",
+          "passed": true
+        },
+        {
+          "description": "projected-tools preserves exit status",
+          "passed": true
+        },
+        {
+          "description": "projected-tools preserves target identity or rejection",
+          "passed": true
+        },
+        {
+          "description": "projected-tools preserves exact Cargo error output",
+          "passed": true
+        },
+        {
+          "description": "projected-tools observes hit",
+          "passed": true
+        },
+        {
+          "description": "cargo-replaced-identically preserves exit status",
+          "passed": true
+        },
+        {
+          "description": "cargo-replaced-identically preserves target identity or rejection",
+          "passed": true
+        },
+        {
+          "description": "cargo-replaced-identically preserves exact Cargo error output",
+          "passed": true
+        },
+        {
+          "description": "cargo-replaced-identically observes miss",
+          "passed": true
+        },
+        {
+          "description": "replacement-tools-retained-seed preserves exit status",
+          "passed": true
+        },
+        {
+          "description": "replacement-tools-retained-seed preserves target identity or rejection",
+          "passed": true
+        },
+        {
+          "description": "replacement-tools-retained-seed preserves exact Cargo error output",
+          "passed": true
+        },
+        {
+          "description": "replacement-tools-retained preserves exit status",
+          "passed": true
+        },
+        {
+          "description": "replacement-tools-retained preserves target identity or rejection",
+          "passed": true
+        },
+        {
+          "description": "replacement-tools-retained preserves exact Cargo error output",
+          "passed": true
+        },
+        {
+          "description": "replacement-tools-retained observes hit",
+          "passed": true
+        },
+        {
+          "description": "cargo-readonly-executable-seed preserves exit status",
+          "passed": true
+        },
+        {
+          "description": "cargo-readonly-executable-seed preserves target identity or rejection",
+          "passed": true
+        },
+        {
+          "description": "cargo-readonly-executable-seed preserves exact Cargo error output",
+          "passed": true
+        },
+        {
+          "description": "cargo-readonly-executable preserves exit status",
+          "passed": true
+        },
+        {
+          "description": "cargo-readonly-executable preserves target identity or rejection",
+          "passed": true
+        },
+        {
+          "description": "cargo-readonly-executable preserves exact Cargo error output",
+          "passed": true
+        },
+        {
+          "description": "cargo-readonly-executable observes hit",
+          "passed": true
+        },
+        {
+          "description": "cargo-execute-permission-removed preserves exit status",
+          "passed": true
+        },
+        {
+          "description": "cargo-execute-permission-removed preserves target identity or rejection",
+          "passed": true
+        },
+        {
+          "description": "cargo-execute-permission-removed preserves exact Cargo error output",
+          "passed": true
+        },
+        {
+          "description": "cargo-execute-permission-removed observes ineligible",
+          "passed": true
+        },
+        {
+          "description": "cargo-execute-permission-restored-seed preserves exit status",
+          "passed": true
+        },
+        {
+          "description": "cargo-execute-permission-restored-seed preserves target identity or rejection",
+          "passed": true
+        },
+        {
+          "description": "cargo-execute-permission-restored-seed preserves exact Cargo error output",
+          "passed": true
+        },
+        {
+          "description": "cargo-execute-permission-restored preserves exit status",
+          "passed": true
+        },
+        {
+          "description": "cargo-execute-permission-restored preserves target identity or rejection",
+          "passed": true
+        },
+        {
+          "description": "cargo-execute-permission-restored preserves exact Cargo error output",
+          "passed": true
+        },
+        {
+          "description": "cargo-execute-permission-restored observes hit",
+          "passed": true
+        },
+        {
+          "description": "native-query-replaced-identically preserves exit status",
+          "passed": true
+        },
+        {
+          "description": "native-query-replaced-identically preserves target identity or rejection",
+          "passed": true
+        },
+        {
+          "description": "native-query-replaced-identically preserves exact Cargo error output",
+          "passed": true
+        },
+        {
+          "description": "native-query-replaced-identically observes miss",
+          "passed": true
+        },
+        {
+          "description": "native-query-replacement-retained-seed preserves exit status",
+          "passed": true
+        },
+        {
+          "description": "native-query-replacement-retained-seed preserves target identity or rejection",
+          "passed": true
+        },
+        {
+          "description": "native-query-replacement-retained-seed preserves exact Cargo error output",
+          "passed": true
+        },
+        {
+          "description": "native-query-replacement-retained preserves exit status",
+          "passed": true
+        },
+        {
+          "description": "native-query-replacement-retained preserves target identity or rejection",
+          "passed": true
+        },
+        {
+          "description": "native-query-replacement-retained preserves exact Cargo error output",
+          "passed": true
+        },
+        {
+          "description": "native-query-replacement-retained observes hit",
+          "passed": true
+        },
+        {
+          "description": "native-query-bytes-changed preserves exit status",
+          "passed": true
+        },
+        {
+          "description": "native-query-bytes-changed preserves target identity or rejection",
+          "passed": true
+        },
+        {
+          "description": "native-query-bytes-changed preserves exact Cargo error output",
+          "passed": true
+        },
+        {
+          "description": "native-query-bytes-changed observes miss or ineligible",
+          "passed": true
+        },
+        {
+          "description": "native-query-bytes-restored-seed preserves exit status",
+          "passed": true
+        },
+        {
+          "description": "native-query-bytes-restored-seed preserves target identity or rejection",
+          "passed": true
+        },
+        {
+          "description": "native-query-bytes-restored-seed preserves exact Cargo error output",
+          "passed": true
+        },
+        {
+          "description": "native-query-bytes-restored preserves exit status",
+          "passed": true
+        },
+        {
+          "description": "native-query-bytes-restored preserves target identity or rejection",
+          "passed": true
+        },
+        {
+          "description": "native-query-bytes-restored preserves exact Cargo error output",
+          "passed": true
+        },
+        {
+          "description": "native-query-bytes-restored observes hit",
+          "passed": true
+        },
+        {
+          "description": "cargo-replaced-by-fifo preserves exit status",
+          "passed": true
+        },
+        {
+          "description": "cargo-replaced-by-fifo preserves target identity or rejection",
+          "passed": true
+        },
+        {
+          "description": "cargo-replaced-by-fifo preserves exact Cargo error output",
+          "passed": true
+        },
+        {
+          "description": "cargo-replaced-by-fifo observes ineligible",
+          "passed": true
+        },
+        {
+          "description": "cargo-fifo-removed-seed preserves exit status",
+          "passed": true
+        },
+        {
+          "description": "cargo-fifo-removed-seed preserves target identity or rejection",
+          "passed": true
+        },
+        {
+          "description": "cargo-fifo-removed-seed preserves exact Cargo error output",
+          "passed": true
+        },
+        {
+          "description": "cargo-fifo-removed preserves exit status",
+          "passed": true
+        },
+        {
+          "description": "cargo-fifo-removed preserves target identity or rejection",
+          "passed": true
+        },
+        {
+          "description": "cargo-fifo-removed preserves exact Cargo error output",
+          "passed": true
+        },
+        {
+          "description": "cargo-fifo-removed observes hit",
+          "passed": true
+        },
+        {
+          "description": "tool-receipt-replaced-by-fifo preserves exit status",
+          "passed": true
+        },
+        {
+          "description": "tool-receipt-replaced-by-fifo preserves target identity or rejection",
+          "passed": true
+        },
+        {
+          "description": "tool-receipt-replaced-by-fifo preserves exact Cargo error output",
+          "passed": true
+        },
+        {
+          "description": "tool-receipt-replaced-by-fifo observes ineligible",
+          "passed": true
+        },
+        {
+          "description": "C compiler exists for unknown-native-tool control",
+          "passed": true
+        },
+        {
+          "description": "unknown native Cargo delegate compiles",
+          "passed": true
+        },
+        {
+          "description": "unknown-native-cargo-0 preserves exit status",
+          "passed": true
+        },
+        {
+          "description": "unknown-native-cargo-0 preserves target identity or rejection",
+          "passed": true
+        },
+        {
+          "description": "unknown-native-cargo-0 preserves exact Cargo error output",
+          "passed": true
+        },
+        {
+          "description": "unknown-native-cargo-0 observes miss or ineligible",
+          "passed": true
+        },
+        {
+          "description": "unknown-native-cargo-1 preserves exit status",
+          "passed": true
+        },
+        {
+          "description": "unknown-native-cargo-1 preserves target identity or rejection",
+          "passed": true
+        },
+        {
+          "description": "unknown-native-cargo-1 preserves exact Cargo error output",
+          "passed": true
+        },
+        {
+          "description": "unknown-native-cargo-1 observes miss or ineligible",
+          "passed": true
+        },
+        {
+          "description": "unknown-native-cargo-2 preserves exit status",
+          "passed": true
+        },
+        {
+          "description": "unknown-native-cargo-2 preserves target identity or rejection",
+          "passed": true
+        },
+        {
+          "description": "unknown-native-cargo-2 preserves exact Cargo error output",
+          "passed": true
+        },
+        {
+          "description": "unknown-native-cargo-2 observes miss or ineligible",
+          "passed": true
+        },
+        {
+          "description": "unknown-native-cargo-external-change preserves exit status",
+          "passed": true
+        },
+        {
+          "description": "unknown-native-cargo-external-change preserves target identity or rejection",
+          "passed": true
+        },
+        {
+          "description": "unknown-native-cargo-external-change preserves exact Cargo error output",
+          "passed": true
+        },
+        {
+          "description": "unknown-native-cargo-external-change observes miss or ineligible",
+          "passed": true
+        }
+      ],
+      "records": [
+        {
+          "label": "unchanged-request-seed",
+          "sequence": 1,
+          "uncached": false,
+          "exit": 0,
+          "diagnostics": [
+            {
+              "selection_cache": "miss"
+            }
+          ]
+        },
+        {
+          "label": "unchanged-request-seed-uncached",
+          "sequence": 2,
+          "uncached": true,
+          "exit": 0,
+          "diagnostics": [
+            {
+              "selection_cache": "ineligible"
+            }
+          ]
+        },
+        {
+          "label": "unchanged-request",
+          "sequence": 3,
+          "uncached": false,
+          "exit": 0,
+          "diagnostics": [
+            {
+              "selection_cache": "hit"
+            }
+          ]
+        },
+        {
+          "label": "unchanged-request-uncached",
+          "sequence": 4,
+          "uncached": true,
+          "exit": 0,
+          "diagnostics": [
+            {
+              "selection_cache": "ineligible"
+            }
+          ]
+        },
+        {
+          "label": "source-body-edit",
+          "sequence": 5,
+          "uncached": false,
+          "exit": 0,
+          "diagnostics": [
+            {
+              "selection_cache": "hit"
+            }
+          ]
+        },
+        {
+          "label": "source-body-edit-uncached",
+          "sequence": 6,
+          "uncached": true,
+          "exit": 0,
+          "diagnostics": [
+            {
+              "selection_cache": "ineligible"
+            }
+          ]
+        },
+        {
+          "label": "caller-directory-seed",
+          "sequence": 7,
+          "uncached": false,
+          "exit": 0,
+          "diagnostics": [
+            {
+              "selection_cache": "miss"
+            }
+          ]
+        },
+        {
+          "label": "caller-directory-seed-uncached",
+          "sequence": 8,
+          "uncached": true,
+          "exit": 0,
+          "diagnostics": [
+            {
+              "selection_cache": "ineligible"
+            }
+          ]
+        },
+        {
+          "label": "caller-directory",
+          "sequence": 9,
+          "uncached": false,
+          "exit": 0,
+          "diagnostics": [
+            {
+              "selection_cache": "hit"
+            }
+          ]
+        },
+        {
+          "label": "caller-directory-uncached",
+          "sequence": 10,
+          "uncached": true,
+          "exit": 0,
+          "diagnostics": [
+            {
+              "selection_cache": "ineligible"
+            }
+          ]
+        },
+        {
+          "label": "new-caller-config",
+          "sequence": 11,
+          "uncached": false,
+          "exit": 2,
+          "diagnostics": [
+            {
+              "selection_cache": "ineligible"
+            }
+          ]
+        },
+        {
+          "label": "new-caller-config-uncached",
+          "sequence": 12,
+          "uncached": true,
+          "exit": 2,
+          "diagnostics": [
+            {
+              "selection_cache": "ineligible"
+            }
+          ]
+        },
+        {
+          "label": "manifest-directory-does-not-inherit-caller",
+          "sequence": 13,
+          "uncached": false,
+          "exit": 0,
+          "diagnostics": [
+            {
+              "selection_cache": "hit"
+            }
+          ]
+        },
+        {
+          "label": "manifest-directory-does-not-inherit-caller-uncached",
+          "sequence": 14,
+          "uncached": true,
+          "exit": 0,
+          "diagnostics": [
+            {
+              "selection_cache": "ineligible"
+            }
+          ]
+        },
+        {
+          "label": "cargo-home-config.toml",
+          "sequence": 15,
+          "uncached": false,
+          "exit": 2,
+          "diagnostics": [
+            {
+              "selection_cache": "ineligible"
+            }
+          ]
+        },
+        {
+          "label": "cargo-home-config.toml-uncached",
+          "sequence": 16,
+          "uncached": true,
+          "exit": 2,
+          "diagnostics": [
+            {
+              "selection_cache": "ineligible"
+            }
+          ]
+        },
+        {
+          "label": "cargo-home-config",
+          "sequence": 17,
+          "uncached": false,
+          "exit": 2,
+          "diagnostics": [
+            {
+              "selection_cache": "ineligible"
+            }
+          ]
+        },
+        {
+          "label": "cargo-home-config-uncached",
+          "sequence": 18,
+          "uncached": true,
+          "exit": 2,
+          "diagnostics": [
+            {
+              "selection_cache": "ineligible"
+            }
+          ]
+        },
+        {
+          "label": "config-removed-seed",
+          "sequence": 19,
+          "uncached": false,
+          "exit": 0,
+          "diagnostics": [
+            {
+              "selection_cache": "hit"
+            }
+          ]
+        },
+        {
+          "label": "config-removed-seed-uncached",
+          "sequence": 20,
+          "uncached": true,
+          "exit": 0,
+          "diagnostics": [
+            {
+              "selection_cache": "ineligible"
+            }
+          ]
+        },
+        {
+          "label": "config-removed",
+          "sequence": 21,
+          "uncached": false,
+          "exit": 0,
+          "diagnostics": [
+            {
+              "selection_cache": "hit"
+            }
+          ]
+        },
+        {
+          "label": "config-removed-uncached",
+          "sequence": 22,
+          "uncached": true,
+          "exit": 0,
+          "diagnostics": [
+            {
+              "selection_cache": "ineligible"
+            }
+          ]
+        },
+        {
+          "label": "same-size-mtime-lock-corruption",
+          "sequence": 23,
+          "uncached": false,
+          "exit": 0,
+          "diagnostics": [
+            {
+              "selection_cache": "miss"
+            }
+          ]
+        },
+        {
+          "label": "same-size-mtime-lock-corruption-uncached",
+          "sequence": 24,
+          "uncached": true,
+          "exit": 0,
+          "diagnostics": [
+            {
+              "selection_cache": "ineligible"
+            }
+          ]
+        },
+        {
+          "label": "lock-restored-seed",
+          "sequence": 25,
+          "uncached": false,
+          "exit": 0,
+          "diagnostics": [
+            {
+              "selection_cache": "miss"
+            }
+          ]
+        },
+        {
+          "label": "lock-restored-seed-uncached",
+          "sequence": 26,
+          "uncached": true,
+          "exit": 0,
+          "diagnostics": [
+            {
+              "selection_cache": "ineligible"
+            }
+          ]
+        },
+        {
+          "label": "lock-restored",
+          "sequence": 27,
+          "uncached": false,
+          "exit": 0,
+          "diagnostics": [
+            {
+              "selection_cache": "hit"
+            }
+          ]
+        },
+        {
+          "label": "lock-restored-uncached",
+          "sequence": 28,
+          "uncached": true,
+          "exit": 0,
+          "diagnostics": [
+            {
+              "selection_cache": "ineligible"
+            }
+          ]
+        },
+        {
+          "label": "selected-target-renamed",
+          "sequence": 29,
+          "uncached": false,
+          "exit": 2,
+          "diagnostics": [
+            {
+              "selection_cache": "miss"
+            }
+          ]
+        },
+        {
+          "label": "selected-target-renamed-uncached",
+          "sequence": 30,
+          "uncached": true,
+          "exit": 2,
+          "diagnostics": [
+            {
+              "selection_cache": "ineligible"
+            }
+          ]
+        },
+        {
+          "label": "manifest-restored-seed",
+          "sequence": 31,
+          "uncached": false,
+          "exit": 0,
+          "diagnostics": [
+            {
+              "selection_cache": "hit"
+            }
+          ]
+        },
+        {
+          "label": "manifest-restored-seed-uncached",
+          "sequence": 32,
+          "uncached": true,
+          "exit": 0,
+          "diagnostics": [
+            {
+              "selection_cache": "ineligible"
+            }
+          ]
+        },
+        {
+          "label": "manifest-restored",
+          "sequence": 33,
+          "uncached": false,
+          "exit": 0,
+          "diagnostics": [
+            {
+              "selection_cache": "hit"
+            }
+          ]
+        },
+        {
+          "label": "manifest-restored-uncached",
+          "sequence": 34,
+          "uncached": true,
+          "exit": 0,
+          "diagnostics": [
+            {
+              "selection_cache": "ineligible"
+            }
+          ]
+        },
+        {
+          "label": "new-build-script",
+          "sequence": 35,
+          "uncached": false,
+          "exit": 2,
+          "diagnostics": [
+            {
+              "selection_cache": "miss"
+            }
+          ]
+        },
+        {
+          "label": "new-build-script-uncached",
+          "sequence": 36,
+          "uncached": true,
+          "exit": 2,
+          "diagnostics": [
+            {
+              "selection_cache": "ineligible"
+            }
+          ]
+        },
+        {
+          "label": "build-script-remains-ineligible-for-store",
+          "sequence": 37,
+          "uncached": false,
+          "exit": 2,
+          "diagnostics": [
+            {
+              "selection_cache": "miss"
+            }
+          ]
+        },
+        {
+          "label": "build-script-remains-ineligible-for-store-uncached",
+          "sequence": 38,
+          "uncached": true,
+          "exit": 2,
+          "diagnostics": [
+            {
+              "selection_cache": "ineligible"
+            }
+          ]
+        },
+        {
+          "label": "build-script-removed-seed",
+          "sequence": 39,
+          "uncached": false,
+          "exit": 0,
+          "diagnostics": [
+            {
+              "selection_cache": "hit"
+            }
+          ]
+        },
+        {
+          "label": "build-script-removed-seed-uncached",
+          "sequence": 40,
+          "uncached": true,
+          "exit": 0,
+          "diagnostics": [
+            {
+              "selection_cache": "ineligible"
+            }
+          ]
+        },
+        {
+          "label": "build-script-removed",
+          "sequence": 41,
+          "uncached": false,
+          "exit": 0,
+          "diagnostics": [
+            {
+              "selection_cache": "hit"
+            }
+          ]
+        },
+        {
+          "label": "build-script-removed-uncached",
+          "sequence": 42,
+          "uncached": true,
+          "exit": 0,
+          "diagnostics": [
+            {
+              "selection_cache": "ineligible"
+            }
+          ]
+        },
+        {
+          "label": "new-discovered-target",
+          "sequence": 43,
+          "uncached": false,
+          "exit": 0,
+          "diagnostics": [
+            {
+              "selection_cache": "miss"
+            }
+          ]
+        },
+        {
+          "label": "new-discovered-target-uncached",
+          "sequence": 44,
+          "uncached": true,
+          "exit": 0,
+          "diagnostics": [
+            {
+              "selection_cache": "ineligible"
+            }
+          ]
+        },
+        {
+          "label": "discovered-target-retained-seed",
+          "sequence": 45,
+          "uncached": false,
+          "exit": 0,
+          "diagnostics": [
+            {
+              "selection_cache": "hit"
+            }
+          ]
+        },
+        {
+          "label": "discovered-target-retained-seed-uncached",
+          "sequence": 46,
+          "uncached": true,
+          "exit": 0,
+          "diagnostics": [
+            {
+              "selection_cache": "ineligible"
+            }
+          ]
+        },
+        {
+          "label": "discovered-target-retained",
+          "sequence": 47,
+          "uncached": false,
+          "exit": 0,
+          "diagnostics": [
+            {
+              "selection_cache": "hit"
+            }
+          ]
+        },
+        {
+          "label": "discovered-target-retained-uncached",
+          "sequence": 48,
+          "uncached": true,
+          "exit": 0,
+          "diagnostics": [
+            {
+              "selection_cache": "ineligible"
+            }
+          ]
+        },
+        {
+          "label": "discovered-target-removed",
+          "sequence": 49,
+          "uncached": false,
+          "exit": 0,
+          "diagnostics": [
+            {
+              "selection_cache": "miss"
+            }
+          ]
+        },
+        {
+          "label": "discovered-target-removed-uncached",
+          "sequence": 50,
+          "uncached": true,
+          "exit": 0,
+          "diagnostics": [
+            {
+              "selection_cache": "ineligible"
+            }
+          ]
+        },
+        {
+          "label": "discovery-restored-seed",
+          "sequence": 51,
+          "uncached": false,
+          "exit": 0,
+          "diagnostics": [
+            {
+              "selection_cache": "hit"
+            }
+          ]
+        },
+        {
+          "label": "discovery-restored-seed-uncached",
+          "sequence": 52,
+          "uncached": true,
+          "exit": 0,
+          "diagnostics": [
+            {
+              "selection_cache": "ineligible"
+            }
+          ]
+        },
+        {
+          "label": "discovery-restored",
+          "sequence": 53,
+          "uncached": false,
+          "exit": 0,
+          "diagnostics": [
+            {
+              "selection_cache": "hit"
+            }
+          ]
+        },
+        {
+          "label": "discovery-restored-uncached",
+          "sequence": 54,
+          "uncached": true,
+          "exit": 0,
+          "diagnostics": [
+            {
+              "selection_cache": "ineligible"
+            }
+          ]
+        },
+        {
+          "label": "unqualified-target-seed",
+          "sequence": 55,
+          "uncached": false,
+          "exit": 0,
+          "diagnostics": [
+            {
+              "selection_cache": "miss"
+            }
+          ]
+        },
+        {
+          "label": "unqualified-target-seed-uncached",
+          "sequence": 56,
+          "uncached": true,
+          "exit": 0,
+          "diagnostics": [
+            {
+              "selection_cache": "ineligible"
+            }
+          ]
+        },
+        {
+          "label": "unqualified-target",
+          "sequence": 57,
+          "uncached": false,
+          "exit": 0,
+          "diagnostics": [
+            {
+              "selection_cache": "hit"
+            }
+          ]
+        },
+        {
+          "label": "unqualified-target-uncached",
+          "sequence": 58,
+          "uncached": true,
+          "exit": 0,
+          "diagnostics": [
+            {
+              "selection_cache": "ineligible"
+            }
+          ]
+        },
+        {
+          "label": "other-target-symlink-creates-ambiguity",
+          "sequence": 59,
+          "uncached": false,
+          "exit": 2,
+          "diagnostics": [
+            {
+              "selection_cache": "miss"
+            }
+          ]
+        },
+        {
+          "label": "other-target-symlink-creates-ambiguity-uncached",
+          "sequence": 60,
+          "uncached": true,
+          "exit": 2,
+          "diagnostics": [
+            {
+              "selection_cache": "ineligible"
+            }
+          ]
+        },
+        {
+          "label": "explicit-bin-resolves-symlink-alias",
+          "sequence": 61,
+          "uncached": false,
+          "exit": 0,
+          "diagnostics": [
+            {
+              "selection_cache": "miss"
+            }
+          ]
+        },
+        {
+          "label": "explicit-bin-resolves-symlink-alias-uncached",
+          "sequence": 62,
+          "uncached": true,
+          "exit": 0,
+          "diagnostics": [
+            {
+              "selection_cache": "ineligible"
+            }
+          ]
+        },
+        {
+          "label": "target-alias-restored-seed",
+          "sequence": 63,
+          "uncached": false,
+          "exit": 0,
+          "diagnostics": [
+            {
+              "selection_cache": "miss"
+            }
+          ]
+        },
+        {
+          "label": "target-alias-restored-seed-uncached",
+          "sequence": 64,
+          "uncached": true,
+          "exit": 0,
+          "diagnostics": [
+            {
+              "selection_cache": "ineligible"
+            }
+          ]
+        },
+        {
+          "label": "target-alias-restored",
+          "sequence": 65,
+          "uncached": false,
+          "exit": 0,
+          "diagnostics": [
+            {
+              "selection_cache": "hit"
+            }
+          ]
+        },
+        {
+          "label": "target-alias-restored-uncached",
+          "sequence": 66,
+          "uncached": true,
+          "exit": 0,
+          "diagnostics": [
+            {
+              "selection_cache": "ineligible"
+            }
+          ]
+        },
+        {
+          "label": "package-lock-replaced-by-directory",
+          "sequence": 67,
+          "uncached": false,
+          "exit": 0,
+          "diagnostics": [
+            {
+              "selection_cache": "ineligible"
+            }
+          ]
+        },
+        {
+          "label": "package-lock-replaced-by-directory-uncached",
+          "sequence": 68,
+          "uncached": true,
+          "exit": 0,
+          "diagnostics": [
+            {
+              "selection_cache": "ineligible"
+            }
+          ]
+        },
+        {
+          "label": "package-lock-restored-seed",
+          "sequence": 69,
+          "uncached": false,
+          "exit": 0,
+          "diagnostics": [
+            {
+              "selection_cache": "miss"
+            }
+          ]
+        },
+        {
+          "label": "package-lock-restored-seed-uncached",
+          "sequence": 70,
+          "uncached": true,
+          "exit": 0,
+          "diagnostics": [
+            {
+              "selection_cache": "ineligible"
+            }
+          ]
+        },
+        {
+          "label": "package-lock-restored",
+          "sequence": 71,
+          "uncached": false,
+          "exit": 0,
+          "diagnostics": [
+            {
+              "selection_cache": "hit"
+            }
+          ]
+        },
+        {
+          "label": "package-lock-restored-uncached",
+          "sequence": 72,
+          "uncached": true,
+          "exit": 0,
+          "diagnostics": [
+            {
+              "selection_cache": "ineligible"
+            }
+          ]
+        },
+        {
+          "label": "unknown-cargo-option",
+          "sequence": 73,
+          "uncached": false,
+          "exit": 0,
+          "diagnostics": [
+            {
+              "selection_cache": "ineligible"
+            }
+          ]
+        },
+        {
+          "label": "unknown-cargo-option-uncached",
+          "sequence": 74,
+          "uncached": true,
+          "exit": 0,
+          "diagnostics": [
+            {
+              "selection_cache": "ineligible"
+            }
+          ]
+        },
+        {
+          "label": "environment-context-change",
+          "sequence": 75,
+          "uncached": false,
+          "exit": 0,
+          "diagnostics": [
+            {
+              "selection_cache": "miss"
+            }
+          ]
+        },
+        {
+          "label": "environment-context-change-uncached",
+          "sequence": 76,
+          "uncached": true,
+          "exit": 0,
+          "diagnostics": [
+            {
+              "selection_cache": "ineligible"
+            }
+          ]
+        },
+        {
+          "label": "environment-context-retained-seed",
+          "sequence": 77,
+          "uncached": false,
+          "exit": 0,
+          "diagnostics": [
+            {
+              "selection_cache": "hit"
+            }
+          ]
+        },
+        {
+          "label": "environment-context-retained-seed-uncached",
+          "sequence": 78,
+          "uncached": true,
+          "exit": 0,
+          "diagnostics": [
+            {
+              "selection_cache": "ineligible"
+            }
+          ]
+        },
+        {
+          "label": "environment-context-retained",
+          "sequence": 79,
+          "uncached": false,
+          "exit": 0,
+          "diagnostics": [
+            {
+              "selection_cache": "hit"
+            }
+          ]
+        },
+        {
+          "label": "environment-context-retained-uncached",
+          "sequence": 80,
+          "uncached": true,
+          "exit": 0,
+          "diagnostics": [
+            {
+              "selection_cache": "ineligible"
+            }
+          ]
+        },
+        {
+          "label": "original-context-retained-seed",
+          "sequence": 81,
+          "uncached": false,
+          "exit": 0,
+          "diagnostics": [
+            {
+              "selection_cache": "hit"
+            }
+          ]
+        },
+        {
+          "label": "original-context-retained-seed-uncached",
+          "sequence": 82,
+          "uncached": true,
+          "exit": 0,
+          "diagnostics": [
+            {
+              "selection_cache": "ineligible"
+            }
+          ]
+        },
+        {
+          "label": "original-context-retained",
+          "sequence": 83,
+          "uncached": false,
+          "exit": 0,
+          "diagnostics": [
+            {
+              "selection_cache": "hit"
+            }
+          ]
+        },
+        {
+          "label": "original-context-retained-uncached",
+          "sequence": 84,
+          "uncached": true,
+          "exit": 0,
+          "diagnostics": [
+            {
+              "selection_cache": "ineligible"
+            }
+          ]
+        },
+        {
+          "label": "malformed-json",
+          "sequence": 85,
+          "uncached": false,
+          "exit": 0,
+          "diagnostics": [
+            {
+              "selection_cache": "miss"
+            }
+          ]
+        },
+        {
+          "label": "malformed-json-uncached",
+          "sequence": 86,
+          "uncached": true,
+          "exit": 0,
+          "diagnostics": [
+            {
+              "selection_cache": "ineligible"
+            }
+          ]
+        },
+        {
+          "label": "malformed-json-recovered-seed",
+          "sequence": 87,
+          "uncached": false,
+          "exit": 0,
+          "diagnostics": [
+            {
+              "selection_cache": "hit"
+            }
+          ]
+        },
+        {
+          "label": "malformed-json-recovered-seed-uncached",
+          "sequence": 88,
+          "uncached": true,
+          "exit": 0,
+          "diagnostics": [
+            {
+              "selection_cache": "ineligible"
+            }
+          ]
+        },
+        {
+          "label": "malformed-json-recovered",
+          "sequence": 89,
+          "uncached": false,
+          "exit": 0,
+          "diagnostics": [
+            {
+              "selection_cache": "hit"
+            }
+          ]
+        },
+        {
+          "label": "malformed-json-recovered-uncached",
+          "sequence": 90,
+          "uncached": true,
+          "exit": 0,
+          "diagnostics": [
+            {
+              "selection_cache": "ineligible"
+            }
+          ]
+        },
+        {
+          "label": "checksum-mismatch",
+          "sequence": 91,
+          "uncached": false,
+          "exit": 0,
+          "diagnostics": [
+            {
+              "selection_cache": "miss"
+            }
+          ]
+        },
+        {
+          "label": "checksum-mismatch-uncached",
+          "sequence": 92,
+          "uncached": true,
+          "exit": 0,
+          "diagnostics": [
+            {
+              "selection_cache": "ineligible"
+            }
+          ]
+        },
+        {
+          "label": "checksum-mismatch-recovered-seed",
+          "sequence": 93,
+          "uncached": false,
+          "exit": 0,
+          "diagnostics": [
+            {
+              "selection_cache": "hit"
+            }
+          ]
+        },
+        {
+          "label": "checksum-mismatch-recovered-seed-uncached",
+          "sequence": 94,
+          "uncached": true,
+          "exit": 0,
+          "diagnostics": [
+            {
+              "selection_cache": "ineligible"
+            }
+          ]
+        },
+        {
+          "label": "checksum-mismatch-recovered",
+          "sequence": 95,
+          "uncached": false,
+          "exit": 0,
+          "diagnostics": [
+            {
+              "selection_cache": "hit"
+            }
+          ]
+        },
+        {
+          "label": "checksum-mismatch-recovered-uncached",
+          "sequence": 96,
+          "uncached": true,
+          "exit": 0,
+          "diagnostics": [
+            {
+              "selection_cache": "ineligible"
+            }
+          ]
+        },
+        {
+          "label": "nonprivate-entry",
+          "sequence": 97,
+          "uncached": false,
+          "exit": 0,
+          "diagnostics": [
+            {
+              "selection_cache": "miss"
+            }
+          ]
+        },
+        {
+          "label": "nonprivate-entry-uncached",
+          "sequence": 98,
+          "uncached": true,
+          "exit": 0,
+          "diagnostics": [
+            {
+              "selection_cache": "ineligible"
+            }
+          ]
+        },
+        {
+          "label": "nonprivate-entry-recovered-seed",
+          "sequence": 99,
+          "uncached": false,
+          "exit": 0,
+          "diagnostics": [
+            {
+              "selection_cache": "hit"
+            }
+          ]
+        },
+        {
+          "label": "nonprivate-entry-recovered-seed-uncached",
+          "sequence": 100,
+          "uncached": true,
+          "exit": 0,
+          "diagnostics": [
+            {
+              "selection_cache": "ineligible"
+            }
+          ]
+        },
+        {
+          "label": "nonprivate-entry-recovered",
+          "sequence": 101,
+          "uncached": false,
+          "exit": 0,
+          "diagnostics": [
+            {
+              "selection_cache": "hit"
+            }
+          ]
+        },
+        {
+          "label": "nonprivate-entry-recovered-uncached",
+          "sequence": 102,
+          "uncached": true,
+          "exit": 0,
+          "diagnostics": [
+            {
+              "selection_cache": "ineligible"
+            }
+          ]
+        },
+        {
+          "label": "unadmitted-manifest-syntax",
+          "sequence": 103,
+          "uncached": false,
+          "exit": 0,
+          "diagnostics": [
+            {
+              "selection_cache": "ineligible"
+            }
+          ]
+        },
+        {
+          "label": "unadmitted-manifest-syntax-uncached",
+          "sequence": 104,
+          "uncached": true,
+          "exit": 0,
+          "diagnostics": [
+            {
+              "selection_cache": "ineligible"
+            }
+          ]
+        },
+        {
+          "label": "admitted-manifest-restored-seed",
+          "sequence": 105,
+          "uncached": false,
+          "exit": 0,
+          "diagnostics": [
+            {
+              "selection_cache": "hit"
+            }
+          ]
+        },
+        {
+          "label": "admitted-manifest-restored-seed-uncached",
+          "sequence": 106,
+          "uncached": true,
+          "exit": 0,
+          "diagnostics": [
+            {
+              "selection_cache": "ineligible"
+            }
+          ]
+        },
+        {
+          "label": "admitted-manifest-restored",
+          "sequence": 107,
+          "uncached": false,
+          "exit": 0,
+          "diagnostics": [
+            {
+              "selection_cache": "hit"
+            }
+          ]
+        },
+        {
+          "label": "admitted-manifest-restored-uncached",
+          "sequence": 108,
+          "uncached": true,
+          "exit": 0,
+          "diagnostics": [
+            {
+              "selection_cache": "ineligible"
+            }
+          ]
+        },
+        {
+          "label": "projected-tools-seed",
+          "sequence": 109,
+          "uncached": false,
+          "exit": 0,
+          "diagnostics": [
+            {
+              "selection_cache": "miss"
+            }
+          ]
+        },
+        {
+          "label": "projected-tools-seed-uncached",
+          "sequence": 110,
+          "uncached": true,
+          "exit": 0,
+          "diagnostics": [
+            {
+              "selection_cache": "ineligible"
+            }
+          ]
+        },
+        {
+          "label": "projected-tools",
+          "sequence": 111,
+          "uncached": false,
+          "exit": 0,
+          "diagnostics": [
+            {
+              "selection_cache": "hit"
+            }
+          ]
+        },
+        {
+          "label": "projected-tools-uncached",
+          "sequence": 112,
+          "uncached": true,
+          "exit": 0,
+          "diagnostics": [
+            {
+              "selection_cache": "ineligible"
+            }
+          ]
+        },
+        {
+          "label": "cargo-replaced-identically",
+          "sequence": 113,
+          "uncached": false,
+          "exit": 0,
+          "diagnostics": [
+            {
+              "selection_cache": "miss"
+            }
+          ]
+        },
+        {
+          "label": "cargo-replaced-identically-uncached",
+          "sequence": 114,
+          "uncached": true,
+          "exit": 0,
+          "diagnostics": [
+            {
+              "selection_cache": "ineligible"
+            }
+          ]
+        },
+        {
+          "label": "replacement-tools-retained-seed",
+          "sequence": 115,
+          "uncached": false,
+          "exit": 0,
+          "diagnostics": [
+            {
+              "selection_cache": "hit"
+            }
+          ]
+        },
+        {
+          "label": "replacement-tools-retained-seed-uncached",
+          "sequence": 116,
+          "uncached": true,
+          "exit": 0,
+          "diagnostics": [
+            {
+              "selection_cache": "ineligible"
+            }
+          ]
+        },
+        {
+          "label": "replacement-tools-retained",
+          "sequence": 117,
+          "uncached": false,
+          "exit": 0,
+          "diagnostics": [
+            {
+              "selection_cache": "hit"
+            }
+          ]
+        },
+        {
+          "label": "replacement-tools-retained-uncached",
+          "sequence": 118,
+          "uncached": true,
+          "exit": 0,
+          "diagnostics": [
+            {
+              "selection_cache": "ineligible"
+            }
+          ]
+        },
+        {
+          "label": "cargo-readonly-executable-seed",
+          "sequence": 119,
+          "uncached": false,
+          "exit": 0,
+          "diagnostics": [
+            {
+              "selection_cache": "miss"
+            }
+          ]
+        },
+        {
+          "label": "cargo-readonly-executable-seed-uncached",
+          "sequence": 120,
+          "uncached": true,
+          "exit": 0,
+          "diagnostics": [
+            {
+              "selection_cache": "ineligible"
+            }
+          ]
+        },
+        {
+          "label": "cargo-readonly-executable",
+          "sequence": 121,
+          "uncached": false,
+          "exit": 0,
+          "diagnostics": [
+            {
+              "selection_cache": "hit"
+            }
+          ]
+        },
+        {
+          "label": "cargo-readonly-executable-uncached",
+          "sequence": 122,
+          "uncached": true,
+          "exit": 0,
+          "diagnostics": [
+            {
+              "selection_cache": "ineligible"
+            }
+          ]
+        },
+        {
+          "label": "cargo-execute-permission-removed",
+          "sequence": 123,
+          "uncached": false,
+          "exit": 2,
+          "diagnostics": [
+            {
+              "selection_cache": "ineligible"
+            }
+          ]
+        },
+        {
+          "label": "cargo-execute-permission-removed-uncached",
+          "sequence": 124,
+          "uncached": true,
+          "exit": 2,
+          "diagnostics": [
+            {
+              "selection_cache": "ineligible"
+            }
+          ]
+        },
+        {
+          "label": "cargo-execute-permission-restored-seed",
+          "sequence": 125,
+          "uncached": false,
+          "exit": 0,
+          "diagnostics": [
+            {
+              "selection_cache": "miss"
+            }
+          ]
+        },
+        {
+          "label": "cargo-execute-permission-restored-seed-uncached",
+          "sequence": 126,
+          "uncached": true,
+          "exit": 0,
+          "diagnostics": [
+            {
+              "selection_cache": "ineligible"
+            }
+          ]
+        },
+        {
+          "label": "cargo-execute-permission-restored",
+          "sequence": 127,
+          "uncached": false,
+          "exit": 0,
+          "diagnostics": [
+            {
+              "selection_cache": "hit"
+            }
+          ]
+        },
+        {
+          "label": "cargo-execute-permission-restored-uncached",
+          "sequence": 128,
+          "uncached": true,
+          "exit": 0,
+          "diagnostics": [
+            {
+              "selection_cache": "ineligible"
+            }
+          ]
+        },
+        {
+          "label": "native-query-replaced-identically",
+          "sequence": 129,
+          "uncached": false,
+          "exit": 0,
+          "diagnostics": [
+            {
+              "selection_cache": "miss"
+            }
+          ]
+        },
+        {
+          "label": "native-query-replaced-identically-uncached",
+          "sequence": 130,
+          "uncached": true,
+          "exit": 0,
+          "diagnostics": [
+            {
+              "selection_cache": "ineligible"
+            }
+          ]
+        },
+        {
+          "label": "native-query-replacement-retained-seed",
+          "sequence": 131,
+          "uncached": false,
+          "exit": 0,
+          "diagnostics": [
+            {
+              "selection_cache": "hit"
+            }
+          ]
+        },
+        {
+          "label": "native-query-replacement-retained-seed-uncached",
+          "sequence": 132,
+          "uncached": true,
+          "exit": 0,
+          "diagnostics": [
+            {
+              "selection_cache": "ineligible"
+            }
+          ]
+        },
+        {
+          "label": "native-query-replacement-retained",
+          "sequence": 133,
+          "uncached": false,
+          "exit": 0,
+          "diagnostics": [
+            {
+              "selection_cache": "hit"
+            }
+          ]
+        },
+        {
+          "label": "native-query-replacement-retained-uncached",
+          "sequence": 134,
+          "uncached": true,
+          "exit": 0,
+          "diagnostics": [
+            {
+              "selection_cache": "ineligible"
+            }
+          ]
+        },
+        {
+          "label": "native-query-bytes-changed",
+          "sequence": 135,
+          "uncached": false,
+          "exit": 0,
+          "diagnostics": [
+            {
+              "selection_cache": "miss"
+            }
+          ]
+        },
+        {
+          "label": "native-query-bytes-changed-uncached",
+          "sequence": 136,
+          "uncached": true,
+          "exit": 0,
+          "diagnostics": [
+            {
+              "selection_cache": "ineligible"
+            }
+          ]
+        },
+        {
+          "label": "native-query-bytes-restored-seed",
+          "sequence": 137,
+          "uncached": false,
+          "exit": 0,
+          "diagnostics": [
+            {
+              "selection_cache": "miss"
+            }
+          ]
+        },
+        {
+          "label": "native-query-bytes-restored-seed-uncached",
+          "sequence": 138,
+          "uncached": true,
+          "exit": 0,
+          "diagnostics": [
+            {
+              "selection_cache": "ineligible"
+            }
+          ]
+        },
+        {
+          "label": "native-query-bytes-restored",
+          "sequence": 139,
+          "uncached": false,
+          "exit": 0,
+          "diagnostics": [
+            {
+              "selection_cache": "hit"
+            }
+          ]
+        },
+        {
+          "label": "native-query-bytes-restored-uncached",
+          "sequence": 140,
+          "uncached": true,
+          "exit": 0,
+          "diagnostics": [
+            {
+              "selection_cache": "ineligible"
+            }
+          ]
+        },
+        {
+          "label": "cargo-replaced-by-fifo",
+          "sequence": 141,
+          "uncached": false,
+          "exit": 2,
+          "diagnostics": [
+            {
+              "selection_cache": "ineligible"
+            }
+          ]
+        },
+        {
+          "label": "cargo-replaced-by-fifo-uncached",
+          "sequence": 142,
+          "uncached": true,
+          "exit": 2,
+          "diagnostics": [
+            {
+              "selection_cache": "ineligible"
+            }
+          ]
+        },
+        {
+          "label": "cargo-fifo-removed-seed",
+          "sequence": 143,
+          "uncached": false,
+          "exit": 0,
+          "diagnostics": [
+            {
+              "selection_cache": "miss"
+            }
+          ]
+        },
+        {
+          "label": "cargo-fifo-removed-seed-uncached",
+          "sequence": 144,
+          "uncached": true,
+          "exit": 0,
+          "diagnostics": [
+            {
+              "selection_cache": "ineligible"
+            }
+          ]
+        },
+        {
+          "label": "cargo-fifo-removed",
+          "sequence": 145,
+          "uncached": false,
+          "exit": 0,
+          "diagnostics": [
+            {
+              "selection_cache": "hit"
+            }
+          ]
+        },
+        {
+          "label": "cargo-fifo-removed-uncached",
+          "sequence": 146,
+          "uncached": true,
+          "exit": 0,
+          "diagnostics": [
+            {
+              "selection_cache": "ineligible"
+            }
+          ]
+        },
+        {
+          "label": "tool-receipt-replaced-by-fifo",
+          "sequence": 147,
+          "uncached": false,
+          "exit": 0,
+          "diagnostics": [
+            {
+              "selection_cache": "ineligible"
+            }
+          ]
+        },
+        {
+          "label": "tool-receipt-replaced-by-fifo-uncached",
+          "sequence": 148,
+          "uncached": true,
+          "exit": 0,
+          "diagnostics": [
+            {
+              "selection_cache": "ineligible"
+            }
+          ]
+        },
+        {
+          "label": "unknown-native-cargo-0",
+          "sequence": 149,
+          "uncached": false,
+          "exit": 0,
+          "diagnostics": [
+            {
+              "selection_cache": "miss"
+            }
+          ]
+        },
+        {
+          "label": "unknown-native-cargo-0-uncached",
+          "sequence": 150,
+          "uncached": true,
+          "exit": 0,
+          "diagnostics": [
+            {
+              "selection_cache": "ineligible"
+            }
+          ]
+        },
+        {
+          "label": "unknown-native-cargo-1",
+          "sequence": 151,
+          "uncached": false,
+          "exit": 0,
+          "diagnostics": [
+            {
+              "selection_cache": "miss"
+            }
+          ]
+        },
+        {
+          "label": "unknown-native-cargo-1-uncached",
+          "sequence": 152,
+          "uncached": true,
+          "exit": 0,
+          "diagnostics": [
+            {
+              "selection_cache": "ineligible"
+            }
+          ]
+        },
+        {
+          "label": "unknown-native-cargo-2",
+          "sequence": 153,
+          "uncached": false,
+          "exit": 0,
+          "diagnostics": [
+            {
+              "selection_cache": "miss"
+            }
+          ]
+        },
+        {
+          "label": "unknown-native-cargo-2-uncached",
+          "sequence": 154,
+          "uncached": true,
+          "exit": 0,
+          "diagnostics": [
+            {
+              "selection_cache": "ineligible"
+            }
+          ]
+        },
+        {
+          "label": "unknown-native-cargo-external-change",
+          "sequence": 155,
+          "uncached": false,
+          "exit": 2,
+          "diagnostics": [
+            {
+              "selection_cache": "miss"
+            }
+          ]
+        },
+        {
+          "label": "unknown-native-cargo-external-change-uncached",
+          "sequence": 156,
+          "uncached": true,
+          "exit": 2,
+          "diagnostics": [
+            {
+              "selection_cache": "ineligible"
+            }
+          ]
+        }
+      ]
+    },
+    "seed": {
+      "status": "passed",
+      "raw_report_sha256": "2afe635a1963b3eb988333d9f0280d43c21bba76884383371387be3cc4a3e5b3",
+      "profiler_sha256": "5933a97c67b183db48b3a9fc1fd2b5324a6c62577adf55e96272c0e8c79827f3",
+      "invocations": 38,
+      "assertions": [
+        {
+          "description": "matched package has its actual tool receipt",
+          "passed": true
+        },
+        {
+          "description": "real Cargo establishes lockfile and package-cache lock",
+          "passed": true
+        },
+        {
+          "description": "prime-matched-package has expected initialization status",
+          "passed": true
+        },
+        {
+          "description": "initialization writes exactly one certificate",
+          "passed": true
+        },
+        {
+          "description": "seed directory is private and owned",
+          "passed": true
+        },
+        {
+          "description": "seed certificate is private and owned",
+          "passed": true
+        },
+        {
+          "description": "prime-idempotent has expected initialization status",
+          "passed": true
+        },
+        {
+          "description": "unchanged initialization preserves existing exact certificate",
+          "passed": true
+        },
+        {
+          "description": "seeded-first-request preserves exact exit status",
+          "passed": true
+        },
+        {
+          "description": "seeded-first-request preserves selection or rejection",
+          "passed": true
+        },
+        {
+          "description": "seeded-first-request preserves exact stderr",
+          "passed": true
+        },
+        {
+          "description": "seeded-first-request uses expected cache state",
+          "passed": true
+        },
+        {
+          "description": "per-project verification has the exact seeded certificate",
+          "passed": true
+        },
+        {
+          "description": "seeded-retained-request preserves exact exit status",
+          "passed": true
+        },
+        {
+          "description": "seeded-retained-request preserves selection or rejection",
+          "passed": true
+        },
+        {
+          "description": "seeded-retained-request preserves exact stderr",
+          "passed": true
+        },
+        {
+          "description": "seeded-retained-request uses expected cache state",
+          "passed": true
+        },
+        {
+          "description": "malformed-seed preserves exact exit status",
+          "passed": true
+        },
+        {
+          "description": "malformed-seed preserves selection or rejection",
+          "passed": true
+        },
+        {
+          "description": "malformed-seed preserves exact stderr",
+          "passed": true
+        },
+        {
+          "description": "malformed-seed uses expected cache state",
+          "passed": true
+        },
+        {
+          "description": "malformed-seed-retained preserves exact exit status",
+          "passed": true
+        },
+        {
+          "description": "malformed-seed-retained preserves selection or rejection",
+          "passed": true
+        },
+        {
+          "description": "malformed-seed-retained preserves exact stderr",
+          "passed": true
+        },
+        {
+          "description": "malformed-seed-retained uses expected cache state",
+          "passed": true
+        },
+        {
+          "description": "malformed-seed is not trusted or rewritten by normal selection",
+          "passed": true
+        },
+        {
+          "description": "checksum-seed preserves exact exit status",
+          "passed": true
+        },
+        {
+          "description": "checksum-seed preserves selection or rejection",
+          "passed": true
+        },
+        {
+          "description": "checksum-seed preserves exact stderr",
+          "passed": true
+        },
+        {
+          "description": "checksum-seed uses expected cache state",
+          "passed": true
+        },
+        {
+          "description": "checksum-seed-retained preserves exact exit status",
+          "passed": true
+        },
+        {
+          "description": "checksum-seed-retained preserves selection or rejection",
+          "passed": true
+        },
+        {
+          "description": "checksum-seed-retained preserves exact stderr",
+          "passed": true
+        },
+        {
+          "description": "checksum-seed-retained uses expected cache state",
+          "passed": true
+        },
+        {
+          "description": "checksum-seed is not trusted or rewritten by normal selection",
+          "passed": true
+        },
+        {
+          "description": "shared-seed-file preserves exact exit status",
+          "passed": true
+        },
+        {
+          "description": "shared-seed-file preserves selection or rejection",
+          "passed": true
+        },
+        {
+          "description": "shared-seed-file preserves exact stderr",
+          "passed": true
+        },
+        {
+          "description": "shared-seed-file uses expected cache state",
+          "passed": true
+        },
+        {
+          "description": "shared-seed-file-retained preserves exact exit status",
+          "passed": true
+        },
+        {
+          "description": "shared-seed-file-retained preserves selection or rejection",
+          "passed": true
+        },
+        {
+          "description": "shared-seed-file-retained preserves exact stderr",
+          "passed": true
+        },
+        {
+          "description": "shared-seed-file-retained uses expected cache state",
+          "passed": true
+        },
+        {
+          "description": "shared-seed-file is left unchanged by fallback",
+          "passed": true
+        },
+        {
+          "description": "shared-seed-directory preserves exact exit status",
+          "passed": true
+        },
+        {
+          "description": "shared-seed-directory preserves selection or rejection",
+          "passed": true
+        },
+        {
+          "description": "shared-seed-directory preserves exact stderr",
+          "passed": true
+        },
+        {
+          "description": "shared-seed-directory uses expected cache state",
+          "passed": true
+        },
+        {
+          "description": "shared-seed-directory-retained preserves exact exit status",
+          "passed": true
+        },
+        {
+          "description": "shared-seed-directory-retained preserves selection or rejection",
+          "passed": true
+        },
+        {
+          "description": "shared-seed-directory-retained preserves exact stderr",
+          "passed": true
+        },
+        {
+          "description": "shared-seed-directory-retained uses expected cache state",
+          "passed": true
+        },
+        {
+          "description": "shared-seed-directory is left unchanged by fallback",
+          "passed": true
+        },
+        {
+          "description": "relocated-seed preserves exact exit status",
+          "passed": true
+        },
+        {
+          "description": "relocated-seed preserves selection or rejection",
+          "passed": true
+        },
+        {
+          "description": "relocated-seed preserves exact stderr",
+          "passed": true
+        },
+        {
+          "description": "relocated-seed uses expected cache state",
+          "passed": true
+        },
+        {
+          "description": "relocation obtains a different live-identity certificate",
+          "passed": true
+        },
+        {
+          "description": "relocation leaves old seed as a rejected prior identity",
+          "passed": true
+        },
+        {
+          "description": "relocated-retained preserves exact exit status",
+          "passed": true
+        },
+        {
+          "description": "relocated-retained preserves selection or rejection",
+          "passed": true
+        },
+        {
+          "description": "relocated-retained preserves exact stderr",
+          "passed": true
+        },
+        {
+          "description": "relocated-retained uses expected cache state",
+          "passed": true
+        },
+        {
+          "description": "native delegate control has a C compiler",
+          "passed": true
+        },
+        {
+          "description": "external-state native delegate compiled",
+          "passed": true
+        },
+        {
+          "description": "unknown-native-delegate-refused has expected initialization status",
+          "passed": true
+        },
+        {
+          "description": "refused delegate writes no new seed certificate",
+          "passed": true
+        },
+        {
+          "description": "unknown-native-delegate-first preserves exact exit status",
+          "passed": true
+        },
+        {
+          "description": "unknown-native-delegate-first preserves selection or rejection",
+          "passed": true
+        },
+        {
+          "description": "unknown-native-delegate-first preserves exact stderr",
+          "passed": true
+        },
+        {
+          "description": "unknown-native-delegate-first uses expected cache state",
+          "passed": true
+        },
+        {
+          "description": "unknown-native-delegate-second preserves exact exit status",
+          "passed": true
+        },
+        {
+          "description": "unknown-native-delegate-second preserves selection or rejection",
+          "passed": true
+        },
+        {
+          "description": "unknown-native-delegate-second preserves exact stderr",
+          "passed": true
+        },
+        {
+          "description": "unknown-native-delegate-second uses expected cache state",
+          "passed": true
+        },
+        {
+          "description": "unknown-native-delegate-external-change preserves exact exit status",
+          "passed": true
+        },
+        {
+          "description": "unknown-native-delegate-external-change preserves selection or rejection",
+          "passed": true
+        },
+        {
+          "description": "unknown-native-delegate-external-change preserves exact stderr",
+          "passed": true
+        },
+        {
+          "description": "unknown-native-delegate-external-change uses expected cache state",
+          "passed": true
+        },
+        {
+          "description": "changed-receipt-refused has expected initialization status",
+          "passed": true
+        },
+        {
+          "description": "changed-receipt-fresh-selection preserves exact exit status",
+          "passed": true
+        },
+        {
+          "description": "changed-receipt-fresh-selection preserves selection or rejection",
+          "passed": true
+        },
+        {
+          "description": "changed-receipt-fresh-selection preserves exact stderr",
+          "passed": true
+        },
+        {
+          "description": "changed-receipt-fresh-selection uses expected cache state",
+          "passed": true
+        },
+        {
+          "description": "changed receipt writes no seed certificate",
+          "passed": true
+        }
+      ],
+      "records": [
+        {
+          "diagnostics": [],
+          "exit": 0,
+          "label": "cargo-setup",
+          "sequence": 1
+        },
+        {
+          "diagnostics": [],
+          "exit": 0,
+          "label": "prime-matched-package",
+          "sequence": 2
+        },
+        {
+          "diagnostics": [],
+          "exit": 0,
+          "label": "prime-idempotent",
+          "sequence": 3
+        },
+        {
+          "diagnostics": [
+            {
+              "selection_cache": "miss"
+            }
+          ],
+          "exit": 0,
+          "label": "seeded-first-request",
+          "sequence": 4
+        },
+        {
+          "diagnostics": [
+            {
+              "selection_cache": "ineligible"
+            }
+          ],
+          "exit": 0,
+          "label": "seeded-first-request-uncached",
+          "sequence": 5
+        },
+        {
+          "diagnostics": [
+            {
+              "selection_cache": "hit"
+            }
+          ],
+          "exit": 0,
+          "label": "seeded-retained-request",
+          "sequence": 6
+        },
+        {
+          "diagnostics": [
+            {
+              "selection_cache": "ineligible"
+            }
+          ],
+          "exit": 0,
+          "label": "seeded-retained-request-uncached",
+          "sequence": 7
+        },
+        {
+          "diagnostics": [
+            {
+              "selection_cache": "miss"
+            }
+          ],
+          "exit": 0,
+          "label": "malformed-seed",
+          "sequence": 8
+        },
+        {
+          "diagnostics": [
+            {
+              "selection_cache": "ineligible"
+            }
+          ],
+          "exit": 0,
+          "label": "malformed-seed-uncached",
+          "sequence": 9
+        },
+        {
+          "diagnostics": [
+            {
+              "selection_cache": "hit"
+            }
+          ],
+          "exit": 0,
+          "label": "malformed-seed-retained",
+          "sequence": 10
+        },
+        {
+          "diagnostics": [
+            {
+              "selection_cache": "ineligible"
+            }
+          ],
+          "exit": 0,
+          "label": "malformed-seed-retained-uncached",
+          "sequence": 11
+        },
+        {
+          "diagnostics": [
+            {
+              "selection_cache": "miss"
+            }
+          ],
+          "exit": 0,
+          "label": "checksum-seed",
+          "sequence": 12
+        },
+        {
+          "diagnostics": [
+            {
+              "selection_cache": "ineligible"
+            }
+          ],
+          "exit": 0,
+          "label": "checksum-seed-uncached",
+          "sequence": 13
+        },
+        {
+          "diagnostics": [
+            {
+              "selection_cache": "hit"
+            }
+          ],
+          "exit": 0,
+          "label": "checksum-seed-retained",
+          "sequence": 14
+        },
+        {
+          "diagnostics": [
+            {
+              "selection_cache": "ineligible"
+            }
+          ],
+          "exit": 0,
+          "label": "checksum-seed-retained-uncached",
+          "sequence": 15
+        },
+        {
+          "diagnostics": [
+            {
+              "selection_cache": "miss"
+            }
+          ],
+          "exit": 0,
+          "label": "shared-seed-file",
+          "sequence": 16
+        },
+        {
+          "diagnostics": [
+            {
+              "selection_cache": "ineligible"
+            }
+          ],
+          "exit": 0,
+          "label": "shared-seed-file-uncached",
+          "sequence": 17
+        },
+        {
+          "diagnostics": [
+            {
+              "selection_cache": "hit"
+            }
+          ],
+          "exit": 0,
+          "label": "shared-seed-file-retained",
+          "sequence": 18
+        },
+        {
+          "diagnostics": [
+            {
+              "selection_cache": "ineligible"
+            }
+          ],
+          "exit": 0,
+          "label": "shared-seed-file-retained-uncached",
+          "sequence": 19
+        },
+        {
+          "diagnostics": [
+            {
+              "selection_cache": "miss"
+            }
+          ],
+          "exit": 0,
+          "label": "shared-seed-directory",
+          "sequence": 20
+        },
+        {
+          "diagnostics": [
+            {
+              "selection_cache": "ineligible"
+            }
+          ],
+          "exit": 0,
+          "label": "shared-seed-directory-uncached",
+          "sequence": 21
+        },
+        {
+          "diagnostics": [
+            {
+              "selection_cache": "hit"
+            }
+          ],
+          "exit": 0,
+          "label": "shared-seed-directory-retained",
+          "sequence": 22
+        },
+        {
+          "diagnostics": [
+            {
+              "selection_cache": "ineligible"
+            }
+          ],
+          "exit": 0,
+          "label": "shared-seed-directory-retained-uncached",
+          "sequence": 23
+        },
+        {
+          "diagnostics": [
+            {
+              "selection_cache": "miss"
+            }
+          ],
+          "exit": 0,
+          "label": "relocated-seed",
+          "sequence": 24
+        },
+        {
+          "diagnostics": [
+            {
+              "selection_cache": "ineligible"
+            }
+          ],
+          "exit": 0,
+          "label": "relocated-seed-uncached",
+          "sequence": 25
+        },
+        {
+          "diagnostics": [
+            {
+              "selection_cache": "hit"
+            }
+          ],
+          "exit": 0,
+          "label": "relocated-retained",
+          "sequence": 26
+        },
+        {
+          "diagnostics": [
+            {
+              "selection_cache": "ineligible"
+            }
+          ],
+          "exit": 0,
+          "label": "relocated-retained-uncached",
+          "sequence": 27
+        },
+        {
+          "diagnostics": [],
+          "exit": 0,
+          "label": "build-native-delegate",
+          "sequence": 28
+        },
+        {
+          "diagnostics": [],
+          "exit": 2,
+          "label": "unknown-native-delegate-refused",
+          "sequence": 29
+        },
+        {
+          "diagnostics": [
+            {
+              "selection_cache": "miss"
+            }
+          ],
+          "exit": 0,
+          "label": "unknown-native-delegate-first",
+          "sequence": 30
+        },
+        {
+          "diagnostics": [
+            {
+              "selection_cache": "ineligible"
+            }
+          ],
+          "exit": 0,
+          "label": "unknown-native-delegate-first-uncached",
+          "sequence": 31
+        },
+        {
+          "diagnostics": [
+            {
+              "selection_cache": "miss"
+            }
+          ],
+          "exit": 0,
+          "label": "unknown-native-delegate-second",
+          "sequence": 32
+        },
+        {
+          "diagnostics": [
+            {
+              "selection_cache": "ineligible"
+            }
+          ],
+          "exit": 0,
+          "label": "unknown-native-delegate-second-uncached",
+          "sequence": 33
+        },
+        {
+          "diagnostics": [
+            {
+              "selection_cache": "miss"
+            }
+          ],
+          "exit": 2,
+          "label": "unknown-native-delegate-external-change",
+          "sequence": 34
+        },
+        {
+          "diagnostics": [
+            {
+              "selection_cache": "ineligible"
+            }
+          ],
+          "exit": 2,
+          "label": "unknown-native-delegate-external-change-uncached",
+          "sequence": 35
+        },
+        {
+          "diagnostics": [],
+          "exit": 2,
+          "label": "changed-receipt-refused",
+          "sequence": 36
+        },
+        {
+          "diagnostics": [
+            {
+              "selection_cache": "ineligible"
+            }
+          ],
+          "exit": 0,
+          "label": "changed-receipt-fresh-selection",
+          "sequence": 37
+        },
+        {
+          "diagnostics": [
+            {
+              "selection_cache": "ineligible"
+            }
+          ],
+          "exit": 0,
+          "label": "changed-receipt-fresh-selection-uncached",
+          "sequence": 38
+        }
+      ]
+    },
+    "compact": {
+      "status": "passed",
+      "raw_report_sha256": "c9e26eea8252bbe890f83108c3f1006ba591974096d370a181fc1a36768b9c96",
+      "profiler_sha256": "5933a97c67b183db48b3a9fc1fd2b5324a6c62577adf55e96272c0e8c79827f3",
+      "invocations": 83,
+      "assertions": [
+        {
+          "description": "setup completes without a timeout or signal",
+          "passed": true
+        },
+        {
+          "description": "real Cargo lockfile setup succeeds",
+          "passed": true
+        },
+        {
+          "description": "initial-seed completes without a timeout or signal",
+          "passed": true
+        },
+        {
+          "description": "initial-seed preserves the expected exit status",
+          "passed": true
+        },
+        {
+          "description": "initial-seed exposes the complete actual Selection",
+          "passed": true
+        },
+        {
+          "description": "initial-seed-uncached completes without a timeout or signal",
+          "passed": true
+        },
+        {
+          "description": "initial-seed-uncached preserves the expected exit status",
+          "passed": true
+        },
+        {
+          "description": "initial-seed-uncached exposes the complete actual Selection",
+          "passed": true
+        },
+        {
+          "description": "initial-seed preserves every Selection field or the exact rejection",
+          "passed": true
+        },
+        {
+          "description": "initial-seed preserves Cargo selection stderr",
+          "passed": true
+        },
+        {
+          "description": "initial-hit completes without a timeout or signal",
+          "passed": true
+        },
+        {
+          "description": "initial-hit preserves the expected exit status",
+          "passed": true
+        },
+        {
+          "description": "initial-hit exposes the complete actual Selection",
+          "passed": true
+        },
+        {
+          "description": "initial-hit observes hit",
+          "passed": true
+        },
+        {
+          "description": "initial-hit-uncached completes without a timeout or signal",
+          "passed": true
+        },
+        {
+          "description": "initial-hit-uncached preserves the expected exit status",
+          "passed": true
+        },
+        {
+          "description": "initial-hit-uncached exposes the complete actual Selection",
+          "passed": true
+        },
+        {
+          "description": "initial-hit preserves every Selection field or the exact rejection",
+          "passed": true
+        },
+        {
+          "description": "initial-hit preserves Cargo selection stderr",
+          "passed": true
+        },
+        {
+          "description": "malformed-record controls address the only current selection context",
+          "passed": true
+        },
+        {
+          "description": "test checksum serialization agrees with the actual private record",
+          "passed": true
+        },
+        {
+          "description": "old-selection-schema completes without a timeout or signal",
+          "passed": true
+        },
+        {
+          "description": "old-selection-schema preserves the expected exit status",
+          "passed": true
+        },
+        {
+          "description": "old-selection-schema exposes the complete actual Selection",
+          "passed": true
+        },
+        {
+          "description": "old-selection-schema observes miss",
+          "passed": true
+        },
+        {
+          "description": "old-selection-schema-uncached completes without a timeout or signal",
+          "passed": true
+        },
+        {
+          "description": "old-selection-schema-uncached preserves the expected exit status",
+          "passed": true
+        },
+        {
+          "description": "old-selection-schema-uncached exposes the complete actual Selection",
+          "passed": true
+        },
+        {
+          "description": "old-selection-schema preserves every Selection field or the exact rejection",
+          "passed": true
+        },
+        {
+          "description": "old-selection-schema preserves Cargo selection stderr",
+          "passed": true
+        },
+        {
+          "description": "old-selection-schema-recovered completes without a timeout or signal",
+          "passed": true
+        },
+        {
+          "description": "old-selection-schema-recovered preserves the expected exit status",
+          "passed": true
+        },
+        {
+          "description": "old-selection-schema-recovered exposes the complete actual Selection",
+          "passed": true
+        },
+        {
+          "description": "old-selection-schema-recovered observes hit",
+          "passed": true
+        },
+        {
+          "description": "old-selection-schema-recovered-uncached completes without a timeout or signal",
+          "passed": true
+        },
+        {
+          "description": "old-selection-schema-recovered-uncached preserves the expected exit status",
+          "passed": true
+        },
+        {
+          "description": "old-selection-schema-recovered-uncached exposes the complete actual Selection",
+          "passed": true
+        },
+        {
+          "description": "old-selection-schema-recovered preserves every Selection field or the exact rejection",
+          "passed": true
+        },
+        {
+          "description": "old-selection-schema-recovered preserves Cargo selection stderr",
+          "passed": true
+        },
+        {
+          "description": "malformed-record controls address the only current selection context",
+          "passed": true
+        },
+        {
+          "description": "test checksum serialization agrees with the actual private record",
+          "passed": true
+        },
+        {
+          "description": "missing-state-digest completes without a timeout or signal",
+          "passed": true
+        },
+        {
+          "description": "missing-state-digest preserves the expected exit status",
+          "passed": true
+        },
+        {
+          "description": "missing-state-digest exposes the complete actual Selection",
+          "passed": true
+        },
+        {
+          "description": "missing-state-digest observes miss",
+          "passed": true
+        },
+        {
+          "description": "missing-state-digest-uncached completes without a timeout or signal",
+          "passed": true
+        },
+        {
+          "description": "missing-state-digest-uncached preserves the expected exit status",
+          "passed": true
+        },
+        {
+          "description": "missing-state-digest-uncached exposes the complete actual Selection",
+          "passed": true
+        },
+        {
+          "description": "missing-state-digest preserves every Selection field or the exact rejection",
+          "passed": true
+        },
+        {
+          "description": "missing-state-digest preserves Cargo selection stderr",
+          "passed": true
+        },
+        {
+          "description": "missing-state-digest-recovered completes without a timeout or signal",
+          "passed": true
+        },
+        {
+          "description": "missing-state-digest-recovered preserves the expected exit status",
+          "passed": true
+        },
+        {
+          "description": "missing-state-digest-recovered exposes the complete actual Selection",
+          "passed": true
+        },
+        {
+          "description": "missing-state-digest-recovered observes hit",
+          "passed": true
+        },
+        {
+          "description": "missing-state-digest-recovered-uncached completes without a timeout or signal",
+          "passed": true
+        },
+        {
+          "description": "missing-state-digest-recovered-uncached preserves the expected exit status",
+          "passed": true
+        },
+        {
+          "description": "missing-state-digest-recovered-uncached exposes the complete actual Selection",
+          "passed": true
+        },
+        {
+          "description": "missing-state-digest-recovered preserves every Selection field or the exact rejection",
+          "passed": true
+        },
+        {
+          "description": "missing-state-digest-recovered preserves Cargo selection stderr",
+          "passed": true
+        },
+        {
+          "description": "malformed-record controls address the only current selection context",
+          "passed": true
+        },
+        {
+          "description": "test checksum serialization agrees with the actual private record",
+          "passed": true
+        },
+        {
+          "description": "changed-state-digest completes without a timeout or signal",
+          "passed": true
+        },
+        {
+          "description": "changed-state-digest preserves the expected exit status",
+          "passed": true
+        },
+        {
+          "description": "changed-state-digest exposes the complete actual Selection",
+          "passed": true
+        },
+        {
+          "description": "changed-state-digest observes miss",
+          "passed": true
+        },
+        {
+          "description": "changed-state-digest-uncached completes without a timeout or signal",
+          "passed": true
+        },
+        {
+          "description": "changed-state-digest-uncached preserves the expected exit status",
+          "passed": true
+        },
+        {
+          "description": "changed-state-digest-uncached exposes the complete actual Selection",
+          "passed": true
+        },
+        {
+          "description": "changed-state-digest preserves every Selection field or the exact rejection",
+          "passed": true
+        },
+        {
+          "description": "changed-state-digest preserves Cargo selection stderr",
+          "passed": true
+        },
+        {
+          "description": "changed-state-digest-recovered completes without a timeout or signal",
+          "passed": true
+        },
+        {
+          "description": "changed-state-digest-recovered preserves the expected exit status",
+          "passed": true
+        },
+        {
+          "description": "changed-state-digest-recovered exposes the complete actual Selection",
+          "passed": true
+        },
+        {
+          "description": "changed-state-digest-recovered observes hit",
+          "passed": true
+        },
+        {
+          "description": "changed-state-digest-recovered-uncached completes without a timeout or signal",
+          "passed": true
+        },
+        {
+          "description": "changed-state-digest-recovered-uncached preserves the expected exit status",
+          "passed": true
+        },
+        {
+          "description": "changed-state-digest-recovered-uncached exposes the complete actual Selection",
+          "passed": true
+        },
+        {
+          "description": "changed-state-digest-recovered preserves every Selection field or the exact rejection",
+          "passed": true
+        },
+        {
+          "description": "changed-state-digest-recovered preserves Cargo selection stderr",
+          "passed": true
+        },
+        {
+          "description": "malformed-record controls address the only current selection context",
+          "passed": true
+        },
+        {
+          "description": "test checksum serialization agrees with the actual private record",
+          "passed": true
+        },
+        {
+          "description": "missing-selection completes without a timeout or signal",
+          "passed": true
+        },
+        {
+          "description": "missing-selection preserves the expected exit status",
+          "passed": true
+        },
+        {
+          "description": "missing-selection exposes the complete actual Selection",
+          "passed": true
+        },
+        {
+          "description": "missing-selection observes miss",
+          "passed": true
+        },
+        {
+          "description": "missing-selection-uncached completes without a timeout or signal",
+          "passed": true
+        },
+        {
+          "description": "missing-selection-uncached preserves the expected exit status",
+          "passed": true
+        },
+        {
+          "description": "missing-selection-uncached exposes the complete actual Selection",
+          "passed": true
+        },
+        {
+          "description": "missing-selection preserves every Selection field or the exact rejection",
+          "passed": true
+        },
+        {
+          "description": "missing-selection preserves Cargo selection stderr",
+          "passed": true
+        },
+        {
+          "description": "missing-selection-recovered completes without a timeout or signal",
+          "passed": true
+        },
+        {
+          "description": "missing-selection-recovered preserves the expected exit status",
+          "passed": true
+        },
+        {
+          "description": "missing-selection-recovered exposes the complete actual Selection",
+          "passed": true
+        },
+        {
+          "description": "missing-selection-recovered observes hit",
+          "passed": true
+        },
+        {
+          "description": "missing-selection-recovered-uncached completes without a timeout or signal",
+          "passed": true
+        },
+        {
+          "description": "missing-selection-recovered-uncached preserves the expected exit status",
+          "passed": true
+        },
+        {
+          "description": "missing-selection-recovered-uncached exposes the complete actual Selection",
+          "passed": true
+        },
+        {
+          "description": "missing-selection-recovered preserves every Selection field or the exact rejection",
+          "passed": true
+        },
+        {
+          "description": "missing-selection-recovered preserves Cargo selection stderr",
+          "passed": true
+        },
+        {
+          "description": "malformed-record controls address the only current selection context",
+          "passed": true
+        },
+        {
+          "description": "test checksum serialization agrees with the actual private record",
+          "passed": true
+        },
+        {
+          "description": "null-package completes without a timeout or signal",
+          "passed": true
+        },
+        {
+          "description": "null-package preserves the expected exit status",
+          "passed": true
+        },
+        {
+          "description": "null-package exposes the complete actual Selection",
+          "passed": true
+        },
+        {
+          "description": "null-package observes miss",
+          "passed": true
+        },
+        {
+          "description": "null-package-uncached completes without a timeout or signal",
+          "passed": true
+        },
+        {
+          "description": "null-package-uncached preserves the expected exit status",
+          "passed": true
+        },
+        {
+          "description": "null-package-uncached exposes the complete actual Selection",
+          "passed": true
+        },
+        {
+          "description": "null-package preserves every Selection field or the exact rejection",
+          "passed": true
+        },
+        {
+          "description": "null-package preserves Cargo selection stderr",
+          "passed": true
+        },
+        {
+          "description": "null-package-recovered completes without a timeout or signal",
+          "passed": true
+        },
+        {
+          "description": "null-package-recovered preserves the expected exit status",
+          "passed": true
+        },
+        {
+          "description": "null-package-recovered exposes the complete actual Selection",
+          "passed": true
+        },
+        {
+          "description": "null-package-recovered observes hit",
+          "passed": true
+        },
+        {
+          "description": "null-package-recovered-uncached completes without a timeout or signal",
+          "passed": true
+        },
+        {
+          "description": "null-package-recovered-uncached preserves the expected exit status",
+          "passed": true
+        },
+        {
+          "description": "null-package-recovered-uncached exposes the complete actual Selection",
+          "passed": true
+        },
+        {
+          "description": "null-package-recovered preserves every Selection field or the exact rejection",
+          "passed": true
+        },
+        {
+          "description": "null-package-recovered preserves Cargo selection stderr",
+          "passed": true
+        },
+        {
+          "description": "malformed-record controls address the only current selection context",
+          "passed": true
+        },
+        {
+          "description": "test checksum serialization agrees with the actual private record",
+          "passed": true
+        },
+        {
+          "description": "extra-selection-field completes without a timeout or signal",
+          "passed": true
+        },
+        {
+          "description": "extra-selection-field preserves the expected exit status",
+          "passed": true
+        },
+        {
+          "description": "extra-selection-field exposes the complete actual Selection",
+          "passed": true
+        },
+        {
+          "description": "extra-selection-field observes miss",
+          "passed": true
+        },
+        {
+          "description": "extra-selection-field-uncached completes without a timeout or signal",
+          "passed": true
+        },
+        {
+          "description": "extra-selection-field-uncached preserves the expected exit status",
+          "passed": true
+        },
+        {
+          "description": "extra-selection-field-uncached exposes the complete actual Selection",
+          "passed": true
+        },
+        {
+          "description": "extra-selection-field preserves every Selection field or the exact rejection",
+          "passed": true
+        },
+        {
+          "description": "extra-selection-field preserves Cargo selection stderr",
+          "passed": true
+        },
+        {
+          "description": "extra-selection-field-recovered completes without a timeout or signal",
+          "passed": true
+        },
+        {
+          "description": "extra-selection-field-recovered preserves the expected exit status",
+          "passed": true
+        },
+        {
+          "description": "extra-selection-field-recovered exposes the complete actual Selection",
+          "passed": true
+        },
+        {
+          "description": "extra-selection-field-recovered observes hit",
+          "passed": true
+        },
+        {
+          "description": "extra-selection-field-recovered-uncached completes without a timeout or signal",
+          "passed": true
+        },
+        {
+          "description": "extra-selection-field-recovered-uncached preserves the expected exit status",
+          "passed": true
+        },
+        {
+          "description": "extra-selection-field-recovered-uncached exposes the complete actual Selection",
+          "passed": true
+        },
+        {
+          "description": "extra-selection-field-recovered preserves every Selection field or the exact rejection",
+          "passed": true
+        },
+        {
+          "description": "extra-selection-field-recovered preserves Cargo selection stderr",
+          "passed": true
+        },
+        {
+          "description": "malformed-record controls address the only current selection context",
+          "passed": true
+        },
+        {
+          "description": "test checksum serialization agrees with the actual private record",
+          "passed": true
+        },
+        {
+          "description": "inconsistent-manifest completes without a timeout or signal",
+          "passed": true
+        },
+        {
+          "description": "inconsistent-manifest preserves the expected exit status",
+          "passed": true
+        },
+        {
+          "description": "inconsistent-manifest exposes the complete actual Selection",
+          "passed": true
+        },
+        {
+          "description": "inconsistent-manifest observes miss",
+          "passed": true
+        },
+        {
+          "description": "inconsistent-manifest-uncached completes without a timeout or signal",
+          "passed": true
+        },
+        {
+          "description": "inconsistent-manifest-uncached preserves the expected exit status",
+          "passed": true
+        },
+        {
+          "description": "inconsistent-manifest-uncached exposes the complete actual Selection",
+          "passed": true
+        },
+        {
+          "description": "inconsistent-manifest preserves every Selection field or the exact rejection",
+          "passed": true
+        },
+        {
+          "description": "inconsistent-manifest preserves Cargo selection stderr",
+          "passed": true
+        },
+        {
+          "description": "inconsistent-manifest-recovered completes without a timeout or signal",
+          "passed": true
+        },
+        {
+          "description": "inconsistent-manifest-recovered preserves the expected exit status",
+          "passed": true
+        },
+        {
+          "description": "inconsistent-manifest-recovered exposes the complete actual Selection",
+          "passed": true
+        },
+        {
+          "description": "inconsistent-manifest-recovered observes hit",
+          "passed": true
+        },
+        {
+          "description": "inconsistent-manifest-recovered-uncached completes without a timeout or signal",
+          "passed": true
+        },
+        {
+          "description": "inconsistent-manifest-recovered-uncached preserves the expected exit status",
+          "passed": true
+        },
+        {
+          "description": "inconsistent-manifest-recovered-uncached exposes the complete actual Selection",
+          "passed": true
+        },
+        {
+          "description": "inconsistent-manifest-recovered preserves every Selection field or the exact rejection",
+          "passed": true
+        },
+        {
+          "description": "inconsistent-manifest-recovered preserves Cargo selection stderr",
+          "passed": true
+        },
+        {
+          "description": "malformed-record controls address the only current selection context",
+          "passed": true
+        },
+        {
+          "description": "test checksum serialization agrees with the actual private record",
+          "passed": true
+        },
+        {
+          "description": "inconsistent-name completes without a timeout or signal",
+          "passed": true
+        },
+        {
+          "description": "inconsistent-name preserves the expected exit status",
+          "passed": true
+        },
+        {
+          "description": "inconsistent-name exposes the complete actual Selection",
+          "passed": true
+        },
+        {
+          "description": "inconsistent-name observes miss",
+          "passed": true
+        },
+        {
+          "description": "inconsistent-name-uncached completes without a timeout or signal",
+          "passed": true
+        },
+        {
+          "description": "inconsistent-name-uncached preserves the expected exit status",
+          "passed": true
+        },
+        {
+          "description": "inconsistent-name-uncached exposes the complete actual Selection",
+          "passed": true
+        },
+        {
+          "description": "inconsistent-name preserves every Selection field or the exact rejection",
+          "passed": true
+        },
+        {
+          "description": "inconsistent-name preserves Cargo selection stderr",
+          "passed": true
+        },
+        {
+          "description": "inconsistent-name-recovered completes without a timeout or signal",
+          "passed": true
+        },
+        {
+          "description": "inconsistent-name-recovered preserves the expected exit status",
+          "passed": true
+        },
+        {
+          "description": "inconsistent-name-recovered exposes the complete actual Selection",
+          "passed": true
+        },
+        {
+          "description": "inconsistent-name-recovered observes hit",
+          "passed": true
+        },
+        {
+          "description": "inconsistent-name-recovered-uncached completes without a timeout or signal",
+          "passed": true
+        },
+        {
+          "description": "inconsistent-name-recovered-uncached preserves the expected exit status",
+          "passed": true
+        },
+        {
+          "description": "inconsistent-name-recovered-uncached exposes the complete actual Selection",
+          "passed": true
+        },
+        {
+          "description": "inconsistent-name-recovered preserves every Selection field or the exact rejection",
+          "passed": true
+        },
+        {
+          "description": "inconsistent-name-recovered preserves Cargo selection stderr",
+          "passed": true
+        },
+        {
+          "description": "malformed-record controls address the only current selection context",
+          "passed": true
+        },
+        {
+          "description": "test checksum serialization agrees with the actual private record",
+          "passed": true
+        },
+        {
+          "description": "nonarray-kind completes without a timeout or signal",
+          "passed": true
+        },
+        {
+          "description": "nonarray-kind preserves the expected exit status",
+          "passed": true
+        },
+        {
+          "description": "nonarray-kind exposes the complete actual Selection",
+          "passed": true
+        },
+        {
+          "description": "nonarray-kind observes miss",
+          "passed": true
+        },
+        {
+          "description": "nonarray-kind-uncached completes without a timeout or signal",
+          "passed": true
+        },
+        {
+          "description": "nonarray-kind-uncached preserves the expected exit status",
+          "passed": true
+        },
+        {
+          "description": "nonarray-kind-uncached exposes the complete actual Selection",
+          "passed": true
+        },
+        {
+          "description": "nonarray-kind preserves every Selection field or the exact rejection",
+          "passed": true
+        },
+        {
+          "description": "nonarray-kind preserves Cargo selection stderr",
+          "passed": true
+        },
+        {
+          "description": "nonarray-kind-recovered completes without a timeout or signal",
+          "passed": true
+        },
+        {
+          "description": "nonarray-kind-recovered preserves the expected exit status",
+          "passed": true
+        },
+        {
+          "description": "nonarray-kind-recovered exposes the complete actual Selection",
+          "passed": true
+        },
+        {
+          "description": "nonarray-kind-recovered observes hit",
+          "passed": true
+        },
+        {
+          "description": "nonarray-kind-recovered-uncached completes without a timeout or signal",
+          "passed": true
+        },
+        {
+          "description": "nonarray-kind-recovered-uncached preserves the expected exit status",
+          "passed": true
+        },
+        {
+          "description": "nonarray-kind-recovered-uncached exposes the complete actual Selection",
+          "passed": true
+        },
+        {
+          "description": "nonarray-kind-recovered preserves every Selection field or the exact rejection",
+          "passed": true
+        },
+        {
+          "description": "nonarray-kind-recovered preserves Cargo selection stderr",
+          "passed": true
+        },
+        {
+          "description": "malformed-record controls address the only current selection context",
+          "passed": true
+        },
+        {
+          "description": "test checksum serialization agrees with the actual private record",
+          "passed": true
+        },
+        {
+          "description": "empty-kind completes without a timeout or signal",
+          "passed": true
+        },
+        {
+          "description": "empty-kind preserves the expected exit status",
+          "passed": true
+        },
+        {
+          "description": "empty-kind exposes the complete actual Selection",
+          "passed": true
+        },
+        {
+          "description": "empty-kind observes miss",
+          "passed": true
+        },
+        {
+          "description": "empty-kind-uncached completes without a timeout or signal",
+          "passed": true
+        },
+        {
+          "description": "empty-kind-uncached preserves the expected exit status",
+          "passed": true
+        },
+        {
+          "description": "empty-kind-uncached exposes the complete actual Selection",
+          "passed": true
+        },
+        {
+          "description": "empty-kind preserves every Selection field or the exact rejection",
+          "passed": true
+        },
+        {
+          "description": "empty-kind preserves Cargo selection stderr",
+          "passed": true
+        },
+        {
+          "description": "empty-kind-recovered completes without a timeout or signal",
+          "passed": true
+        },
+        {
+          "description": "empty-kind-recovered preserves the expected exit status",
+          "passed": true
+        },
+        {
+          "description": "empty-kind-recovered exposes the complete actual Selection",
+          "passed": true
+        },
+        {
+          "description": "empty-kind-recovered observes hit",
+          "passed": true
+        },
+        {
+          "description": "empty-kind-recovered-uncached completes without a timeout or signal",
+          "passed": true
+        },
+        {
+          "description": "empty-kind-recovered-uncached preserves the expected exit status",
+          "passed": true
+        },
+        {
+          "description": "empty-kind-recovered-uncached exposes the complete actual Selection",
+          "passed": true
+        },
+        {
+          "description": "empty-kind-recovered preserves every Selection field or the exact rejection",
+          "passed": true
+        },
+        {
+          "description": "empty-kind-recovered preserves Cargo selection stderr",
+          "passed": true
+        },
+        {
+          "description": "malformed-record controls address the only current selection context",
+          "passed": true
+        },
+        {
+          "description": "test checksum serialization agrees with the actual private record",
+          "passed": true
+        },
+        {
+          "description": "nonstring-kind completes without a timeout or signal",
+          "passed": true
+        },
+        {
+          "description": "nonstring-kind preserves the expected exit status",
+          "passed": true
+        },
+        {
+          "description": "nonstring-kind exposes the complete actual Selection",
+          "passed": true
+        },
+        {
+          "description": "nonstring-kind observes miss",
+          "passed": true
+        },
+        {
+          "description": "nonstring-kind-uncached completes without a timeout or signal",
+          "passed": true
+        },
+        {
+          "description": "nonstring-kind-uncached preserves the expected exit status",
+          "passed": true
+        },
+        {
+          "description": "nonstring-kind-uncached exposes the complete actual Selection",
+          "passed": true
+        },
+        {
+          "description": "nonstring-kind preserves every Selection field or the exact rejection",
+          "passed": true
+        },
+        {
+          "description": "nonstring-kind preserves Cargo selection stderr",
+          "passed": true
+        },
+        {
+          "description": "nonstring-kind-recovered completes without a timeout or signal",
+          "passed": true
+        },
+        {
+          "description": "nonstring-kind-recovered preserves the expected exit status",
+          "passed": true
+        },
+        {
+          "description": "nonstring-kind-recovered exposes the complete actual Selection",
+          "passed": true
+        },
+        {
+          "description": "nonstring-kind-recovered observes hit",
+          "passed": true
+        },
+        {
+          "description": "nonstring-kind-recovered-uncached completes without a timeout or signal",
+          "passed": true
+        },
+        {
+          "description": "nonstring-kind-recovered-uncached preserves the expected exit status",
+          "passed": true
+        },
+        {
+          "description": "nonstring-kind-recovered-uncached exposes the complete actual Selection",
+          "passed": true
+        },
+        {
+          "description": "nonstring-kind-recovered preserves every Selection field or the exact rejection",
+          "passed": true
+        },
+        {
+          "description": "nonstring-kind-recovered preserves Cargo selection stderr",
+          "passed": true
+        },
+        {
+          "description": "malformed-record controls address the only current selection context",
+          "passed": true
+        },
+        {
+          "description": "test checksum serialization agrees with the actual private record",
+          "passed": true
+        },
+        {
+          "description": "inconsistent-target-source completes without a timeout or signal",
+          "passed": true
+        },
+        {
+          "description": "inconsistent-target-source preserves the expected exit status",
+          "passed": true
+        },
+        {
+          "description": "inconsistent-target-source exposes the complete actual Selection",
+          "passed": true
+        },
+        {
+          "description": "inconsistent-target-source observes miss",
+          "passed": true
+        },
+        {
+          "description": "inconsistent-target-source-uncached completes without a timeout or signal",
+          "passed": true
+        },
+        {
+          "description": "inconsistent-target-source-uncached preserves the expected exit status",
+          "passed": true
+        },
+        {
+          "description": "inconsistent-target-source-uncached exposes the complete actual Selection",
+          "passed": true
+        },
+        {
+          "description": "inconsistent-target-source preserves every Selection field or the exact rejection",
+          "passed": true
+        },
+        {
+          "description": "inconsistent-target-source preserves Cargo selection stderr",
+          "passed": true
+        },
+        {
+          "description": "inconsistent-target-source-recovered completes without a timeout or signal",
+          "passed": true
+        },
+        {
+          "description": "inconsistent-target-source-recovered preserves the expected exit status",
+          "passed": true
+        },
+        {
+          "description": "inconsistent-target-source-recovered exposes the complete actual Selection",
+          "passed": true
+        },
+        {
+          "description": "inconsistent-target-source-recovered observes hit",
+          "passed": true
+        },
+        {
+          "description": "inconsistent-target-source-recovered-uncached completes without a timeout or signal",
+          "passed": true
+        },
+        {
+          "description": "inconsistent-target-source-recovered-uncached preserves the expected exit status",
+          "passed": true
+        },
+        {
+          "description": "inconsistent-target-source-recovered-uncached exposes the complete actual Selection",
+          "passed": true
+        },
+        {
+          "description": "inconsistent-target-source-recovered preserves every Selection field or the exact rejection",
+          "passed": true
+        },
+        {
+          "description": "inconsistent-target-source-recovered preserves Cargo selection stderr",
+          "passed": true
+        },
+        {
+          "description": "malformed-record controls address the only current selection context",
+          "passed": true
+        },
+        {
+          "description": "test checksum serialization agrees with the actual private record",
+          "passed": true
+        },
+        {
+          "description": "target-absent-from-package completes without a timeout or signal",
+          "passed": true
+        },
+        {
+          "description": "target-absent-from-package preserves the expected exit status",
+          "passed": true
+        },
+        {
+          "description": "target-absent-from-package exposes the complete actual Selection",
+          "passed": true
+        },
+        {
+          "description": "target-absent-from-package observes miss",
+          "passed": true
+        },
+        {
+          "description": "target-absent-from-package-uncached completes without a timeout or signal",
+          "passed": true
+        },
+        {
+          "description": "target-absent-from-package-uncached preserves the expected exit status",
+          "passed": true
+        },
+        {
+          "description": "target-absent-from-package-uncached exposes the complete actual Selection",
+          "passed": true
+        },
+        {
+          "description": "target-absent-from-package preserves every Selection field or the exact rejection",
+          "passed": true
+        },
+        {
+          "description": "target-absent-from-package preserves Cargo selection stderr",
+          "passed": true
+        },
+        {
+          "description": "target-absent-from-package-recovered completes without a timeout or signal",
+          "passed": true
+        },
+        {
+          "description": "target-absent-from-package-recovered preserves the expected exit status",
+          "passed": true
+        },
+        {
+          "description": "target-absent-from-package-recovered exposes the complete actual Selection",
+          "passed": true
+        },
+        {
+          "description": "target-absent-from-package-recovered observes hit",
+          "passed": true
+        },
+        {
+          "description": "target-absent-from-package-recovered-uncached completes without a timeout or signal",
+          "passed": true
+        },
+        {
+          "description": "target-absent-from-package-recovered-uncached preserves the expected exit status",
+          "passed": true
+        },
+        {
+          "description": "target-absent-from-package-recovered-uncached exposes the complete actual Selection",
+          "passed": true
+        },
+        {
+          "description": "target-absent-from-package-recovered preserves every Selection field or the exact rejection",
+          "passed": true
+        },
+        {
+          "description": "target-absent-from-package-recovered preserves Cargo selection stderr",
+          "passed": true
+        },
+        {
+          "description": "malformed-record controls address the only current selection context",
+          "passed": true
+        },
+        {
+          "description": "test checksum serialization agrees with the actual private record",
+          "passed": true
+        },
+        {
+          "description": "missing-target-bindings completes without a timeout or signal",
+          "passed": true
+        },
+        {
+          "description": "missing-target-bindings preserves the expected exit status",
+          "passed": true
+        },
+        {
+          "description": "missing-target-bindings exposes the complete actual Selection",
+          "passed": true
+        },
+        {
+          "description": "missing-target-bindings observes miss",
+          "passed": true
+        },
+        {
+          "description": "missing-target-bindings-uncached completes without a timeout or signal",
+          "passed": true
+        },
+        {
+          "description": "missing-target-bindings-uncached preserves the expected exit status",
+          "passed": true
+        },
+        {
+          "description": "missing-target-bindings-uncached exposes the complete actual Selection",
+          "passed": true
+        },
+        {
+          "description": "missing-target-bindings preserves every Selection field or the exact rejection",
+          "passed": true
+        },
+        {
+          "description": "missing-target-bindings preserves Cargo selection stderr",
+          "passed": true
+        },
+        {
+          "description": "missing-target-bindings-recovered completes without a timeout or signal",
+          "passed": true
+        },
+        {
+          "description": "missing-target-bindings-recovered preserves the expected exit status",
+          "passed": true
+        },
+        {
+          "description": "missing-target-bindings-recovered exposes the complete actual Selection",
+          "passed": true
+        },
+        {
+          "description": "missing-target-bindings-recovered observes hit",
+          "passed": true
+        },
+        {
+          "description": "missing-target-bindings-recovered-uncached completes without a timeout or signal",
+          "passed": true
+        },
+        {
+          "description": "missing-target-bindings-recovered-uncached preserves the expected exit status",
+          "passed": true
+        },
+        {
+          "description": "missing-target-bindings-recovered-uncached exposes the complete actual Selection",
+          "passed": true
+        },
+        {
+          "description": "missing-target-bindings-recovered preserves every Selection field or the exact rejection",
+          "passed": true
+        },
+        {
+          "description": "missing-target-bindings-recovered preserves Cargo selection stderr",
+          "passed": true
+        },
+        {
+          "description": "malformed-record controls address the only current selection context",
+          "passed": true
+        },
+        {
+          "description": "test checksum serialization agrees with the actual private record",
+          "passed": true
+        },
+        {
+          "description": "malformed-metadata-provenance completes without a timeout or signal",
+          "passed": true
+        },
+        {
+          "description": "malformed-metadata-provenance preserves the expected exit status",
+          "passed": true
+        },
+        {
+          "description": "malformed-metadata-provenance exposes the complete actual Selection",
+          "passed": true
+        },
+        {
+          "description": "malformed-metadata-provenance observes miss",
+          "passed": true
+        },
+        {
+          "description": "malformed-metadata-provenance-uncached completes without a timeout or signal",
+          "passed": true
+        },
+        {
+          "description": "malformed-metadata-provenance-uncached preserves the expected exit status",
+          "passed": true
+        },
+        {
+          "description": "malformed-metadata-provenance-uncached exposes the complete actual Selection",
+          "passed": true
+        },
+        {
+          "description": "malformed-metadata-provenance preserves every Selection field or the exact rejection",
+          "passed": true
+        },
+        {
+          "description": "malformed-metadata-provenance preserves Cargo selection stderr",
+          "passed": true
+        },
+        {
+          "description": "malformed-metadata-provenance-recovered completes without a timeout or signal",
+          "passed": true
+        },
+        {
+          "description": "malformed-metadata-provenance-recovered preserves the expected exit status",
+          "passed": true
+        },
+        {
+          "description": "malformed-metadata-provenance-recovered exposes the complete actual Selection",
+          "passed": true
+        },
+        {
+          "description": "malformed-metadata-provenance-recovered observes hit",
+          "passed": true
+        },
+        {
+          "description": "malformed-metadata-provenance-recovered-uncached completes without a timeout or signal",
+          "passed": true
+        },
+        {
+          "description": "malformed-metadata-provenance-recovered-uncached preserves the expected exit status",
+          "passed": true
+        },
+        {
+          "description": "malformed-metadata-provenance-recovered-uncached exposes the complete actual Selection",
+          "passed": true
+        },
+        {
+          "description": "malformed-metadata-provenance-recovered preserves every Selection field or the exact rejection",
+          "passed": true
+        },
+        {
+          "description": "malformed-metadata-provenance-recovered preserves Cargo selection stderr",
+          "passed": true
+        },
+        {
+          "description": "explicit-package-check-seed completes without a timeout or signal",
+          "passed": true
+        },
+        {
+          "description": "explicit-package-check-seed preserves the expected exit status",
+          "passed": true
+        },
+        {
+          "description": "explicit-package-check-seed exposes the complete actual Selection",
+          "passed": true
+        },
+        {
+          "description": "explicit-package-check-seed-uncached completes without a timeout or signal",
+          "passed": true
+        },
+        {
+          "description": "explicit-package-check-seed-uncached preserves the expected exit status",
+          "passed": true
+        },
+        {
+          "description": "explicit-package-check-seed-uncached exposes the complete actual Selection",
+          "passed": true
+        },
+        {
+          "description": "explicit-package-check-seed preserves every Selection field or the exact rejection",
+          "passed": true
+        },
+        {
+          "description": "explicit-package-check-seed preserves Cargo selection stderr",
+          "passed": true
+        },
+        {
+          "description": "explicit-package-check-hit completes without a timeout or signal",
+          "passed": true
+        },
+        {
+          "description": "explicit-package-check-hit preserves the expected exit status",
+          "passed": true
+        },
+        {
+          "description": "explicit-package-check-hit exposes the complete actual Selection",
+          "passed": true
+        },
+        {
+          "description": "explicit-package-check-hit observes hit",
+          "passed": true
+        },
+        {
+          "description": "explicit-package-check-hit-uncached completes without a timeout or signal",
+          "passed": true
+        },
+        {
+          "description": "explicit-package-check-hit-uncached preserves the expected exit status",
+          "passed": true
+        },
+        {
+          "description": "explicit-package-check-hit-uncached exposes the complete actual Selection",
+          "passed": true
+        },
+        {
+          "description": "explicit-package-check-hit preserves every Selection field or the exact rejection",
+          "passed": true
+        },
+        {
+          "description": "explicit-package-check-hit preserves Cargo selection stderr",
+          "passed": true
+        },
+        {
+          "description": "default-build-seed completes without a timeout or signal",
+          "passed": true
+        },
+        {
+          "description": "default-build-seed preserves the expected exit status",
+          "passed": true
+        },
+        {
+          "description": "default-build-seed exposes the complete actual Selection",
+          "passed": true
+        },
+        {
+          "description": "default-build-seed-uncached completes without a timeout or signal",
+          "passed": true
+        },
+        {
+          "description": "default-build-seed-uncached preserves the expected exit status",
+          "passed": true
+        },
+        {
+          "description": "default-build-seed-uncached exposes the complete actual Selection",
+          "passed": true
+        },
+        {
+          "description": "default-build-seed preserves every Selection field or the exact rejection",
+          "passed": true
+        },
+        {
+          "description": "default-build-seed preserves Cargo selection stderr",
+          "passed": true
+        },
+        {
+          "description": "default-build-hit completes without a timeout or signal",
+          "passed": true
+        },
+        {
+          "description": "default-build-hit preserves the expected exit status",
+          "passed": true
+        },
+        {
+          "description": "default-build-hit exposes the complete actual Selection",
+          "passed": true
+        },
+        {
+          "description": "default-build-hit observes hit",
+          "passed": true
+        },
+        {
+          "description": "default-build-hit-uncached completes without a timeout or signal",
+          "passed": true
+        },
+        {
+          "description": "default-build-hit-uncached preserves the expected exit status",
+          "passed": true
+        },
+        {
+          "description": "default-build-hit-uncached exposes the complete actual Selection",
+          "passed": true
+        },
+        {
+          "description": "default-build-hit preserves every Selection field or the exact rejection",
+          "passed": true
+        },
+        {
+          "description": "default-build-hit preserves Cargo selection stderr",
+          "passed": true
+        },
+        {
+          "description": "changed-profile-and-output-seed completes without a timeout or signal",
+          "passed": true
+        },
+        {
+          "description": "changed-profile-and-output-seed preserves the expected exit status",
+          "passed": true
+        },
+        {
+          "description": "changed-profile-and-output-seed exposes the complete actual Selection",
+          "passed": true
+        },
+        {
+          "description": "changed-profile-and-output-seed-uncached completes without a timeout or signal",
+          "passed": true
+        },
+        {
+          "description": "changed-profile-and-output-seed-uncached preserves the expected exit status",
+          "passed": true
+        },
+        {
+          "description": "changed-profile-and-output-seed-uncached exposes the complete actual Selection",
+          "passed": true
+        },
+        {
+          "description": "changed-profile-and-output-seed preserves every Selection field or the exact rejection",
+          "passed": true
+        },
+        {
+          "description": "changed-profile-and-output-seed preserves Cargo selection stderr",
+          "passed": true
+        },
+        {
+          "description": "changed-profile-and-output-hit completes without a timeout or signal",
+          "passed": true
+        },
+        {
+          "description": "changed-profile-and-output-hit preserves the expected exit status",
+          "passed": true
+        },
+        {
+          "description": "changed-profile-and-output-hit exposes the complete actual Selection",
+          "passed": true
+        },
+        {
+          "description": "changed-profile-and-output-hit observes hit",
+          "passed": true
+        },
+        {
+          "description": "changed-profile-and-output-hit-uncached completes without a timeout or signal",
+          "passed": true
+        },
+        {
+          "description": "changed-profile-and-output-hit-uncached preserves the expected exit status",
+          "passed": true
+        },
+        {
+          "description": "changed-profile-and-output-hit-uncached exposes the complete actual Selection",
+          "passed": true
+        },
+        {
+          "description": "changed-profile-and-output-hit preserves every Selection field or the exact rejection",
+          "passed": true
+        },
+        {
+          "description": "changed-profile-and-output-hit preserves Cargo selection stderr",
+          "passed": true
+        },
+        {
+          "description": "different-selected-target-seed completes without a timeout or signal",
+          "passed": true
+        },
+        {
+          "description": "different-selected-target-seed preserves the expected exit status",
+          "passed": true
+        },
+        {
+          "description": "different-selected-target-seed exposes the complete actual Selection",
+          "passed": true
+        },
+        {
+          "description": "different-selected-target-seed-uncached completes without a timeout or signal",
+          "passed": true
+        },
+        {
+          "description": "different-selected-target-seed-uncached preserves the expected exit status",
+          "passed": true
+        },
+        {
+          "description": "different-selected-target-seed-uncached exposes the complete actual Selection",
+          "passed": true
+        },
+        {
+          "description": "different-selected-target-seed preserves every Selection field or the exact rejection",
+          "passed": true
+        },
+        {
+          "description": "different-selected-target-seed preserves Cargo selection stderr",
+          "passed": true
+        },
+        {
+          "description": "different-selected-target-hit completes without a timeout or signal",
+          "passed": true
+        },
+        {
+          "description": "different-selected-target-hit preserves the expected exit status",
+          "passed": true
+        },
+        {
+          "description": "different-selected-target-hit exposes the complete actual Selection",
+          "passed": true
+        },
+        {
+          "description": "different-selected-target-hit observes hit",
+          "passed": true
+        },
+        {
+          "description": "different-selected-target-hit-uncached completes without a timeout or signal",
+          "passed": true
+        },
+        {
+          "description": "different-selected-target-hit-uncached preserves the expected exit status",
+          "passed": true
+        },
+        {
+          "description": "different-selected-target-hit-uncached exposes the complete actual Selection",
+          "passed": true
+        },
+        {
+          "description": "different-selected-target-hit preserves every Selection field or the exact rejection",
+          "passed": true
+        },
+        {
+          "description": "different-selected-target-hit preserves Cargo selection stderr",
+          "passed": true
+        },
+        {
+          "description": "wrong-package-rejected completes without a timeout or signal",
+          "passed": true
+        },
+        {
+          "description": "wrong-package-rejected preserves the expected exit status",
+          "passed": true
+        },
+        {
+          "description": "wrong-package-rejected observes miss",
+          "passed": true
+        },
+        {
+          "description": "wrong-package-rejected-uncached completes without a timeout or signal",
+          "passed": true
+        },
+        {
+          "description": "wrong-package-rejected-uncached preserves the expected exit status",
+          "passed": true
+        },
+        {
+          "description": "wrong-package-rejected preserves every Selection field or the exact rejection",
+          "passed": true
+        },
+        {
+          "description": "wrong-package-rejected preserves Cargo selection stderr",
+          "passed": true
+        }
+      ],
+      "records": [
+        {
+          "label": "setup",
+          "kind": "setup",
+          "exit": 0
+        },
+        {
+          "label": "initial-seed",
+          "kind": "helper",
+          "exit": 0,
+          "diagnostics": [
+            {
+              "selection_cache": "miss"
+            }
+          ]
+        },
+        {
+          "label": "initial-seed-uncached",
+          "kind": "helper",
+          "exit": 0,
+          "diagnostics": [
+            {
+              "selection_cache": "ineligible"
+            }
+          ]
+        },
+        {
+          "label": "initial-hit",
+          "kind": "helper",
+          "exit": 0,
+          "diagnostics": [
+            {
+              "selection_cache": "hit"
+            }
+          ]
+        },
+        {
+          "label": "initial-hit-uncached",
+          "kind": "helper",
+          "exit": 0,
+          "diagnostics": [
+            {
+              "selection_cache": "ineligible"
+            }
+          ]
+        },
+        {
+          "label": "old-selection-schema",
+          "kind": "helper",
+          "exit": 0,
+          "diagnostics": [
+            {
+              "selection_cache": "miss"
+            }
+          ]
+        },
+        {
+          "label": "old-selection-schema-uncached",
+          "kind": "helper",
+          "exit": 0,
+          "diagnostics": [
+            {
+              "selection_cache": "ineligible"
+            }
+          ]
+        },
+        {
+          "label": "old-selection-schema-recovered",
+          "kind": "helper",
+          "exit": 0,
+          "diagnostics": [
+            {
+              "selection_cache": "hit"
+            }
+          ]
+        },
+        {
+          "label": "old-selection-schema-recovered-uncached",
+          "kind": "helper",
+          "exit": 0,
+          "diagnostics": [
+            {
+              "selection_cache": "ineligible"
+            }
+          ]
+        },
+        {
+          "label": "missing-state-digest",
+          "kind": "helper",
+          "exit": 0,
+          "diagnostics": [
+            {
+              "selection_cache": "miss"
+            }
+          ]
+        },
+        {
+          "label": "missing-state-digest-uncached",
+          "kind": "helper",
+          "exit": 0,
+          "diagnostics": [
+            {
+              "selection_cache": "ineligible"
+            }
+          ]
+        },
+        {
+          "label": "missing-state-digest-recovered",
+          "kind": "helper",
+          "exit": 0,
+          "diagnostics": [
+            {
+              "selection_cache": "hit"
+            }
+          ]
+        },
+        {
+          "label": "missing-state-digest-recovered-uncached",
+          "kind": "helper",
+          "exit": 0,
+          "diagnostics": [
+            {
+              "selection_cache": "ineligible"
+            }
+          ]
+        },
+        {
+          "label": "changed-state-digest",
+          "kind": "helper",
+          "exit": 0,
+          "diagnostics": [
+            {
+              "selection_cache": "miss"
+            }
+          ]
+        },
+        {
+          "label": "changed-state-digest-uncached",
+          "kind": "helper",
+          "exit": 0,
+          "diagnostics": [
+            {
+              "selection_cache": "ineligible"
+            }
+          ]
+        },
+        {
+          "label": "changed-state-digest-recovered",
+          "kind": "helper",
+          "exit": 0,
+          "diagnostics": [
+            {
+              "selection_cache": "hit"
+            }
+          ]
+        },
+        {
+          "label": "changed-state-digest-recovered-uncached",
+          "kind": "helper",
+          "exit": 0,
+          "diagnostics": [
+            {
+              "selection_cache": "ineligible"
+            }
+          ]
+        },
+        {
+          "label": "missing-selection",
+          "kind": "helper",
+          "exit": 0,
+          "diagnostics": [
+            {
+              "selection_cache": "miss"
+            }
+          ]
+        },
+        {
+          "label": "missing-selection-uncached",
+          "kind": "helper",
+          "exit": 0,
+          "diagnostics": [
+            {
+              "selection_cache": "ineligible"
+            }
+          ]
+        },
+        {
+          "label": "missing-selection-recovered",
+          "kind": "helper",
+          "exit": 0,
+          "diagnostics": [
+            {
+              "selection_cache": "hit"
+            }
+          ]
+        },
+        {
+          "label": "missing-selection-recovered-uncached",
+          "kind": "helper",
+          "exit": 0,
+          "diagnostics": [
+            {
+              "selection_cache": "ineligible"
+            }
+          ]
+        },
+        {
+          "label": "null-package",
+          "kind": "helper",
+          "exit": 0,
+          "diagnostics": [
+            {
+              "selection_cache": "miss"
+            }
+          ]
+        },
+        {
+          "label": "null-package-uncached",
+          "kind": "helper",
+          "exit": 0,
+          "diagnostics": [
+            {
+              "selection_cache": "ineligible"
+            }
+          ]
+        },
+        {
+          "label": "null-package-recovered",
+          "kind": "helper",
+          "exit": 0,
+          "diagnostics": [
+            {
+              "selection_cache": "hit"
+            }
+          ]
+        },
+        {
+          "label": "null-package-recovered-uncached",
+          "kind": "helper",
+          "exit": 0,
+          "diagnostics": [
+            {
+              "selection_cache": "ineligible"
+            }
+          ]
+        },
+        {
+          "label": "extra-selection-field",
+          "kind": "helper",
+          "exit": 0,
+          "diagnostics": [
+            {
+              "selection_cache": "miss"
+            }
+          ]
+        },
+        {
+          "label": "extra-selection-field-uncached",
+          "kind": "helper",
+          "exit": 0,
+          "diagnostics": [
+            {
+              "selection_cache": "ineligible"
+            }
+          ]
+        },
+        {
+          "label": "extra-selection-field-recovered",
+          "kind": "helper",
+          "exit": 0,
+          "diagnostics": [
+            {
+              "selection_cache": "hit"
+            }
+          ]
+        },
+        {
+          "label": "extra-selection-field-recovered-uncached",
+          "kind": "helper",
+          "exit": 0,
+          "diagnostics": [
+            {
+              "selection_cache": "ineligible"
+            }
+          ]
+        },
+        {
+          "label": "inconsistent-manifest",
+          "kind": "helper",
+          "exit": 0,
+          "diagnostics": [
+            {
+              "selection_cache": "miss"
+            }
+          ]
+        },
+        {
+          "label": "inconsistent-manifest-uncached",
+          "kind": "helper",
+          "exit": 0,
+          "diagnostics": [
+            {
+              "selection_cache": "ineligible"
+            }
+          ]
+        },
+        {
+          "label": "inconsistent-manifest-recovered",
+          "kind": "helper",
+          "exit": 0,
+          "diagnostics": [
+            {
+              "selection_cache": "hit"
+            }
+          ]
+        },
+        {
+          "label": "inconsistent-manifest-recovered-uncached",
+          "kind": "helper",
+          "exit": 0,
+          "diagnostics": [
+            {
+              "selection_cache": "ineligible"
+            }
+          ]
+        },
+        {
+          "label": "inconsistent-name",
+          "kind": "helper",
+          "exit": 0,
+          "diagnostics": [
+            {
+              "selection_cache": "miss"
+            }
+          ]
+        },
+        {
+          "label": "inconsistent-name-uncached",
+          "kind": "helper",
+          "exit": 0,
+          "diagnostics": [
+            {
+              "selection_cache": "ineligible"
+            }
+          ]
+        },
+        {
+          "label": "inconsistent-name-recovered",
+          "kind": "helper",
+          "exit": 0,
+          "diagnostics": [
+            {
+              "selection_cache": "hit"
+            }
+          ]
+        },
+        {
+          "label": "inconsistent-name-recovered-uncached",
+          "kind": "helper",
+          "exit": 0,
+          "diagnostics": [
+            {
+              "selection_cache": "ineligible"
+            }
+          ]
+        },
+        {
+          "label": "nonarray-kind",
+          "kind": "helper",
+          "exit": 0,
+          "diagnostics": [
+            {
+              "selection_cache": "miss"
+            }
+          ]
+        },
+        {
+          "label": "nonarray-kind-uncached",
+          "kind": "helper",
+          "exit": 0,
+          "diagnostics": [
+            {
+              "selection_cache": "ineligible"
+            }
+          ]
+        },
+        {
+          "label": "nonarray-kind-recovered",
+          "kind": "helper",
+          "exit": 0,
+          "diagnostics": [
+            {
+              "selection_cache": "hit"
+            }
+          ]
+        },
+        {
+          "label": "nonarray-kind-recovered-uncached",
+          "kind": "helper",
+          "exit": 0,
+          "diagnostics": [
+            {
+              "selection_cache": "ineligible"
+            }
+          ]
+        },
+        {
+          "label": "empty-kind",
+          "kind": "helper",
+          "exit": 0,
+          "diagnostics": [
+            {
+              "selection_cache": "miss"
+            }
+          ]
+        },
+        {
+          "label": "empty-kind-uncached",
+          "kind": "helper",
+          "exit": 0,
+          "diagnostics": [
+            {
+              "selection_cache": "ineligible"
+            }
+          ]
+        },
+        {
+          "label": "empty-kind-recovered",
+          "kind": "helper",
+          "exit": 0,
+          "diagnostics": [
+            {
+              "selection_cache": "hit"
+            }
+          ]
+        },
+        {
+          "label": "empty-kind-recovered-uncached",
+          "kind": "helper",
+          "exit": 0,
+          "diagnostics": [
+            {
+              "selection_cache": "ineligible"
+            }
+          ]
+        },
+        {
+          "label": "nonstring-kind",
+          "kind": "helper",
+          "exit": 0,
+          "diagnostics": [
+            {
+              "selection_cache": "miss"
+            }
+          ]
+        },
+        {
+          "label": "nonstring-kind-uncached",
+          "kind": "helper",
+          "exit": 0,
+          "diagnostics": [
+            {
+              "selection_cache": "ineligible"
+            }
+          ]
+        },
+        {
+          "label": "nonstring-kind-recovered",
+          "kind": "helper",
+          "exit": 0,
+          "diagnostics": [
+            {
+              "selection_cache": "hit"
+            }
+          ]
+        },
+        {
+          "label": "nonstring-kind-recovered-uncached",
+          "kind": "helper",
+          "exit": 0,
+          "diagnostics": [
+            {
+              "selection_cache": "ineligible"
+            }
+          ]
+        },
+        {
+          "label": "inconsistent-target-source",
+          "kind": "helper",
+          "exit": 0,
+          "diagnostics": [
+            {
+              "selection_cache": "miss"
+            }
+          ]
+        },
+        {
+          "label": "inconsistent-target-source-uncached",
+          "kind": "helper",
+          "exit": 0,
+          "diagnostics": [
+            {
+              "selection_cache": "ineligible"
+            }
+          ]
+        },
+        {
+          "label": "inconsistent-target-source-recovered",
+          "kind": "helper",
+          "exit": 0,
+          "diagnostics": [
+            {
+              "selection_cache": "hit"
+            }
+          ]
+        },
+        {
+          "label": "inconsistent-target-source-recovered-uncached",
+          "kind": "helper",
+          "exit": 0,
+          "diagnostics": [
+            {
+              "selection_cache": "ineligible"
+            }
+          ]
+        },
+        {
+          "label": "target-absent-from-package",
+          "kind": "helper",
+          "exit": 0,
+          "diagnostics": [
+            {
+              "selection_cache": "miss"
+            }
+          ]
+        },
+        {
+          "label": "target-absent-from-package-uncached",
+          "kind": "helper",
+          "exit": 0,
+          "diagnostics": [
+            {
+              "selection_cache": "ineligible"
+            }
+          ]
+        },
+        {
+          "label": "target-absent-from-package-recovered",
+          "kind": "helper",
+          "exit": 0,
+          "diagnostics": [
+            {
+              "selection_cache": "hit"
+            }
+          ]
+        },
+        {
+          "label": "target-absent-from-package-recovered-uncached",
+          "kind": "helper",
+          "exit": 0,
+          "diagnostics": [
+            {
+              "selection_cache": "ineligible"
+            }
+          ]
+        },
+        {
+          "label": "missing-target-bindings",
+          "kind": "helper",
+          "exit": 0,
+          "diagnostics": [
+            {
+              "selection_cache": "miss"
+            }
+          ]
+        },
+        {
+          "label": "missing-target-bindings-uncached",
+          "kind": "helper",
+          "exit": 0,
+          "diagnostics": [
+            {
+              "selection_cache": "ineligible"
+            }
+          ]
+        },
+        {
+          "label": "missing-target-bindings-recovered",
+          "kind": "helper",
+          "exit": 0,
+          "diagnostics": [
+            {
+              "selection_cache": "hit"
+            }
+          ]
+        },
+        {
+          "label": "missing-target-bindings-recovered-uncached",
+          "kind": "helper",
+          "exit": 0,
+          "diagnostics": [
+            {
+              "selection_cache": "ineligible"
+            }
+          ]
+        },
+        {
+          "label": "malformed-metadata-provenance",
+          "kind": "helper",
+          "exit": 0,
+          "diagnostics": [
+            {
+              "selection_cache": "miss"
+            }
+          ]
+        },
+        {
+          "label": "malformed-metadata-provenance-uncached",
+          "kind": "helper",
+          "exit": 0,
+          "diagnostics": [
+            {
+              "selection_cache": "ineligible"
+            }
+          ]
+        },
+        {
+          "label": "malformed-metadata-provenance-recovered",
+          "kind": "helper",
+          "exit": 0,
+          "diagnostics": [
+            {
+              "selection_cache": "hit"
+            }
+          ]
+        },
+        {
+          "label": "malformed-metadata-provenance-recovered-uncached",
+          "kind": "helper",
+          "exit": 0,
+          "diagnostics": [
+            {
+              "selection_cache": "ineligible"
+            }
+          ]
+        },
+        {
+          "label": "explicit-package-check-seed",
+          "kind": "helper",
+          "exit": 0,
+          "diagnostics": [
+            {
+              "selection_cache": "miss"
+            }
+          ]
+        },
+        {
+          "label": "explicit-package-check-seed-uncached",
+          "kind": "helper",
+          "exit": 0,
+          "diagnostics": [
+            {
+              "selection_cache": "ineligible"
+            }
+          ]
+        },
+        {
+          "label": "explicit-package-check-hit",
+          "kind": "helper",
+          "exit": 0,
+          "diagnostics": [
+            {
+              "selection_cache": "hit"
+            }
+          ]
+        },
+        {
+          "label": "explicit-package-check-hit-uncached",
+          "kind": "helper",
+          "exit": 0,
+          "diagnostics": [
+            {
+              "selection_cache": "ineligible"
+            }
+          ]
+        },
+        {
+          "label": "default-build-seed",
+          "kind": "helper",
+          "exit": 0,
+          "diagnostics": [
+            {
+              "selection_cache": "miss"
+            }
+          ]
+        },
+        {
+          "label": "default-build-seed-uncached",
+          "kind": "helper",
+          "exit": 0,
+          "diagnostics": [
+            {
+              "selection_cache": "ineligible"
+            }
+          ]
+        },
+        {
+          "label": "default-build-hit",
+          "kind": "helper",
+          "exit": 0,
+          "diagnostics": [
+            {
+              "selection_cache": "hit"
+            }
+          ]
+        },
+        {
+          "label": "default-build-hit-uncached",
+          "kind": "helper",
+          "exit": 0,
+          "diagnostics": [
+            {
+              "selection_cache": "ineligible"
+            }
+          ]
+        },
+        {
+          "label": "changed-profile-and-output-seed",
+          "kind": "helper",
+          "exit": 0,
+          "diagnostics": [
+            {
+              "selection_cache": "miss"
+            }
+          ]
+        },
+        {
+          "label": "changed-profile-and-output-seed-uncached",
+          "kind": "helper",
+          "exit": 0,
+          "diagnostics": [
+            {
+              "selection_cache": "ineligible"
+            }
+          ]
+        },
+        {
+          "label": "changed-profile-and-output-hit",
+          "kind": "helper",
+          "exit": 0,
+          "diagnostics": [
+            {
+              "selection_cache": "hit"
+            }
+          ]
+        },
+        {
+          "label": "changed-profile-and-output-hit-uncached",
+          "kind": "helper",
+          "exit": 0,
+          "diagnostics": [
+            {
+              "selection_cache": "ineligible"
+            }
+          ]
+        },
+        {
+          "label": "different-selected-target-seed",
+          "kind": "helper",
+          "exit": 0,
+          "diagnostics": [
+            {
+              "selection_cache": "miss"
+            }
+          ]
+        },
+        {
+          "label": "different-selected-target-seed-uncached",
+          "kind": "helper",
+          "exit": 0,
+          "diagnostics": [
+            {
+              "selection_cache": "ineligible"
+            }
+          ]
+        },
+        {
+          "label": "different-selected-target-hit",
+          "kind": "helper",
+          "exit": 0,
+          "diagnostics": [
+            {
+              "selection_cache": "hit"
+            }
+          ]
+        },
+        {
+          "label": "different-selected-target-hit-uncached",
+          "kind": "helper",
+          "exit": 0,
+          "diagnostics": [
+            {
+              "selection_cache": "ineligible"
+            }
+          ]
+        },
+        {
+          "label": "wrong-package-rejected",
+          "kind": "helper",
+          "exit": 2,
+          "diagnostics": [
+            {
+              "selection_cache": "miss"
+            }
+          ]
+        },
+        {
+          "label": "wrong-package-rejected-uncached",
+          "kind": "helper",
+          "exit": 2,
+          "diagnostics": [
+            {
+              "selection_cache": "ineligible"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "structural_import_guard": {
+    "status": "passed",
+    "tampered_inventory_controls_rejected": 6,
+    "scope": "structural and provenance constraints, not semantic exclusivity/minimality proof"
+  },
+  "complete_replacement_release": {
+    "status": "refused",
+    "expected_exit": 1,
+    "full_rust_coverage": false,
+    "release_status": "unavailable"
+  },
+  "historical_evidence_checks": {
+    "warm_entry_controls": 29,
+    "warm_native_controls": 43,
+    "entry_diagnostic_controls": 11,
+    "native_startup_controls": 8,
+    "assessment_controls": 14,
+    "applicability_controls": 16,
+    "warm_entry_archive_replay": "passed; historical failures and misses preserved",
+    "native_nochange_archive_replay": "passed; original initial failure retained",
+    "current_performance_qualified": false
+  },
+  "limitations": [
+    {
+      "kind": "native_daemon",
+      "status": "not_executed_locally",
+      "reason": "Unix socket bind returned EPERM",
+      "hosted_requirement": "tools/test-exclusive-entry.py --require-daemon requires real retained body edit, rejection, reversion and caller environment observations"
+    },
+    {
+      "kind": "optimized_native_constructor",
+      "source": "ac5db2306d9d695e51f74dc16f92ed6169b2ff68",
+      "status": "failed",
+      "phase": "native-library-build",
+      "reason": "rustc terminated by SIGKILL (signal 9); cause not established from compiler diagnostics",
+      "release_or_performance_admission": false
+    },
+    {
+      "kind": "full_rust_coverage",
+      "status": "incomplete",
+      "detail": "Only current native integration and declared partial Unicode imports exist; a selective Rust complement is not complete."
+    },
+    {
+      "kind": "shared_service_campaigns",
+      "status": "not_rerun_in_this_local_cleanup",
+      "detail": "Real symbol/ABI, provider metadata, owned imported emission and failure-preservation controls remain automatic in Compiler set."
+    }
+  ],
+  "independent_review": {
+    "source": "cd775d996dde91c0c2f98c38fcc72e2ede2ffebf",
+    "entry_sha256": "e17d6411c1c7c0c48ad5991fd1d1b0ae253977106ff36028309d2bd39754820d",
+    "observations": "Corrected original environment reproducer; nested Cargo default/no-default feature graph with implicit local library; exact helper identity and forbidden-mode refusal; no ambient compiler spies; nonempty query input refused."
+  }
+}

@@ -1,0 +1,119 @@
+{
+  "schema": "lustr-public-library-failed-attempt-v1",
+  "observed_date": "2026-11-20",
+  "source": {
+    "head": "08faf0d47ee1240ee9c3894366c3081afd354a92",
+    "tree": "f0e795a09cde35a9213a934785fcb7658db4cf54",
+    "native_tree": "290af451111b2b5b167fdcd22f813157af922176",
+    "merge_checkout": "15791847a4de25fdda125498232a0e380a522d11",
+    "merge_tree_equals_head_tree": true
+  },
+  "compiler_set": {
+    "run_id": 44709646261,
+    "url": "https://github.com/glopyglerky/lustr/actions/runs/44709646261",
+    "conclusion": "failure",
+    "successful_jobs": 7,
+    "failed_jobs": 3,
+    "provenance_guard_jobs": [
+      136197790412,
+      136197789888
+    ],
+    "metadata_construction_job": 136197790522
+  },
+  "broad_ci": {
+    "run_id": 44709646182,
+    "url": "https://github.com/glopyglerky/lustr/actions/runs/44709646182",
+    "conclusion": "failure",
+    "linux_job": 136197789835,
+    "macos_job": 136197790262,
+    "runner_source_receipt_passed": true
+  },
+  "failures": [
+    {
+      "kind": "provenance-mutation-control",
+      "message": "forged import provenance was admitted",
+      "cause": "The unchanged positional mutation targeted research_components[2]. Encoder and SDK moved to selective_components, so that position now identified the research qualifier. Its added native_caller_committed=false field was ignored.",
+      "scope": "The actual encoder and SDK native_caller_committed=true checks remained in the guard. The failure exposes obsolete fixture targeting and acceptance of undeclared contradictory provenance, not loss of the encoder check."
+    },
+    {
+      "kind": "native-construction",
+      "error": "E0609",
+      "location": "compiler/native/src/driver/compile.rs:2189",
+      "cause": "Common library admission referenced UnitInfo.build_script, which is declared only under exclusive-native and is unavailable in the compiled non-exclusive-native configuration.",
+      "observed_in": [
+        "metadata research construction",
+        "broad Linux native construction",
+        "broad macOS native construction"
+      ]
+    }
+  ],
+  "executed_and_unexecuted": {
+    "existing_metadata_evaluator_controls_passed": 11,
+    "new_public_evaluator_controls_executed": 0,
+    "public_package_construction_completed": false,
+    "new_public_cargo_campaign_executed": false,
+    "one_shot_metadata_runtime_campaign_executed": false,
+    "retained_metadata_runtime_campaign_executed": false,
+    "new_public_runtime_assertions": 0,
+    "secondary_missing_tool_failures": "Later steps without constructed prerequisites do not establish additional independent candidate compilation or semantic outcomes."
+  },
+  "original_artifacts": [
+    {
+      "run_id": 44709646261,
+      "id": 14617415378,
+      "bytes": 942760,
+      "sha256": "a7234c0776a277b9af5f20c91cbfcea2a2aa3670320248307a1495913bd814d5"
+    },
+    {
+      "run_id": 44709646261,
+      "id": 14617285643,
+      "bytes": 457,
+      "sha256": "9073377ac9b605018b98d039fd851fcf327f8cdc44f70e6d92f12ec90333d86f"
+    },
+    {
+      "run_id": 44709646261,
+      "id": 14617095630,
+      "bytes": 197,
+      "sha256": "e92cd3ff676b1f05543bacf502e41376a38df5e2d5e836080c618b68b8758611"
+    },
+    {
+      "run_id": 44709646261,
+      "id": 14616916170,
+      "bytes": 3662,
+      "sha256": "f253994732ace3b9003ffcdc53c21b746953a7f125b30540fc835d528a0c7723"
+    },
+    {
+      "run_id": 44709646261,
+      "id": 14616666737,
+      "bytes": 6338,
+      "sha256": "e5f4315ddf4d8de4c582c2a2eaffa9ea89463e2516dbe38ae2aaf47407eb3cc6"
+    },
+    {
+      "run_id": 44709646182,
+      "id": 14616333191,
+      "bytes": 1529710,
+      "sha256": "f17037280caa9d6378ec97f208371ceafe2bf258f3316e7d83568e0f2f1f7a3e"
+    },
+    {
+      "run_id": 44709646182,
+      "id": 14616287906,
+      "bytes": 452,
+      "sha256": "f7fcffe8e0001eb4813ee0785417fecc001d2309d5eee7a215f2d0cc7ecfab64"
+    },
+    {
+      "run_id": 44709646182,
+      "id": 14615989384,
+      "bytes": 538728,
+      "sha256": "a49b6bf2d4d16d9b85ec672b1b16f86587df5c1ba74746fba6d85a74ee40f22a"
+    }
+  ],
+  "all_eight_downloaded_upload_digests_verified": true,
+  "correction_status": "Source corrections and identity-based control repairs are authored separately and require their own hosted execution. This failed attempt remains failed.",
+  "qualification": {
+    "public_retained_library": false,
+    "full_rust_coverage": false,
+    "performance": false,
+    "release": false,
+    "qualifies_later_source": false
+  }
+}

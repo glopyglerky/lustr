@@ -1,0 +1,199 @@
+{
+  "schema": "lustr-retained-metadata-first-failure-v1",
+  "source_head": "cdec0f7a75cc2fe0d1dadbed689b5ae8e9d9e62e",
+  "actual_ci_checkout": "955a266f17a5732ad455ffc6c550c18ad1833100",
+  "source_and_checkout_tree": "7a923a1653e83e68678c665bfeccd1252fb0dbe0",
+  "native_tree": "297bbc6f4cc73149e3c4f2cfacb421235eef84c7",
+  "construction_compiler_commit": "5b7b37aefcb5b2fba3c2392bc9065b9e4602d494",
+  "jobs": [
+    {
+      "id": 136122408473,
+      "name": "Exclusive native entry and shared-service research",
+      "run": 44686636539,
+      "result": "failure",
+      "first_failed_step": "Build the partial debug native compiler without a packaged Rust compiler",
+      "errors": [
+        "E0609: FnDef has no span, compile.rs:4736",
+        "E0609: FnDef has no span, native_library.rs:138"
+      ],
+      "url": "https://github.com/glopyglerky/lustr/actions/runs/44686636539/job/136122408473"
+    },
+    {
+      "id": 136122408498,
+      "name": "Native metadata join and original Rust consumers",
+      "run": 44686636539,
+      "result": "failure",
+      "first_failed_step": "Build the separate native metadata research caller",
+      "errors": [
+        "E0609: FnDef has no span, compile.rs:4736",
+        "E0609: FnDef has no span, native_library.rs:138",
+        "E0277: publication io::Error cannot convert to String, retained.rs:220"
+      ],
+      "url": "https://github.com/glopyglerky/lustr/actions/runs/44686636539/job/136122408498"
+    },
+    {
+      "id": 136122407185,
+      "name": "linux-x86_64",
+      "run": 44686636436,
+      "result": "failure",
+      "first_failed_step": "Qualify portable process, IPC, and SDK boundaries",
+      "errors": [
+        "E0609: FnDef has no span, compile.rs:4736",
+        "E0609: FnDef has no span, native_library.rs:138"
+      ],
+      "url": "https://github.com/glopyglerky/lustr/actions/runs/44686636436/job/136122407185"
+    },
+    {
+      "id": 136122407550,
+      "name": "macos-arm64",
+      "run": 44686636436,
+      "result": "failure",
+      "first_failed_step": "Qualify portable process, IPC, and SDK boundaries",
+      "errors": [
+        "E0609: FnDef has no span, compile.rs:4736",
+        "E0609: FnDef has no span, native_library.rs:138"
+      ],
+      "url": "https://github.com/glopyglerky/lustr/actions/runs/44686636436/job/136122407550"
+    }
+  ],
+  "compiler_set_jobs": {
+    "passed": 8,
+    "failed": 2,
+    "total": 10
+  },
+  "ci_jobs": {
+    "passed": 1,
+    "failed": 2,
+    "total": 3
+  },
+  "native_metadata_campaign": {
+    "candidate_build": "failed",
+    "original_nonretained_campaign": "skipped",
+    "retained_campaign": "skipped",
+    "candidate_runtime_assertions": 0,
+    "candidate_traces": 0,
+    "evaluator_controls_passed": 11,
+    "evaluator_controls_scope": "trace/diagnostic unit controls only; not candidate compilation"
+  },
+  "source_capture": {
+    "files": 13090,
+    "gitlinks": 1,
+    "manifest_sha256": "76b091883deb5b2bce44a28c8c9de110adb106e0643fcd2242fb1e0711e26a35",
+    "bytes": 3667201
+  },
+  "retained_log_and_artifact_identities": [
+    {
+      "path": "job-136122408473.log",
+      "sha256": "fb910a73c4ef7918e2dda4791f82500f64c73473c492c012243049d95e12a178",
+      "bytes": 122882,
+      "kind": "GitHub connector decoded original job log reencoded UTF-8"
+    },
+    {
+      "path": "job-136122408498.log",
+      "sha256": "1dcf6ae10e48b60f4053901528c86f529bcbee5fa2a1e4e34bc02b41a57d0811",
+      "bytes": 74007,
+      "kind": "GitHub connector decoded original job log reencoded UTF-8"
+    },
+    {
+      "path": "job-136122407185.log",
+      "sha256": "0d743d0f905df5317d5b22121ec300c6dfa8dc8e0ec588bf3451a9228b2a7567",
+      "bytes": 81590,
+      "kind": "GitHub connector decoded original job log reencoded UTF-8"
+    },
+    {
+      "path": "job-136122407550.log",
+      "sha256": "83b09efcb19c9b61c32067731c6969913af039c764f63ab861d9d5227c998e47",
+      "bytes": 103578,
+      "kind": "GitHub connector decoded original job log reencoded UTF-8"
+    },
+    {
+      "path": "lustr-cdec-metadata-first-failure.zip",
+      "sha256": "94809376d5be5a0155dc1e9bd2937198f340a4abc494b052d61e420023d859fb",
+      "bytes": 942894,
+      "kind": "original Actions artifact archive",
+      "artifact_id": 14606109220,
+      "members": [
+        {
+          "path": "native-metadata-join/build.log",
+          "bytes": 23789
+        },
+        {
+          "path": "native-metadata-join/compiler.txt",
+          "bytes": 214
+        },
+        {
+          "path": "native-metadata-join/dependency-build.log",
+          "bytes": 348
+        },
+        {
+          "path": "native-metadata-join/dependency-constructor.log",
+          "bytes": 0
+        },
+        {
+          "path": "native-metadata-join/dependency-fetch.log",
+          "bytes": 1344
+        },
+        {
+          "path": "native-metadata-join/evaluator-controls.log",
+          "bytes": 1488
+        },
+        {
+          "path": "native-metadata-join/source-admission.log",
+          "bytes": 322
+        },
+        {
+          "path": "native-metadata-join/source-capture.log",
+          "bytes": 154
+        },
+        {
+          "path": "native-metadata-join/source-inputs.json",
+          "bytes": 3667201
+        },
+        {
+          "path": "native-metadata-join/source.txt",
+          "bytes": 123
+        }
+      ]
+    },
+    {
+      "path": "lustr-cdec-native-first-failure.zip",
+      "sha256": "b38af6adad56751d7e1a4b0e7a0854ae5dbd45874692f9a55ee473ade3c01403",
+      "bytes": 177256,
+      "kind": "original Actions artifact archive",
+      "artifact_id": 14607205725,
+      "members": [
+        {
+          "path": "inventory.json",
+          "bytes": 70128
+        },
+        {
+          "path": "records.tar.gz",
+          "bytes": 169813
+        }
+      ]
+    }
+  ],
+  "published_original_files": {
+    "original-metadata-build.log": {
+      "sha256": "f0e7db9a0853b8a43a2546a05f65ce8a411acd3b5736f2f9033d42e5ab28e256",
+      "bytes": 23789,
+      "original_archive_member": "native-metadata-join/build.log"
+    },
+    "original-evaluator-controls.log": {
+      "sha256": "a0d3378d38cd462f55ae230bdccef8a479bfba4ccc12bceb0b254f5bd795cd8d",
+      "bytes": 1488,
+      "original_archive_member": "native-metadata-join/evaluator-controls.log"
+    },
+    "original-source.txt": {
+      "sha256": "1f4abdbd3f884c15e7470edbf12a8f7f06450087ce19fecf690cd2a137c8dc87",
+      "bytes": 123,
+      "original_archive_member": "native-metadata-join/source.txt"
+    },
+    "original-compiler.txt": {
+      "sha256": "bbc9b960fe50c84bca20f3109950bcb87c48b6d1ce61d2fc2fc1519aaba2daaa",
+      "bytes": 214,
+      "original_archive_member": "native-metadata-join/compiler.txt"
+    }
+  },
+  "interpretation": "Both workflows failed overall on this exact source. Subsequent native semantic steps failed after the initial compiler error; they do not establish additional candidate test outcomes. Older successful metadata campaigns do not qualify this source. A later source correction requires new evidence."
+}

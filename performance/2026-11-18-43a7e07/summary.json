@@ -1,0 +1,1168 @@
+{
+  "artifacts": [
+    {
+      "bytes": 1354430,
+      "id": 14444082989,
+      "local_archive": "source-built.zip",
+      "name": "source-built-mixed-qualification-1",
+      "sha256": "64cb6a4fed94a12b6fc69a4f1c32d7c575617938a441094e33b534b7eb1eefa7",
+      "url": "https://github.com/glopyglerky/lustr/actions/runs/44337186349/artifacts/14444082989"
+    },
+    {
+      "bytes": 590665,
+      "id": 14443288234,
+      "local_archive": "public-slice.zip",
+      "name": "upstream-public-slice-1",
+      "sha256": "e15ce3dce10c667f827b112c87d0abbfd21c04ae01776093652f3326391e1a61",
+      "url": "https://github.com/glopyglerky/lustr/actions/runs/44337186349/artifacts/14443288234"
+    },
+    {
+      "bytes": 31977,
+      "id": 14443883811,
+      "local_archive": "project.zip",
+      "name": "coordinator-project-performance-1",
+      "sha256": "d48037291f7ce3b3b5e4f6b68cfe18e5b0f84050dc536ef59e9572738c6d710b",
+      "url": "https://github.com/glopyglerky/lustr/actions/runs/44337186349/artifacts/14443883811"
+    },
+    {
+      "bytes": 5567,
+      "id": 14443254589,
+      "local_archive": "three-way.zip",
+      "name": "three-compiler-performance-1",
+      "sha256": "c74d551cc63b56f07fa6c570e4338cbb59d494bf74da8fd394d9f3573250039c",
+      "url": "https://github.com/glopyglerky/lustr/actions/runs/44337186349/artifacts/14443254589"
+    },
+    {
+      "bytes": 1249782,
+      "id": 14444452602,
+      "local_archive": "project-originals-encrypted.zip",
+      "name": "coordinator-project-originals-encrypted-1",
+      "sha256": "7dc757a10b7c69fe964156796020a15b3b8a89deb2c34f9d3edac6fefa415e20",
+      "url": "https://github.com/glopyglerky/lustr/actions/runs/44337186349/artifacts/14444452602"
+    },
+    {
+      "bytes": 460,
+      "id": 14442271569,
+      "local_archive": "runner-source.zip",
+      "name": "runner-source-44337186349-1",
+      "sha256": "4c057b33ada72c2011626617531e565a151608ee209f18fef4f75df9cc3ab05d",
+      "url": "https://github.com/glopyglerky/lustr/actions/runs/44337186349/artifacts/14442271569"
+    }
+  ],
+  "components_sha256": {
+    "cargo": "da29c2a9ff7f85bda5587e9c974e05c9e2a7196377e54466f6e9d6f9e00b2530",
+    "cargo_lustr": "8674bc8324bf815e35b5dc19e0f4dbf3320137d0a71b85292281fcc44ba57745",
+    "fixed_benchmark_runner": "9f7e0fbc25bb59c8ea00971f60ad8bc827f308ddf8c9f670a5720d9384d89207",
+    "integrated_lust": "5dc743706cfd7403af6bee0f56ffd7783122e84438e6e808350f8ddc917557e4",
+    "integrated_lust_core": "c16805ae83a0ffb24a1aee673e125c052b11b0ec56dc6849ff20b67a031c4fc6",
+    "lustr": "e8cc3ffb52bc1b2d71923f280c18ed3378535b59b22aae2d9d5f2702536835da",
+    "native_shared_library": "e04309dbac4c104bf17cfdfa912e43ea8039f6224367ddd264200053bdde2534",
+    "pristine_lust": "4dcd3743c75f1524132882b5cd59d4cdc2cd355b8beb6faa839d860bc1bb571a",
+    "pristine_lust_core": "eabbe1f10434939ed1d278ad30ead2b789a29ae84ab98ecd0820e8051e891623",
+    "rustc_full": "6deef1ea0d45888d6e7f801668ddd4ef706f69e3044af207aff270212d10a3bf",
+    "rustc_reference": "ca9d833d09469a534ca1449e71ca9961608409cdb257df96cf8035338fac28de"
+  },
+  "counts": {
+    "comparisons": {
+      "fixed": 36,
+      "public_slice": 18,
+      "total": 59,
+      "unchanged_project": 5
+    },
+    "dashboard_rows": 29,
+    "timings": {
+      "fixed": 648,
+      "public_slice": 288,
+      "total": 1056,
+      "unchanged_project": 120
+    }
+  },
+  "coverage": {
+    "cargo_coordinator_compatibility": [
+      "ubuntu-24.04",
+      "macos-26",
+      "windows-latest"
+    ],
+    "compiler_set_jobs_passed": 10,
+    "entry_contract_passed": 16,
+    "foreign_native_layout_checks": {
+      "assertions_per_target": 26,
+      "linking_and_execution": "not established by layout checks",
+      "targets": [
+        "x86_64-unknown-linux-gnu",
+        "x86_64-apple-darwin",
+        "aarch64-apple-darwin",
+        "x86_64-pc-windows-gnu"
+      ]
+    },
+    "full_rust_route": "identified matching upstream Rust implementation",
+    "general_full_rust_speed_proof": false,
+    "general_native_platform_qualification": "incomplete",
+    "independent_package_before_after_timings": "none; baseline qualification failed before timing in run44337186487",
+    "native_mixed_runtime": "Linux x86_64 only in this campaign",
+    "normal_profile_project_assessment": "The five measured unchanged-coordinator normal-profile medians fit the near-stock direction for this workload. This does not classify the seven fixed opt0/debug0 Cargo regressions as near-stock or establish every Rust configuration.",
+    "normal_profile_project_median_change_percent": {
+      "clean-dependency-build": -0.05772932838246092,
+      "compile-plus-test": 0.30659437941475964,
+      "no-op": 1.036237828664155,
+      "primed-root-build": 0.7782688204216681,
+      "primed-root-check": 0.1670599519602467
+    },
+    "performance_acceptance": "Retain Lust subset gains and near-Lust supported-path latency while ordinary full-Rust compilation remains close to matched stock Rust; large gains outside the Lust subset are not required.",
+    "release_admission": false,
+    "release_pending_reason": "Correctness and complete native platform qualification remain incomplete. No new general full-Rust superiority requirement is imposed.",
+    "unchanged_project_tests_existing_ignored": 9,
+    "unchanged_project_tests_passed": 41
+  },
+  "families": [
+    {
+      "name": "fixed-cargo",
+      "pairs": 12,
+      "reason": "replayed qualified evidence",
+      "rows": [
+        {
+          "lust": {
+            "reason": "no matched pristine Lust Cargo lane",
+            "status": "NT"
+          },
+          "lustr": {
+            "median_ms": 35.5969465,
+            "p95_ms": 36.371373,
+            "status": "MEASURED"
+          },
+          "operation": "body-edit",
+          "rustc": {
+            "median_ms": 38.776578,
+            "p95_ms": 40.390607,
+            "status": "MEASURED"
+          },
+          "rustc_over_lustr": {
+            "bootstrap_95": [
+              1.0763441102567994,
+              1.1041036043157595
+            ],
+            "direction": "reference time / Lustr time; greater than one favors Lustr",
+            "rust_or_lust_over_lustr": 1.0901442650917512
+          }
+        },
+        {
+          "lust": {
+            "reason": "no matched pristine Lust Cargo lane",
+            "status": "NT"
+          },
+          "lustr": {
+            "median_ms": 25.4699105,
+            "p95_ms": 26.528589,
+            "status": "MEASURED"
+          },
+          "operation": "rejection",
+          "rustc": {
+            "median_ms": 27.1103635,
+            "p95_ms": 28.201944,
+            "status": "MEASURED"
+          },
+          "rustc_over_lustr": {
+            "bootstrap_95": [
+              1.0408126709609427,
+              1.0732385853240103
+            ],
+            "direction": "reference time / Lustr time; greater than one favors Lustr",
+            "rust_or_lust_over_lustr": 1.0580441720835043
+          }
+        },
+        {
+          "lust": {
+            "reason": "no matched pristine Lust Cargo lane",
+            "status": "NT"
+          },
+          "lustr": {
+            "median_ms": 61.645787,
+            "p95_ms": 62.47318,
+            "status": "MEASURED"
+          },
+          "operation": "compile-plus-test",
+          "rustc": {
+            "median_ms": 61.0248315,
+            "p95_ms": 61.680128,
+            "status": "MEASURED"
+          },
+          "rustc_over_lustr": {
+            "bootstrap_95": [
+              0.983859614931163,
+              0.996200815929003
+            ],
+            "direction": "reference time / Lustr time; greater than one favors Lustr",
+            "rust_or_lust_over_lustr": 0.9897288932104529
+          }
+        },
+        {
+          "lust": {
+            "reason": "no matched pristine Lust Cargo lane",
+            "status": "NT"
+          },
+          "lustr": {
+            "median_ms": 8.5512705,
+            "p95_ms": 9.100677,
+            "status": "MEASURED"
+          },
+          "operation": "no-op",
+          "rustc": {
+            "median_ms": 8.1029185,
+            "p95_ms": 8.421217,
+            "status": "MEASURED"
+          },
+          "rustc_over_lustr": {
+            "bootstrap_95": [
+              0.9268274970477012,
+              0.9749206453498365
+            ],
+            "direction": "reference time / Lustr time; greater than one favors Lustr",
+            "rust_or_lust_over_lustr": 0.9506793083357818
+          }
+        },
+        {
+          "lust": {
+            "reason": "no matched pristine Lust Cargo lane",
+            "status": "NT"
+          },
+          "lustr": {
+            "median_ms": 8.1633645,
+            "p95_ms": 8.462545,
+            "status": "MEASURED"
+          },
+          "operation": "check-no-op",
+          "rustc": {
+            "median_ms": 7.810617,
+            "p95_ms": 8.227652,
+            "status": "MEASURED"
+          },
+          "rustc_over_lustr": {
+            "bootstrap_95": [
+              0.9508451143114754,
+              0.9764682575833723
+            ],
+            "direction": "reference time / Lustr time; greater than one favors Lustr",
+            "rust_or_lust_over_lustr": 0.9622912913396832
+          }
+        },
+        {
+          "lust": {
+            "reason": "no matched pristine Lust Cargo lane",
+            "status": "NT"
+          },
+          "lustr": {
+            "median_ms": 19.828998,
+            "p95_ms": 20.593748,
+            "status": "MEASURED"
+          },
+          "operation": "check-body-edit",
+          "rustc": {
+            "median_ms": 19.2838545,
+            "p95_ms": 19.905422,
+            "status": "MEASURED"
+          },
+          "rustc_over_lustr": {
+            "bootstrap_95": [
+              0.9552856209541853,
+              0.9800158731509433
+            ],
+            "direction": "reference time / Lustr time; greater than one favors Lustr",
+            "rust_or_lust_over_lustr": 0.9683584060092504
+          }
+        },
+        {
+          "lust": {
+            "reason": "no matched pristine Lust Cargo lane",
+            "status": "NT"
+          },
+          "lustr": {
+            "median_ms": 34.727526,
+            "p95_ms": 38.372414,
+            "status": "MEASURED"
+          },
+          "operation": "check",
+          "rustc": {
+            "median_ms": 31.4953875,
+            "p95_ms": 32.734675,
+            "status": "MEASURED"
+          },
+          "rustc_over_lustr": {
+            "bootstrap_95": [
+              0.8852863715493055,
+              0.9146787816621991
+            ],
+            "direction": "reference time / Lustr time; greater than one favors Lustr",
+            "rust_or_lust_over_lustr": 0.9008541850652877
+          }
+        },
+        {
+          "lust": {
+            "reason": "no matched pristine Lust Cargo lane",
+            "status": "NT"
+          },
+          "lustr": {
+            "median_ms": 141.7838325,
+            "p95_ms": 149.079061,
+            "status": "MEASURED"
+          },
+          "operation": "cold",
+          "rustc": {
+            "median_ms": 125.448538,
+            "p95_ms": 129.18926,
+            "status": "MEASURED"
+          },
+          "rustc_over_lustr": {
+            "bootstrap_95": [
+              0.8697390464078579,
+              0.8893750127174579
+            ],
+            "direction": "reference time / Lustr time; greater than one favors Lustr",
+            "rust_or_lust_over_lustr": 0.8798784494604078
+          }
+        },
+        {
+          "lust": {
+            "reason": "no matched pristine Lust Cargo lane",
+            "status": "NT"
+          },
+          "lustr": {
+            "median_ms": 47.1627655,
+            "p95_ms": 48.516007,
+            "status": "MEASURED"
+          },
+          "operation": "signature-edit",
+          "rustc": {
+            "median_ms": 40.9586765,
+            "p95_ms": 41.891296,
+            "status": "MEASURED"
+          },
+          "rustc_over_lustr": {
+            "bootstrap_95": [
+              0.8616592972517295,
+              0.8800724567166944
+            ],
+            "direction": "reference time / Lustr time; greater than one favors Lustr",
+            "rust_or_lust_over_lustr": 0.8711376469791817
+          }
+        }
+      ],
+      "rustc_mode": "rustc via Cargo",
+      "source": {
+        "input_report_sha256": "28c0650e89d6cf3b776768658a9b3e85fc615812a7f7ed7ac2e15626e62767e4",
+        "original_raw_sha256": "4499c7b616d0013595deabb333f7bdcdff950c64d90c566a4c32a14eda248b8b",
+        "pristine_lust_sha256": "4dcd3743c75f1524132882b5cd59d4cdc2cd355b8beb6faa839d860bc1bb571a",
+        "revision": "8a7af2e1e2c21743d14dad45c83283232e2bc102",
+        "tree": "853e22bc16d1a9d96c00369f13a8fec267162dfc",
+        "verified": {
+          "command_outputs": 2160,
+          "comparisons": 36,
+          "records": 1135,
+          "timed_commands": 648
+        }
+      },
+      "status": "MEASURED",
+      "title": "Fixed Cargo"
+    },
+    {
+      "name": "native-scalar",
+      "pairs": 12,
+      "reason": "replayed qualified evidence",
+      "rows": [
+        {
+          "lust": {
+            "median_ms": 4.8496495,
+            "p95_ms": 5.279884,
+            "status": "MEASURED"
+          },
+          "lust_over_lustr": {
+            "bootstrap_95": [
+              0.9660327675285787,
+              1.0681435961730115
+            ],
+            "direction": "reference time / Lustr time; greater than one favors Lustr",
+            "rust_or_lust_over_lustr": 1.0169320379340268
+          },
+          "lustr": {
+            "median_ms": 4.8089045,
+            "p95_ms": 5.08842,
+            "status": "MEASURED"
+          },
+          "operation": "body-edit",
+          "rustc": {
+            "median_ms": 33.818142,
+            "p95_ms": 35.415428,
+            "status": "MEASURED"
+          },
+          "rustc_over_lustr": {
+            "bootstrap_95": [
+              6.690008557367079,
+              7.311730819349028
+            ],
+            "direction": "reference time / Lustr time; greater than one favors Lustr",
+            "rust_or_lust_over_lustr": 7.004463347329446
+          }
+        },
+        {
+          "lust": {
+            "median_ms": 1.614515,
+            "p95_ms": 2.359941,
+            "status": "MEASURED"
+          },
+          "lust_over_lustr": {
+            "bootstrap_95": [
+              0.11197810172600742,
+              0.13131241610793168
+            ],
+            "direction": "reference time / Lustr time; greater than one favors Lustr",
+            "rust_or_lust_over_lustr": 0.12035655620502932
+          },
+          "lustr": {
+            "median_ms": 14.456521,
+            "p95_ms": 14.984391,
+            "status": "MEASURED"
+          },
+          "operation": "rejection",
+          "rustc": {
+            "median_ms": 13.4774575,
+            "p95_ms": 14.743456,
+            "status": "MEASURED"
+          },
+          "rustc_over_lustr": {
+            "bootstrap_95": [
+              0.9221152685498103,
+              0.9664899421420573
+            ],
+            "direction": "reference time / Lustr time; greater than one favors Lustr",
+            "rust_or_lust_over_lustr": 0.9434256621693248
+          }
+        },
+        {
+          "lust": {
+            "median_ms": 26.630221,
+            "p95_ms": 29.563867,
+            "status": "MEASURED"
+          },
+          "lust_over_lustr": {
+            "bootstrap_95": [
+              0.9320979360595872,
+              1.0100764619015343
+            ],
+            "direction": "reference time / Lustr time; greater than one favors Lustr",
+            "rust_or_lust_over_lustr": 0.9708892996211193
+          },
+          "lustr": {
+            "median_ms": 27.426097,
+            "p95_ms": 29.63472,
+            "status": "MEASURED"
+          },
+          "operation": "compile-plus-test",
+          "rustc": {
+            "median_ms": 47.979377,
+            "p95_ms": 49.328879,
+            "status": "MEASURED"
+          },
+          "rustc_over_lustr": {
+            "bootstrap_95": [
+              1.6411473718925742,
+              1.7746787508552544
+            ],
+            "direction": "reference time / Lustr time; greater than one favors Lustr",
+            "rust_or_lust_over_lustr": 1.7089513302727541
+          }
+        },
+        {
+          "lust": {
+            "median_ms": 2.9490805,
+            "p95_ms": 3.11907,
+            "status": "MEASURED"
+          },
+          "lust_over_lustr": {
+            "bootstrap_95": [
+              1.0318798511953655,
+              1.0699347348394315
+            ],
+            "direction": "reference time / Lustr time; greater than one favors Lustr",
+            "rust_or_lust_over_lustr": 1.051281392966466
+          },
+          "lustr": {
+            "median_ms": 2.8236525,
+            "p95_ms": 2.939028,
+            "status": "MEASURED"
+          },
+          "operation": "no-op",
+          "rustc": {
+            "median_ms": 30.864299,
+            "p95_ms": 31.83451,
+            "status": "MEASURED"
+          },
+          "rustc_over_lustr": {
+            "bootstrap_95": [
+              10.770828087581872,
+              11.109239737117445
+            ],
+            "direction": "reference time / Lustr time; greater than one favors Lustr",
+            "rust_or_lust_over_lustr": 10.93909173704093
+          }
+        },
+        {
+          "lust": {
+            "median_ms": 1.4392715,
+            "p95_ms": 1.487427,
+            "status": "MEASURED"
+          },
+          "lust_over_lustr": {
+            "bootstrap_95": [
+              0.9751691228873963,
+              1.0364187922294459
+            ],
+            "direction": "reference time / Lustr time; greater than one favors Lustr",
+            "rust_or_lust_over_lustr": 1.0054970389851852
+          },
+          "lustr": {
+            "median_ms": 1.4234415,
+            "p95_ms": 1.472574,
+            "status": "MEASURED"
+          },
+          "operation": "check-no-op",
+          "rustc": {
+            "median_ms": 8.6356205,
+            "p95_ms": 9.195484,
+            "status": "MEASURED"
+          },
+          "rustc_over_lustr": {
+            "bootstrap_95": [
+              5.918190318279416,
+              6.30341986546589
+            ],
+            "direction": "reference time / Lustr time; greater than one favors Lustr",
+            "rust_or_lust_over_lustr": 6.108236357193308
+          }
+        },
+        {
+          "lust": {
+            "median_ms": 1.4325485,
+            "p95_ms": 1.583226,
+            "status": "MEASURED"
+          },
+          "lust_over_lustr": {
+            "bootstrap_95": [
+              0.9293815580167608,
+              0.9919766421302411
+            ],
+            "direction": "reference time / Lustr time; greater than one favors Lustr",
+            "rust_or_lust_over_lustr": 0.9603346181477204
+          },
+          "lustr": {
+            "median_ms": 1.519686,
+            "p95_ms": 1.61527,
+            "status": "MEASURED"
+          },
+          "operation": "check-body-edit",
+          "rustc": {
+            "median_ms": 8.5300065,
+            "p95_ms": 9.155386,
+            "status": "MEASURED"
+          },
+          "rustc_over_lustr": {
+            "bootstrap_95": [
+              5.435467336065103,
+              5.859907385433155
+            ],
+            "direction": "reference time / Lustr time; greater than one favors Lustr",
+            "rust_or_lust_over_lustr": 5.630144079778637
+          }
+        },
+        {
+          "lust": {
+            "median_ms": 1.6298285,
+            "p95_ms": 2.057787,
+            "status": "MEASURED"
+          },
+          "lust_over_lustr": {
+            "bootstrap_95": [
+              1.0039317539861192,
+              1.1188964331121054
+            ],
+            "direction": "reference time / Lustr time; greater than one favors Lustr",
+            "rust_or_lust_over_lustr": 1.0579469182015893
+          },
+          "lustr": {
+            "median_ms": 1.6040885,
+            "p95_ms": 1.743577,
+            "status": "MEASURED"
+          },
+          "operation": "check",
+          "rustc": {
+            "median_ms": 8.749941,
+            "p95_ms": 9.199907,
+            "status": "MEASURED"
+          },
+          "rustc_over_lustr": {
+            "bootstrap_95": [
+              5.360574327188758,
+              5.621002684595056
+            ],
+            "direction": "reference time / Lustr time; greater than one favors Lustr",
+            "rust_or_lust_over_lustr": 5.485330798546742
+          }
+        },
+        {
+          "lust": {
+            "median_ms": 37.4094045,
+            "p95_ms": 44.149793,
+            "status": "MEASURED"
+          },
+          "lust_over_lustr": {
+            "bootstrap_95": [
+              0.9208902524111496,
+              1.0263005310084723
+            ],
+            "direction": "reference time / Lustr time; greater than one favors Lustr",
+            "rust_or_lust_over_lustr": 0.972573974715253
+          },
+          "lustr": {
+            "median_ms": 38.870363,
+            "p95_ms": 43.925024,
+            "status": "MEASURED"
+          },
+          "operation": "cold",
+          "rustc": {
+            "median_ms": 33.6536585,
+            "p95_ms": 34.694968,
+            "status": "MEASURED"
+          },
+          "rustc_over_lustr": {
+            "bootstrap_95": [
+              0.8213050510841546,
+              0.8745922287553753
+            ],
+            "direction": "reference time / Lustr time; greater than one favors Lustr",
+            "rust_or_lust_over_lustr": 0.8481319832766173
+          }
+        },
+        {
+          "lust": {
+            "median_ms": 4.157039,
+            "p95_ms": 4.43156,
+            "status": "MEASURED"
+          },
+          "lust_over_lustr": {
+            "bootstrap_95": [
+              0.9914997713391394,
+              1.0588030128270505
+            ],
+            "direction": "reference time / Lustr time; greater than one favors Lustr",
+            "rust_or_lust_over_lustr": 1.0245004529462676
+          },
+          "lustr": {
+            "median_ms": 4.0271,
+            "p95_ms": 4.316473,
+            "status": "MEASURED"
+          },
+          "operation": "signature-edit",
+          "rustc": {
+            "median_ms": 31.631849,
+            "p95_ms": 32.699208,
+            "status": "MEASURED"
+          },
+          "rustc_over_lustr": {
+            "bootstrap_95": [
+              7.543419488038074,
+              8.019318993173027
+            ],
+            "direction": "reference time / Lustr time; greater than one favors Lustr",
+            "rust_or_lust_over_lustr": 7.7801517521455095
+          }
+        }
+      ],
+      "rustc_mode": "standalone rustc",
+      "source": {
+        "input_report_sha256": "28c0650e89d6cf3b776768658a9b3e85fc615812a7f7ed7ac2e15626e62767e4",
+        "original_raw_sha256": "4499c7b616d0013595deabb333f7bdcdff950c64d90c566a4c32a14eda248b8b",
+        "pristine_lust_sha256": "4dcd3743c75f1524132882b5cd59d4cdc2cd355b8beb6faa839d860bc1bb571a",
+        "revision": "8a7af2e1e2c21743d14dad45c83283232e2bc102",
+        "tree": "853e22bc16d1a9d96c00369f13a8fec267162dfc",
+        "verified": {
+          "command_outputs": 2160,
+          "comparisons": 36,
+          "records": 1135,
+          "timed_commands": 648
+        }
+      },
+      "status": "MEASURED",
+      "title": "Native scalar"
+    },
+    {
+      "name": "public-slice",
+      "pairs": 12,
+      "reason": "replayed qualified evidence",
+      "rows": [
+        {
+          "lust": {
+            "median_ms": 126.2731175,
+            "p95_ms": 130.031285,
+            "status": "MEASURED"
+          },
+          "lust_over_lustr": {
+            "bootstrap_95": [
+              0.8126059445611302,
+              0.8379260117161282
+            ],
+            "direction": "reference time / Lustr time; greater than one favors Lustr",
+            "rust_or_lust_over_lustr": 0.8246389200056535
+          },
+          "lustr": {
+            "median_ms": 153.0142445,
+            "p95_ms": 158.268318,
+            "status": "MEASURED"
+          },
+          "operation": "cold-check",
+          "rustc": {
+            "median_ms": 248.260332,
+            "p95_ms": 258.991196,
+            "status": "MEASURED"
+          },
+          "rustc_over_lustr": {
+            "bootstrap_95": [
+              1.6004623800219413,
+              1.6620829515578235
+            ],
+            "direction": "reference time / Lustr time; greater than one favors Lustr",
+            "rust_or_lust_over_lustr": 1.6299143027891434
+          }
+        },
+        {
+          "lust": {
+            "median_ms": 1.0975365,
+            "p95_ms": 1.291095,
+            "status": "MEASURED"
+          },
+          "lust_over_lustr": {
+            "bootstrap_95": [
+              0.7608936186454694,
+              0.8510159202502183
+            ],
+            "direction": "reference time / Lustr time; greater than one favors Lustr",
+            "rust_or_lust_over_lustr": 0.8047947165675147
+          },
+          "lustr": {
+            "median_ms": 1.4069045,
+            "p95_ms": 1.582478,
+            "status": "MEASURED"
+          },
+          "operation": "no-op-check",
+          "rustc": {
+            "median_ms": 8.4429775,
+            "p95_ms": 8.727552,
+            "status": "MEASURED"
+          },
+          "rustc_over_lustr": {
+            "bootstrap_95": [
+              5.758999247757124,
+              6.289487107978615
+            ],
+            "direction": "reference time / Lustr time; greater than one favors Lustr",
+            "rust_or_lust_over_lustr": 6.0129833163820985
+          }
+        },
+        {
+          "lust": {
+            "median_ms": 255.0764645,
+            "p95_ms": 259.815661,
+            "status": "MEASURED"
+          },
+          "lust_over_lustr": {
+            "bootstrap_95": [
+              0.898158210328503,
+              0.9116656975230466
+            ],
+            "direction": "reference time / Lustr time; greater than one favors Lustr",
+            "rust_or_lust_over_lustr": 0.904956047444396
+          },
+          "lustr": {
+            "median_ms": 282.1606955,
+            "p95_ms": 289.437045,
+            "status": "MEASURED"
+          },
+          "operation": "cold-build",
+          "rustc": {
+            "median_ms": 337.885335,
+            "p95_ms": 365.583748,
+            "status": "MEASURED"
+          },
+          "rustc_over_lustr": {
+            "bootstrap_95": [
+              1.191725785482714,
+              1.2326920909350472
+            ],
+            "direction": "reference time / Lustr time; greater than one favors Lustr",
+            "rust_or_lust_over_lustr": 1.2097297727758907
+          }
+        },
+        {
+          "lust": {
+            "median_ms": 3.1272705,
+            "p95_ms": 3.342354,
+            "status": "MEASURED"
+          },
+          "lust_over_lustr": {
+            "bootstrap_95": [
+              0.8463357057473903,
+              0.973639040719957
+            ],
+            "direction": "reference time / Lustr time; greater than one favors Lustr",
+            "rust_or_lust_over_lustr": 0.9064322855436533
+          },
+          "lustr": {
+            "median_ms": 3.333219,
+            "p95_ms": 3.643224,
+            "status": "MEASURED"
+          },
+          "operation": "no-op-build",
+          "rustc": {
+            "median_ms": 8.623051,
+            "p95_ms": 8.851752,
+            "status": "MEASURED"
+          },
+          "rustc_over_lustr": {
+            "bootstrap_95": [
+              2.4471067715817627,
+              2.7017109537442017
+            ],
+            "direction": "reference time / Lustr time; greater than one favors Lustr",
+            "rust_or_lust_over_lustr": 2.569343066737314
+          }
+        },
+        {
+          "lust": {
+            "median_ms": 3.766557,
+            "p95_ms": 3.937351,
+            "status": "MEASURED"
+          },
+          "lust_over_lustr": {
+            "bootstrap_95": [
+              0.8934399326663285,
+              0.9613234317668476
+            ],
+            "direction": "reference time / Lustr time; greater than one favors Lustr",
+            "rust_or_lust_over_lustr": 0.9272701424850789
+          },
+          "lustr": {
+            "median_ms": 4.0468265,
+            "p95_ms": 4.16313,
+            "status": "MEASURED"
+          },
+          "operation": "compile-plus-run",
+          "rustc": {
+            "median_ms": 9.0533645,
+            "p95_ms": 9.235774,
+            "status": "MEASURED"
+          },
+          "rustc_over_lustr": {
+            "bootstrap_95": [
+              2.2022585437254887,
+              2.3022807358485884
+            ],
+            "direction": "reference time / Lustr time; greater than one favors Lustr",
+            "rust_or_lust_over_lustr": 2.2491624836675475
+          }
+        },
+        {
+          "lust": {
+            "median_ms": 0.872462,
+            "p95_ms": 0.908096,
+            "status": "MEASURED"
+          },
+          "lust_over_lustr": {
+            "bootstrap_95": [
+              0.9826779154354162,
+              0.9995658213303538
+            ],
+            "direction": "reference time / Lustr time; greater than one favors Lustr",
+            "rust_or_lust_over_lustr": 0.9911762737370688
+          },
+          "lustr": {
+            "median_ms": 0.8762425,
+            "p95_ms": 0.927137,
+            "status": "MEASURED"
+          },
+          "operation": "runtime",
+          "rustc": {
+            "median_ms": 0.7134855,
+            "p95_ms": 0.737165,
+            "status": "MEASURED"
+          },
+          "rustc_over_lustr": {
+            "bootstrap_95": [
+              0.7902320757005286,
+              0.8211305985887416
+            ],
+            "direction": "reference time / Lustr time; greater than one favors Lustr",
+            "rust_or_lust_over_lustr": 0.8061760941863162
+          }
+        }
+      ],
+      "rustc_mode": "rustc via Cargo",
+      "source": {
+        "input_report_sha256": "fce6a0e0583fecce0387a4d2c2c24fcdb4e4badc69cfb116200d9d6f05aa98c4",
+        "original_raw_sha256": "872ef50d4e60f20a7e15110aa5a1fb430561c1a03c54aae2e92c76bc6db59850",
+        "pristine_lust_sha256": "4dcd3743c75f1524132882b5cd59d4cdc2cd355b8beb6faa839d860bc1bb571a",
+        "revision": "8a7af2e1e2c21743d14dad45c83283232e2bc102",
+        "tree": "853e22bc16d1a9d96c00369f13a8fec267162dfc"
+      },
+      "status": "MEASURED",
+      "title": "Public slice"
+    },
+    {
+      "name": "unchanged-project",
+      "pairs": 12,
+      "reason": "replayed qualified evidence",
+      "rows": [
+        {
+          "lust": {
+            "reason": "no matched pristine Lust project lane",
+            "status": "NT"
+          },
+          "lustr": {
+            "median_ms": 496.700513,
+            "p95_ms": 501.030019,
+            "status": "MEASURED"
+          },
+          "operation": "clean-dependency-build",
+          "rustc": {
+            "median_ms": 496.9874205,
+            "p95_ms": 503.11254,
+            "status": "MEASURED"
+          },
+          "rustc_over_lustr": {
+            "bootstrap_95": [
+              0.9973270912927129,
+              1.0029064762476154
+            ],
+            "direction": "reference time / Lustr time; greater than one favors Lustr",
+            "rust_or_lust_over_lustr": 1.000196922696445
+          }
+        },
+        {
+          "lust": {
+            "reason": "no matched pristine Lust project lane",
+            "status": "NT"
+          },
+          "lustr": {
+            "median_ms": 141.005492,
+            "p95_ms": 145.830778,
+            "status": "MEASURED"
+          },
+          "operation": "primed-root-build",
+          "rustc": {
+            "median_ms": 139.916565,
+            "p95_ms": 142.383184,
+            "status": "MEASURED"
+          },
+          "rustc_over_lustr": {
+            "bootstrap_95": [
+              0.9784146463073012,
+              1.0003249966936232
+            ],
+            "direction": "reference time / Lustr time; greater than one favors Lustr",
+            "rust_or_lust_over_lustr": 0.9898971945913982
+          }
+        },
+        {
+          "lust": {
+            "reason": "no matched pristine Lust project lane",
+            "status": "NT"
+          },
+          "lustr": {
+            "median_ms": 51.6517655,
+            "p95_ms": 53.763274,
+            "status": "MEASURED"
+          },
+          "operation": "primed-root-check",
+          "rustc": {
+            "median_ms": 51.56562,
+            "p95_ms": 52.763985,
+            "status": "MEASURED"
+          },
+          "rustc_over_lustr": {
+            "bootstrap_95": [
+              0.9728778063075731,
+              1.0014644557026102
+            ],
+            "direction": "reference time / Lustr time; greater than one favors Lustr",
+            "rust_or_lust_over_lustr": 0.9876081415900106
+          }
+        },
+        {
+          "lust": {
+            "reason": "no matched pristine Lust project lane",
+            "status": "NT"
+          },
+          "lustr": {
+            "median_ms": 8.9538415,
+            "p95_ms": 10.045831,
+            "status": "MEASURED"
+          },
+          "operation": "no-op",
+          "rustc": {
+            "median_ms": 8.86201,
+            "p95_ms": 9.080603,
+            "status": "MEASURED"
+          },
+          "rustc_over_lustr": {
+            "bootstrap_95": [
+              0.9265729250689281,
+              0.9878469906589159
+            ],
+            "direction": "reference time / Lustr time; greater than one favors Lustr",
+            "rust_or_lust_over_lustr": 0.9568627537469597
+          }
+        },
+        {
+          "lust": {
+            "reason": "no matched pristine Lust project lane",
+            "status": "NT"
+          },
+          "lustr": {
+            "median_ms": 4608.8729885,
+            "p95_ms": 4647.995996,
+            "status": "MEASURED"
+          },
+          "operation": "compile-plus-test",
+          "rustc": {
+            "median_ms": 4594.785634,
+            "p95_ms": 4618.90862,
+            "status": "MEASURED"
+          },
+          "rustc_over_lustr": {
+            "bootstrap_95": [
+              0.9941243206467145,
+              0.9987820807572377
+            ],
+            "direction": "reference time / Lustr time; greater than one favors Lustr",
+            "rust_or_lust_over_lustr": 0.9963791299881891
+          }
+        }
+      ],
+      "rustc_mode": "rustc via Cargo",
+      "source": {
+        "input_report_sha256": "55cdf538cbab1d0b4b7aec1d53a73b23cd635e2fa122a9ad5c88cdc63dceb023",
+        "public_export_sha256": "d034ca94ce0b29a78bc29fc35c09334a44b45b9d4b683e32c50f147402192428",
+        "revision": "8a7af2e1e2c21743d14dad45c83283232e2bc102",
+        "source_tree_sha256": "0e4d4ac997b698a770154f1d7949ba744156dfe21cc88b4ed3b8a6cb815dfed5"
+      },
+      "status": "MEASURED",
+      "title": "Unchanged project"
+    }
+  ],
+  "host": {
+    "cgroup_v2_cpu_max": {
+      "source": "/sys/fs/cgroup/cpu.max",
+      "unavailable_reason": "not reported on this host",
+      "value": null
+    },
+    "cgroup_v2_cpuset_effective": {
+      "source": "/sys/fs/cgroup/cpuset.cpus.effective",
+      "value": "0-3"
+    },
+    "cgroup_v2_memory_max": {
+      "source": "/sys/fs/cgroup/memory.max",
+      "unavailable_reason": "not reported on this host",
+      "value": null
+    },
+    "cpu_model": {
+      "source": "/proc/cpuinfo: model name or Processor",
+      "value": "Intel(R) Xeon(R) 6975P-C"
+    },
+    "frequency_governors": {
+      "source": "/sys/devices/system/cpu/cpufreq/policy*/scaling_governor",
+      "unavailable_reason": "not reported on this host",
+      "value": null
+    },
+    "limits": [
+      "Container-visible host facts; physical memory is not a process budget.",
+      "Cgroup files describe the visible cgroup root; nested constraints may differ.",
+      "Affinity is observed, not pinned. CPU frequency and host load can change.",
+      "No process CPU time, RSS, energy or isolated application runtime is measured."
+    ],
+    "logical_cpus": {
+      "source": "os.cpu_count",
+      "value": 4
+    },
+    "physical_memory_bytes": {
+      "source": "/proc/meminfo: MemTotal",
+      "value": 16464306176
+    },
+    "platform": {
+      "machine": "x86_64",
+      "release": "7.0.0-1014-aws",
+      "system": "Linux"
+    },
+    "process_affinity": {
+      "source": "os.sched_getaffinity(0)",
+      "value": [
+        0,
+        1,
+        2,
+        3
+      ]
+    },
+    "recorded_utc": "2026-11-18T15:57:33.334542+00:00",
+    "runner": {
+      "GITHUB_RUN_ATTEMPT": {
+        "source": "environment:GITHUB_RUN_ATTEMPT",
+        "value": "1"
+      },
+      "GITHUB_RUN_ID": {
+        "source": "environment:GITHUB_RUN_ID",
+        "value": "44337186349"
+      },
+      "GITHUB_SHA": {
+        "source": "environment:GITHUB_SHA",
+        "value": "8a7af2e1e2c21743d14dad45c83283232e2bc102"
+      },
+      "ImageOS": {
+        "source": "environment:ImageOS",
+        "value": "ubuntu24"
+      },
+      "ImageVersion": {
+        "source": "environment:ImageVersion",
+        "value": "20261111.127.1"
+      },
+      "RUNNER_ARCH": {
+        "source": "environment:RUNNER_ARCH",
+        "value": "X64"
+      },
+      "RUNNER_OS": {
+        "source": "environment:RUNNER_OS",
+        "value": "Linux"
+      }
+    },
+    "schema": "lustr-benchmark-host-v1"
+  },
+  "limits": [
+    "Timing is conditional on this host and repeated workloads. Affinity was observed, not pinned; OS page caches were not flushed.",
+    "Native scalar standalone rustc no-op and Cargo no-op are different command contracts.",
+    "The public slice is adapted supported upstream code, not an unchanged full upstream project.",
+    "Default debug=2 unchanged-project builds do not assert mixed native-object participation.",
+    "Measured subset gains and near-stock ordinary Rust are separate performance goals. Correctness and platform qualification remain required; no universal overall speed ratio is inferred.",
+    "This snapshot preserves historical evidence; no compiler or timing campaign was rerun during its creation."
+  ],
+  "profiles": {
+    "cargo_jobs": 2,
+    "compiler_components": "release",
+    "fixed": "owned compiler components: manifest release profiles; fixture applications: dev opt0/debug0, normal unwind/checks; full Rust reference is the matching imported SDK",
+    "public_slice": "Application dev opt0/debug0/unwind/overflow+debug assertions; Cargo incremental enabled; native TinyCC dev.",
+    "unchanged_project": "unchanged dev and test defaults"
+  },
+  "schema": "lustr-performance-snapshot-v1",
+  "source": {
+    "executed_revision": "8a7af2e1e2c21743d14dad45c83283232e2bc102",
+    "full_rust_revision": "5b7b37aefcb5b2fba3c2392bc9065b9e4602d494",
+    "pr_head": "43a7e07d32929309fc6e402d7bca6b5673e186a2",
+    "rust_version": "rustc 1.102.0-nightly (5b7b37aef 2026-11-08)\nbinary: rustc\ncommit-hash: 5b7b37aefcb5b2fba3c2392bc9065b9e4602d494\ncommit-date: 2026-11-08\nhost: x86_64-unknown-linux-gnu\nrelease: 1.102.0-nightly\nLLVM version: 23.1.5",
+    "tree": "853e22bc16d1a9d96c00369f13a8fec267162dfc",
+    "upstream_lust_revision": "240e08d91d4aed0299639f6f11fd522912b248f9",
+    "upstream_lust_tree": "0ab1b09815802894e6078de0af59273cbdf46cb0"
+  }
+}

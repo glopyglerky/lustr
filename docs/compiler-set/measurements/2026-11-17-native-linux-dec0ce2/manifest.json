@@ -1,0 +1,32 @@
+{
+  "schema": "lustr-native-gate-archive-v1",
+  "head": "dec0ce2e3a68b82cac16eae238fc51b16e534e5e",
+  "checkout": "dbacce1d14c8df60427eeca8dc7865156c98dcb4",
+  "tree": "c29f3bda282c0870c163303d865abb9be81bd066",
+  "native_tree": "0c196f3b8f0803cbf3985cc2f4be687129831e26",
+  "run": 44083661066,
+  "job": 134040390485,
+  "artifact": 14333541823,
+  "archive": "native-gate-original.zip",
+  "archive_sha256": "63a3df69632cbf1b4a08e55b26b2ef3aedda79c156245db77b61f6d2fc8263f6",
+  "archive_bytes": 16713,
+  "job_conclusion": "success",
+  "macos_conclusion": "cancelled-before-execution-hosted-capacity",
+  "files": [
+    {
+      "path": "native-gate-identity.txt",
+      "bytes": 636,
+      "sha256": "91e67a1700f345e89c70f95df1eb68fac4ddbcd0e725bcfbe6b5bfaab634f57c"
+    },
+    {
+      "path": "native-gate-builds.sha256",
+      "bytes": 177,
+      "sha256": "fb62b22dcd63a1813f8107675586da1b1896451cea5354a17673e6e008d128a1"
+    },
+    {
+      "path": "native-gate.log",
+      "bytes": 61246,
+      "sha256": "62f2b95db11180412df80b7c7f237bf49a690edc548e535444cb7856a0378cfc"
+    }
+  ]
+}

@@ -7,7 +7,8 @@ No public workload measurements or candidate/control comparison are part of this
 qualification. Existing historical measurements remain wall-time-only.
 
 The benchmark workspace alone adds pinned nix 0.31.3 with resource/process/signal
-features; the independently installable coordinator remains registry-free.
+features. The retained planning crate is independent of this collector and
+supplies no compiler execution.
 The safe API and units were checked against the actual cached crate source and
 [Linux getrusage(2)](https://man7.org/linux/man-pages/man2/getrusage.2.html).
 

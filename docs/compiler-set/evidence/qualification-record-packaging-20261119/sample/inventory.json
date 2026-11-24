@@ -1,0 +1,315 @@
+{
+  "schema": "lustr-qualification-records-v1",
+  "capture_complete": true,
+  "compiler_qualification": false,
+  "workflow_sha256": "d8d3c4df1cb3cba45614ff4fa3f72ee7f0b11845027ce0071f6a8e7881bae7b6",
+  "helper_sha256": "3363ca74981e99ecc48689dfe46c4cf8f16b5aa6c29dc396599532fffb9b056e",
+  "source": {
+    "GITHUB_SHA": null,
+    "GITHUB_RUN_ID": null,
+    "GITHUB_RUN_ATTEMPT": null
+  },
+  "original_upload": "exclusive-entry-and-shared-services",
+  "patterns": [
+    "release-refusal.json",
+    "native-build-policy.json",
+    "exclusive-entry.json",
+    "native-selection-cache",
+    "native-selection-seed",
+    "native-compact-selection",
+    "native-cargo-plan",
+    "tinycc-signing-qualification",
+    "lustr-tinycc/logs",
+    "lustr-tinycc/COMPONENTS.txt",
+    "lustr-native-built/COMPONENTS.txt",
+    "lustr-native-built/logs",
+    "lustr-root-package-controls",
+    "retained-results",
+    "retained-oracle-controls",
+    "capability-results/report.json",
+    "capability-results/*.stdout",
+    "capability-results/*.stderr",
+    "lustr-shared-upstream/verification.json",
+    "lustr-shared-upstream/*.stdout",
+    "lustr-shared-upstream/*.stderr",
+    "lustr-shared-upstream/campaign",
+    "lustr-import-emission/verification.json",
+    "lustr-import-emission/*.stdout",
+    "lustr-import-emission/*.stderr",
+    "lustr-import-emission/campaign"
+  ],
+  "roots": [
+    {
+      "pattern": "release-refusal.json",
+      "matches": [],
+      "state": "absent"
+    },
+    {
+      "pattern": "native-build-policy.json",
+      "matches": [],
+      "state": "absent"
+    },
+    {
+      "pattern": "exclusive-entry.json",
+      "matches": [],
+      "state": "absent"
+    },
+    {
+      "pattern": "native-selection-cache",
+      "matches": [],
+      "state": "absent"
+    },
+    {
+      "pattern": "native-selection-seed",
+      "matches": [],
+      "state": "absent"
+    },
+    {
+      "pattern": "native-compact-selection",
+      "matches": [],
+      "state": "absent"
+    },
+    {
+      "pattern": "native-cargo-plan",
+      "matches": [
+        "native-cargo-plan"
+      ],
+      "state": "present"
+    },
+    {
+      "pattern": "tinycc-signing-qualification",
+      "matches": [],
+      "state": "absent"
+    },
+    {
+      "pattern": "lustr-tinycc/logs",
+      "matches": [],
+      "state": "absent"
+    },
+    {
+      "pattern": "lustr-tinycc/COMPONENTS.txt",
+      "matches": [],
+      "state": "absent"
+    },
+    {
+      "pattern": "lustr-native-built/COMPONENTS.txt",
+      "matches": [
+        "lustr-native-built/COMPONENTS.txt"
+      ],
+      "state": "present"
+    },
+    {
+      "pattern": "lustr-native-built/logs",
+      "matches": [
+        "lustr-native-built/logs"
+      ],
+      "state": "present"
+    },
+    {
+      "pattern": "lustr-root-package-controls",
+      "matches": [],
+      "state": "absent"
+    },
+    {
+      "pattern": "retained-results",
+      "matches": [
+        "retained-results"
+      ],
+      "state": "present"
+    },
+    {
+      "pattern": "retained-oracle-controls",
+      "matches": [],
+      "state": "absent"
+    },
+    {
+      "pattern": "capability-results/report.json",
+      "matches": [],
+      "state": "absent"
+    },
+    {
+      "pattern": "capability-results/*.stdout",
+      "matches": [],
+      "state": "absent"
+    },
+    {
+      "pattern": "capability-results/*.stderr",
+      "matches": [],
+      "state": "absent"
+    },
+    {
+      "pattern": "lustr-shared-upstream/verification.json",
+      "matches": [],
+      "state": "absent"
+    },
+    {
+      "pattern": "lustr-shared-upstream/*.stdout",
+      "matches": [],
+      "state": "absent"
+    },
+    {
+      "pattern": "lustr-shared-upstream/*.stderr",
+      "matches": [],
+      "state": "absent"
+    },
+    {
+      "pattern": "lustr-shared-upstream/campaign",
+      "matches": [],
+      "state": "absent"
+    },
+    {
+      "pattern": "lustr-import-emission/verification.json",
+      "matches": [],
+      "state": "absent"
+    },
+    {
+      "pattern": "lustr-import-emission/*.stdout",
+      "matches": [],
+      "state": "absent"
+    },
+    {
+      "pattern": "lustr-import-emission/*.stderr",
+      "matches": [],
+      "state": "absent"
+    },
+    {
+      "pattern": "lustr-import-emission/campaign",
+      "matches": [],
+      "state": "absent"
+    }
+  ],
+  "entries": [
+    {
+      "path": "lustr-native-built/COMPONENTS.txt",
+      "mode": 420,
+      "size": 24,
+      "kind": "regular",
+      "included": true,
+      "sha256": "93c12c1a65166d70b0df060668e1531e63b140128a4415e73761da00af9b26b0",
+      "hash_domain": "file-bytes"
+    },
+    {
+      "path": "lustr-native-built/logs",
+      "mode": 493,
+      "size": 60,
+      "kind": "directory",
+      "included": true
+    },
+    {
+      "path": "lustr-native-built/logs/original-failure.log",
+      "mode": 420,
+      "size": 16,
+      "kind": "regular",
+      "included": true,
+      "sha256": "d295fb7539cb32ae6264df0b88c7678cd5f4eb6ba21c0740b4dff0fe9bfa316c",
+      "hash_domain": "file-bytes"
+    },
+    {
+      "path": "native-cargo-plan",
+      "mode": 493,
+      "size": 120,
+      "kind": "directory",
+      "included": true
+    },
+    {
+      "path": "native-cargo-plan/.cache",
+      "mode": 493,
+      "size": 60,
+      "kind": "directory",
+      "included": true
+    },
+    {
+      "path": "native-cargo-plan/.cache/daemon.log",
+      "mode": 420,
+      "size": 27,
+      "kind": "regular",
+      "included": true,
+      "sha256": "5dacac7c19144df26a4448af20a4b11329f20a909d7731eaf214fb79e78a088f",
+      "hash_domain": "file-bytes"
+    },
+    {
+      "path": "native-cargo-plan/compiled-control",
+      "mode": 420,
+      "size": 1092008,
+      "kind": "regular",
+      "included": false,
+      "omitted": "compiled-container",
+      "format": "ELF",
+      "sha256": "46b226a25b1fee1afd4f739638d8d9fa2cbcbb845bd470454a8b12ef9fc6bb94",
+      "hash_domain": "file-bytes"
+    },
+    {
+      "path": "native-cargo-plan/daemon.exec.trace",
+      "mode": 420,
+      "size": 17,
+      "kind": "regular",
+      "included": true,
+      "sha256": "66eb85f676cd24b1b0fc5a2c0107beadd0b589fd945cd86081b05a3c3600b74c",
+      "hash_domain": "file-bytes"
+    },
+    {
+      "path": "native-cargo-plan/external-tool",
+      "mode": 511,
+      "size": 18,
+      "kind": "symlink",
+      "included": true,
+      "target": "../../outside-tool",
+      "sha256": "f102fbba66a934ecdebb3b70508966e8fbe3a23ac578f74a3630ce94ab237fd1",
+      "hash_domain": "link-target-bytes"
+    },
+    {
+      "path": "retained-results",
+      "mode": 493,
+      "size": 60,
+      "kind": "directory",
+      "included": true
+    },
+    {
+      "path": "retained-results/example",
+      "mode": 493,
+      "size": 100,
+      "kind": "directory",
+      "included": true
+    },
+    {
+      "path": "retained-results/example/0001.stderr",
+      "mode": 420,
+      "size": 26,
+      "kind": "regular",
+      "included": true,
+      "sha256": "c059decf00044dde591f4d56df3e935c8fd0ec3d572beef328a9655a6bada8ba",
+      "hash_domain": "file-bytes"
+    },
+    {
+      "path": "retained-results/example/0001.stdout",
+      "mode": 420,
+      "size": 36,
+      "kind": "regular",
+      "included": true,
+      "sha256": "dec085054759f413d6a477b95e34bb1e4c56a47dddf17998082591354608199e",
+      "hash_domain": "file-bytes"
+    },
+    {
+      "path": "retained-results/example/report.json",
+      "mode": 420,
+      "size": 53,
+      "kind": "regular",
+      "included": true,
+      "sha256": "704e293fd2af9e0bb673942fe81b37a9070188db99b773a3f324403c7e45f8cb",
+      "hash_domain": "file-bytes"
+    }
+  ],
+  "errors": [],
+  "symlink_policy": "Preserve link targets without dereferencing. A record-named symlink fails capture; its referent bytes are not asserted.",
+  "omission_policy": "Only ELF object/executable/shared-library, ar, or Rust metadata containers of at least 1 MiB with non-record names omit regular-file bytes. Every regular file is hashed. Other formats remain included.",
+  "snapshot_scope": "Each entry is checked before and after capture. This is not a coordinated cross-file snapshot or a verified download of the separate complete artifact.",
+  "archive": {
+    "path": "records.tar.gz",
+    "bytes": 577,
+    "sha256": "2141c572810949e6c09616d5059d81aeed85593ceb88f0767e548aec8e05899b",
+    "maximum_bytes": 503316480
+  },
+  "regular_files": 8,
+  "included_regular_bytes": 199,
+  "omitted_regular_bytes": 1092008
+}

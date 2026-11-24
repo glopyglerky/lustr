@@ -26,6 +26,8 @@ pub mod record;
 mod slices;
 mod kconst;
 pub mod ll;
+mod ll_debug;
+pub(crate) mod rust_tests;
 use unwind::Unw;
 
 /// A body-independent type, so glue can be shared across functions.
@@ -178,6 +180,9 @@ enum Step {
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub enum Glue {
+    /// `void drop_T(void *raw)`: the same C ABI for direct calls, vtables,
+    /// channels and unwind callbacks. Each body restores its concrete `T *`.
+    /// Casting a typed function pointer does not change its C function type.
     Drop,
     Clone,
     /// `void clonefrom_T(T *d, T *s)`: `Clone::clone_from` by
@@ -192,8 +197,8 @@ pub enum Glue {
     /// Like `Cmp`, but `PartialOrd::partial_cmp` order where it can
     /// differ from `Ord::cmp`: a written `partial_cmp` is called even
     /// when an `Ord` impl exists, and composite types compare their
-    /// parts with `PCmp`. Only the sort adapters ask for it (std's
-    /// sort compares with `lt`).
+    /// parts with `PCmp`. Sorting and iterator min/max use it because
+    /// the pinned standard library compares with PartialOrd::lt.
     PCmp,
     /// `T default_T(void)`: the value derived and core `Default` build.
     Default,
@@ -523,23 +528,23 @@ fn std_loc(file: u64, line: u64, col: u64) -> String {
 }
 
 /// The std location of an integer method that panics inside core
-/// (`abs`, `pow`, signed wrapping/overflowing/saturating division):
+/// (`abs`, `pow`, next-multiple and next-power overflow):
 /// the `int_impl!` or `uint_impl!` line for its type in
 /// core/src/num/mod.rs.
 fn num_loc(i: IntTy, pow: bool) -> String {
     let line = match i {
-        IntTy::I8 => 379,
-        IntTy::I16 => 404,
-        IntTy::I32 => 429,
-        IntTy::I64 => 454,
-        IntTy::I128 => 479,
-        IntTy::Isize => 559,
-        IntTy::U8 => 586,
-        IntTy::U16 => 1234,
-        IntTy::U32 => 1290,
-        IntTy::U64 => 1322,
-        IntTy::U128 => 1354,
-        IntTy::Usize => 1452,
+        IntTy::I8 => 387,
+        IntTy::I16 => 412,
+        IntTy::I32 => 437,
+        IntTy::I64 => 462,
+        IntTy::I128 => 487,
+        IntTy::Isize => 567,
+        IntTy::U8 => 594,
+        IntTy::U16 => 1243,
+        IntTy::U32 => 1299,
+        IntTy::U64 => 1331,
+        IntTy::U128 => 1363,
+        IntTy::Usize => 1461,
     };
     std_loc(if pow { 0x40 } else { 0 }, line, 5)
 }
@@ -1041,6 +1046,12 @@ fn bytes_array_lit(p: &Program, t: &CTy, bytes: &[u8]) -> String {
 /// The generated code for one function, plus the glue it needs.
 #[derive(Default)]
 pub struct FnOut {
+    /// A lowered scalar body whose operations cannot unwind or access a foreign
+    /// runtime. Used only by the mixed compiler's C boundary. Cached generated
+    /// code retains this result with the body it describes.
+    pub mixed_total: bool,
+    /// This body keeps its C ABI wrapper for its test Termination entry.
+    pub(crate) test_termination: bool,
     /// The fn's C text (`code_text`, `code_len`, `has_code`).
     pub text: CText,
     pub glue: HashSet<(Glue, CTy)>,
@@ -1063,6 +1074,8 @@ pub struct FnOut {
     /// names; `ll_c` holds its helpers' C (with the prelude and statics they read), and
     /// `text` only the C ABI wrapper and the trampoline. Empty for C bodies.
     pub ll: String,
+    /// Source anchor of a function whose LLVM records carry absolute positions.
+    pub(crate) rust_debug_source: Option<(u64, u64)>,
     pub ll_decls: BTreeSet<String>,
     pub ll_c: String,
     /// The LLVM backend: the fn's size for cross-unit inlining (`ll::LlFn::cost`).
@@ -1298,6 +1311,9 @@ impl<'s> Slots<'s> {
 
 struct FnGen<'b, 'p> {
     p: &'p Program,
+    unwind: bool,
+    unwind_tables: bool,
+    nounwind: bool,
     body: &'b Body<'p>,
     out: String,
     glue: HashSet<(Glue, CTy)>,
@@ -2068,6 +2084,29 @@ fn ret_is_large(p: &Program, f: LocalDefId) -> bool {
     ret_by_out(p, &cty(&p.tys, p.fn_info(f).ret))
 }
 
+/// The active C ABI can call this signature with direct scalar returns and
+/// by-value parameters. Providers check under the same naming/backend context
+/// as generation, including effective process-cached backend settings.
+pub fn native_direct_abi(p: &Program, params: &[Ty], ret: Ty) -> bool {
+    !ll::on(p) && !ret_by_out(p, &cty(&p.tys, ret))
+        && params.iter().all(|&t| !param_by_ptr(p, &cty(&p.tys, t)))
+}
+
+/// Actual emitted C representation and passing rules for a native type image.
+/// Layout and call ABI are distinct; the provider must retain both.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct NativeTypeAbi {
+    pub size: u64, pub align: u64,
+    pub param_dropped: bool, pub param_by_ptr: bool, pub ret_by_out: bool,
+}
+pub fn native_type_abi(p: &Program, t: Ty) -> Option<NativeTypeAbi> {
+    if ll::on(p) { return None; }
+    let ct = cty(&p.tys, t);
+    let (size, align) = c_size_align(p, &ct);
+    Some(NativeTypeAbi { size, align, param_dropped: param_dropped(p, &ct),
+        param_by_ptr: param_by_ptr(p, &ct), ret_by_out: ret_by_out(p, &ct) })
+}
+
 /// True when a C function returns `t` through a hidden out-pointer:
 /// over 32 bytes, or a zero-sized type whose C struct holds an array
 /// member (`[T; 0]`, `[No; 4]`, also in a tuple, struct, or `Cell`).
@@ -2433,6 +2472,44 @@ fn trampoline(p: &Program, f: LocalDefId, slot: u32) -> String {
 /// Generates C for one function body. `base_line` is the line of its `fn` keyword, in the
 /// file that defines it; `slots` maps every LocalDefId to its slot in `lust_fns`.
 pub fn gen_fn(p: &Program, body: &Body, map: &SourceMap, base_line: u32, slots: &[u32]) -> FnOut {
+    gen_fn_policy(p, body, map, base_line, slots, false, None, false)
+}
+
+/// Generate a body already proved total by the mixed object boundary.
+pub fn gen_fn_total(p: &Program, body: &Body, map: &SourceMap, base_line: u32, slots: &[u32]) -> FnOut {
+    gen_fn_policy(p, body, map, base_line, slots, true, None, false)
+}
+
+pub(crate) fn gen_fn_cargo_llvm(p: &Program, body: &Body, map: &SourceMap, base_line: u32, slots: &[u32], debug_optimized: Option<bool>, scalar_library: bool) -> FnOut {
+    let source = debug_optimized.and_then(|_| rust_debug_source(p, body.fn_id, map));
+    if debug_optimized.is_some() && source.is_none() && !shipped_debug_body(p, body.fn_id) {
+        return FnOut { error: Some("Rust debug function source cannot be bound to the native body".into()), ..Default::default() };
+    }
+    let mut output = gen_fn_policy(p, body, map, base_line, slots, scalar_library, debug_optimized, scalar_library);
+    output.rust_debug_source = source;
+    output
+}
+
+pub(crate) fn rust_debug_source(p: &Program, id: LocalDefId, map: &SourceMap) -> Option<(u64, u64)> {
+    if shipped_debug_body(p, id) { return None; }
+    let item = p.fn_def(id);
+    let name = map.call_site(item.name_span);
+    let body = map.call_site(p.ast.block(item.body?).span);
+    let text = map.text(name.file)?;
+    let (line, column) = map.line_col(name);
+    if name.file != body.file { return None; }
+    let source = text.get(name.lo as usize..body.hi as usize)?;
+    Some(crate::driver::cache::hash128(
+        &[map.path(name.file).as_bytes(), &line.to_le_bytes(), &column.to_le_bytes(), source.as_bytes()],
+        91,
+    ))
+}
+
+fn shipped_debug_body(p: &Program, id: LocalDefId) -> bool {
+    p.std_source_span(p.fn_def(id).name_span) || p.fn_shipped_crate(id).is_some()
+}
+
+fn gen_fn_policy(p: &Program, body: &Body, map: &SourceMap, base_line: u32, slots: &[u32], nounwind: bool, debug_optimized: Option<bool>, scalar_library: bool) -> FnOut {
     if !has_generated_body(p, body.fn_id) {
         return FnOut { error: Some(no_body_error(p, body, body.fn_id)), ..Default::default() };
     }
@@ -2458,15 +2535,18 @@ pub fn gen_fn(p: &Program, body: &Body, map: &SourceMap, base_line: u32, slots: 
         Err(e) => return FnOut { error: Some(e), ..Default::default() },
     };
     let slots = Slots::new(slots);
-    let mut g = FnGen::new(p, body, map, base_line, &slots);
+    let mut g = FnGen::new(p, body, map, base_line, &slots, nounwind);
     g.collect_move_paths();
     if g.bad_move {
         return FnOut { error: Some(bad_move_error(p, body)), ..Default::default() };
     }
     // The LLVM backend writes the C side (prelude and trampoline included) itself.
     let mut llfn = None;
-    if ll::on(p) {
-        match g.function_ll() {
+    if debug_optimized.is_some() || scalar_library || ll::on(p) {
+        // Only the requested Rust crate has a debug source contract.
+        // The text of shipped std shims is not part of that crate's file.
+        let debug = debug_optimized.filter(|_| !shipped_debug_body(p, body.fn_id));
+        match g.function_ll(debug, scalar_library) {
             Ok(f) => llfn = Some(f),
             Err(e) => return FnOut { error: Some(e), ..Default::default() },
         }
@@ -2488,10 +2568,13 @@ pub fn gen_fn(p: &Program, body: &Body, map: &SourceMap, base_line: u32, slots: 
         }
         g.out.push_str(&trampoline(p, body.fn_id, slots.of(body.fn_id)));
     }
-    // A `main` returning `Result` gets a Termination entry in its
-    // unit (see `fn_unit`): it needs the error type's Debug glue
-    // and the Result's own drop glue.
-    if Some(body.fn_id) == p.main
+    // A main or Cargo test returning Result needs the error's Debug
+    // glue and the Result's own drop glue for its Termination entry.
+    let test_termination = names::release()
+        && p.fn_def(body.fn_id).is_test
+        && p.fn_info(body.fn_id).ret != UNIT
+        && has_native_termination(p, p.fn_info(body.fn_id).ret);
+    if (Some(body.fn_id) == p.main || test_termination)
         && let Some((_, err_t)) = p.tys.result_args(p.fn_info(body.fn_id).ret)
     {
         let rc = cty(&p.tys, p.fn_info(body.fn_id).ret);
@@ -2499,6 +2582,10 @@ pub fn gen_fn(p: &Program, body: &Body, map: &SourceMap, base_line: u32, slots: 
         if needs_drop_c(p, &rc) {
             g.want(Glue::Drop, &rc);
         }
+    }
+    if test_termination {
+        let slot = slots.of(body.fn_id);
+        emit_termination_entry(&mut g.out, p, body.fn_id, slot, &rust_tests::termination_entry(slot), "");
     }
     let mut types = std::mem::take(&mut g.sig_types);
     let mut named = std::mem::take(&mut g.sig_named);
@@ -2550,6 +2637,8 @@ pub fn gen_fn(p: &Program, body: &Body, map: &SourceMap, base_line: u32, slots: 
     ll_c.shrink_to_fit();
     let externs = externs.into_iter().map(shared_extern).collect();
     FnOut {
+        mixed_total: false,
+        test_termination,
         text: CText::Plain(code),
         glue,
         types,
@@ -2558,6 +2647,7 @@ pub fn gen_fn(p: &Program, body: &Body, map: &SourceMap, base_line: u32, slots: 
         externs,
         named,
         ll,
+        rust_debug_source: None,
         ll_decls,
         ll_c,
         ll_cost,
@@ -2614,7 +2704,7 @@ fn inline_attr(p: &Program, f: LocalDefId) -> InlineAttr {
     for a in p.fn_info(f).def(&p.ast).attrs.iter().filter(|a| a.path.len() == 1 && p.name(a.path[0].name) == "inline") {
         out = match &a.input {
             AttrInput::List(_, t) => match t.as_slice() {
-                [TokenTree::Token(x)] if matches!(x.tok, Tok::Ident(s) if p.name(s) == "always") => InlineAttr::Always,
+                [TokenTree::Token(x)] if matches!(x.tok, Tok::Ident(s, _) if p.name(s) == "always") => InlineAttr::Always,
                 _ => InlineAttr::Never,
             },
             _ => InlineAttr::Hint,
@@ -2643,7 +2733,7 @@ fn static_drop_flags(p: &Program) -> (bool, bool) {
 impl<'b, 'p> FnGen<'b, 'p> {
     /// A generator for `body` with nothing emitted yet (`gen_fn`; an
     /// `ItemShim` builtin method's one-call body, `prim_shim`).
-    fn new(p: &'p Program, body: &'b Body<'p>, map: &'b SourceMap, base_line: u32, slots: &'b Slots<'b>) -> Self {
+    fn new(p: &'p Program, body: &'b Body<'p>, map: &'b SourceMap, base_line: u32, slots: &'b Slots<'b>, nounwind: bool) -> Self {
         let local_cty: Vec<CTy> = body.locals.iter().map(|l| cty(&body.tys, l.ty)).collect();
         let byte_blobs = crate::ir::byte_blob_locals(body);
         let kstatic: crate::intern::FxMap<Local, crate::ty::consteval::ConstValue> = if names::release() {
@@ -2668,6 +2758,9 @@ impl<'b, 'p> FnGen<'b, 'p> {
         };
         FnGen {
             p,
+            unwind: p.unwind && !nounwind,
+            unwind_tables: p.unwind_tables && !nounwind,
+            nounwind,
             body,
             out: String::new(),
             glue: HashSet::new(),
@@ -2695,7 +2788,7 @@ impl<'b, 'p> FnGen<'b, 'p> {
             prelude: String::new(),
             adapters: 0,
             shims: HashMap::new(),
-            cleanup: if p.unwind { unwind::cleanup_blocks(body) } else { Vec::new() },
+            cleanup: if p.unwind && !nounwind { unwind::cleanup_blocks(body) } else { Vec::new() },
             byte_blobs,
             kstatic,
             kcx: kconst::StaticCx::default(),
@@ -2719,22 +2812,22 @@ impl<'b, 'p> FnGen<'b, 'p> {
 }
 
 /// The line of `ty`'s `int_impl!` or `uint_impl!` invocation in
-/// core/src/num/mod.rs (rustc 1.99, 64-bit targets): where a panic in
+/// core/src/num/mod.rs (the pinned Rust source, 64-bit targets): where a panic in
 /// one of its methods called through a fn pointer is reported.
 fn int_impl_line(ty: IntTy) -> u32 {
     match ty {
-        IntTy::I8 => 379,
-        IntTy::I16 => 404,
-        IntTy::I32 => 429,
-        IntTy::I64 => 454,
-        IntTy::I128 => 479,
-        IntTy::Isize => 559,
-        IntTy::U8 => 586,
-        IntTy::U16 => 1234,
-        IntTy::U32 => 1290,
-        IntTy::U64 => 1322,
-        IntTy::U128 => 1354,
-        IntTy::Usize => 1452,
+        IntTy::I8 => 387,
+        IntTy::I16 => 412,
+        IntTy::I32 => 437,
+        IntTy::I64 => 462,
+        IntTy::I128 => 487,
+        IntTy::Isize => 567,
+        IntTy::U8 => 594,
+        IntTy::U16 => 1243,
+        IntTy::U32 => 1299,
+        IntTy::U64 => 1331,
+        IntTy::U128 => 1363,
+        IntTy::Usize => 1461,
     }
 }
 
@@ -2830,14 +2923,20 @@ impl FnGen<'_, '_> {
             if std::mem::replace(&mut reachable[b], true) {
                 continue;
             }
-            stack.extend(succ(&self.body.blocks[b].term).into_iter().map(|s| s.0 as usize));
-            stack.extend(self.body.stmt_unwind.iter().filter(|e| e.0.0 as usize == b).map(|e| e.2.0 as usize));
+            if self.nounwind && let Terminator::Call { next, .. } = &self.body.blocks[b].term {
+                stack.push(next.0 as usize);
+            } else {
+                stack.extend(succ(&self.body.blocks[b].term).into_iter().map(|s| s.0 as usize));
+            }
+            if !self.nounwind {
+                stack.extend(self.body.stmt_unwind.iter().filter(|e| e.0.0 as usize == b).map(|e| e.2.0 as usize));
+            }
         }
         let order: Vec<usize> = (0..n).filter(|&b| reachable[b]).collect();
         // Unwind tables: the cleanup blocks go to their own fn (`cleanup_fn`), and the frame
         // struct its cleanup variable points at holds the flags of the locals they read and
         // a pointer to each.
-        let zc = p.unwind && p.unwind_tables;
+        let zc = self.unwind && self.unwind_tables;
         let cl_order: Vec<usize> = if zc { order.iter().copied().filter(|&b| self.cleanup[b]).collect() } else { Vec::new() };
         let order: Vec<usize> = if zc { order.into_iter().filter(|&b| !self.cleanup[b]).collect() } else { order };
         let mut cl_text = String::new();
@@ -3022,7 +3121,7 @@ impl FnGen<'_, '_> {
         if zc {
             // A panic never returns with unwind tables: no entry check.
             self.out.push_str("  lust_exc ex;\n");
-        } else if p.unwind {
+        } else if self.unwind {
             // A call made while its thread has a pending exception comes
             // from code that runs on after a panic (glue, a runtime
             // callback): it returns at once, as if never called.
@@ -3058,7 +3157,7 @@ impl FnGen<'_, '_> {
     /// Emits the blocks `order` (reachable, in this order): their labels, statements with
     /// their unwind actions, and terminators.
     fn blocks(&mut self, order: &[usize]) {
-        let zc = self.p.unwind && self.p.unwind_tables;
+        let zc = self.unwind && self.unwind_tables;
         let entry = if zc && self.zc_frame && !self.zc_in_cleanup { self.zc_entry_states(order) } else { Vec::new() };
         for (k, &bi) in order.iter().enumerate() {
             self.zc_st = entry.get(bi).copied().flatten();
@@ -3154,7 +3253,7 @@ impl FnGen<'_, '_> {
     /// the statement count is the terminator): abort in a cleanup
     /// block, else its cleanup entry, if lowering gave it one.
     fn stmt_action(&self, bi: usize, si: usize) -> Option<Unw> {
-        if !self.p.unwind {
+        if !self.unwind {
             return None;
         }
         if self.cleanup[bi] {
@@ -3423,6 +3522,26 @@ impl FnGen<'_, '_> {
     /// out of a type with a `Drop` impl (E0509, borrowck), so no place
     /// split here has one.
     fn elab_drop(&mut self, l: Local, prefix: &[Step]) -> String {
+        let body = self.elab_drop_inner(l, prefix);
+        let partial = self.move_paths[l as usize].iter().any(|p| p.len() > prefix.len() && p.starts_with(prefix));
+        if self.p.unwind
+            && partial
+            && self.path_place(l, prefix).is_some_and(|(_, t)| unwind::drop_may_unwind(self.p, &t, &mut HashSet::new()))
+        {
+            // A partially moved value bypasses its whole-value drop glue.
+            // Give the complete remaining value one continuation boundary:
+            // a panic in a child still drops later children, including those
+            // outside a nested field, before the original panic propagates.
+            unwind::partial_drop_body(&body, self.unwind_tables)
+        } else {
+            body
+        }
+    }
+
+    /// The recursive projection walk shares the outer `elab_drop` boundary.
+    /// Catching and rethrowing at each nested projection would skip its later
+    /// siblings when a destructor panics.
+    fn elab_drop_inner(&mut self, l: Local, prefix: &[Step]) -> String {
         let paths = &self.move_paths[l as usize];
         let own = paths.iter().position(|p| p == prefix);
         let deeper = paths.iter().any(|p| p.len() > prefix.len() && p.starts_with(prefix));
@@ -3480,10 +3599,13 @@ impl FnGen<'_, '_> {
         };
         match t {
             CTy::Array(el, n) if variant.is_none() => {
-                // rustc's open drop of an array (`open_drop_for_array`):
+                // The pinned rustc's open drop of an array (`open_drop_for_array`):
                 // a run of elements with no move path drops as one
                 // subslice (in index order), an element with one drops
-                // on its own, and the runs and elements go in reverse.
+                // on its own, and those parts also run in index order.
+                // Rust builds its control-flow ladder backwards but enters
+                // at the last block it created; that does not reverse the
+                // observable order of its forward `drop_ranges` list.
                 let kept: Vec<u64> = next_steps.iter().filter_map(|s| if let Step::Elem(c) = s { Some(*c) } else { None }).collect();
                 let mut parts: Vec<Result<(u64, u64), u64>> = Vec::new();
                 let (mut dropping, mut start) = (true, 0);
@@ -3503,7 +3625,7 @@ impl FnGen<'_, '_> {
                 if dropping {
                     parts.push(Ok((start, *n)));
                 }
-                for part in parts.into_iter().rev() {
+                for part in parts {
                     match part {
                         Ok((a, b)) if b > a => {
                             let i = self.tmp();
@@ -3511,7 +3633,7 @@ impl FnGen<'_, '_> {
                             let _ = write!(out, " for (uint64_t {i} = {a}; {i} < {b}; {i}++) drop_{}(&{e}.v[{i}]);", mangle(el));
                         }
                         Ok(_) => {}
-                        Err(c) => out += &self.elab_drop(l, &sub(Step::Elem(c))),
+                        Err(c) => out += &self.elab_drop_inner(l, &sub(Step::Elem(c))),
                     }
                 }
             }
@@ -3526,7 +3648,7 @@ impl FnGen<'_, '_> {
             CTy::Boxed(inner) => {
                 // Drop the still-owned part behind the pointer,
                 // then free the allocation itself (its `sizeof` needs the type defined).
-                out += &self.elab_drop(l, &sub(Step::Deref));
+                out += &self.elab_drop_inner(l, &sub(Step::Deref));
                 self.note_held(inner);
                 let et = ctype(inner);
                 let _ = write!(out, " lust_dealloc((void*){e}, sizeof({et}), _Alignof({et}));");
@@ -3536,7 +3658,7 @@ impl FnGen<'_, '_> {
                 let _ = write!(out, " switch ({d}) {{");
                 for s in next_steps {
                     if let Step::Downcast(v) = s {
-                        let body = self.elab_drop(l, &sub(s));
+                        let body = self.elab_drop_inner(l, &sub(s));
                         let _ = write!(out, " case {v}: {{{body} }} break;");
                     }
                 }
@@ -3553,7 +3675,7 @@ impl FnGen<'_, '_> {
                     _ => 0,
                 };
                 for f in 0..n {
-                    out += &self.elab_drop(l, &sub(Step::Field(f as u32)));
+                    out += &self.elab_drop_inner(l, &sub(Step::Field(f as u32)));
                 }
             }
         }
@@ -3809,7 +3931,7 @@ impl FnGen<'_, '_> {
     /// cleanup at block `b` before any element is read. The `(void)`
     /// keeps `wrap_calls` from adding its own check in front of `b`.
     fn index_unw(&self, len: &str, base: &str, l: Local, loc: &str, b: u32) -> String {
-        if self.p.unwind_tables {
+        if self.unwind_tables {
             // The bounds panic never returns: the frame's cleanup runs from `L.st`.
             return format!(
                 "(*({{ if (__builtin_expect(l{l} >= {len}, 0)) {{ (void)lust_bounds(l{l}, {len}, {loc}); __builtin_unreachable(); }} &{base}[l{l}]; }}))"
@@ -3940,7 +4062,7 @@ impl FnGen<'_, '_> {
             for p in &post {
                 let _ = writeln!(self.out, "    {p}");
             }
-            let zc = self.p.unwind_tables;
+            let zc = self.unwind_tables;
             if !zc {
                 let _ = writeln!(self.out, "    {}", u.check());
             }
@@ -4129,9 +4251,9 @@ impl FnGen<'_, '_> {
                 // (cgen/unwind.rs); a call without one (a catch
                 // boundary) is not checked.
                 if self.unw != Some(Unw::Abort) {
-                    self.unw = unwind.filter(|_| self.p.unwind).map(|u| Unw::Goto(u.0));
+                    self.unw = unwind.filter(|_| self.unwind).map(|u| Unw::Goto(u.0));
                 }
-                let zc = self.p.unwind && self.p.unwind_tables;
+                let zc = self.unwind && self.unwind_tables;
                 if zc && let Some(Unw::Goto(b)) = self.unw {
                     self.zc_store(b);
                 }
@@ -4144,6 +4266,7 @@ impl FnGen<'_, '_> {
                 // dead assignment a zero of the destination type.
                 let dest_cty = self.place(dest, &loc).1;
                 let ret_unit = match target {
+                    CallTarget::NativeFn(def) => cty(&self.p.tys, self.p.native_fn(*def).expect("installed native signature").1) == CTy::Unit,
                     CallTarget::Fn(f) => cty(&self.p.tys, self.p.fn_info(*f).ret) == CTy::Unit,
                     CallTarget::Intrinsic(id) => lang::intrinsic(*id).ret == SigTy::Never,
                     CallTarget::Indirect(c) => matches!(&self.local_cty[*c as usize], CTy::FnPtr(_, r) if **r == CTy::Unit),
@@ -4247,8 +4370,8 @@ impl FnGen<'_, '_> {
             }
             Terminator::MatchExhausted => self.term(&Terminator::Unreachable, span, next_block),
             Terminator::Panic(parts)
-                if self.p.unwind
-                    && self.p.unwind_tables
+                if self.unwind
+                    && self.unwind_tables
                     && parts.iter().any(|p| matches!(p, FmtPart::Arg { .. }))
                     && let Some(call) = self.panic_outlined(parts, &loc) =>
             {
@@ -4270,12 +4393,12 @@ impl FnGen<'_, '_> {
                     let _ = writeln!(self.out, "    lust_panic_lit(&{s}, {loc});\n  }}");
                 }
                 if let Some(Unw::Goto(b)) = self.unw
-                    && !(self.p.unwind && self.p.unwind_tables)
+                    && !(self.unwind && self.unwind_tables)
                 {
                     let _ = writeln!(self.out, "  lust_unw_take(&ex);\n  goto bb{b};");
                 }
                 // Unwind tables: the panic never returns.
-                if self.p.unwind && self.p.unwind_tables {
+                if self.unwind && self.unwind_tables {
                     self.out.push_str("  __builtin_unreachable();\n");
                 }
             }
@@ -4449,6 +4572,23 @@ impl FnGen<'_, '_> {
         }
     }
 
+    /// Declare the actual independent symbol from installed typed linkage.
+    /// The provider has qualified its ABI; no local slot is allocated.
+    fn native_callee(&mut self, def: crate::def::DefId) -> String {
+        let (params, ret, link) = self.p.native_fn(def).expect("checked native function has linkage");
+        let ret = cty(&self.p.tys, ret);
+        self.note_held(&ret);
+        for &t in params { self.note_held(&cty(&self.p.tys, t)); }
+        let mut kept: Vec<String> = params.iter().map(|&t| cty(&self.p.tys, t))
+            .filter(|t| !param_dropped(self.p, t)).map(|t| param_ctype(self.p, &t)).collect();
+        let result = if ret_by_out(self.p, &ret) {
+            kept.insert(0, format!("{} *", ctype(&ret))); "void".into()
+        } else { ctype(&ret) };
+        let declaration = if kept.is_empty() { "void".into() } else { kept.join(", ") };
+        let _ = writeln!(self.out, "  extern {result} {}({declaration});", link.symbol);
+        link.symbol.clone()
+    }
+
     fn call_value(&mut self, target: CallTarget, args: &[Operand], dest_cty: &CTy, loc: &str, post: &mut Vec<String>) -> String {
         // Release C defines only what a unit holds by value or projects from
         // (`type_decls_with`): a builtin may size or open what its operands and result
@@ -4463,6 +4603,23 @@ impl FnGen<'_, '_> {
             }
         }
         match target {
+            CallTarget::NativeFn(def) => {
+                let (params, ret, _) = self.p.native_fn(def).expect("checked native call has linkage");
+                let ret = cty(&self.p.tys, ret);
+                let types: Vec<CTy> = params.iter().map(|&t| cty(&self.p.tys, t)).collect();
+                let mut values: Vec<String> = args.iter().map(|o| self.operand(o, loc, post).0).collect();
+                let mut pre = String::new();
+                self.spill_by_ptr(&mut pre, &types, &mut values);
+                self.out.push_str(&pre);
+                let symbol = self.native_callee(def);
+                let values: Vec<_> = values.into_iter().zip(&types).filter_map(|(v,t)| (!param_dropped(self.p,t)).then_some(v)).collect();
+                if ret_by_out(self.p, &ret) {
+                    let (decl, t) = self.out_target(&ctype(&ret));
+                    let pre = if values.is_empty() { String::new() } else { format!(", {}", values.join(", ")) };
+                    let _ = writeln!(self.out, "    {decl}{symbol}(&{t}{pre});");
+                    t
+                } else { format!("{symbol}({})", values.join(", ")) }
+            }
             CallTarget::Fn(f) => {
                 self.note_callee(f);
                 let info = self.p.fn_info(f);
@@ -4775,7 +4932,7 @@ impl FnGen<'_, '_> {
     /// here, and only the panic path calls the fn, with a copy. `args` are the call's C
     /// arguments (with the caller location); None for any other call.
     fn unwrap_inline(&mut self, f: LocalDefId, ops: &[Operand], args: &[String]) -> Option<String> {
-        if !names::release() || (self.p.unwind && !self.p.unwind_tables) {
+        if !names::release() || (self.unwind && !self.unwind_tables) {
             return None;
         }
         let def = self.p.fn_info(f).def(&self.p.ast);
@@ -5118,7 +5275,7 @@ impl FnGen<'_, '_> {
                 // Unwind tables: a capacity overflow panic never returns. The frame still owns
                 // the moved value (its drop flag clears at the end of the statement), so the
                 // frame's cleanup drops it.
-                if self.p.unwind && !self.p.unwind_tables {
+                if self.unwind && !self.unwind_tables {
                     // A capacity overflow panic returns here under panic=unwind:
                     // fill nothing, drop the value, and unwind.
                     let _ = writeln!(self.out, "    if ({} < {i}_n) {i}_n = 0;", vec_cap(&et, &format!("&{t}")));
@@ -5262,6 +5419,18 @@ impl FnGen<'_, '_> {
                     // A bare fn item value is a zero-sized type.
                     CTy::Unit => "((lust_Unit){})".into(),
                     _ => "0".into(),
+                }
+            }
+            Rvalue::NativeFnValue(def, ty) => {
+                let t = cty(&self.body.tys, *ty);
+                match t {
+                    CTy::FnPtr(..) => {
+                        self.note_held(&t);
+                        let symbol = self.native_callee(*def);
+                        format!("(({}){symbol})", ctype(&t))
+                    }
+                    CTy::Unit => "((lust_Unit){})".into(),
+                    _ => unreachable!("checked independent function value type"),
                 }
             }
             Rvalue::ItemShim(item, ty) => {
@@ -6048,7 +6217,7 @@ impl FnGen<'_, '_> {
         let TyKind::FnPtr(sig) = tys.kind(fp_ty) else { unreachable!("ItemShim to a non fn pointer type") };
         let sig = tys.sig(sig).value;
         let ins: Vec<Ty> = tys.tys_of(sig.inputs).to_vec();
-        let decl = |ty: Ty| crate::ir::LocalDecl { ty, mutable: false, name: None };
+        let decl = |ty: Ty| crate::ir::LocalDecl { ty, mutable: false, name: None, binding_span: None };
         let mut locals = vec![decl(sig.output)];
         locals.extend(ins.iter().map(|&t| decl(t)));
         let body = Body {
@@ -6079,7 +6248,7 @@ impl FnGen<'_, '_> {
         // The shim's params have no drop flags: the builtin takes each by
         // a plain read (a by-value one, `drop`'s, is consumed there).
         let ops: Vec<Operand> = (1..=ins.len()).map(|i| Operand::Copy(Place::local(i as Local))).collect();
-        let mut g = FnGen::new(p, &body, self.map, self.base_line, self.slots);
+        let mut g = FnGen::new(p, &body, self.map, self.base_line, self.slots, !self.unwind);
         let mut post: Vec<String> = Vec::new();
         let value = if b == Builtin::PrimFromCast {
             g.rvalue(&Rvalue::Cast(ops[0].clone(), sig.output), &loc, &mut post)
@@ -6107,7 +6276,7 @@ impl FnGen<'_, '_> {
             let params = if decls.is_empty() { "void".to_string() } else { decls.join(", ") };
             (format!("static {rt} {name}({params})"), "return r;".to_string())
         };
-        let exc = if p.unwind { "  lust_exc ex; (void)ex;" } else { "" };
+        let exc = if self.unwind { "  lust_exc ex; (void)ex;" } else { "" };
         let _ = writeln!(
             self.prelude,
             "{}{head} {{{exc}{inits}\n{}  {rt} r = {value};\n{}  {tail}\n}}",
@@ -6530,7 +6699,7 @@ impl FnGen<'_, '_> {
             B::FromStrRadix(it) => {
                 // core panics on a radix outside 2..=36 before parsing,
                 // at its `from_str_radix` line for the type's sign.
-                let sloc = std_loc(0, if it.signed() { 1866 } else { 1867 }, 1);
+                let sloc = std_loc(0, if it.signed() { 1888 } else { 1889 }, 1);
                 let _ = writeln!(self.out, "    lust_radix_check({}, {sloc});", vals[1]);
                 self.parse_int_c(it, &str_of(&vals[0], &tys[0]), &vals[1])
             }
@@ -7224,9 +7393,9 @@ impl FnGen<'_, '_> {
                 let (d, n, t) = (self.tmp(), self.tmp(), self.tmp());
                 let dt = ctype(&tys[1]);
                 let (helper, sloc) = if b == B::CharEncodeUtf8 {
-                    ("lust_char_encode_utf8", std_loc(1, 2518, 9))
+                    ("lust_char_encode_utf8", std_loc(1, 2581, 9))
                 } else {
-                    ("lust_char_encode_utf16", std_loc(1, 2612, 13))
+                    ("lust_char_encode_utf16", std_loc(1, 2675, 13))
                 };
                 let _ = writeln!(
                     self.out,
@@ -7252,7 +7421,7 @@ impl FnGen<'_, '_> {
                 format!("(((*{0} >= '0' && *{0} <= '9') || ((*{0} | 32) >= 'a' && (*{0} | 32) <= 'f')))", vals[0])
             }
             B::CharIsAsciiControl => format!("(*{0} < 32u || *{0} == 127u)", vals[0]),
-            B::CharIsDigitRadix => format!("(lust_digit({}, {}, {}) != 0xFFFFFFFFu)", vals[0], vals[1], std_loc(1, 407, 9)),
+            B::CharIsDigitRadix => format!("(lust_digit({}, {}, {}) != 0xFFFFFFFFu)", vals[0], vals[1], std_loc(1, 410, 9)),
             // `abs` and `pow` inherit the caller's overflow checks
             // (`#[rustc_inherit_overflow_checks]`): off, they wrap.
             B::Abs if !self.p.overflow_checks => {
@@ -7336,8 +7505,13 @@ impl FnGen<'_, '_> {
             // check of a panic left pending by the range check; elsewhere a panic never returns.
             B::VecDrain | B::StringDrain => {
                 let f = if matches!(b, B::VecDrain) { "lust_vec_drain" } else { "lust_string_drain" };
-                let t = if self.p.unwind && !self.p.unwind_tables { "" } else { "_t" };
-                format!("{f}{t}({}, {}, {}, {}, {}, {loc})", vals[0], vals[1], vals[2], vals[3], vals[4])
+                let t = if self.unwind && !self.unwind_tables { "" } else { "_t" };
+                // Vec::drain is not track_caller. A shipped adapter may name its
+                // own upstream operation with a source marker (VecDeque::drain).
+                let marked = self.body.blocks.get(self.at.0 as usize)
+                    .and_then(|bb| crate::stdloc::site(self.p, self.map, bb.term_span)).is_some();
+                let at = if b == B::VecDrain && !marked { std_loc(3, 3095, 36) } else { loc.to_string() };
+                format!("{f}{t}({}, {}, {}, {}, {}, {at})", vals[0], vals[1], vals[2], vals[3], vals[4])
             }
             B::VecDrainLen => format!("({0}->back - {0}->front)", vals[0]),
             B::VecDrainNext | B::VecDrainNextBack => {
@@ -7530,8 +7704,8 @@ impl FnGen<'_, '_> {
                     rt = ctype(&rc),
                     et = ctype(e),
                     // `swap` is not track_caller: its two `borrow_mut`s panic in cell.rs.
-                    la = std_loc(9, 1083, 30),
-                    lb = std_loc(9, 1083, 56)
+                    la = std_loc(9, 1085, 30),
+                    lb = std_loc(9, 1085, 56)
                 );
                 "((lust_Unit){})".into()
             }
@@ -7562,7 +7736,7 @@ impl FnGen<'_, '_> {
                         ctype(cell),
                         vals[0],
                         // `take` is not track_caller: its `replace` panics in cell.rs.
-                        std_loc(9, 1434, 14)
+                        std_loc(9, 1436, 14)
                     );
                 } else {
                     let _ = writeln!(self.out, "    {et}* {c} = {}; {et} {old} = *{c}; *{c} = {def};", vals[0]);
@@ -8034,7 +8208,7 @@ impl FnGen<'_, '_> {
                 // Read the index and the value before the shift: both can
                 // read the Vec itself, as in `v.insert(0, v[1])`.
                 let _ = writeln!(self.out, "    uint64_t {ti} = {i}; {et} {tx} = {x};");
-                if self.p.unwind_tables {
+                if self.unwind_tables {
                     // A bad index panics with the value still owned by `insert`: a guard
                     // drops it as the panic unwinds.
                     let (gd, gdis) = self.zc_guard(&tx, e);
@@ -8044,14 +8218,14 @@ impl FnGen<'_, '_> {
                     );
                     return "((lust_Unit){})".into();
                 }
-                if self.p.unwind {
+                if self.unwind {
                     // A bad index panics with the value still owned by
                     // `insert`, which drops it as it unwinds.
                     let drop_x = self.unw_cleanup_drop(&tx, e);
                     let _ = writeln!(self.out, "    if ({ti} > {vv}->len) {{ (void)(lust_vec_insert_at({vv}, {ti}, sizeof({et}), _Alignof({et}), {loc}), 0);{drop_x} }} else {{");
                 }
                 let _ = writeln!(self.out, "    lust_vec_insert_at({vv}, {ti}, sizeof({et}), _Alignof({et}), {loc});\n    (({et}*){vv}->ptr)[{ti}] = {tx};");
-                if self.p.unwind {
+                if self.unwind {
                     let _ = writeln!(self.out, "    }}");
                 }
                 "((lust_Unit){})".into()
@@ -8094,7 +8268,7 @@ impl FnGen<'_, '_> {
                 let _ = writeln!(
                     self.out,
                     "    if ({i} >= {vv}->len) lust_panic_nn(\"swap_remove index (is \", {i}, \") should be < len (is \", {vv}->len, \")\", {});\n    {et} {t} = (({et}*){vv}->ptr)[{i}];\n    (({et}*){vv}->ptr)[{i}] = (({et}*){vv}->ptr)[{vv}->len - 1];\n    {vv}->len--;",
-                    std_loc(3, 2258, 13)
+                    std_loc(3, 2180, 13)
                 );
                 t
             }
@@ -8168,11 +8342,11 @@ impl FnGen<'_, '_> {
                     );
                 }
                 let _ = writeln!(self.out, "    if ({n} <= {vv}->len) {{ {vv}->len = {n}; }} else {{");
-                if self.p.unwind_tables {
+                if self.unwind_tables {
                     // A capacity overflow panic never returns: a guard drops the value.
                     let (gd, gdis) = self.zc_guard(&tv, e);
                     let _ = writeln!(self.out, "      {{{gd} lust_vec_reserve({vv}, {n} - {vv}->len, sizeof({et}), _Alignof({et}));{gdis} }}");
-                } else if self.p.unwind {
+                } else if self.unwind {
                     // After a capacity overflow panic (panic=unwind) the Vec is
                     // unchanged and the value is dropped; `(void)` keeps
                     // `wrap_calls` from unwinding before that drop (the
@@ -8194,7 +8368,7 @@ impl FnGen<'_, '_> {
                         mangle(e)
                     );
                 }
-                if self.p.unwind && !self.p.unwind_tables {
+                if self.unwind && !self.unwind_tables {
                     if needs_drop_c(self.p, e) {
                         self.want(Glue::Drop, e);
                         // The frame holds the exception while the drop runs.
@@ -8237,7 +8411,7 @@ impl FnGen<'_, '_> {
                 let f = self.adapter_callee(&ops[1]);
                 let (w, r, c) = (self.tmp(), self.tmp(), self.tmp());
                 let mut body = String::new();
-                let zc = self.p.unwind_tables;
+                let zc = self.unwind_tables;
                 let rg = if zc { self.tmp() } else { String::new() };
                 if zc {
                     body.push_str("    {\n");
@@ -8264,7 +8438,7 @@ impl FnGen<'_, '_> {
                 // removed. Either way the rest moves down behind the kept
                 // ones (std's `BackshiftOnDrop`), so nothing is lost.
                 let mine = "lust_unw_pending && lust_unw_mine()";
-                if self.p.unwind && !zc {
+                if self.unwind && !zc {
                     let _ = writeln!(body, "      if ({mine}) break;");
                 }
                 // A removed element drops as soon as it is rejected,
@@ -8275,7 +8449,7 @@ impl FnGen<'_, '_> {
                         // The element counts removed while its drop runs.
                         format!("{r}++; drop_{}(&(({et}*){vv}->ptr)[{r} - 1]); {r}--; ", mangle(e))
                     } else {
-                        let after = if self.p.unwind { format!(" if ({mine}) {{ {r}++; break; }}") } else { String::new() };
+                        let after = if self.unwind { format!(" if ({mine}) {{ {r}++; break; }}") } else { String::new() };
                         format!("(void)(drop_{}(&(({et}*){vv}->ptr)[{r}]), 0);{after} ", mangle(e))
                     }
                 } else {
@@ -8288,7 +8462,7 @@ impl FnGen<'_, '_> {
                 let _ = writeln!(body, "    }}");
                 if zc {
                     let _ = writeln!(body, "    {rg}.armed = 0; {vv}->len = {w};");
-                } else if self.p.unwind {
+                } else if self.unwind {
                     let n = self.tmp();
                     let _ = writeln!(body, "    uint64_t {n} = {vv}->len - {r}; {vv}->len = {w} + {n};");
                     let _ = writeln!(body, "    if ({n} && {w} != {r}) lust_memmove((({et}*){vv}->ptr) + {w}, (({et}*){vv}->ptr) + {r}, {n} * sizeof({et}));");
@@ -8299,7 +8473,7 @@ impl FnGen<'_, '_> {
                     self.want(Glue::Drop, &tys[1]);
                     if zc {
                         let _ = writeln!(body, "   {env_disarm} drop_{}(&{c});", mangle(&tys[1]));
-                    } else if self.p.unwind {
+                    } else if self.unwind {
                         let drop_c = self.unw_cleanup_drop(&c, &tys[1]);
                         let _ = writeln!(body, "    if ({mine}) {{{drop_c} }} else drop_{}(&{c});", mangle(&tys[1]));
                     } else {
@@ -8592,7 +8766,7 @@ impl FnGen<'_, '_> {
                     "    {{ uint32_t d = lust_digit({}, {}, {}); if (d != 0xFFFFFFFFu) {{ {field} = d;{some} }} }}",
                     vals[0],
                     vals[1],
-                    std_loc(1, 407, 9)
+                    std_loc(1, 410, 9)
                 );
                 t
             }
@@ -8735,8 +8909,8 @@ impl FnGen<'_, '_> {
                 let op = if b == B::WrappingDiv { 3 } else { 4 };
                 let (o, rc) = checked_call(self, &ua, &ub, op);
                 let msg = div0(b);
-                // The signed forms divide inside core; the unsigned ones at the caller.
-                let at = if sgn { num_loc(it, false) } else { loc.to_string() };
+                // The pinned signed and unsigned methods both track their caller.
+                let at = loc;
                 let _ = writeln!(self.out, "    if ({rc} < 0) lust_panic_cstr(\"{msg}\", {at});");
                 format!("(({ct}){o})")
             }
@@ -9063,8 +9237,8 @@ impl FnGen<'_, '_> {
             let (o, rc) = (self.tmp(), self.tmp());
             let _ = writeln!(self.out, "    uint64_t {o}; int {rc} = lust_checked_op({ua}, {ub}, {bits}, {}, {op}, &{o});", sgn as i32);
             let div0msg = if op == 4 { "attempt to calculate the remainder with a divisor of zero" } else { "attempt to divide by zero" };
-            // The signed forms divide inside core; the unsigned ones at the caller.
-            let at = if sgn { num_loc(it, false) } else { loc.to_string() };
+            // The pinned signed and unsigned methods both track their caller.
+            let at = loc;
             let _ = writeln!(self.out, "    if ({rc} < 0) lust_panic_cstr(\"{div0msg}\", {at});");
             if matches!(b, B::SaturatingAdd | B::SaturatingSub | B::SaturatingMul | B::SaturatingDiv) {
                 // Clamp to the endpoint the true result passes.
@@ -10355,6 +10529,59 @@ fn strip_impl_blocks(src: &str) -> String {
 /// (`runtime_decls`), from the compiler's predefined types.
 const INT_TYPEDEFS: &str = "typedef signed char int8_t; typedef unsigned char uint8_t; typedef short int16_t; typedef unsigned short uint16_t;\ntypedef int int32_t; typedef unsigned int uint32_t;\n#ifdef __INT64_TYPE__\ntypedef __INT64_TYPE__ int64_t; typedef unsigned __INT64_TYPE__ uint64_t;\n#else\ntypedef long long int64_t; typedef unsigned long long uint64_t;\n#endif\n#ifdef __SIZE_TYPE__\ntypedef __SIZE_TYPE__ size_t; typedef __PTRDIFF_TYPE__ ptrdiff_t; typedef __UINTPTR_TYPE__ uintptr_t; typedef __INTPTR_TYPE__ intptr_t;\n#else\ntypedef unsigned long size_t; typedef long ptrdiff_t; typedef unsigned long uintptr_t; typedef long intptr_t;\n#endif\n#define INT64_MIN (-9223372036854775807LL-1)\n#ifndef NULL\n#define NULL ((void*)0)\n#endif\n";
 
+/// The original generated scalar function needs no unrelated string, atomic or
+/// exception helpers. TinyCC emits unused inline helpers from the general unit
+/// header, so using that header would introduce foreign runtime references.
+pub fn mixed_scalar_unit(output: &FnOut) -> Option<String> {
+    if !output.mixed_total || !output.glue.is_empty() || !output.ll.is_empty() { return None; }
+    Some(format!("{INT_TYPEDEFS}\n{}", output.code_text()))
+}
+
+/// A completed total scalar body with its exact native direct-call prototypes.
+/// The library completion proof, not this text operation, owns totality.
+pub fn native_scalar_unit(output: &FnOut, unwind_tables: bool) -> Option<String> {
+    if !output.mixed_total || !output.glue.is_empty() || !output.ll.is_empty() || !output.ll_c.is_empty() || !output.types.is_empty() || !output.named.is_empty() {
+        return None;
+    }
+    let mut unit = String::from(INT_TYPEDEFS);
+    for declaration in &output.externs { unit.push_str(declaration); unit.push('\n'); }
+    let code = output.code_text();
+    if unwind_tables {
+        // The checked scalar call graph uses the body symbol directly.
+        // TinyCC's x86-64 EH frame relocations omit offsets for later
+        // definitions in a unit, so emit the body without its trampoline.
+        let function = plain_fn_def(&code)?;
+        if function.frame.is_some() || !function.pks.is_empty() || function.statics {
+            return None;
+        }
+        unit.push_str(function.def);
+    } else {
+        unit.push_str(&code);
+    }
+    Some(unit)
+}
+
+pub(crate) fn native_scalar_llvm_unit(outputs: &[FnOut], slot: usize, triple: &str, rust_debug: bool) -> Option<String> {
+    if !scalar_llvm_output(&outputs[slot], rust_debug) {
+        return None;
+    }
+    Some(ll::ll_unit(outputs, &[slot], &[], triple))
+}
+
+pub(crate) fn native_scalar_llvm_objects(outputs: &[FnOut], triple: &str, rust_debug: bool) -> Option<String> {
+    if outputs.is_empty() || !outputs.iter().all(|output| scalar_llvm_output(output, rust_debug)) {
+        return None;
+    }
+    let slots: Vec<_> = (0..outputs.len()).collect();
+    Some(ll::ll_unit(outputs, &slots, &[], triple))
+}
+
+fn scalar_llvm_output(output: &FnOut, rust_debug: bool) -> bool {
+    output.mixed_total && !output.ll.is_empty() && output.ll_c.is_empty()
+        && output.glue.is_empty() && output.types.is_empty() && output.named.is_empty()
+        && (!rust_debug || output.rust_debug_source.is_some())
+}
+
 fn runtime_decls() -> &'static str {
     static DECLS: std::sync::OnceLock<String> = std::sync::OnceLock::new();
     DECLS.get_or_init(|| {
@@ -10427,6 +10654,15 @@ pub fn runtime_unit() -> String {
     format!("#define LUST_IMPL 1\n{}", runtime_source(true))
 }
 
+pub(crate) fn cargo_runtime_unit(test: bool) -> String {
+    let mut source = runtime_unit();
+    if test {
+        source.insert_str(0, "#define LUST_LIBTEST_CAPTURE 1\n");
+        source.push_str(rust_tests::CATCH_ADAPTER);
+    }
+    source
+}
+
 /// The source files panic locations name: every file's path (index 0 is
 /// the crate root) and each slot's file index.
 pub struct SlotFiles<'a> {
@@ -10444,6 +10680,8 @@ pub struct UnwindInit {
     pub tables: bool,
     pub ids: [u64; 4],
     pub hook_runner: Option<u32>,
+    /// Result/ExitCode mains require the typed Termination wrapper in their body unit.
+    pub termination_entry: bool,
 }
 
 /// The `main_unit` argument for `p` (`slot_of` maps a fn to its slot).
@@ -10461,7 +10699,11 @@ pub fn unwind_init(p: &Program, slot_of: impl Fn(LocalDefId) -> u32) -> Option<U
         .map(|i| slot_of(LocalDefId(i as u32)));
     let (a, b) = crate::check::any::type_id_words(p, &p.tys, REF_STR);
     let (c, d) = crate::check::any::type_id_words(p, &p.tys, STRING);
-    Some(UnwindInit { unwind: p.unwind, tables: p.unwind_tables, ids: [a, b, c, d], hook_runner: runner })
+    let termination_entry = p.main.is_some_and(|m| {
+        let ret = p.fn_info(m).ret;
+        p.tys.is_exit_code(ret) || p.tys.result_args(ret).is_some()
+    });
+    Some(UnwindInit { unwind: p.unwind, tables: p.unwind_tables, ids: [a, b, c, d], hook_runner: runner, termination_entry })
 }
 
 /// The location unit: the per-slot line and file tables and
@@ -10503,11 +10745,21 @@ pub fn loc_unit(files: &SlotFiles, slot_lines: &[u32]) -> String {
 /// sets up the runtime's panic payloads and hook runner; under
 /// panic=unwind a `main` that ends by a panic exits 101.
 pub fn main_unit(main_slot: u32, overlays: &[usize], init: Option<UnwindInit>) -> String {
+    main_unit_with_tests(main_slot, overlays, init, None)
+}
+
+pub(crate) fn main_unit_with_tests(
+    main_slot: u32,
+    overlays: &[usize],
+    init: Option<UnwindInit>,
+    tests: Option<(&[rust_tests::NativeTest], &[u32])>,
+) -> String {
     let unwind = init.as_ref().is_some_and(|i| i.unwind);
     let tables = init.as_ref().is_some_and(|i| i.unwind && i.tables);
     let runner_slot = init.as_ref().and_then(|i| i.hook_runner);
+    let termination_entry = init.as_ref().is_some_and(|i| i.termination_entry);
     let (init, runner) = match init {
-        Some(UnwindInit { unwind, tables, ids: [a, b, c, d], hook_runner }) => (
+        Some(UnwindInit { unwind, tables, ids: [a, b, c, d], hook_runner, .. }) => (
             format!("\n  lust_unw_init({}, {a}ull, {b}ull, {c}ull, {d}ull);", if unwind && tables { 2 } else { unwind as u8 }),
             hook_runner.map_or(String::new(), |s| {
                 // Release C names the runner directly (only its address is taken here).
@@ -10518,20 +10770,32 @@ pub fn main_unit(main_slot: u32, overlays: &[usize], init: Option<UnwindInit>) -
     };
     let mut c = unit_header();
     c.push_str("void lust_loc_init(void);\nvoid lust_kstatics_init(void);\n");
-    // Release C calls main's body (and passes the hook runner) by name.
-    let main_call = if names::release() {
-        let _ = writeln!(c, "void {}(void);", names::body(main_slot));
+    // Release C passes the hook runner by name, with its actual Rust-to-C signature.
+    if names::release() {
         if let Some(s) = runner_slot.filter(|&s| s != main_slot) {
-            let _ = writeln!(c, "void {}(void);", names::body(s));
+            let _ = writeln!(c, "lust_Unit {}(uint8_t);", names::body(s));
         }
+    }
+    let main_call = if let Some((tests, slots)) = tests {
+        rust_tests::main_declarations(&mut c, tests, slots);
+        String::new()
+    } else if termination_entry {
+        // The body unit must register its typed wrapper. Never declare or call a
+        // Result/ExitCode body as a unit-returning function if that invariant fails.
+        "abort()".to_string()
+    } else if names::release() {
+        let _ = writeln!(c, "lust_Unit {}(void);", names::body(main_slot));
         format!("{}()", names::body(main_slot))
     } else {
-        format!("((void (*)(void))lust_fns[{main_slot}])()")
+        // A Rust `()` return is emitted as `lust_Unit`, including `main`.
+        // Discard its value after a correctly typed call; a void-returning
+        // function pointer is incompatible even when both ABIs return no data.
+        format!("((lust_Unit (*)(void))lust_fns[{main_slot}])()")
     };
     for u in overlays {
         let _ = writeln!(c, "void lust_overlay_u{u}(void);");
     }
-    if tables {
+    if tables && tests.is_none() {
         // Main runs under a catch point (std's lang_start catches its panic).
         let _ = writeln!(
             c,
@@ -10549,6 +10813,11 @@ pub fn main_unit(main_slot: u32, overlays: &[usize], init: Option<UnwindInit>) -
     c.push_str(runner.trim_start_matches('\n'));
     if !runner.is_empty() {
         c.push('\n');
+    }
+    if let Some((tests, _)) = tests {
+        let _ = writeln!(c, "  int rc = lustr_test_main(argc, argv, {}, lust_tests);", tests.len());
+        c.push_str("  lust_tls_exit();\n  lust_flush();\n  return rc;\n}\n");
+        return c;
     }
     if tables {
         c.push_str("  int rc = 0;\n  if (lust_unw_try(lust_main_thunk, &rc)) rc = lust_unw_main_caught();\n  lust_tls_exit();\n  lust_flush();\n  return rc;\n}\n");
@@ -10580,6 +10849,45 @@ pub fn table_unit(capacity: usize, fn_units: &[usize]) -> String {
     }
     c.push_str("}\n");
     c
+}
+
+fn emit_termination_entry(c: &mut String, p: &Program, m: LocalDefId, idx: u32, entry: &str, linkage: &str) {
+    let ret = p.fn_info(m).ret;
+    let rc = cty(&p.tys, ret);
+    let rt = ctype(&rc);
+    let cast = fn_ptr_cast(p, m);
+    // Main's body is in this unit: release C calls it by name.
+    let target = if names::release() { names::body(idx) } else { format!("lust_fns[{idx}]") };
+    let _ = writeln!(c, "{linkage}int {entry}(void) {{");
+    if ret_is_large(p, m) {
+        let _ = writeln!(c, "  {rt} r; ({cast}{target})(&r);");
+    } else {
+        let _ = writeln!(c, "  {rt} r = ({cast}{target})();");
+    }
+    if p.unwind {
+        let _ = writeln!(c, "  if (lust_unw_pending && lust_unw_mine()) return 0;");
+    }
+    match p.tys.result_args(ret) {
+        Some((ok_t, err_t)) => {
+            let disc = disc_call(p, &rc, "(&r)");
+            let field = variant_field(p, &rc, "r", 1, 0);
+            let ec = cty(&p.tys, err_t);
+            let ok = if p.tys.is_exit_code(ok_t) { format!(" else {{ rc = {}; }}", variant_field(p, &rc, "r", 0, 0)) } else { String::new() };
+            let _ = writeln!(c, "  int rc = 0;");
+            let _ = writeln!(
+                c,
+                "  if ({disc}) {{ lust_sink k; lust_print_begin(&k, 1); lust_Formatter f; lust_f_init(&f, &k); lust_f_write(&f, \"Error: \", 7); (void)dbg_{}(&f, &{field}); lust_f_write(&f, \"\\n\", 1); lust_print_end(1); rc = 1; }}{ok}",
+                mangle(&ec)
+            );
+        }
+        None => {
+            let _ = writeln!(c, "  int rc = r;");
+        }
+    }
+    if needs_drop_c(p, &rc) {
+        let _ = writeln!(c, "  drop_{}(&r);", mangle(&rc));
+    }
+    let _ = writeln!(c, "  return rc;\n}}");
 }
 
 /// The shared glue unit. With a frozen shared set it holds only those keys; the rest of the
@@ -12032,7 +12340,7 @@ pub fn fn_unit_parts(
         let f = &fns[s];
         let m = c.len();
         // An LLVM fn's C is its C ABI wrapper and trampoline: kept only when a text names them.
-        match (c_refs, f.ll.is_empty(), names::fn_tag_opt(s as u32)) {
+        match (c_refs.filter(|_| !f.test_termination), f.ll.is_empty(), names::fn_tag_opt(s as u32)) {
             (Some(r), false, Some(id)) => c.push_str(&r.c_body(text_of(s), &id)),
             (_, _, Some(id)) if copy_hot.is_some_and(|h| !is_hot(&h.hot, &id)) => c.push_str(&cold_cleanup(text_of(s), &id)),
             _ => c.push_str(text_of(s)),
@@ -12044,46 +12352,11 @@ pub fn fn_unit_parts(
     // table; on Err print `Error: {err:?}` to stderr and exit 1, as
     // Rust does; an `ExitCode` is the exit status. Registered below
     // in `lust_main_entry_p`, which the main unit prefers over the
-    // plain void call. The Debug and Drop glue it calls is wanted
+    // plain unit-returning call. The Debug and Drop glue it calls is wanted
     // by main's own FnOut (see `gen_fn`).
     let entry_at = c.len();
     if let Some((m, idx)) = term_main {
-        let ret = p.fn_info(m).ret;
-        let rc = cty(&p.tys, ret);
-        let rt = ctype(&rc);
-        let cast = fn_ptr_cast(p, m);
-        // Main's body is in this unit: release C calls it by name.
-        let target = if names::release() { names::body(idx) } else { format!("lust_fns[{idx}]") };
-        let _ = writeln!(c, "static int lust_main_entry_impl(void) {{");
-        if ret_is_large(p, m) {
-            let _ = writeln!(c, "  {rt} r; ({cast}{target})(&r);");
-        } else {
-            let _ = writeln!(c, "  {rt} r = ({cast}{target})();");
-        }
-        if p.unwind {
-            let _ = writeln!(c, "  if (lust_unw_pending && lust_unw_mine()) return 0;");
-        }
-        match p.tys.result_args(ret) {
-            Some((ok_t, err_t)) => {
-                let disc = disc_call(p, &rc, "(&r)");
-                let field = variant_field(p, &rc, "r", 1, 0);
-                let ec = cty(&p.tys, err_t);
-                let ok = if p.tys.is_exit_code(ok_t) { format!(" else {{ rc = {}; }}", variant_field(p, &rc, "r", 0, 0)) } else { String::new() };
-                let _ = writeln!(c, "  int rc = 0;");
-                let _ = writeln!(
-                    c,
-                    "  if ({disc}) {{ lust_sink k; lust_print_begin(&k, 1); lust_Formatter f; lust_f_init(&f, &k); lust_f_write(&f, \"Error: \", 7); (void)dbg_{}(&f, &{field}); lust_f_write(&f, \"\\n\", 1); lust_print_end(1); rc = 1; }}{ok}",
-                    mangle(&ec)
-                );
-            }
-            None => {
-                let _ = writeln!(c, "  int rc = r;");
-            }
-        }
-        if needs_drop_c(p, &rc) {
-            let _ = writeln!(c, "  drop_{}(&r);", mangle(&rc));
-        }
-        let _ = writeln!(c, "  return rc;\n}}");
+        emit_termination_entry(&mut c, p, m, idx, "lust_main_entry_impl", "static ");
     }
     record::piece(record::Kind::Entry, 0, &c[entry_at..]);
     let register_at = c.len();
@@ -13126,7 +13399,7 @@ fn glue_def_value(
     match g {
         Glue::CloneFrom => unreachable!("clonefrom glue returns above"),
         Glue::Drop => {
-            let _ = writeln!(protos, "void drop_{m}({ct} *p);");
+            let _ = writeln!(protos, "void drop_{m}(void *raw);");
             match t {
                 CTy::String => body.push_str("  lust_string_drop(p);\n"),
                 CTy::Hash(k, _) if hash::is_table(*k) => body.push_str(&hash::drop_body(p, t, &mut need)),
@@ -13364,7 +13637,7 @@ fn glue_def_value(
             } else {
                 body = body.replace(UNW_DSTEP, "").replace("UNW_DSTEP ", "");
             }
-            let _ = writeln!(defs, "void drop_{m}({ct} *p) {{\n{body}}}\n");
+            let _ = writeln!(defs, "void drop_{m}(void *raw) {{\n  {ct} *p = raw;\n{body}}}\n");
         }
         Glue::Clone => {
             let _ = writeln!(protos, "{ct} clone_{m}({ct} *p);");
@@ -14261,7 +14534,7 @@ mod tests {
         let span = Span::new(FileId(0), 0, 0);
         let elems = body.tys.intern_tys(&[STRING, int(IntTy::U8)]);
         let tuple_ty = body.tys.intern(TyKind::Tuple(elems));
-        let local = |ty: Ty| LocalDecl { ty, mutable: false, name: None };
+        let local = |ty: Ty| LocalDecl { ty, mutable: false, name: None, binding_span: None };
         body.locals = vec![local(UNIT), local(tuple_ty), local(STRING)];
         body.blocks = vec![BlockData {
             stmts: vec![Stmt {
@@ -14781,9 +15054,9 @@ mod tests {
             let shards = names::glue_shards(&program, &glue, &outs, 1);
             let drop_hooks = format!("void drop_{}_(", ctype(&CTy::Adt(hooks)));
             let shard = shards.iter().find(|s| s.lines().any(|l| l.starts_with(&drop_hooks) && l.ends_with('{'))).expect("a shard defines the struct's drop glue");
-            assert!(shard.contains("inline void drop_O_Rcdyn_(O_O_Rcdyn_ *p) {"), "the field's drop is inline there:\n{shard}");
+            assert!(shard.contains("inline void drop_O_Rcdyn_(void *raw) {"), "the field's drop is inline there:\n{shard}");
             assert!(shard.lines().all(|l| !l.starts_with("void drop_O_Rcdyn_(")), "no declaration of it without inline:\n{shard}");
-            assert_eq!(shards.iter().filter(|s| s.lines().any(|l| l.starts_with("void drop_O_Rcdyn_(O_O_Rcdyn_ *p) {"))).count(), 1, "one external definition");
+            assert_eq!(shards.iter().filter(|s| s.lines().any(|l| l.starts_with("void drop_O_Rcdyn_(void *raw) {"))).count(), 1, "one external definition");
             let keys = names::glue_shard_keys(&glue, &outs, 1);
             let made = names::glue_shard_texts(&program, &glue, &keys, &[], true);
             assert_eq!(made.iter().map(|(c, _)| c.as_str()).collect::<Vec<_>>(), shards, "a record does not change a shard");
@@ -14898,7 +15171,7 @@ mod tests {
         let inputs = body.tys.intern_tys(&[i64_ty]);
         let sig = body.tys.intern_sig(Binder::plain(FnSig::plain(inputs, i64_ty)));
         let fnptr_ty = body.tys.intern(TyKind::FnPtr(sig));
-        let local = |ty: Ty| LocalDecl { ty, mutable: false, name: None };
+        let local = |ty: Ty| LocalDecl { ty, mutable: false, name: None, binding_span: None };
         // Print args hold a reference to the value, as lower emits them:
         // locals 8.. hold &l2, &l5, &l6, &l7 for the four prints.
         let ref_i64 = body.tys.mk_ref(false, i64_ty);

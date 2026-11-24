@@ -1,0 +1,339 @@
+{
+  "schema": "lustr-public-library-integration-v1",
+  "rust_revision": "5b7b37aefcb5b2fba3c2392bc9065b9e4602d494",
+  "status": "implemented-partial",
+  "full_rust_coverage": false,
+  "performance_qualified": false,
+  "qualification_record": "docs/compiler-set/evidence/compiler-review-20261122/README.md; results apply only to the exact source and package identities recorded there, not every future regeneration of this inventory",
+  "metadata_dependency_closure": "upstream/metadata-dependency-closure.json",
+  "artifact_tool_closure": "upstream/metadata-artifact-tools.json",
+  "product_owner": "crates/lustr-native-core/src/public_library.rs",
+  "shared_artifact_service": "crates/lustr-native-core/src/library_artifact.rs",
+  "supported_context": "Linux x64, edition 2024, embed-bitcode=no and opt-level=0. Native builds accept debuginfo=0. Supported executables and native scalar leaf libraries with std or no_std crate policy accept unsplit and unstripped full Rust debug information using the native LLVM emitter and Clang. The debug emitter represents scalar values, selected aggregates and variants, references, function pointers and local bindings across normal control flow. Scalar leaf libraries and executables with a closed scalar archive graph also link under unwind. The native emitter can lower direct integer library dependency calls with Rust debug information. Executable dependencies resolve transitive metadata in Cargo search paths while retaining the explicit extern namespace. Metadata-only checks also accept the ordinary Cargo dev profile with unwind, debuginfo=2 and the optional incremental cache location. Checked scalar signatures carry every integer type. Linked artifacts require the existing direct ABI for 32-bit, 64-bit and pointer-sized integers. Cargo library checks and builds may use one direct scalar leaf dependency supplied as metadata. Cargo executable checks use a closed scalar metadata graph. Executable builds additionally use the matching archives. Executable dep-info covers source files and actual include and environment reads from the native resolver and expander. The admitted extern lint uses native checked reads. Supported Cargo unit and integration tests with the unwind strategy link the pinned Rust libtest runtime and keep body checking and emission in Lust. Tests may use the supported native main return forms and link the represented native path dev dependencies.",
+  "request_options": "LibraryOptions is per request, outside native SessionKey and Client. At O0, omitted overflow-checks inherits the effective debug-assertions setting; admitted explicit values take precedence. The direct Rust adapter preserves last-option precedence, while the bounded Cargo artifact adapter preserves debug level (-g and -C debuginfo), split and strip precedence. Other duplicate codegen options are refused. Debug choices travel on public requests outside the semantic session key. Native executable and scalar leaf library debug requests use full unsplit Rust DWARF for the represented source and types. Other debug levels and split sidecars remain unimplemented for linked output. Unstable embedding None/true/false are distinct metadata/SVH variants; effective None/true use full archive metadata and false uses its matching header stub. Force-warn/JSON do not enter the metadata hash. Stable -C embed-metadata remains unrepresented.",
+  "artifact_variants": "At most three embedding choices for the current native link snapshot, plus the last durable link publication. The metadata-only cache holds a single checked generation and requires no native object, export, or archive work.",
+  "semantic_owner": "One existing native prepare/emit continuation; only existing completed scalar declarations/bodies.",
+  "unimplemented": [
+    "wider std-root library dependencies and dependent executables",
+    "wider Rust source-level debug information",
+    "general Rust panic cleanup and exception semantics",
+    "stable -C embed-metadata and wider unstable options",
+    "general native library and executable dependency graphs",
+    "wider native completion",
+    "other targets/profiles",
+    "socket-free public retained host"
+  ],
+  "inactive_history": "Owner-start budget, default 128 entries and 16 MiB of known payload per native-object, native-definition and artifact cache; current/published/in-flight evidence protected. Lowering the real entry limit exercises the same LRU cut. Actual RSS includes live source, allocator overhead and original native caches.",
+  "publication": "All bytes staged/synced before replacements; complete files replace in metadata/dep-info/archive order. Partial multi-name effects and uncertain durability are terminal. No-op exact output bytes leave output inodes/mtimes unchanged.",
+  "runtime_limitation": "The pinned dynamic llvm-ar/llvm-objcopy dependency closure may require the exact 208,283,952-byte LLVM shared library. This is artifact-tool closure, not a proved minimal source cut or compiler speed qualification.",
+  "upstream_sources": [
+    {
+      "repository": "rust-lang/rust",
+      "revision": "5b7b37aefcb5b2fba3c2392bc9065b9e4602d494",
+      "path": "compiler/rustc_driver_impl/src/args.rs",
+      "sha256": "0a22c186ea65003951856d1ef0b44e5e9b9136e9b248d483dc64de936144e33f",
+      "role": "Line-based compiler response-file expansion and early diagnostics at the Rust entry; no shell-style argument files are admitted"
+    },
+    {
+      "repository": "rust-lang/rust",
+      "revision": "5b7b37aefcb5b2fba3c2392bc9065b9e4602d494",
+      "path": "compiler/rustc_driver_impl/src/lib.rs",
+      "sha256": "28d3ed858c3db58e159cfe6a6e6e47fa15b64fe354e565a7c94ef24b563c7b44",
+      "role": "make_input reads UTF-8 stdin and distinguishes anonymous input from Rustdoc source coordinates"
+    },
+    {
+      "repository": "rust-lang/rust",
+      "revision": "5b7b37aefcb5b2fba3c2392bc9065b9e4602d494",
+      "path": "compiler/rustc_interface/src/interface.rs",
+      "sha256": "374372a8fa5c5b46ad6d98db08c4b3791808618495ab93f4ed2a34b0719b9cc2",
+      "role": "parse_cfg and parse_check_cfg distinguish active flags and values from declarations about expected cfg usage"
+    },
+    {
+      "repository": "rust-lang/rust",
+      "revision": "5b7b37aefcb5b2fba3c2392bc9065b9e4602d494",
+      "path": "compiler/rustc_interface/src/passes.rs",
+      "sha256": "8ee543fb7a03b80cbd95a58c57a134215d97218afa6551ecc0bd70f02fe75fbc",
+      "role": "Authoritative file-stem crate naming for direct compiler inputs"
+    },
+    {
+      "repository": "rust-lang/rust",
+      "revision": "5b7b37aefcb5b2fba3c2392bc9065b9e4602d494",
+      "path": "compiler/rustc_interface/src/util.rs",
+      "sha256": "a72d09c63337f969f489d5ef4f8ac4266c0516c6126603b34be05500dbf6f90e",
+      "role": "build_output_filenames binds the caller's explicit -o and directory selection"
+    },
+    {
+      "repository": "rust-lang/rust",
+      "revision": "5b7b37aefcb5b2fba3c2392bc9065b9e4602d494",
+      "path": "compiler/rustc_codegen_ssa/src/back/metadata.rs",
+      "sha256": "cb11be9978528bdd6950b7c07c61a9ad914569cc0a20281cb7a564a7bae1881b",
+      "role": "DefaultMetadataLoader reads the original lib.rmeta member and .rmeta wrapper section in an rlib"
+    },
+    {
+      "repository": "rust-lang/rust",
+      "revision": "5b7b37aefcb5b2fba3c2392bc9065b9e4602d494",
+      "path": "compiler/rustc_attr_ir/src/attr.rs",
+      "sha256": "cc70605cd3eb285592beafaea8970c0ea0f1bb1e54f57416dbbb12ecfa9da8b2",
+      "role": "Original parsed attribute wrapper and cross-crate documentation accessor"
+    },
+    {
+      "repository": "rust-lang/rust",
+      "revision": "5b7b37aefcb5b2fba3c2392bc9065b9e4602d494",
+      "path": "compiler/rustc_attr_ir/src/data_structures.rs",
+      "sha256": "6b61fd75a4a88bb80dfdcc71bdb5325c9083bfa99f5bf03baa9c19250a0852ba",
+      "role": "Original DocComment variant and field order in the pinned attribute schema"
+    },
+    {
+      "repository": "rust-lang/rust",
+      "revision": "5b7b37aefcb5b2fba3c2392bc9065b9e4602d494",
+      "path": "compiler/rustc_ast/src/token.rs",
+      "sha256": "d99c9f5a247cb2f24b759fa719d0c1c884970f32f7ade2b08424a2bea69d3fa9",
+      "role": "Original sugared line and block doc comment kinds"
+    },
+    {
+      "repository": "rust-lang/rust",
+      "revision": "5b7b37aefcb5b2fba3c2392bc9065b9e4602d494",
+      "path": "compiler/rustc_metadata/src/locator.rs",
+      "sha256": "3e91bea232fdf8b8b01858bb55fb923f63f8c3ea66071cfc8eda9e9cebb9d758",
+      "role": "Original crate-location rules prefer a matching metadata file and can read full metadata from a matching Rust library"
+    },
+    {
+      "repository": "rust-lang/rust",
+      "revision": "5b7b37aefcb5b2fba3c2392bc9065b9e4602d494",
+      "path": "src/librustdoc/doctest.rs",
+      "sha256": "7ae0bd8b117707b936a99aed1e9ede843342ceeaba16465cdc8b96fa1521113d",
+      "role": "Original standalone doctest builder request, including the response-file codegen unit choice and generated stdin source"
+    },
+    {
+      "repository": "rust-lang/rust",
+      "revision": "5b7b37aefcb5b2fba3c2392bc9065b9e4602d494",
+      "path": "compiler/rustc_span/src/lib.rs",
+      "sha256": "9682c3b7d227039f040afff82aae4d2fd8133692bc9ef84f0974323f8a0acca0",
+      "role": "Original SourceFile multibyte character sequence and normalized position wire order"
+    },
+    {
+      "repository": "rust-lang/rust",
+      "revision": "5b7b37aefcb5b2fba3c2392bc9065b9e4602d494",
+      "path": "compiler/rustc_span/src/analyze_source_file.rs",
+      "sha256": "15cb5f3992b3e6f178b1bfac78ed136dd95f6d5b87c3eb4e4587da69b132734d",
+      "role": "Original generic byte-offset analysis for line starts and multibyte characters"
+    },
+    {
+      "repository": "rust-lang/rust",
+      "revision": "5b7b37aefcb5b2fba3c2392bc9065b9e4602d494",
+      "path": "compiler/rustc_session/src/options.rs",
+      "sha256": "9ac7d7de14cbef1624c9998593b081000dcd496413d2bb3643aac2bd1c9c7e69",
+      "role": "Pinned debug, split and strip option value parsing; separate embedding options, excluded lint crate-hash state and untracked JSON response mode"
+    },
+    {
+      "repository": "rust-lang/rust",
+      "revision": "5b7b37aefcb5b2fba3c2392bc9065b9e4602d494",
+      "path": "compiler/rustc_session/src/config.rs",
+      "sha256": "20518f46c9a57d05f1353c1fcc2b3f8108b09c99efd87d6f009b71254441dcaf",
+      "role": "select_debuginfo orders -g and -C debuginfo by argument position; DocTestStr retains its originating file and signed line offset"
+    },
+    {
+      "repository": "rust-lang/rust",
+      "revision": "5b7b37aefcb5b2fba3c2392bc9065b9e4602d494",
+      "path": "compiler/rustc_span/src/source_map.rs",
+      "sha256": "9fa60e859a71b59b6787028a569a17d9fa0b5f047af9bb12de14e9c34af6eeb3",
+      "role": "doctest_offset_line reports document coordinates while retaining the generated source line index"
+    },
+    {
+      "repository": "rust-lang/rust",
+      "revision": "5b7b37aefcb5b2fba3c2392bc9065b9e4602d494",
+      "path": "compiler/rustc_session/src/session.rs",
+      "sha256": "cf93aa2f3af4a4be00930d9c1078c17a91add82ac6206e38e3fee74c724e93a8",
+      "role": "Effective embedding and profile options; resolve_path rejects a relative include from an anonymous input"
+    },
+    {
+      "repository": "TinyCC/tinycc",
+      "revision": "43c7708b85681a2fd4451c8a541af4494a8919b2",
+      "path": "tccdbg.c",
+      "sha256": "62c14837a1e68283d4505e4837d3cc2f7e3df422a727124a5129cc71f74399fa",
+      "role": "Original x86-64 frame descriptor emission and section relocation for one native function per object"
+    },
+    {
+      "repository": "rust-lang/rust",
+      "revision": "5b7b37aefcb5b2fba3c2392bc9065b9e4602d494",
+      "path": "compiler/rustc_metadata/src/rmeta/encoder.rs",
+      "sha256": "7f740fbaf9e81f4d518a95eeab485059c4f1a88c636df3104af03ec2817f5b73",
+      "role": "Original stub writer/header and full-SVH binding; tracked-option supplement"
+    },
+    {
+      "repository": "rust-lang/rust",
+      "revision": "5b7b37aefcb5b2fba3c2392bc9065b9e4602d494",
+      "path": "compiler/rustc_metadata/src/rmeta/mod.rs",
+      "sha256": "d6d5d627a4876ddd5d371c2260f0d68303f1e483a5209fcace3893765bfd5948",
+      "role": "Original CrateHeader target/name/proc-macro/stub field order"
+    },
+    {
+      "repository": "rust-lang/rust",
+      "revision": "5b7b37aefcb5b2fba3c2392bc9065b9e4602d494",
+      "path": "compiler/rustc_metadata/src/fs.rs",
+      "sha256": "793c4dae083a30b7073ec080ce24cc02eb1e2048938c6c48d9946fb51e14ecdf",
+      "role": "Split full metadata and header-only metadata preparation/publication"
+    },
+    {
+      "repository": "rust-lang/rust",
+      "revision": "5b7b37aefcb5b2fba3c2392bc9065b9e4602d494",
+      "path": "compiler/rustc_middle/src/ty/context.rs",
+      "sha256": "cea6dd6e43c84fb14476a18923aa3b4acb2138c8bff6b849f4b55e2b20544ae3",
+      "role": "Executable crate types do not need encoded metadata; encode_and_write_metadata publishes the requested empty file after checking"
+    },
+    {
+      "repository": "rust-lang/rust",
+      "revision": "5b7b37aefcb5b2fba3c2392bc9065b9e4602d494",
+      "path": "compiler/rustc_codegen_ssa/src/back/link.rs",
+      "sha256": "0cfbc38cf0c66133b3f7dc10bd558d1fb4773fc1c09054c48a32bc694902a191",
+      "role": "Original lib.rmeta wrapper uses stub_or_full while lib.rmeta-link and object inventory remain"
+    },
+    {
+      "repository": "rust-lang/rust",
+      "revision": "5b7b37aefcb5b2fba3c2392bc9065b9e4602d494",
+      "path": "compiler/rustc_codegen_ssa/src/back/symbol_export.rs",
+      "sha256": "75e01be382f01e791e71d7ede5bc8f3430902b4efebf269f50aead67bd7d0f1f",
+      "role": "Both exported symbol providers return no symbols on metadata-only requests before consulting code generation"
+    },
+    {
+      "repository": "rust-lang/rust",
+      "revision": "5b7b37aefcb5b2fba3c2392bc9065b9e4602d494",
+      "path": "compiler/rustc_resolve/src/late/weak_lang_items.rs",
+      "sha256": "ad42f79421494be53258e42570877f91c2c162ade987fa317a514cb1c941cc42",
+      "role": "Record the original missing personality language item for the fixed native no_std leaf and SDK closure"
+    },
+    {
+      "repository": "rust-lang/rust",
+      "revision": "5b7b37aefcb5b2fba3c2392bc9065b9e4602d494",
+      "path": "compiler/rustc_metadata/src/locator.rs",
+      "sha256": "3e91bea232fdf8b8b01858bb55fb923f63f8c3ea66071cfc8eda9e9cebb9d758",
+      "role": "Full standalone metadata and matching stub archive association; no stub-only full-metadata acceptance"
+    },
+    {
+      "repository": "rust-lang/rust",
+      "revision": "5b7b37aefcb5b2fba3c2392bc9065b9e4602d494",
+      "path": "compiler/rustc_metadata/src/creader.rs",
+      "sha256": "5ad69fef2068ce2cff4a1ab21659359270770e4ee69fa840558a29a3fb706539",
+      "role": "Actual explicit-unused-extern inventory and forced empty result emission after required analyses"
+    },
+    {
+      "repository": "rust-lang/rust",
+      "revision": "5b7b37aefcb5b2fba3c2392bc9065b9e4602d494",
+      "path": "compiler/rustc_lint_defs/src/lib.rs",
+      "sha256": "5bb391853043b7216010b3fccdc09e81158f34c39232a1dc51eab9d816654084",
+      "role": "Exact ForceWarn as_str token for the typed response"
+    },
+    {
+      "repository": "rust-lang/rust",
+      "revision": "5b7b37aefcb5b2fba3c2392bc9065b9e4602d494",
+      "path": "compiler/rustc_interface/src/passes.rs",
+      "sha256": "8ee543fb7a03b80cbd95a58c57a134215d97218afa6551ecc0bd70f02fe75fbc",
+      "role": "Exact output/dep-info layout, filename escaping, and sorted escaped env-dep records for actual expansion reads"
+    },
+    {
+      "repository": "rust-lang/rust",
+      "revision": "5b7b37aefcb5b2fba3c2392bc9065b9e4602d494",
+      "path": "compiler/rustc_errors/src/json.rs",
+      "sha256": "cb6bfcad442469b2bbdcc77ce28b22b3903c4fec489043a82f6dfd008ad12281",
+      "role": "Typed diagnostic, artifact and unused-extern JSON representation; semantic diagnostics remain native"
+    },
+    {
+      "repository": "rust-lang/cargo",
+      "revision": "c07ac2c4d12237effc4b94f4543769b421790045",
+      "path": "src/compiler/mod.rs",
+      "sha256": "06f232baf25ae3279fa92eaa96a2ff791dfa7dd0c200c8c9e4b58273245a9f44",
+      "role": "Actual leaf compiler arguments and explicit/default profile facts"
+    }
+  ],
+  "source_sha256": {
+    "Cargo.toml": "3cbe194c029ff28d35f7ae2d5c8ad9a5406c50a36101757637e0d0d5d33ce547",
+    "Cargo.lock": "ad33e3260c84791c32381d5d42f710457dcb4f0241d0b167f3659baf78b6fac0",
+    "build.rs": "209664ecbac600246cb18a83a91c46d474062ebb6d6b4236b1e42cb16544e39a",
+    "src/lib.rs": "c4c2bc559ad1c64214c555d1d9e28f8adfb68cb423e9af5759756193149f80fd",
+    "src/main.rs": "0958fe147b7b8934a041190ee44e8347e52708390f919871c663066b9e3df78e",
+    "src/native_queries.rs": "7dc5ba746c086b853e3e27605c99d384129671d3db3287355e7a1628586388f2",
+    "src/library_contract.rs": "ff8c3b6dbe3c57bd7c7419a969348cb325e55b109a41cdcb8b66fd145fc5d1fa",
+    "src/library_request.rs": "8b36cd3f288a7629c01cad740b2a0d6dc6d6ac82bf64aba75497a566b04e2ada",
+    "compiler/native/Cargo.toml": "022fce40408d543c29550f7b03de3e622a5e01a08c82ea642d30537f61f93891",
+    "compiler/native/Cargo.lock": "d46a58d499b1cfa163f5e2a23f10c0e69e077638f7a84e38e13332875a52f181",
+    "compiler/native/build.rs": "044e0595531dd5468cf4df3dcfb21e1f43592fbada278c63b461d6dcb6a8b946",
+    "compiler/native/src/main.rs": "becc0fe1db57aa5900e7599e094669d55a2a61c48b181636425cbbd0f63fd1aa",
+    "compiler/native/src/protocol.rs": "5bc81fcca7f89335860d8c4dc1dcb77cd7561c5233f260c769ab5b5fc2bbc3f1",
+    "compiler/native/src/daemon.rs": "d4ced7ab3e2fafeace2153b02b23c2bd8d7a47b6acf3801826b18fc58a114592",
+    "compiler/native/src/diag.rs": "26cd5031e5d2d8bbbbf9be06efc46a8869f40aa67d91d2432fd4980d21241bd0",
+    "compiler/native/src/cgen.rs": "e632c2b421d33d42e6ca8d2499c167da1a983a465c3f904e1f31daf51df8eea9",
+    "compiler/native/src/cgen/ll.rs": "45684698c99446d428a5cc5c929773d7b4bd451b6015a702da91f4b06116fc80",
+    "compiler/native/src/cgen/ll_debug.rs": "981ff46f85b18c22f03c0e1047f6236d7ae2d4b7e64b3e3f53062b0a2ae18383",
+    "compiler/native/src/check/collect.rs": "4754e5aacc6075981cf07a14757df5c9d7d5bd0cd3774d54a6830b827f24a5ca",
+    "compiler/native/src/cc.rs": "d32f9864bde54dab46ef115cca38728d0ed8bf3228c4d7c5f275518aefcdcab2",
+    "compiler/native/src/cc/pgo.rs": "c18beb74a6247f3c47d84ca45af84e4082acff6ad0c495fd868266142bf84c30",
+    "compiler/native/src/ir.rs": "4e30b15220371609b9fb3bd0d74aca4ccfb675ed219bdd478d7921afaa408d85",
+    "compiler/native/src/lower.rs": "6ba4820c522e06f16b6c9cef8b96f0bdf5f9578dcba273a317fa4a72727f5625",
+    "compiler/native/src/driver/ir_cache.rs": "f5c2fd0dbd0983d133c5bd90c3513f5f98fe0ca47b72239f75344fe46a6e9169",
+    "compiler/native/src/tcc.rs": "3a68275643f5cd22c6a87c4ee8b520b1fb0ebe92e119b5e91301a2f53c36c6a2",
+    "compiler/native/src/cgen/rust_tests.rs": "cb80c842a2037b4451e16fbc8d96284380d49a7f3986f2f0eb6355b53629d7b3",
+    "compiler/native/src/runtime/core.c": "4d9568cacf4dd252f7637cd8c33bf2d7487f8a630bc5e51988588b00f49c2d1c",
+    "compiler/native/src/runtime/fmt.c": "35f056be6850d1a1327ccd20018174c7ce8a6c7a57158b22c8679b5e6a9e44b5",
+    "compiler/native/src/runtime/panic.c": "ee2d42c84186b650046fe3c639124ed8a4fa2bb25184a6916889af695a9ac266",
+    "compiler/native/src/driver/mod.rs": "d176c245ac4974c2c82a4d8d97e0cacf1e2a7a43b05123759bed1ea2d8043ccf",
+    "compiler/native/src/driver/cache.rs": "60025e108f3dfb944e9fb8a2266c0c02da8eae071cec883434f7d7a8079cdb18",
+    "compiler/native/src/driver/compile.rs": "557e6a162ef0d3e5d2d2b0e817cec22f0a31089f257f7f0dbb09f3221ef69832",
+    "compiler/native/src/driver/session.rs": "350ae82752934e1604c13551a39c71f0551e43c7e42519f58a93c1394c520e4f",
+    "compiler/native/src/driver/imports.rs": "b93d4398c6659e2d1db19d84dc9a3c34211b8349cced22edac84dee7ca30b63b",
+    "compiler/native/src/resolve/worklist.rs": "b2da8d04f792685ccec013a98c67ae3092e5bb60b01542cf45dd9e07063ee25b",
+    "compiler/native/src/resolve/imports.rs": "3430a738b3b99c4fa18507cd3fe8da30e46b529ca755f3bdb382b856604286a5",
+    "compiler/native/src/driver/graph.rs": "60e83bdea08e4121a59047085834df3e159af534d96d86399b123b86456d81ff",
+    "compiler/native/src/check/generics.rs": "aa4ed8d1dae1757c058a065b49f4d5deefc400b59919e900305e813e893157c5",
+    "compiler/native/src/check/prog_shift.rs": "b0d6db3ba022e74c41d589a0e897860f3b2004191dc9a2782f8f30ff585c16ea",
+    "compiler/native/src/check/delta_audit.rs": "1225507e9377527e7d560c8ddc1897eba40f72607a5356161f862d70c74b57bc",
+    "compiler/native/src/borrowck/regions/supers.rs": "8412451ceccfb5272a91f918fc2470c6e26d736ba3fba823b13375ac13ffc2f1",
+    "compiler/native/src/check/outlives.rs": "8cf15f2919cd93fd18c3a7388c4b3a8b3bb2e2688ba2dcf74af4cf310bad200a",
+    "compiler/native/src/resolve/cargo_plan.rs": "82c872e1e7533c9d8b680744240c42f11b4d0de595d9ec439539db1da0d4b9d3",
+    "crates/lustr-native-core/Cargo.toml": "c3de56d1b2130ac0510c2d9e9e87ecf2a86ec5193a5b163a3841b56aa7b705ce",
+    "crates/lustr-native-core/Cargo.lock": "bc7c64836b4b04b12031fdeb3a3bb90b9a723a40208b39379f8cd54ba96b4372",
+    "crates/lustr-native-core/src/library_history.rs": "b9b5599d739bd221cfcdb59280f456c2556859d0dc400b8b1afe57407678354f",
+    "crates/lustr-native-core/src/native_library.rs": "c7c2e1162fc2a9eb033557514a912894516fb42f5f680a1114b3ad2fae902227",
+    "crates/lustr-native-core/src/native_completion.rs": "77ae1cb3690d1a2121330dd5e0883ddb78d8f7aa9fb00ac8ac804c7802732ea1",
+    "crates/lustr-native-core/src/library_artifact.rs": "18d083d822d113afadad76481e1e5dd9ae58ccba19b23f0a2aa912b6fbb0b4d6",
+    "crates/lustr-native-core/src/metadata_archive.rs": "4906cce455716560344bdb329c3bcbc563da21e8c615c357583c038a90e11dfa",
+    "crates/lustr-native-core/src/public_library.rs": "08826d7c651b33d3294013974a5c1cfa8a1343a6ed65537e69abbd5de6976e0e",
+    "crates/lustr-native-core/src/public_library_import.rs": "070d042bdf1527c1de64b64a4dbcfcb7bae1bb25d1149a813cf5f9df4a0a2f07",
+    "crates/lustr-native-core/src/public_executable_import.rs": "0b8da2028a5c65c8d9f6e9f5dcbc065461e55b9f1a373a6f82414a7f3b267e92",
+    "crates/lustr-native-core/src/public_macro_import.rs": "a89bd619071fb3f5b7d9663b75ebe808a1d0e037d6e5c3e83d13a752b287cfa1",
+    "crates/lustr-native-core/src/public_metadata_query.rs": "f2bf03daa09adc4357c941980a865dcc629c6f1c9f019c7aaa7e69661351b580",
+    "crates/lustr-native-core/src/unit_object.rs": "d43929971c980ec395913ce5f6cb13955e012e72ef2fcddcd14a24adaea1bd24",
+    "crates/lustr-native-core/src/unit_publication.rs": "035ee3f6a763a9562348f50476815bd24e7b6bc67a1a14a69edcd2fe8f44ae05",
+    "crates/lustr-native-core/src/native_object.rs": "f66296399703b7da40f1d31eab679d60767bd93859f8f51b11940fd53820c4bb",
+    "crates/lustr-native-core/src/mixed_unit.rs": "2313855e73b42ebe2bad81817918b6c323896dabebc589ebacc2395afbae7ac1",
+    "crates/lustr-native-core/LICENSE-LLVM": "8d85c1057d742e597985c7d4e6320b015a9139385cff4cbae06ffc0ebe89afee",
+    "crates/lustr-metadata-encoder/Cargo.toml": "0f63faa420b6c2e1ec91739f61f7ee77ee874233399ed8e744783325168493c2",
+    "crates/lustr-metadata-encoder/src/lib.rs": "371e468c44e8b0a87b6702b58e13dfe3686117654534c403b5b23efe249435b2",
+    "crates/lustr-metadata-encoder/src/encode.rs": "928f314bf20568ee0b37d46975f808ad5749d223d1f1defe7dd8a39d25d7f186",
+    "crates/lustr-metadata-encoder/src/extern_metadata.rs": "fba900b9d714e3fdab380c363f5b532269d8bff385f75cea34d50d73a5fd910a",
+    "crates/lustr-metadata-encoder/src/sdk.rs": "1ca10fbf946d09bc2af225c18b287d31ddd84b7162148d4339293970db0dc930",
+    "crates/lustr-metadata-encoder/src/upstream/predefined_symbols.rs": "ed7963c315a7e9ac5a51a206cc68a78e4a741291d344c74bab1dbf1fde7cf645",
+    "crates/lustr-metadata-sdk/Cargo.toml": "1251d90b032c4d77d9ef6768642ba959679a183a23f4c3d5e15748c4a02cac6a",
+    "crates/lustr-metadata-sdk/src/lib.rs": "b311d353a8f8d1e59efdf48abc573e99f2e3ce56f75a3a655886c36159467d8b",
+    "tools/build-native-toolchain.rs": "ed9162163b34b2b0fa308c13cf2ecb63d4005d740dd4f5d177354ce0e67bcdc0",
+    "tools/native-test-runtime.rs": "928a07c0e01caaa520b6bdb6e0746e5c047f34e47a7574fc416d70ed30685ed7",
+    "tools/install-native-metadata-sdk.py": "6a5e8f7728888dfb7e24ab05389ce0675a0ebbb8cd22f7a7582c9e467717b0e2",
+    "tools/check-exclusive-coverage.py": "7efdfdda368f053958ff796da7729958d4f3598b30ac3d3b9652f26ad663ed7d",
+    "tools/update-public-library-source-manifest.py": "1eb162e4d30dcccce785976730f2c6c5e6ae40cb4740e76687517427d2e3fb17",
+    "upstream/metadata-artifact-tools.json": "d1bd48f3b362645dce89172ce862f66189a1847c26e443f1861f9222021af9ff",
+    "upstream/metadata-dependency-closure.json": "a5b2d8cccb4594fa2bfe56c33d202c4e6a1f88a1e09105bac8c4f1ab1e0ca32e",
+    "upstream/rustdoc-test-builders.patch": "4be4ebb9006f3e31b1c831d242a10c321b540a8888c752760f6400f305997ca7",
+    "tools/host-proc-macro.rs": "cdb799da35cb8e667fa522fcf480b7f9074fe973da9a1a1edf6cdc4ab0bff3e1",
+    "tools/host-crate-interface.rs": "ec692d711ca90056d8dac1c3ff0d8c3d568efd5f2e04d4366b3ddf567601f618",
+    "upstream/complement-imports.json": "9ab257dde42dce0739a50855394ab8ffbb401f6bc286467bd713acd26dc95b6e",
+    "upstream/proc-macro-expansion.patch": "a7f4f05d73321d640fd131211e53f532c84c27c13cc7aaba3ba27828d6a1a004",
+    "tools/host-freestanding.rs": "6b753cf8d3fdcd1ed2618406324cf079f1c91beb454d5b8df41ec9ef2e5fa399",
+    "tools/host-retained-link.rs": "cf8e2c1a0583674c8f4def35642e665f57101145c24bfbd5bdc13944326dc9c3",
+    "tools/proc-macro-expansion/client/Cargo.toml": "7b0709ed816f2f215df9b5f787d26239e96b33bc43384a51b56c4451927f9a52",
+    "tools/proc-macro-expansion/client/Cargo.lock": "db15c149da01521cf567dc9733c6aafc3f11075218f919235c6153e8e688e45f",
+    "tools/proc-macro-expansion/client/src/main.rs": "f0db17206d69543930db2756276c044562818bd130c378de0019ab3bac0b4555",
+    "tools/proc-macro-expansion/server/Cargo.toml": "204413094ed7bc3abf672d35902583a948801ead82c323799ce80e92490d2753",
+    "tools/proc-macro-expansion/server/Cargo.lock": "d48eddcebfdb746ef0a0e957d6f5cbb7e647798e98c247614b43672ec283ab99",
+    "docs/compiler-set/evidence/metadata-sdk-receipt-20261120/receipt.json": "4e400b263bf9923616dea44ead2d77213703177d3bfaf6becd6a19a4c5a657a7",
+    "docs/compiler-set/evidence/metadata-sdk-receipt-20261120/standard-receipt.json": "fa35ba66edb2400611692c9c64a7575e0658b9876a03b0be0531aa4ed6658e9d"
+  }
+}

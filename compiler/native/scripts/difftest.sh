@@ -31,7 +31,8 @@
 #     thread::spawn) is UNSUPPORTED, and LUST_STRICT=1 makes it fail.
 #     The filter `unwind-` runs only the tests/unwind cases (their names get that prefix).
 #   EH=1 (with PANIC=unwind or RELEASE=1): lust's C with unwind tables (LUST_UNWIND_TABLES=1),
-#     built by clang -fexceptions (eh_build), in place of the tcc build.
+#     built by EH_CC/EH_CXX (default clang/clang++) with -fexceptions
+#     (eh_build), in place of the tcc build.
 #   CC_DRIVER=1 (with RELEASE=1): the lust release driver builds each case (cc_build:
 #     lust build --release --target $CC_TARGET, default the host triple, the libc rustc
 #     builds for, with the compiler LUST_CC names), the shipped release path: unwind
@@ -47,9 +48,10 @@
 #     PANIC=unwind mode. A tests/release case that lust rejects fails. The filter `release-`
 #     runs only the tests/release cases.
 # Usage: scripts/difftest.sh [filter]
-#   SANITIZE=1 also builds the generated C with gcc -fsanitize=address,undefined and runs it.
+#   SANITIZE=1 also builds the generated C with SAN_CC (default gcc), using
+#              -fsanitize=address,undefined, and runs it.
 #              Its stdout and exit status must match the plain lust build's.
-#              The gcc build uses -Werror=incompatible-pointer-types, so a
+#              The sanitized build uses -Werror=incompatible-pointer-types, so a
 #              miscompile that passes a pointer of the wrong type (which
 #              tcc accepts silently) fails loudly here. A unit whose sanitized
 #              build passes SAN_CC_LIMIT seconds (default 20) is built at -O0.
@@ -105,20 +107,21 @@ case "${PANIC:-}" in
   *) echo "FAIL: PANIC must be unset, abort or unwind, not '$PANIC'"; exit 1 ;;
 esac
 san_flags=(-O1 -w -Werror=incompatible-pointer-types -fno-sanitize-recover=undefined -fsanitize=address,undefined)
-# san_obj: this run's gcc objects of the generated C units, named by a hash of the unit's
+san_compiler=${SAN_CC:-gcc}
+# san_obj: this run's sanitized objects of the generated C units, named by a hash of the unit's
 # bytes. The runtime unit is the same in most cases and is the slow one to build, so each
 # distinct unit compiles once per run. Not kept across runs.
 san_obj=$work/san-obj
 mkdir -p "$san_obj"
-# san_cc <unit.c> <obj> <errfile>: the sanitized gcc build of one unit. ASAN's use-after-scope
+# san_cc <unit.c> <obj> <errfile>: the sanitized build of one unit. ASAN's use-after-scope
 # instrumentation at -O1 is superlinear in a long function: one 5166-line main (iter_flatten)
 # took 185 s, and 0.5 s without that check. A unit that takes longer than SAN_CC_LIMIT seconds
 # (default 20) is built again at -O0, which keeps every check (8 s for that unit).
 san_cc() {
-  timeout "${SAN_CC_LIMIT:-20}" gcc "${san_flags[@]}" -c -o "$2" "$1" 2>>"$3"
+  timeout "${SAN_CC_LIMIT:-20}" "$san_compiler" "${san_flags[@]}" -c -o "$2" "$1" 2>>"$3"
   local st=$?
   [ $st -eq 124 ] || return $st
-  gcc "${san_flags[@]}" -O0 -c -o "$2" "$1" 2>>"$3"
+  "$san_compiler" "${san_flags[@]}" -O0 -c -o "$2" "$1" 2>>"$3"
 }
 
 sanitize_case() {
@@ -137,8 +140,8 @@ sanitize_case() {
     ) 9>"$o.lock"
   done
   # -lm: an -O0 unit (san_cc) calls libm functions that -O1 builds inline.
-  if ! gcc "${san_flags[@]}" -o "$name.san" "${objs[@]}" -lm 2>>"$name.san.err"; then
-    echo "gcc could not build the generated C: $(head -3 "$name.san.err")"
+  if ! "$san_compiler" "${san_flags[@]}" -o "$name.san" "${objs[@]}" -lm 2>>"$name.san.err"; then
+    echo "$san_compiler could not build the generated C: $(head -3 "$name.san.err")"
     return 1
   fi
   # Under panic=unwind a panicking statement's C temporaries (a message
@@ -172,9 +175,11 @@ sanitize_case() {
 }
 
 # eh_build <fixture> <name>: EH=1 (unwind tables, runtime/panic.c mode 2): lust emits the C with
-# LUST_UNWIND_TABLES=1, clang builds it with -fexceptions and the C++ unit (<name>.eh.cc, the
-# throw and the catch) with clang++, and clang++ links <name>.lust. Objects are cached per run
+# LUST_UNWIND_TABLES=1, EH_CC builds it with -fexceptions and the C++ unit (<name>.eh.cc, the
+# throw and the catch) with EH_CXX, and EH_CXX links <name>.lust. Objects are cached per run
 # by the unit's hash, as the sanitized build's are.
+eh_cc=${EH_CC:-clang}
+eh_cxx=${EH_CXX:-clang++}
 eh_obj=$work/eh-obj
 mkdir -p "$eh_obj"
 eh_build() {
@@ -185,12 +190,12 @@ eh_build() {
     objs+=("$o")
     (
       flock 9
-      local cc=clang
-      [[ "$c" == *.cc ]] && cc=clang++
-      [ -f "$o" ] || { $cc -O1 -fexceptions -fno-strict-aliasing -fwrapv -w -Wno-error=implicit-function-declaration -c -o "$o.tmp" "$c" && mv "$o.tmp" "$o"; }
+      local cc=$eh_cc
+      [[ "$c" == *.cc ]] && cc=$eh_cxx
+      [ -f "$o" ] || { "$cc" -O1 -fexceptions -fno-strict-aliasing -fwrapv -w -Wno-error=implicit-function-declaration -c -o "$o.tmp" "$c" && mv "$o.tmp" "$o"; }
     ) 9>"$o.lock" || return 1
   done
-  clang++ -o "$name.lust" "${objs[@]}" -lm -lpthread
+  "$eh_cxx" -o "$name.lust" "${objs[@]}" -lm -lpthread
 }
 
 # cc_build <fixture> <name>: CC_DRIVER=1, the release driver build of one case (see the header).

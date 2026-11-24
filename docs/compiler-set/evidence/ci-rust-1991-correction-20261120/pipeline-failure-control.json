@@ -1,0 +1,14 @@
+{
+  "scope": "Controlled pipeline failure only. The Cargo test subprocess is replaced by an explicit exit101 sentinel; this is not a real compiler test result.",
+  "source_commit": "960b1fa47efed2324388565f387fd9e7a00ca547",
+  "workflow_sha256": "c6fe0d9794fbe1081e4ee5b4a26050bb19b880a8c70cb623430415386b1345e2",
+  "step_sha256": "1160684ceea0fa4c0b82caba21f2d17fcd5c8179fd619e47a105ba6838cdf64e",
+  "exit_code": 101,
+  "expected_exit_code": 101,
+  "log_created": true,
+  "failure_text_retained": true,
+  "always_upload_references_log": true,
+  "log": "forced-failure/cargo-gate-controls.log",
+  "log_sha256": "f91654fb6cf45d7c873b0d0e715515d9d3669d673aeba1e925a773ce1e1fbb1f",
+  "sentinel_sha256": "2703d9eccf59383c64a66daa402bd8da2eb852c74ccb33b8ca83d76862049cbe"
+}

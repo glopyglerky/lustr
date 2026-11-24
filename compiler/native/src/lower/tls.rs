@@ -132,7 +132,7 @@ impl Ex<'_, '_> {
     // ---------- IR building ----------
 
     fn local(&mut self, ty: Ty) -> Local {
-        self.body.locals.push(LocalDecl { ty, mutable: true, name: None });
+        self.body.locals.push(LocalDecl { ty, mutable: true, name: None, binding_span: None });
         self.body.locals.len() as Local - 1
     }
     fn block(&mut self) -> Bb {
@@ -165,7 +165,7 @@ impl Ex<'_, '_> {
         self.term(Terminator::Goto(b));
     }
     /// Runs `f` with its statements' span at line `line`, col `col` of
-    /// std's thread/local.rs, where rustc 1.99 reports the panics of
+    /// std's thread/local.rs, where the pinned Rust source reports the panics of
     /// these key methods (W-PANIC; cgen's `std_loc` file 10).
     fn at_local_rs<T>(&mut self, line: u32, col: u32, f: impl FnOnce(&mut Self) -> T) -> T {
         let saved = std::mem::replace(&mut self.span, Span::std_site(10, line, col));
@@ -254,7 +254,7 @@ impl Ex<'_, '_> {
         let Some(on_none) = on_none else {
             let r = self.local(rt);
             // `with`'s `expect` in local.rs (`set` passes its own site).
-            let (line, col) = self.access_site.take().unwrap_or((429, 25));
+            let (line, col) = self.access_site.take().unwrap_or((436, 25));
             self.at_local_rs(line, col, |this| this.call(CallTarget::Builtin(Builtin::TlsAccess), vec![key.clone(), init.clone()], Place::local(r)));
             return Ok((r, None));
         };
@@ -385,7 +385,7 @@ impl Ex<'_, '_> {
                 let u = self.body.tys.refcell_elem(t).ok_or("thread_local expansion: with_borrow on a non-RefCell")?;
                 let (f, fty) = self.own(args.get(1).cloned().ok_or("thread_local expansion: missing closure")?)?;
                 let (r, _) = self.access(&key, &init, t, None)?;
-                let g = self.guard(r, u, m, if m { (714, 38) } else { (681, 34) });
+                let g = self.guard(r, u, m, if m { (721, 38) } else { (688, 34) });
                 let ut = self.body.tys.mk_ref(m, u);
                 let ur = self.local(ut);
                 self.assign(Place::local(ur), Rvalue::Ref(m, Place::local(g).deref()));
@@ -433,7 +433,7 @@ impl Ex<'_, '_> {
                 // `RefCell::replace` reports its call in local.rs; `take`
                 // goes through cell.rs (cgen's RefCellTake site).
                 if op == B::RefCellReplace {
-                    self.at_local_rs(820, 31, |this| this.call(CallTarget::Builtin(op), all, dest));
+                    self.at_local_rs(827, 31, |this| this.call(CallTarget::Builtin(op), all, dest));
                 } else {
                     self.call(CallTarget::Builtin(op), all, dest);
                 }
@@ -492,7 +492,7 @@ impl Ex<'_, '_> {
         self.access_site = Some((487, 25));
         let (r, _) = self.access(key, init, t, None)?;
         if refcell.is_some() {
-            let g = self.guard(r, u, true, (752, 23));
+            let g = self.guard(r, u, true, (759, 23));
             self.assign(Place::local(g).deref(), Rvalue::Use(Operand::Move(Place::local(vl))));
             self.drop_local(g);
         } else {

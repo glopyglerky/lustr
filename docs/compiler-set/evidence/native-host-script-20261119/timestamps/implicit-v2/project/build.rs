@@ -1,0 +1,1 @@
+fn main() { let v = std::fs::metadata("build.rs").unwrap().modified().unwrap().duration_since(std::time::UNIX_EPOCH).unwrap().as_secs(); println!("cargo:rerun-if-env-changed=SOURCE_MTIME_UNUSED"); println!("cargo:rustc-env=STAMP={}", v); }

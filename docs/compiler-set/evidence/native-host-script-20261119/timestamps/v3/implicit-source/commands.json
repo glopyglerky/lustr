@@ -1,0 +1,198 @@
+[
+  {
+    "name": "before-native-build",
+    "argv": [
+      "/tmp/lustr-cargo-plan-build/package-v3/bin/lustr",
+      "build",
+      "src/main.rs",
+      "--manifest-path",
+      "Cargo.toml",
+      "--offline",
+      "-o",
+      "/tmp/lustr-host-timestamp-review-v3/implicit-source/before-native"
+    ],
+    "cwd": "/tmp/lustr-host-timestamp-review-v3/implicit-source/project",
+    "env": {
+      "PATH": "/usr/bin:/bin",
+      "HOME": "/tmp/lustr-host-timestamp-review-v3/implicit-source/home",
+      "CARGO_HOME": "/tmp/lustr-host-timestamp-review-v3/implicit-source/cargo-home",
+      "CARGO_NET_OFFLINE": "true",
+      "CARGO_BUILD_JOBS": "2",
+      "CARGO_TARGET_DIR": "/tmp/lustr-host-timestamp-review-v3/implicit-source/native-target",
+      "CARGO_BUILD_BUILD_DIR": "/tmp/lustr-host-timestamp-review-v3/implicit-source/native-intermediates",
+      "LUST_NO_DAEMON": "1",
+      "LUST_CACHE_DIR": "/tmp/lustr-host-timestamp-review-v3/implicit-source/native-cache",
+      "LUSTR_TRACE_PATH": "/tmp/lustr-host-timestamp-review-v3/implicit-source/before.trace.jsonl"
+    },
+    "exit": 0,
+    "stdout_file": "before-native-build.stdout",
+    "stderr_file": "before-native-build.stderr"
+  },
+  {
+    "name": "before-native-run",
+    "argv": [
+      "/tmp/lustr-host-timestamp-review-v3/implicit-source/before-native"
+    ],
+    "cwd": "/tmp/lustr-host-timestamp-review-v3/implicit-source/project",
+    "env": {
+      "PATH": "/usr/bin:/bin",
+      "HOME": "/tmp/lustr-host-timestamp-review-v3/implicit-source/home",
+      "CARGO_HOME": "/tmp/lustr-host-timestamp-review-v3/implicit-source/cargo-home",
+      "CARGO_NET_OFFLINE": "true",
+      "CARGO_BUILD_JOBS": "2",
+      "CARGO_TARGET_DIR": "/tmp/lustr-host-timestamp-review-v3/implicit-source/native-target",
+      "CARGO_BUILD_BUILD_DIR": "/tmp/lustr-host-timestamp-review-v3/implicit-source/native-intermediates",
+      "LUST_NO_DAEMON": "1",
+      "LUST_CACHE_DIR": "/tmp/lustr-host-timestamp-review-v3/implicit-source/native-cache",
+      "LUSTR_TRACE_PATH": "/tmp/lustr-host-timestamp-review-v3/implicit-source/before.trace.jsonl"
+    },
+    "exit": 0,
+    "stdout_file": "before-native-run.stdout",
+    "stderr_file": "before-native-run.stderr"
+  },
+  {
+    "name": "before-oracle-build",
+    "argv": [
+      "/workspace/scratch/bf3e8280f86b/tooling/rustup/toolchains/nightly-2026-11-09-x86_64-unknown-linux-gnu/bin/cargo",
+      "build",
+      "--offline",
+      "-q"
+    ],
+    "cwd": "/tmp/lustr-host-timestamp-review-v3/implicit-source/project",
+    "env": {
+      "PATH": "/workspace/scratch/bf3e8280f86b/tooling/rustup/toolchains/nightly-2026-11-09-x86_64-unknown-linux-gnu/bin:/usr/bin:/bin",
+      "HOME": "/tmp/lustr-host-timestamp-review-v3/implicit-source/home",
+      "CARGO_HOME": "/tmp/lustr-host-timestamp-review-v3/implicit-source/cargo-home",
+      "CARGO_NET_OFFLINE": "true",
+      "CARGO_BUILD_JOBS": "2",
+      "CARGO_TARGET_DIR": "/tmp/lustr-host-timestamp-review-v3/implicit-source/oracle-target",
+      "CARGO_BUILD_BUILD_DIR": "/tmp/lustr-host-timestamp-review-v3/implicit-source/oracle-intermediates",
+      "LUST_NO_DAEMON": "1",
+      "LUST_CACHE_DIR": "/tmp/lustr-host-timestamp-review-v3/implicit-source/native-cache",
+      "RUSTC": "/workspace/scratch/bf3e8280f86b/tooling/rustup/toolchains/nightly-2026-11-09-x86_64-unknown-linux-gnu/bin/rustc"
+    },
+    "exit": 0,
+    "stdout_file": "before-oracle-build.stdout",
+    "stderr_file": "before-oracle-build.stderr"
+  },
+  {
+    "name": "before-oracle-run",
+    "argv": [
+      "/tmp/lustr-host-timestamp-review-v3/implicit-source/oracle-target/debug/source-mtime-control"
+    ],
+    "cwd": "/tmp/lustr-host-timestamp-review-v3/implicit-source/project",
+    "env": {
+      "PATH": "/workspace/scratch/bf3e8280f86b/tooling/rustup/toolchains/nightly-2026-11-09-x86_64-unknown-linux-gnu/bin:/usr/bin:/bin",
+      "HOME": "/tmp/lustr-host-timestamp-review-v3/implicit-source/home",
+      "CARGO_HOME": "/tmp/lustr-host-timestamp-review-v3/implicit-source/cargo-home",
+      "CARGO_NET_OFFLINE": "true",
+      "CARGO_BUILD_JOBS": "2",
+      "CARGO_TARGET_DIR": "/tmp/lustr-host-timestamp-review-v3/implicit-source/oracle-target",
+      "CARGO_BUILD_BUILD_DIR": "/tmp/lustr-host-timestamp-review-v3/implicit-source/oracle-intermediates",
+      "LUST_NO_DAEMON": "1",
+      "LUST_CACHE_DIR": "/tmp/lustr-host-timestamp-review-v3/implicit-source/native-cache",
+      "RUSTC": "/workspace/scratch/bf3e8280f86b/tooling/rustup/toolchains/nightly-2026-11-09-x86_64-unknown-linux-gnu/bin/rustc"
+    },
+    "exit": 0,
+    "stdout_file": "before-oracle-run.stdout",
+    "stderr_file": "before-oracle-run.stderr"
+  },
+  {
+    "name": "after-native-build",
+    "argv": [
+      "/tmp/lustr-cargo-plan-build/package-v3/bin/lustr",
+      "build",
+      "src/main.rs",
+      "--manifest-path",
+      "Cargo.toml",
+      "--offline",
+      "-o",
+      "/tmp/lustr-host-timestamp-review-v3/implicit-source/after-native"
+    ],
+    "cwd": "/tmp/lustr-host-timestamp-review-v3/implicit-source/project",
+    "env": {
+      "PATH": "/usr/bin:/bin",
+      "HOME": "/tmp/lustr-host-timestamp-review-v3/implicit-source/home",
+      "CARGO_HOME": "/tmp/lustr-host-timestamp-review-v3/implicit-source/cargo-home",
+      "CARGO_NET_OFFLINE": "true",
+      "CARGO_BUILD_JOBS": "2",
+      "CARGO_TARGET_DIR": "/tmp/lustr-host-timestamp-review-v3/implicit-source/native-target",
+      "CARGO_BUILD_BUILD_DIR": "/tmp/lustr-host-timestamp-review-v3/implicit-source/native-intermediates",
+      "LUST_NO_DAEMON": "1",
+      "LUST_CACHE_DIR": "/tmp/lustr-host-timestamp-review-v3/implicit-source/native-cache",
+      "LUSTR_TRACE_PATH": "/tmp/lustr-host-timestamp-review-v3/implicit-source/after.trace.jsonl"
+    },
+    "exit": 0,
+    "stdout_file": "after-native-build.stdout",
+    "stderr_file": "after-native-build.stderr"
+  },
+  {
+    "name": "after-native-run",
+    "argv": [
+      "/tmp/lustr-host-timestamp-review-v3/implicit-source/after-native"
+    ],
+    "cwd": "/tmp/lustr-host-timestamp-review-v3/implicit-source/project",
+    "env": {
+      "PATH": "/usr/bin:/bin",
+      "HOME": "/tmp/lustr-host-timestamp-review-v3/implicit-source/home",
+      "CARGO_HOME": "/tmp/lustr-host-timestamp-review-v3/implicit-source/cargo-home",
+      "CARGO_NET_OFFLINE": "true",
+      "CARGO_BUILD_JOBS": "2",
+      "CARGO_TARGET_DIR": "/tmp/lustr-host-timestamp-review-v3/implicit-source/native-target",
+      "CARGO_BUILD_BUILD_DIR": "/tmp/lustr-host-timestamp-review-v3/implicit-source/native-intermediates",
+      "LUST_NO_DAEMON": "1",
+      "LUST_CACHE_DIR": "/tmp/lustr-host-timestamp-review-v3/implicit-source/native-cache",
+      "LUSTR_TRACE_PATH": "/tmp/lustr-host-timestamp-review-v3/implicit-source/after.trace.jsonl"
+    },
+    "exit": 0,
+    "stdout_file": "after-native-run.stdout",
+    "stderr_file": "after-native-run.stderr"
+  },
+  {
+    "name": "after-oracle-build",
+    "argv": [
+      "/workspace/scratch/bf3e8280f86b/tooling/rustup/toolchains/nightly-2026-11-09-x86_64-unknown-linux-gnu/bin/cargo",
+      "build",
+      "--offline",
+      "-q"
+    ],
+    "cwd": "/tmp/lustr-host-timestamp-review-v3/implicit-source/project",
+    "env": {
+      "PATH": "/workspace/scratch/bf3e8280f86b/tooling/rustup/toolchains/nightly-2026-11-09-x86_64-unknown-linux-gnu/bin:/usr/bin:/bin",
+      "HOME": "/tmp/lustr-host-timestamp-review-v3/implicit-source/home",
+      "CARGO_HOME": "/tmp/lustr-host-timestamp-review-v3/implicit-source/cargo-home",
+      "CARGO_NET_OFFLINE": "true",
+      "CARGO_BUILD_JOBS": "2",
+      "CARGO_TARGET_DIR": "/tmp/lustr-host-timestamp-review-v3/implicit-source/oracle-target",
+      "CARGO_BUILD_BUILD_DIR": "/tmp/lustr-host-timestamp-review-v3/implicit-source/oracle-intermediates",
+      "LUST_NO_DAEMON": "1",
+      "LUST_CACHE_DIR": "/tmp/lustr-host-timestamp-review-v3/implicit-source/native-cache",
+      "RUSTC": "/workspace/scratch/bf3e8280f86b/tooling/rustup/toolchains/nightly-2026-11-09-x86_64-unknown-linux-gnu/bin/rustc"
+    },
+    "exit": 0,
+    "stdout_file": "after-oracle-build.stdout",
+    "stderr_file": "after-oracle-build.stderr"
+  },
+  {
+    "name": "after-oracle-run",
+    "argv": [
+      "/tmp/lustr-host-timestamp-review-v3/implicit-source/oracle-target/debug/source-mtime-control"
+    ],
+    "cwd": "/tmp/lustr-host-timestamp-review-v3/implicit-source/project",
+    "env": {
+      "PATH": "/workspace/scratch/bf3e8280f86b/tooling/rustup/toolchains/nightly-2026-11-09-x86_64-unknown-linux-gnu/bin:/usr/bin:/bin",
+      "HOME": "/tmp/lustr-host-timestamp-review-v3/implicit-source/home",
+      "CARGO_HOME": "/tmp/lustr-host-timestamp-review-v3/implicit-source/cargo-home",
+      "CARGO_NET_OFFLINE": "true",
+      "CARGO_BUILD_JOBS": "2",
+      "CARGO_TARGET_DIR": "/tmp/lustr-host-timestamp-review-v3/implicit-source/oracle-target",
+      "CARGO_BUILD_BUILD_DIR": "/tmp/lustr-host-timestamp-review-v3/implicit-source/oracle-intermediates",
+      "LUST_NO_DAEMON": "1",
+      "LUST_CACHE_DIR": "/tmp/lustr-host-timestamp-review-v3/implicit-source/native-cache",
+      "RUSTC": "/workspace/scratch/bf3e8280f86b/tooling/rustup/toolchains/nightly-2026-11-09-x86_64-unknown-linux-gnu/bin/rustc"
+    },
+    "exit": 0,
+    "stdout_file": "after-oracle-run.stdout",
+    "stderr_file": "after-oracle-run.stderr"
+  }
+]

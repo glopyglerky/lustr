@@ -1,0 +1,84 @@
+{
+  "campaign_conclusion": "passed",
+  "checkout": "5a3c5666a16d46629a4787e37ca9b20e65720ccc",
+  "comparisons": 5,
+  "encrypted_artifact": 14375565377,
+  "files": {
+    "README.md": {
+      "bytes": 7644,
+      "sha256": "220f39bcb1f9a22c368a44eabe02d3e4d8b740cda9289dd5011d6d45c50c6b24"
+    },
+    "artifacts/encrypted-original.zip": {
+      "bytes": 1243647,
+      "sha256": "b6afe1c1619ece2c726c545537b66956dd6abb7f8b0376754bb98729fdbe5d24"
+    },
+    "artifacts/public-original.zip": {
+      "bytes": 32332,
+      "sha256": "bf3bc4f222afbce2a729788573ceb0a86b126bf0cba78d39039c9201212876f3"
+    },
+    "github-artifacts.json": {
+      "bytes": 3666,
+      "sha256": "106bb750ac63e67236178333d9a6a28c59b6605b1ca214e77969aeadb9cfb4d1"
+    },
+    "github-jobs-at-completion.json": {
+      "bytes": 27584,
+      "sha256": "550ace723464f24c7f57a97fa675986276aec234992264193f1cfc51ba6c0f47"
+    },
+    "public/README.md": {
+      "bytes": 3362,
+      "sha256": "60f168f0a471b2a9a08554f39d87bceaccbdb7d7c31e67ac89bd2cf19437d805"
+    },
+    "public/SHA256SUMS": {
+      "bytes": 389,
+      "sha256": "56121dd53274c818895589211ff99e3fd65a05ddad9f808df8bedacffeff6a3b"
+    },
+    "public/campaign.json": {
+      "bytes": 2438,
+      "sha256": "57bd3483c1ef385df2a98bd2f752f542922be0cdb2a2d46de05ed6cd9df74b72"
+    },
+    "public/host.json": {
+      "bytes": 2270,
+      "sha256": "64003d69c5786a8d27e7188a87aabeb57e9f2aab9850601b7204c3f7249b815f"
+    },
+    "public/replay.json": {
+      "bytes": 7427,
+      "sha256": "a136c4c1401686ecee3fc3e02ab6c0813f481d8158043f7026e773bed4dd6732"
+    },
+    "public/samples.json": {
+      "bytes": 288852,
+      "sha256": "0e939892cd2294d6cb75d2be7aa7481141c084ba475548d93ee8c2b5104751ac"
+    },
+    "recovery/receipt.json": {
+      "bytes": 1276,
+      "sha256": "8dee0721d8b3ecf695f500737681a7712e600608314423083e36999f8b41eea1"
+    },
+    "recovery/replay-build.json": {
+      "bytes": 1019,
+      "sha256": "048871d63ccc300fd3e6d5d5f1bb9caf0bff16b250bd733536601e2085dfe4ed"
+    },
+    "recovery/result.json": {
+      "bytes": 1828,
+      "sha256": "674e5e9b49200705fb9e6f3200170e51aab276f844ea1249c53908d3b9822271"
+    },
+    "retention/receipt.json": {
+      "bytes": 1262,
+      "sha256": "4620cefa5369bdb4ad0a2ae3006dfa741de4601d827fe94e3cb60b9212260a0b"
+    },
+    "retention/status.json": {
+      "bytes": 511,
+      "sha256": "a38559e63ed3d3d84f2dc4821f5a87d165311ee40d53aac6cfcb1602176b3b64"
+    },
+    "timings.csv": {
+      "bytes": 21105,
+      "sha256": "0579751c16c24cbac06319cff5e61482f803f073e37956da9a6627d48bbad9df"
+    }
+  },
+  "head": "6bf6e3e3384a99fbaeab2c66aa7c97bc73231996",
+  "job": 134380277750,
+  "overall_job_conclusion": "failure",
+  "public_artifact": 14374661651,
+  "run": 44179667793,
+  "schema": "lustr-committed-project-evidence-v1",
+  "timed_commands": 120,
+  "tree": "02652f033e84c0957dd2b99eb562db8171289e50"
+}

@@ -1,0 +1,68 @@
+{
+  "schema": "native-metadata-join-hosted-attempt-v1",
+  "run_id": 44673875771,
+  "run_attempt": 1,
+  "run_url": "https://github.com/glopyglerky/lustr/actions/runs/44673875771",
+  "published_head": "fb54fbe0da2efa80d33430492c131f4ddc930dc5",
+  "actual_checkout": "0207f175dc9124848bb984ad04fc21b74ba0daff",
+  "actual_source_tree": "d798678f4fa9cbf32a441113c9b1861f22e22d67",
+  "native_source_tree": "bf933c382fd99e52dd2586ebc46f0d0aceaa71a8",
+  "construction_fixture": {
+    "job_id": 136080961355,
+    "passed": false,
+    "first_failure": "construction-source/crates/lustr-native-metadata-qualification/Cargo.toml was absent from the test fixture",
+    "subsequent_missing_tinycc": "Construction was skipped after the first failure; downstream missing-input errors, not separate demonstrated compiler defects."
+  },
+  "metadata_campaign": {
+    "job_id": 136080961680,
+    "candidate_build_completed": true,
+    "candidate_sha256": "53ea8dee5c87eb14dcb92bb24d40823c02f359d199110470ebd28d3e591acc29",
+    "candidate_size": 258931472,
+    "evaluator_control_tests_passed": 11,
+    "candidate_first_invocation_exit": 0,
+    "candidate_artifact_emitted": true,
+    "campaign_exit": 1,
+    "campaign_passed": false,
+    "functional_passed": false,
+    "exec_trace_qualified": false,
+    "completed_campaign_controls": [
+      "compiler-trap-control"
+    ],
+    "first_failure": "candidate attempted an undeclared process: /usr/bin/sha256sum",
+    "cause": "The freestanding object path captured an unused native-semantic-artifact runtime record, whose source digest invoked sha256sum.",
+    "original_metadata_reader_executed": false,
+    "ordinary_rust_consumer_executed": false,
+    "runtime_result_assertions_executed": 0,
+    "semantic_negative_controls_executed": false,
+    "post_campaign_source_and_built_tool_verification_reached": false
+  },
+  "full_compiler_qualification": false,
+  "retained_public_integration": false,
+  "speed_qualification": false,
+  "later_source_qualified_by_this_attempt": false,
+  "records_archive": {
+    "path": "first-failure-records.tar.gz",
+    "sha256": "a43375bdfb073c3b0d3e2aafffe7b34579b94c825a31b9bb679dedea3e020c79",
+    "size": 1043214,
+    "files": 61
+  },
+  "records_inventory": {
+    "path": "first-failure-inventory.json",
+    "sha256": "15da130d41cb96e3ea6d7d87b208c0d6a67b5e926306bd6c07a97a884cbae615"
+  },
+  "source_boundary": "Pre-build source manifest and actual binary retained. The campaign failed before its after-run source/tool checks; no complete source-stability or successful consumer qualification claim follows.",
+  "github_source_binding": [
+    {
+      "commit": "fb54fbe0da2efa80d33430492c131f4ddc930dc5",
+      "tree": "d798678f4fa9cbf32a441113c9b1861f22e22d67",
+      "record_path": "first-attempt/github-commits/fb54fbe0da2efa80d33430492c131f4ddc930dc5.json",
+      "sha256": "fed84aee084fb075ac48cd7a30f931b914291d4a6194ef01a9bbf813e9d89e8c"
+    },
+    {
+      "commit": "0207f175dc9124848bb984ad04fc21b74ba0daff",
+      "tree": "d798678f4fa9cbf32a441113c9b1861f22e22d67",
+      "record_path": "first-attempt/github-commits/0207f175dc9124848bb984ad04fc21b74ba0daff.json",
+      "sha256": "d1538866570f92628584ae6c163a023de46a5d982581d455e6db345acfb4e106"
+    }
+  ]
+}

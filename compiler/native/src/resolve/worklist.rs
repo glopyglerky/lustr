@@ -32,7 +32,7 @@ use crate::driver::graph::Namespace;
 use crate::intern::{FxMap, Interner, Known, Sym};
 use crate::stdload::StdPlan;
 use crate::ty::defs::{ModuleId, ROOT_MODULE};
-use crate::{lexer, parser, scan};
+use crate::{expand, lexer, parser, scan};
 use std::path::PathBuf;
 
 /// The selected crate to resolve: its root file and text (with any std
@@ -45,6 +45,7 @@ use std::path::PathBuf;
 /// same-crate paths.
 #[derive(Clone)]
 pub struct CrateInput {
+    pub(crate) procedural_macros: Option<std::sync::Arc<dyn expand::ProceduralMacros>>,
     pub root_path: PathBuf,
     pub root_text: String,
     pub env: CfgEnv,
@@ -71,6 +72,7 @@ pub struct CrateInput {
 /// selected crate or one source dependency).
 #[derive(Clone)]
 struct OneInput {
+    pub(crate) procedural_macros: Option<std::sync::Arc<dyn expand::ProceduralMacros>>,
     root_path: PathBuf,
     root_text: String,
     env: CfgEnv,
@@ -263,7 +265,7 @@ fn lex_file(text: &str, file: FileId, interner: &Interner) -> Result<lexer::Lexe
 
 /// Joins piece lexes in order: one final `Eof`, and string-table indexes
 /// (`Tok::shift_strings`) moved past the strings of earlier pieces.
-fn join_lexed(parts: Vec<lexer::Lexed>) -> lexer::Lexed {
+pub(crate) fn join_lexed(parts: Vec<lexer::Lexed>) -> lexer::Lexed {
     let mut out = lexer::Lexed { tokens: Vec::with_capacity(parts.iter().map(|p| p.tokens.len()).sum()), strings: Vec::new() };
     let last = parts.len() - 1;
     for (k, mut part) in parts.into_iter().enumerate() {
@@ -353,7 +355,7 @@ fn starts_item(toks: &[lexer::Token], i: usize, union: Sym) -> bool {
         | Tok::Unsafe
         | Tok::Async => true,
         // `union U` (a contextual keyword), and a macro call `name!` or `path::name!`.
-        Tok::Ident(s) => (s == union && matches!(next, Some(Tok::Ident(_)))) || is_macro_call(toks, i),
+        Tok::Ident(s, _) => (s == union && matches!(next, Some(Tok::Ident(_, _)))) || is_macro_call(toks, i),
         Tok::SelfUpper | Tok::Crate | Tok::Super | Tok::SelfLower | Tok::PathSep => is_macro_call(toks, i),
         _ => false,
     }
@@ -367,7 +369,7 @@ fn is_macro_call(toks: &[lexer::Token], mut i: usize) -> bool {
         i += 1;
     }
     loop {
-        if !matches!(toks.get(i).map(|t| t.tok), Some(Tok::Ident(_) | Tok::SelfUpper | Tok::Crate | Tok::Super | Tok::SelfLower)) {
+        if !matches!(toks.get(i).map(|t| t.tok), Some(Tok::Ident(_, _) | Tok::SelfUpper | Tok::Crate | Tok::Super | Tok::SelfLower)) {
             return false;
         }
         match toks.get(i + 1).map(|t| t.tok) {
@@ -404,17 +406,17 @@ fn route_keywords(lexed: &lexer::Lexed, interner: &Interner) -> bool {
                 let prev = if i == 0 { None } else { Some(toks[i - 1].tok) };
                 if !matches!(
                     prev,
-                    Some(Tok::Ident(_)) | Some(Tok::SelfUpper) | Some(Tok::Gt) | Some(Tok::Crate) | Some(Tok::Super) | Some(Tok::SelfLower)
+                    Some(Tok::Ident(_, _)) | Some(Tok::SelfUpper) | Some(Tok::Gt) | Some(Tok::Crate) | Some(Tok::Super) | Some(Tok::SelfLower)
                 ) {
                     return true;
                 }
             }
-            Tok::Const if matches!(toks.get(i + 1).map(|t| t.tok), Some(Tok::Ident(_)) | Some(Tok::Underscore)) => return true,
+            Tok::Const if matches!(toks.get(i + 1).map(|t| t.tok), Some(Tok::Ident(_, _)) | Some(Tok::Underscore)) => return true,
             Tok::Type => return true,
             // A root type named like a std prelude type or a primitive takes
             // a flat name only the resolver gives (`flat_name`).
             Tok::Struct | Tok::Enum | Tok::Trait
-                if matches!(toks.get(i + 1).map(|t| t.tok), Some(Tok::Ident(s))
+                if matches!(toks.get(i + 1).map(|t| t.tok), Some(Tok::Ident(s, _))
                     if PRELUDE_TYPES.contains(&interner.get(s)) || crate::ty::lang::is_primitive_type_name(interner.get(s))) =>
             {
                 return true;
@@ -426,16 +428,16 @@ fn route_keywords(lexed: &lexer::Lexed, interner: &Interner) -> bool {
                     j += 1;
                 }
                 if toks.get(j).map(|t| t.tok) == Some(Tok::LBracket)
-                    && let Some(Tok::Ident(s)) = toks.get(j + 1).map(|t| t.tok)
+                    && let Some(Tok::Ident(s, _)) = toks.get(j + 1).map(|t| t.tok)
                     && matches!(interner.get(s), "cfg" | "cfg_attr" | "path" | "macro_use" | "macro_export" | "no_implicit_prelude")
                 {
                     return true;
                 }
             }
-            Tok::Ident(s) if s == macro_rules => return true,
+            Tok::Ident(s, _) if s == macro_rules => return true,
             // A path from `alloc`: only the resolver knows whether the
             // crate root links it (`extern crate alloc;`).
-            Tok::Ident(s)
+            Tok::Ident(s, _)
                 if s == alloc_sym
                     && matches!(toks.get(i + 1).map(|t| t.tok), Some(Tok::PathSep))
                     && (i == 0 || toks[i - 1].tok != Tok::PathSep) =>
@@ -445,16 +447,16 @@ fn route_keywords(lexed: &lexer::Lexed, interner: &Interner) -> bool {
             // `std::io::..` and the other platform modules: their items
             // live in the shipped platform crate, which only the
             // worklist loads (W-SHIM).
-            Tok::Ident(s)
+            Tok::Ident(s, _)
                 if s == std_sym
                     && matches!(toks.get(i + 1).map(|t| t.tok), Some(Tok::PathSep))
                     && match toks.get(i + 2).map(|t| t.tok) {
-                        Some(Tok::Ident(m)) => {
+                        Some(Tok::Ident(m, _)) => {
                             // `std::env::args` (and its `Args` type) and
                             // `std::process::exit` keep the compiler's std
                             // handling: no route change.
                             let item = match (toks.get(i + 3).map(|t| t.tok), toks.get(i + 4).map(|t| t.tok)) {
-                                (Some(Tok::PathSep), Some(Tok::Ident(n))) => interner.get(n),
+                                (Some(Tok::PathSep), Some(Tok::Ident(n, _))) => interner.get(n),
                                 _ => "",
                             };
                             match interner.get(m) {
@@ -474,7 +476,7 @@ fn route_keywords(lexed: &lexer::Lexed, interner: &Interner) -> bool {
             }
             // An `include!` can introduce items and macro definitions
             // other chunks would not see (added for W-MACRO).
-            Tok::Ident(s) if s == include && matches!(toks.get(i + 1).map(|t| t.tok), Some(Tok::Bang)) => return true,
+            Tok::Ident(s, _) if s == include && matches!(toks.get(i + 1).map(|t| t.tok), Some(Tok::Bang)) => return true,
             _ => {}
         }
     }
@@ -503,7 +505,7 @@ impl NestedFnScan {
         for (i, t) in toks.iter().enumerate() {
             let next = |k: usize| toks.get(i + k).map(|t| t.tok);
             match t.tok {
-                Tok::Fn if matches!(next(1), Some(Tok::Ident(_))) => {
+                Tok::Fn if matches!(next(1), Some(Tok::Ident(_, _))) => {
                     if self.stack.iter().any(|&(body, _)| body) && self.stack.last().is_some_and(|&(_, g)| g) {
                         return true;
                     }
@@ -576,7 +578,8 @@ pub(crate) fn expand_cfg(env: &CfgEnv) -> crate::expand::builtin::CfgEnv {
     for f in &env.features {
         facts.push(("feature".to_string(), Some(f.clone())));
     }
-    crate::expand::builtin::CfgEnv { test: env.flags.contains("test"), debug_assertions: env.flags.contains("debug_assertions"), facts, panic_unwind: false }
+    crate::expand::builtin::CfgEnv { test: env.flags.contains("test"), debug_assertions: env.flags.contains("debug_assertions"),
+        facts, panic_unwind: false, core_prelude: false, explicit_std: false }
 }
 
 /// Evaluates every `#[cfg]`/`#[cfg_attr]` predicate and `cfg!` call in
@@ -594,10 +597,10 @@ pub(crate) fn check_cfg_names(lexed: &lexer::Lexed, env: &CfgEnv, interner: &Int
     let mut i = 0;
     while i < toks.len() {
         // Skip a macro_rules body (one delimited group after the name).
-        if toks[i].tok == Tok::Ident(macro_rules) && toks.get(i + 1).map(|t| t.tok) == Some(Tok::Bang) {
+        if matches!(toks[i].tok, Tok::Ident(s, _) if s == macro_rules) && toks.get(i + 1).map(|t| t.tok) == Some(Tok::Bang) {
             i += 2;
             // Optional macro name, then the delimited body.
-            if matches!(toks.get(i).map(|t| t.tok), Some(Tok::Ident(_))) {
+            if matches!(toks.get(i).map(|t| t.tok), Some(Tok::Ident(_, _))) {
                 i += 1;
             }
             if let Some(open) = toks.get(i).map(|t| t.tok) {
@@ -632,7 +635,7 @@ pub(crate) fn check_cfg_names(lexed: &lexer::Lexed, env: &CfgEnv, interner: &Int
                 j += 1;
             }
             if toks.get(j).map(|t| t.tok) == Some(Tok::LBracket) {
-                if let Some(Tok::Ident(s)) = toks.get(j + 1).map(|t| t.tok) {
+                if let Some(Tok::Ident(s, _)) = toks.get(j + 1).map(|t| t.tok) {
                     let name = interner.get(s);
                     if (name == "cfg" || name == "cfg_attr") && toks.get(j + 2).map(|t| t.tok) == Some(Tok::LParen) {
                         // Trees inside the parens; for cfg_attr only
@@ -667,7 +670,7 @@ pub(crate) fn check_cfg_names(lexed: &lexer::Lexed, env: &CfgEnv, interner: &Int
             }
         }
         // `cfg!(...)` in expression position.
-        if toks[i].tok == Tok::Ident(cfg)
+        if matches!(toks[i].tok, Tok::Ident(s, _) if s == cfg)
             && toks.get(i + 1).map(|t| t.tok) == Some(Tok::Bang)
             && toks.get(i + 2).map(|t| t.tok) == Some(Tok::LParen)
         {
@@ -698,7 +701,7 @@ pub(crate) fn check_cfg_names(lexed: &lexer::Lexed, env: &CfgEnv, interner: &Int
 /// Builds a source map from discovered (path, text, file id) triples: an id no triple has
 /// gets an empty file, and of two triples with one id the map keeps the first (the text
 /// keeps both). The files' line indexes are made on the pool (`SourceMap::with_texts`).
-fn make_map(seen: &[(PathBuf, String, FileId)]) -> (SourceMap, String) {
+fn make_map(seen: &[(PathBuf, String, FileId)], origin: Option<(FileId, &expand::StdinOrigin)>) -> (SourceMap, String) {
     let mut sorted: Vec<&(PathBuf, String, FileId)> = seen.iter().collect();
     sorted.sort_by_key(|(_, _, f)| f.0);
     let mut files: Vec<(String, &str)> = Vec::with_capacity(sorted.len());
@@ -708,12 +711,18 @@ fn make_map(seen: &[(PathBuf, String, FileId)]) -> (SourceMap, String) {
             files.push((String::new(), ""));
         }
         if files.len() as u32 == file_id.0 {
-            files.push((path.to_string_lossy().into_owned(), text));
+            let name = origin.filter(|(id, _)| id == file_id)
+                .map_or_else(|| path.to_string_lossy().into_owned(), |(_, origin)| origin.display.clone());
+            files.push((name, text));
         }
         all.push_str(text);
         all.push('\n');
     }
-    (SourceMap::with_texts(&files), all)
+    let mut map = SourceMap::with_texts(&files);
+    if let Some((file, origin)) = origin && let Some(offset) = origin.doctest_offset {
+        map.set_doctest_offset(file, offset);
+    }
+    (map, all)
 }
 
 /// Per-file front-end cache for one crate session (W-DRIVER phase 2):
@@ -855,7 +864,7 @@ fn blank_bodies(lexed: lexer::Lexed, blank: &[(u32, u32)], text: &str) -> lexer:
     for (i, t) in toks.iter().enumerate() {
         match t.tok {
             Tok::LParen | Tok::LBracket | Tok::LBrace => {
-                let call = i >= 2 && toks[i - 1].tok == Tok::Bang && matches!(toks[i - 2].tok, Tok::Ident(_));
+                let call = i >= 2 && toks[i - 1].tok == Tok::Bang && matches!(toks[i - 2].tok, Tok::Ident(_, _));
                 open.push((i, call));
             }
             Tok::RParen | Tok::RBracket | Tok::RBrace => {
@@ -941,10 +950,12 @@ impl FileExpander {
             real_path: path.clone(),
             cargo_env: self.cargo_env.clone(),
             src: text,
+            source_file: None,
             cfg: expand_cfg(&self.env),
             module_path: module_path.clone(),
             crate_name: Some(self.crate_name.clone()),
             extern_crates: self.menv.extern_crates(interner),
+            procedural_macros: None,
             client,
         };
         let spliced = self.menv.splice(*di, lexed, self.magic);
@@ -1300,7 +1311,7 @@ fn hash_tokens(tokens: &[crate::lexer::Token], strings: &[String]) -> u64 {
     for t in tokens {
         std::mem::discriminant(&t.tok).hash(&mut h);
         match t.tok {
-            Tok::Ident(s) | Tok::Reserved(s) | Tok::Lifetime(s) => h.write_u64(s.0 as u64),
+            Tok::Ident(s, _) | Tok::Reserved(s) | Tok::Lifetime(s, _) => h.write_u64(s.0 as u64),
             Tok::Int(v, suffix, _) => {
                 h.write_u128(v);
                 std::mem::discriminant(&suffix).hash(&mut h);
@@ -1325,10 +1336,12 @@ fn hash_tokens(tokens: &[crate::lexer::Token], strings: &[String]) -> u64 {
 /// crate names, the crate's `$crate` magic, name, Cargo env, display
 /// root, and the client's shown root (`file!`). The cfg environment
 /// keys the whole `ResolveCache` already.
-fn expansion_env_hash(menv: &MacroEnv, job: &CrateJob, input: &OneInput, client: &crate::expand::ClientView, interner: &Interner) -> u64 {
+fn expansion_env_hash(menv: &MacroEnv, job: &CrateJob, input: &OneInput, client: &crate::expand::ClientView,
+    interner: &Interner, core_prelude: bool, explicit_std: bool) -> u64 {
     use std::hash::{Hash, Hasher};
     let mut h = crate::intern::FxHasher::default();
     "expansion-env-v2".hash(&mut h);
+    if core_prelude { ("core prelude", explicit_std).hash(&mut h); }
     crate::expand::parser_name_facts(&menv.seeds, interner).hash(&mut h);
     let mut externs: Vec<&String> = menv.dep_owned.keys().collect();
     externs.sort_unstable();
@@ -1339,6 +1352,65 @@ fn expansion_env_hash(menv: &MacroEnv, job: &CrateJob, input: &OneInput, client:
     input.display_root.hash(&mut h);
     client.shown_root.hash(&mut h);
     h.finish()
+}
+
+/// Read explicit std visibility before expansion using the existing item
+/// parser and the selected Cargo cfg. A nested or disabled declaration does
+/// not put std into the crate's extern prelude.
+fn explicit_root_std(lexed: &lexer::Lexed, env: &CfgEnv, interner: &Interner, known: &Known) -> bool {
+    use crate::lexer::Tok;
+    let tokens = &lexed.tokens;
+    let opening = |end: usize, open: Tok, close: Tok| {
+        let mut depth = 0u32;
+        for index in (0..end).rev() {
+            let tok = tokens[index].tok;
+            if tok == close { depth += 1; }
+            if tok == open {
+                depth -= 1;
+                if depth == 0 { return Some(index); }
+            }
+        }
+        None
+    };
+    let mut depth = 0u32;
+    for (index, token) in tokens.iter().enumerate() {
+        match token.tok {
+            Tok::LBrace | Tok::LParen | Tok::LBracket => depth += 1,
+            Tok::RBrace | Tok::RParen | Tok::RBracket => depth = depth.saturating_sub(1),
+            Tok::Extern if depth == 0 && tokens.get(index + 1).is_some_and(|token| token.tok == Tok::Crate) => {
+                let Some(end) = tokens[index..].iter().position(|token| token.tok == Tok::Semi) else { continue; };
+                let preceding = |index: usize| index.checked_sub(1).map(|index| tokens[index].tok);
+                let mut start = index;
+                if preceding(start) == Some(Tok::RParen)
+                    && let Some(open) = opening(start, Tok::LParen, Tok::RParen)
+                    && preceding(open) == Some(Tok::Pub)
+                {
+                    start = open;
+                }
+                if preceding(start) == Some(Tok::Pub) { start -= 1; }
+                while preceding(start) == Some(Tok::RBracket)
+                    && let Some(open) = opening(start, Tok::LBracket, Tok::RBracket)
+                    && preceding(open) == Some(Tok::Pound)
+                {
+                    start = open - 1;
+                }
+                let Ok(parsed) = parser::parse_items(lexed, start..index + end + 1, interner, known) else { continue; };
+                let [item] = parsed.items.as_slice() else { continue; };
+                let ItemKind::ExternCrate(external) = &item.kind else { continue; };
+                if interner.get(external.name) != "std" || interner.get(external.rename.unwrap_or(external.name)) != "std" {
+                    continue;
+                }
+                let mut attrs = item.attrs.clone();
+                if cfg::expand_cfg_attr(env, &mut attrs, &parsed.strings, interner).is_ok()
+                    && cfg::attrs_enabled(env, &attrs, &parsed.strings, interner).is_ok_and(|enabled| enabled)
+                {
+                    return true;
+                }
+            }
+            _ => {}
+        }
+    }
+    false
 }
 
 fn seed_hash(h: &mut crate::intern::FxHasher, s: &crate::expand::MacroSeed) {
@@ -1730,6 +1802,7 @@ fn add_platform_job(input: &CrateInput, tables: &mut ResolvedTables, jobs: &mut 
     env.allow_lust_dev = true;
     jobs.push(CrateJob {
         input: OneInput {
+            procedural_macros: None,
             root_path: root,
             root_text,
             env,
@@ -1764,7 +1837,7 @@ fn add_std_splice_job(input: &CrateInput, lo: u32, jobs: &mut Vec<CrateJob>) -> 
     text.push_str(&input.root_text[lo..]);
     let root = &jobs[0];
     jobs.push(CrateJob {
-        input: OneInput { root_text: text, ..root.input.clone() },
+        input: OneInput { root_text: text, procedural_macros: None, ..root.input.clone() },
         root_module: root.root_module,
         flat_prefix: root.flat_prefix.clone(),
         magic: root.magic,
@@ -1784,6 +1857,66 @@ pub fn resolve_crate_with(
     cache: &mut ResolveCache,
     with_platform: bool,
 ) -> Result<ResolvedCrate, ResolveError> {
+    resolve_crate_seeded(input, interner, known, cache, with_platform, None, None, false)
+}
+
+/// Fresh resolution with caller-owned semantic imports installed before any
+/// source job registers items, resolves imports, or rewrites paths. Imports
+/// must carry real definitions; this interface does not manufacture source.
+/// A new one-shot cache prevents unkeyed import state from authorizing reuse.
+pub fn resolve_crate_with_imports(
+    input: &CrateInput,
+    interner: &Interner,
+    known: &Known,
+    with_platform: bool,
+    imports: &mut dyn FnMut(&mut ResolvedTables) -> Result<(), Diag>,
+) -> Result<ResolvedCrate, ResolveError> {
+    let mut cache = ResolveCache::new(true);
+    resolve_crate_seeded(input, interner, known, &mut cache, with_platform, Some(imports), None, false)
+}
+
+/// Original-root syntax supplied by a semantic entry's parser. The callback
+/// receives the real expanded stream, without token/source substitution. It
+/// runs only for the selected root in a fresh one-shot resolve; ordinary and
+/// retained parses keep their original interface and cache contract.
+pub type RootParser<'a> = dyn Fn(&lexer::Lexed, &Interner, &Known) -> Result<Ast, Diag> + Sync + 'a;
+pub fn resolve_crate_with_root_parser(
+    input: &CrateInput,
+    interner: &Interner,
+    known: &Known,
+    parse: &RootParser<'_>,
+) -> Result<ResolvedCrate, ResolveError> {
+    resolve_crate_seeded(input, interner, known, &mut ResolveCache::new(true), false, None, Some(parse), false)
+}
+
+/// The retained native-library Session fixes its root parser before any cache
+/// entry exists. All subsequent updates retain this same source policy.
+pub(crate) fn resolve_native_library(
+    input: &CrateInput, interner: &Interner, known: &Known, cache: &mut ResolveCache,
+    parse: &RootParser<'_>,
+    imports: Option<&mut dyn FnMut(&mut ResolvedTables) -> Result<(), Diag>>,
+) -> Result<ResolvedCrate, ResolveError> {
+    resolve_crate_seeded(input, interner, known, cache, false, imports, Some(parse), false)
+}
+
+pub(crate) fn resolve_native_executable(
+    input: &CrateInput, interner: &Interner, known: &Known, cache: &mut ResolveCache, with_platform: bool,
+    imports: &mut dyn FnMut(&mut ResolvedTables) -> Result<(), Diag>,
+    cargo_test: bool,
+) -> Result<ResolvedCrate, ResolveError> {
+    resolve_crate_seeded(input, interner, known, cache, with_platform, Some(imports), None, cargo_test)
+}
+
+fn resolve_crate_seeded(
+    input: &CrateInput,
+    interner: &Interner,
+    known: &Known,
+    cache: &mut ResolveCache,
+    with_platform: bool,
+    imports: Option<&mut dyn FnMut(&mut ResolvedTables) -> Result<(), Diag>>,
+    root_parser: Option<&RootParser<'_>>,
+    cargo_test: bool,
+) -> Result<ResolvedCrate, ResolveError> {
     cache.begin(input);
     let mut tables = ResolvedTables::new(interner.intern(&input.crate_name));
     tables.std_splice_lo = input.std_splice_lo;
@@ -1797,6 +1930,7 @@ pub fn resolve_crate_with(
     };
     let mut jobs: Vec<CrateJob> = vec![CrateJob {
         input: OneInput {
+            procedural_macros: input.procedural_macros.clone(),
             root_path: input.root_path.clone(),
             root_text: user_text,
             env: input.env.clone(),
@@ -1817,7 +1951,8 @@ pub fn resolve_crate_with(
     // that cannot be read, a non-2024 source dependency): the selected
     // crate's root file at the span's default file id.
     let build_err = |d: Diag| -> ResolveError {
-        let (map, all_text) = make_map(&[(input.root_path.clone(), input.root_text.clone(), FileId(0))]);
+        let (map, all_text) = make_map(&[(input.root_path.clone(), input.root_text.clone(), FileId(0))],
+            input.client.stdin_origin.as_deref().map(|origin| (FileId(0), origin)));
         ResolveError { map, all_text, std_asks: StdPlan::default(), platform_asks: None, diags: vec![d] }
     };
     let mut by_key: FxMap<String, usize> = FxMap::default();
@@ -1859,6 +1994,9 @@ pub fn resolve_crate_with(
             }
         }
     }
+    if let Some(imports) = imports {
+        imports(&mut tables).map_err(build_err)?;
+    }
     // After the extern preludes: the splice job's root module has the
     // selected crate's prelude already.
     let std_job = input.std_splice_lo.map(|lo| add_std_splice_job(input, lo, &mut jobs));
@@ -1886,6 +2024,7 @@ pub fn resolve_crate_with(
         order.insert(at, sj);
     }
     let mut shared = SharedFiles::default();
+    let origin = input.client.stdin_origin.as_deref().map(|origin| (shared.file_id(&origin.root, ROOT_MODULE), origin));
     // Every file an earlier resolve canonicalized, read again now in
     // parallel: discovery walks the module tree one file at a time and
     // finds these texts here (a CI checkout is not in the page cache, and
@@ -1959,7 +2098,8 @@ pub fn resolve_crate_with(
                 dep_exports.push((interner.get(jobs[d].magic).to_string(), sources.clone()));
             }
         }
-        match resolve_one(&jobs[j], &mut tables, &mut shared, cache, &dep_exports, &input.client, interner, known) {
+        match resolve_one(&jobs[j], &mut tables, &mut shared, cache, &dep_exports, &input.client,
+            interner, known, if j == 0 { root_parser } else { None }, j == 0 && cargo_test) {
             Ok(out) => {
                 if let Some(exact_layout) = &jobs[j].adapter {
                     tables.adapters.push(super::imports::AdapterCrate {
@@ -2002,7 +2142,7 @@ pub fn resolve_crate_with(
                 add_asks(j, e.std_asks);
                 all_seen.extend(seen_whole(e.seen, j, std_job, input));
                 cache.unpacked.clear();
-                let (map, all_text) = make_map(&all_seen);
+                let (map, all_text) = make_map(&all_seen, origin);
                 return Err(ResolveError { map, all_text, std_asks, platform_asks, diags: e.diags });
             }
         }
@@ -2015,7 +2155,7 @@ pub fn resolve_crate_with(
     // The source map builds beside the merged Ast (each 10-70 ms on tsgo).
     let old = cache.merged.as_ref().map(|m| &*m.0);
     let ((map, all_text), (ast, spans)) = std::thread::scope(|s| {
-        let map = s.spawn(|| make_map(&all_seen));
+        let map = s.spawn(|| make_map(&all_seen, origin));
         let ast = Ast::concat_parts(chunks, old);
         (map.join().unwrap_or_else(|p| std::panic::resume_unwind(p)), ast)
     });
@@ -2091,6 +2231,7 @@ fn add_dep_job(
     by_key.insert(key, idx);
     jobs.push(CrateJob {
         input: OneInput {
+            procedural_macros: None,
             root_path: root,
             root_text,
             env,
@@ -2479,7 +2620,7 @@ struct UseSite {
 fn use_seg_sym(tok: crate::lexer::Tok, interner: &Interner) -> Option<Sym> {
     use crate::lexer::Tok;
     Some(match tok {
-        Tok::Ident(s) => s,
+        Tok::Ident(s, _) => s,
         Tok::SelfLower => interner.intern("self"),
         Tok::Super => interner.intern("super"),
         Tok::Crate => interner.intern("crate"),
@@ -2562,7 +2703,7 @@ fn parse_use_trees(
             }
             Some(Tok::As) => {
                 match tok(i + 1) {
-                    Some(Tok::Ident(s)) => alias = Some(s),
+                    Some(Tok::Ident(s, _)) => alias = Some(s),
                     Some(Tok::Underscore) => underscore = true,
                     _ => return,
                 }
@@ -2663,7 +2804,7 @@ fn restricted_vis(inner: &[crate::lexer::TokenTree], module: &[Sym]) -> Option<V
             Tok::Super => {
                 out.pop();
             }
-            Tok::Ident(s) => out.push(*s),
+            Tok::Ident(s, _) => out.push(*s),
             _ => return Some(module.to_vec()),
         }
     }
@@ -2687,7 +2828,7 @@ fn rewrite_dollar_crate(tokens: &[crate::lexer::Token], magic: Sym) -> Vec<crate
                     TokenTree::Token(t) => t.span,
                     _ => unreachable!(),
                 };
-                out.push(TokenTree::Token(Token { tok: Tok::Ident(magic), span }));
+                out.push(TokenTree::Token(Token { tok: Tok::Ident(magic, false), span }));
                 i += 2;
                 continue;
             }
@@ -2740,10 +2881,10 @@ fn rewrite_dollar_crate(tokens: &[crate::lexer::Token], magic: Sym) -> Vec<crate
 fn rename_macro_token(tokens: &mut [crate::lexer::Token], alias: Sym) {
     use crate::lexer::Tok;
     if let Some(t) = tokens.get_mut(2)
-        && let Tok::Ident(name) = t.tok
+        && let Tok::Ident(name, raw) = t.tok
         && name != alias
     {
-        t.tok = Tok::Ident(alias);
+        t.tok = Tok::Ident(alias, raw);
     }
 }
 
@@ -2900,7 +3041,7 @@ impl MacroEnv {
                 collect(&disc.outline, orig, &mut owned);
             }
             if let Some(Some(exp)) = expanded.get(di)
-                && exp.tokens.iter().any(|t| t.tok == crate::lexer::Tok::Ident(macro_rules))
+                && exp.tokens.iter().any(|t| matches!(t.tok, crate::lexer::Tok::Ident(s, _) if s == macro_rules))
             {
                 // Only `outline.macros` feeds this collect, and a
                 // macro definition needs a `macro_rules`
@@ -3329,8 +3470,13 @@ impl MacroEnv {
                     .collect();
                 names.sort_by(|a, b| interner.get(a.0).cmp(interner.get(b.0)));
                 for (name, src_idx) in names {
-                    let amb = ambiguous.contains_key(&(target.clone(), name))
-                        || crate::expand::builtin::is_std_macro_name(interner.get(name));
+                    let macro_name = interner.get(name);
+                    let prelude = if tables.uses_core_prelude(job.root_module) {
+                        crate::expand::builtin::is_core_prelude_macro(macro_name)
+                    } else {
+                        crate::expand::builtin::is_std_macro_name(macro_name)
+                    };
+                    let amb = ambiguous.contains_key(&(target.clone(), name)) || prelude;
                     let key = (site.module.clone(), name);
                     match found.iter_mut().find(|(k, _)| *k == key) {
                         Some((_, (_, s, a))) => *a |= amb || *s != src_idx,
@@ -3488,6 +3634,8 @@ fn resolve_one(
     client: &crate::expand::ClientView,
     interner: &Interner,
     known: &Known,
+    root_parser: Option<&RootParser<'_>>,
+    cargo_test: bool,
 ) -> Result<CrateOut, OneError> {
     let input = &job.input;
     let mut timings: Vec<(&'static str, f64)> = Vec::new();
@@ -3520,6 +3668,17 @@ fn resolve_one(
     if !diags.is_empty() {
         return Err(OneError { diags, seen: seen_of(&discs), std_asks });
     }
+    let core_prelude = (cargo_test || root_parser.is_some()) && discs[0].lexed.as_ref()
+        .is_some_and(|lexed| parser::leading_no_std(lexed, interner).is_some());
+    if core_prelude {
+        tables.core_prelude_roots.push(job.root_module);
+    }
+    let explicit_std = core_prelude && discs[0].lexed.as_ref()
+        .is_some_and(|lexed| explicit_root_std(lexed, &input.env, interner, known));
+    let parse_test_root = |lexed: &lexer::Lexed, interner: &Interner, known: &Known| {
+        crate::driver::library::parse_root(lexed, interner, known, false)
+    };
+    let root_parser = if cargo_test && core_prelude { Some(&parse_test_root as &RootParser<'_>) } else { root_parser };
     lap!("resolve: discovery");
     // Unknown cfg names (L0520) are checked on the original tokens of
     // every file before expansion can strip the item that carries one, on
@@ -3565,8 +3724,10 @@ fn resolve_one(
         // file of the crate). An expansion that read outside data (`env!`,
         // the `include!` family) comes back only while each of those reads
         // reads the same (`expand::deps_stale_in`).
-        let keep = !cache.one_shot;
-        let env_hash = if keep { expansion_env_hash(&menv, job, input, client, interner) } else { 0 };
+        let keep = !cache.one_shot && input.procedural_macros.is_none();
+        let env_hash = if keep {
+            expansion_env_hash(&menv, job, input, client, interner, core_prelude, explicit_std)
+        } else { 0 };
         // Each macro source's hash and the seeds it names, and each file's reachable seeds
         // (`MacroEnv::reach`) and key, on the pool.
         let seed_index = keep.then(|| crate::expand::SeedReach::new(&menv.seeds, interner));
@@ -3625,10 +3786,12 @@ fn resolve_one(
                 real_path: path.clone(),
                 cargo_env: input.cargo_env.clone(),
                 src: &text,
-                cfg: expand_cfg(&input.env),
+                source_file: Some(discs[di].file_id),
+                cfg: crate::expand::builtin::CfgEnv { core_prelude, explicit_std, ..expand_cfg(&input.env) },
                 module_path: module_paths[di].clone(),
                 crate_name: Some(input.crate_name.clone()),
                 extern_crates: menv.extern_crates(interner),
+                procedural_macros: input.procedural_macros.as_deref(),
                 client,
             };
             let spliced = menv.splice(di, orig, job.magic);
@@ -3691,7 +3854,7 @@ fn resolve_one(
         let macro_rules = interner.intern("macro_rules");
         let outlines = par_map(&indices, |&di| {
             let exp = expanded[di].as_ref()?;
-            Some(match exp.tokens.iter().any(|t| t.tok == crate::lexer::Tok::Mod || t.tok == crate::lexer::Tok::Ident(macro_rules)) {
+            Some(match exp.tokens.iter().any(|t| t.tok == crate::lexer::Tok::Mod || matches!(t.tok, crate::lexer::Tok::Ident(s, _) if s == macro_rules)) {
                 true => scan::outline(exp, interner),
                 false => scan::Outline::default(),
             })
@@ -3734,7 +3897,7 @@ fn resolve_one(
         }
     }
     // The local crate's files for its `FileExpander` (stored at the end).
-    let keep_expander = job.root_module == ROOT_MODULE && !job.std_splice && !cache.one_shot;
+    let keep_expander = job.root_module == ROOT_MODULE && !job.std_splice && !cache.one_shot && input.procedural_macros.is_none();
     let seen_files: Vec<(FileId, (usize, Vec<Sym>, PathBuf))> = match keep_expander {
         true => discs.iter().enumerate().map(|(di, d)| (d.file_id, (di, tables.modules[d.module.0 as usize].path.clone(), d.path.clone()))).collect(),
         false => Vec::new(),
@@ -3759,7 +3922,7 @@ fn resolve_one(
     // hashes (0 keys nothing).
     let mut order: Vec<usize> = (0..discs.len()).collect();
     order.sort_by_key(|&di| discs[di].file_id.0);
-    let keep = !cache.one_shot;
+    let keep = !cache.one_shot && input.procedural_macros.is_none();
     let exp_hashes = if keep {
         par_map(&order, |&di| match (exp_known.get(di).copied().flatten(), expanded[di].as_ref(), discs[di].lexed.as_ref()) {
             (Some(h), Some(_), _) => h,
@@ -3792,7 +3955,9 @@ fn resolve_one(
         // its missing `;` ends at the cut), and the answer must be the
         // one-piece answer.
         let segments = if keep { vec![0..lexed.tokens.len()] } else { item_segments(&lexed.tokens, interner) };
-        let asts: Vec<Ast> = if segments.len() == 1 {
+        let asts: Vec<Ast> = if let Some(parse) = root_parser.filter(|_| disc.file_id == root_file_id) {
+            vec![parse(&lexed, interner, known)?]
+        } else if segments.len() == 1 {
             vec![parser::parse(&lexed, interner, known)?]
         } else {
             // Later segments start under the file's inner allows, as
@@ -3894,7 +4059,7 @@ fn resolve_one(
         );
     }
     lap!("resolve: strip+register");
-    match run_imports(tables, &imports, interner) {
+    match run_imports(tables, &imports, interner, input.procedural_macros.as_deref()) {
         Ok(ds) => inner_diags.extend(ds),
         Err(e) => inner_diags.push(Diag::new("L0506", Span::default(), e, "This is a lust bug; report it.")),
     }
@@ -4428,7 +4593,7 @@ fn extern_macro_use_events(lexed: &lexer::Lexed, interner: &Interner) -> Vec<(u3
                     j += 1;
                 }
                 if toks.get(j).map(|t| t.tok) == Some(Tok::LBracket) {
-                    if let Some(Tok::Ident(s)) = toks.get(j + 1).map(|t| t.tok)
+                    if let Some(Tok::Ident(s, _)) = toks.get(j + 1).map(|t| t.tok)
                         && interner.get(s) == "macro_use"
                     {
                         pending = true;
@@ -4455,7 +4620,7 @@ fn extern_macro_use_events(lexed: &lexer::Lexed, interner: &Interner) -> Vec<(u3
             Tok::Extern if depth == 0 => {
                 if pending
                     && toks.get(i + 1).map(|t| t.tok) == Some(Tok::Crate)
-                    && let Some(Tok::Ident(name)) = toks.get(i + 2).map(|t| t.tok)
+                    && let Some(Tok::Ident(name, _)) = toks.get(i + 2).map(|t| t.tok)
                 {
                     out.push((toks[i].span.lo, interner.get(name).to_string()));
                 }
@@ -5284,11 +5449,20 @@ fn register_items(
                 {
                     tables.alloc_roots.push(module);
                 }
+                if module == tables.root_of(module) && tables.uses_core_prelude(module)
+                    && interner.get(bind_name) == "std" && interner.get(e.name) == "std"
+                    && !tables.explicit_std_roots.contains(&module)
+                {
+                    tables.explicit_std_roots.push(module);
+                }
                 let target = if e.name == interner.intern("self") {
                     Some(Target::Module(tables.root_of(module)))
                 } else {
                     tables.extern_by_name(module, interner.get(e.name)).map(|i| tables.extern_target(i))
                 };
+                if let Some(target) = target {
+                    tables.record_executable_import(target);
+                }
                 if e.name == interner.intern("self") && e.rename.is_none() {
                     diags.push(Diag::new(
                         "L0001",
@@ -6318,6 +6492,21 @@ impl Rewrite<'_> {
     /// path's own span for diagnostics; `ns` and `scopes` are the
     /// namespace and frames the checker will read the rewritten path in.
     fn apply(&mut self, segs: &mut Vec<PathSeg>, res: PathRes, span: Span, module: ModuleId, ns: Namespace, scopes: &[Frame]) {
+        if res == PathRes::Absent && self.tables.uses_core_prelude(module) {
+            let mut path = segs.iter().map(|segment| self.interner.get(segment.name));
+            if let Some(first) = path.next().filter(|first| *first != "::").or_else(|| path.next()) {
+                let qualified = path.next().is_some();
+                if first == "std" && qualified && self.tables.std_out_of_scope(module) {
+                    self.diags.push(extern_crate_not_found(first, span));
+                    return;
+                }
+                if (ns == Namespace::Type || qualified) && self.tables.outside_core_prelude(module, first) {
+                    self.diags.push(Diag::new("L0102", span, format!("cannot find type `{first}` in this scope"),
+                        "Import the type from an available crate."));
+                    return;
+                }
+            }
+        }
         match res {
             PathRes::Done(Target::Def(def)) => {
                 if let Some(info) = self.tables.def_info.get(&def) {
@@ -8802,7 +8991,7 @@ mod tests {
         let interner = Interner::default();
         let src = "fn a() { \"x\"; 1.5; }\nmacro_rules! m { () => { (\"y\", 2.5, 'c') } }\nfn b() { \"z\"; }";
         let lexed = lexer::lex(src, FileId(0), 0, &interner).unwrap();
-        let at = lexed.tokens.iter().position(|t| matches!(t.tok, crate::lexer::Tok::Ident(s) if interner.get(s) == "macro_rules")).unwrap();
+        let at = lexed.tokens.iter().position(|t| matches!(t.tok, crate::lexer::Tok::Ident(s, _) if interner.get(s) == "macro_rules")).unwrap();
         let (lo, hi) = macro_tok_range(&lexed.tokens, at);
         let (toks, strings) = own_def_strings(&lexed.tokens[lo..hi], &lexed.strings);
         assert!(strings.len() < lexed.strings.len(), "{strings:?} vs {:?}", lexed.strings);
@@ -8943,6 +9132,7 @@ mod tests {
         let root = dir.join("main.rs");
         std::fs::write(&root, text).unwrap();
         let input = CrateInput {
+            procedural_macros: None,
             root_path: root,
             root_text: text.to_string(),
             env: CfgEnv::new("", &[], false, ProfileFlags::DEV),
@@ -9083,6 +9273,7 @@ mod tests {
         let known = Known::new(&interner);
         let root = dir.join("main.rs");
         let input = CrateInput {
+            procedural_macros: None,
             root_path: root.clone(),
             root_text: std::fs::read_to_string(&root).unwrap(),
             env: CfgEnv::new("", &[], false, ProfileFlags::DEV),
@@ -9116,6 +9307,7 @@ mod tests {
         let interner: &'static Interner = Box::leak(Box::new(Interner::default()));
         let known: &'static Known = Box::leak(Box::new(Known::new(interner)));
         let input = |dir: &std::path::Path| CrateInput {
+            procedural_macros: None,
             root_path: dir.join("main.rs"),
             root_text: std::fs::read_to_string(dir.join("main.rs")).unwrap(),
             env: CfgEnv::new("", &[], false, ProfileFlags::DEV),
@@ -9200,6 +9392,7 @@ mod tests {
         let interner: &'static Interner = Box::leak(Box::new(Interner::default()));
         let known: &'static Known = Box::leak(Box::new(Known::new(interner)));
         let input = CrateInput {
+            procedural_macros: None,
             root_path: dir.join("main.rs"),
             root_text: std::fs::read_to_string(dir.join("main.rs")).unwrap(),
             env: CfgEnv::new("", &[], false, ProfileFlags::DEV),
@@ -9249,6 +9442,7 @@ mod tests {
             let root = format!("mod m;\n#[path = \"x.rs\"]\nmod {name};\nfn main() {{ println!(\"{{}}\", {name}::v() + {name}::h!()); }}\n");
             std::fs::write(dir.join("main.rs"), &root).unwrap();
             let input = CrateInput {
+                procedural_macros: None,
                 root_path: dir.join("main.rs"),
                 root_text: root,
                 env: CfgEnv::new("", &[], false, ProfileFlags::DEV),
@@ -9288,6 +9482,7 @@ mod tests {
         let interner: &'static Interner = Box::leak(Box::new(Interner::default()));
         let known: &'static Known = Box::leak(Box::new(Known::new(interner)));
         let input = CrateInput {
+            procedural_macros: None,
             root_path: dir.join("main.rs"),
             root_text: std::fs::read_to_string(dir.join("main.rs")).unwrap(),
             env: CfgEnv::new("", &[], false, ProfileFlags::DEV),
@@ -9328,6 +9523,7 @@ mod tests {
         let interner: &'static Interner = Box::leak(Box::new(Interner::default()));
         let known: &'static Known = Box::leak(Box::new(Known::new(interner)));
         let input = CrateInput {
+            procedural_macros: None,
             root_path: dir.join("main.rs"),
             root_text: std::fs::read_to_string(dir.join("main.rs")).unwrap(),
             env: CfgEnv::new("", &[], false, ProfileFlags::DEV),
@@ -9382,6 +9578,8 @@ mod tests {
             build_check_cfgs: Vec::new(),
             features: Vec::new(),
             deps: Vec::new(),
+            #[cfg(feature = "exclusive-native")]
+            build_script: None,
         }
     }
 

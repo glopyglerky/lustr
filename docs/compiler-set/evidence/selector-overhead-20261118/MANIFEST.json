@@ -1,0 +1,17 @@
+{
+  "files": {
+    "samples.json": {
+      "bytes": 30681,
+      "sha256": "704672ffa5f32168ebf54cbef45e9f23ddfc5f9de10ee5f2b03fbfe461baf63e"
+    },
+    "summary.json": {
+      "bytes": 7101,
+      "sha256": "1dd52467c4458178e0b041a2e2ba94feec4e90c93771b3c852cd6ad32a54853a"
+    },
+    "verify-summary.py": {
+      "bytes": 5506,
+      "sha256": "87a6934d838cff94df16b5ed06a555f5516d9d493d9cf5aa91d6ff056da04358"
+    }
+  },
+  "schema": "lustr-selector-public-files-v1"
+}

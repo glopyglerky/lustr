@@ -1,5 +1,7 @@
-//! One owned foreground process group. The Linux x86_64 build gate fixes the
-//! ABI below. Signal handlers call only async-signal-safe libc functions.
+//! One owned foreground process group. Host signal/wait constants are explicit;
+//! signal handlers call only async-signal-safe libc functions.
+#[path = "host_runtime.rs"]
+mod host_runtime;
 use std::io::{self, Read};
 use std::os::unix::process::CommandExt;
 use std::process::{Child, Command, ExitStatus, Output, Stdio};
@@ -9,7 +11,7 @@ const SIGNALS: [i32; 4] = [1, 2, 3, 15];
 const KILL: i32 = 9;
 static GROUP: AtomicI32 = AtomicI32::new(0);
 static PENDING: AtomicI32 = AtomicI32::new(0);
-type SigSet = [u64; 16];
+use host_runtime::{EMPTY_SIGSET, SIG_BLOCK, SIG_SETMASK, SigSet, WNOWAIT};
 unsafe extern "C" {
     fn kill(pid: i32, signal: i32) -> i32;
     fn getpid() -> i32;
@@ -43,14 +45,14 @@ extern "C" fn cancel(signal: i32) {
 struct Blocked(SigSet);
 impl Blocked {
     fn new() -> io::Result<Self> {
-        let mut set = [0; 16];
-        let mut old = [0; 16];
+        let mut set = EMPTY_SIGSET;
+        let mut old = EMPTY_SIGSET;
         unsafe {
             sigemptyset(&mut set);
             for signal in SIGNALS {
                 sigaddset(&mut set, signal);
             }
-            let result = pthread_sigmask(0, &set, &mut old); // SIG_BLOCK
+            let result = pthread_sigmask(SIG_BLOCK, &set, &mut old);
             if result != 0 {
                 return Err(io::Error::from_raw_os_error(result));
             }
@@ -61,7 +63,7 @@ impl Blocked {
 impl Drop for Blocked {
     fn drop(&mut self) {
         unsafe {
-            pthread_sigmask(2, &self.0, std::ptr::null_mut());
+            pthread_sigmask(SIG_SETMASK, &self.0, std::ptr::null_mut());
         }
     }
 }
@@ -77,7 +79,7 @@ fn observe_exit(pid: u32) -> io::Result<()> {
     loop {
         // Retain the leader until the owner reaps it. Killing descendants
         // here also closes inherited pipes while the owner is draining them.
-        if unsafe { waitid(1, pid, &mut info, 4 | 0x0100_0000) } == 0 {
+        if unsafe { waitid(1, pid, &mut info, 4 | WNOWAIT) } == 0 {
             unsafe {
                 kill(-(pid as i32), KILL);
             }
@@ -118,7 +120,7 @@ impl OwnedChild {
                 for &(signal, old) in &handlers {
                     set_signal(signal, if old == 1 { 1 } else { 0 });
                 }
-                let result = pthread_sigmask(2, &mask, std::ptr::null_mut());
+                let result = pthread_sigmask(SIG_SETMASK, &mask, std::ptr::null_mut());
                 if result != 0 {
                     return Err(io::Error::from_raw_os_error(result));
                 }
@@ -189,6 +191,9 @@ impl Drop for OwnedChild {
 
 #[cfg(test)]
 mod tests {
+    use std::io;
+    use std::time::{Duration, Instant};
+
     static SERIAL: std::sync::Mutex<()> = std::sync::Mutex::new(());
     #[test]
     fn cancellation_during_group_creation_is_retained() {
@@ -229,6 +234,120 @@ mod tests {
         command
     }
 
+    struct ProcessObservation {
+        terminal: bool,
+        raw: String,
+    }
+
+    #[cfg(target_os = "linux")]
+    fn observe_process(pid: i32) -> io::Result<ProcessObservation> {
+        let raw = match std::fs::read_to_string(format!("/proc/{pid}/stat")) {
+            Ok(raw) => raw,
+            Err(error) if error.kind() == io::ErrorKind::NotFound => {
+                return Ok(ProcessObservation { terminal: true, raw: "absent (ENOENT)".into() });
+            }
+            Err(error) => return Err(io::Error::new(error.kind(), format!("cannot inspect pid {pid}: {error}"))),
+        };
+        let malformed = || io::Error::new(io::ErrorKind::InvalidData, format!("malformed /proc/{pid}/stat: {raw:?}"));
+        if !raw.starts_with(&format!("{pid} (")) {
+            return Err(malformed());
+        }
+        // comm may itself contain ')'; the state follows its final closing ')'.
+        let (_, rest) = raw.rsplit_once(')').ok_or_else(malformed)?;
+        let mut fields = rest.split_whitespace();
+        let state = fields.next().ok_or_else(malformed)?;
+        if state.len() != 1 || !b"RSDZTtXxKWPI".contains(&state.as_bytes()[0]) {
+            return Err(malformed());
+        }
+        fields.next().and_then(|parent| parent.parse::<u32>().ok()).ok_or_else(malformed)?;
+        Ok(ProcessObservation { terminal: state == "Z", raw })
+    }
+
+    #[cfg(target_os = "macos")]
+    fn observe_process(pid: i32) -> io::Result<ProcessObservation> {
+        let output = std::process::Command::new("/bin/ps")
+            .args(["-o", "stat=", "-p", &pid.to_string()])
+            .env("LC_ALL", "C")
+            .output()?;
+        let raw = String::from_utf8(output.stdout)
+            .map_err(|error| io::Error::new(io::ErrorKind::InvalidData, format!("invalid ps output for pid {pid}: {error}")))?;
+        if !output.stderr.is_empty() || !matches!(output.status.code(), Some(0 | 1)) {
+            return Err(io::Error::other(format!(
+                "cannot inspect pid {pid}: ps status={}, stdout={raw:?}, stderr={:?}",
+                output.status,
+                String::from_utf8_lossy(&output.stderr)
+            )));
+        }
+        let state = raw.trim().as_bytes();
+        if output.status.code() == Some(1) && state.is_empty() {
+            return Ok(ProcessObservation { terminal: true, raw: "absent (ps exit 1, empty output)".into() });
+        }
+        // Darwin ps(1) has one run-state letter followed only by state flags.
+        if output.status.code() != Some(0)
+            || state.is_empty()
+            || !b"IRSTUZ".contains(&state[0])
+            || !state[1..].iter().all(|flag| b"+<>AELNSsVWX".contains(flag))
+        {
+            return Err(io::Error::new(io::ErrorKind::InvalidData, format!("malformed ps state for pid {pid}: {raw:?}")));
+        }
+        Ok(ProcessObservation { terminal: state[0] == b'Z', raw })
+    }
+
+    fn wait_for_terminal(pid: i32, deadline: Instant) -> io::Result<()> {
+        loop {
+            let observed = observe_process(pid)?;
+            let now = Instant::now();
+            if now >= deadline {
+                return Err(io::Error::new(
+                    io::ErrorKind::TimedOut,
+                    format!("pid {pid} did not reach an observed terminal state before the deadline; last state: {:?}", observed.raw),
+                ));
+            }
+            if observed.terminal {
+                return Ok(());
+            }
+            std::thread::sleep(Duration::from_millis(1).min(deadline - now));
+        }
+    }
+
+    #[test]
+    fn terminal_observation_rejects_a_live_process() {
+        struct CleanupChild(std::process::Child);
+        impl Drop for CleanupChild {
+            fn drop(&mut self) {
+                // The observation helper never signals the process. This guard
+                // owns cleanup even if an assertion or status read fails.
+                let _ = self.0.kill();
+                let _ = self.0.wait();
+            }
+        }
+
+        let _lock = SERIAL.lock().unwrap();
+        let root = std::env::temp_dir().join(format!("lustr-live-observation-{}", std::process::id()));
+        std::fs::create_dir(&root).unwrap();
+        let marker = root.join("leaf.pid");
+        let mut child = CleanupChild(
+            fixture_command("leaf", &marker)
+                .stdout(std::process::Stdio::null())
+                .stderr(std::process::Stdio::null())
+                .spawn()
+                .unwrap(),
+        );
+        let ready_deadline = Instant::now() + Duration::from_secs(3);
+        while !marker.exists() && Instant::now() < ready_deadline {
+            std::thread::sleep(Duration::from_millis(1));
+        }
+        assert!(marker.exists(), "negative-control process did not reach its leaf fixture");
+        let pid = i32::try_from(child.0.id()).unwrap();
+        assert!(child.0.try_wait().unwrap().is_none(), "negative-control process exited before observation");
+        let error = wait_for_terminal(pid, Instant::now() + Duration::from_millis(50)).unwrap_err();
+        assert_eq!(error.kind(), io::ErrorKind::TimedOut, "live process was not observed to the deadline: {error}");
+        assert!(child.0.try_wait().unwrap().is_none(), "observation must not kill the negative-control process");
+        child.0.kill().unwrap();
+        child.0.wait().unwrap();
+        std::fs::remove_dir_all(root).unwrap();
+    }
+
     #[test]
     fn exited_leader_cannot_leave_pipe_readers_blocked() {
         use std::io::Read;
@@ -238,7 +357,8 @@ mod tests {
         for capture in [true, false] {
             let marker = root.join(if capture { "capture.pid" } else { "stream.pid" });
             let mut command = fixture_command("leader", &marker);
-            let start = std::time::Instant::now();
+            let start = Instant::now();
+            let deadline = start + Duration::from_secs(3);
             let status = if capture {
                 super::output(&mut command).unwrap().status
             } else {
@@ -248,13 +368,14 @@ mod tests {
                 child.wait().unwrap()
             };
             assert_eq!(status.code(), Some(17));
-            assert!(start.elapsed() < std::time::Duration::from_secs(3), "pipe drain waited for leaf timeout");
+            assert!(start.elapsed() < Duration::from_secs(3), "pipe drain waited for leaf timeout");
             let pid: i32 = std::fs::read_to_string(&marker).unwrap().parse().unwrap();
-            let active = std::fs::read_to_string(format!("/proc/{pid}/stat"))
-                .ok()
-                .and_then(|s| s.rsplit_once(')').map(|(_, rest)| !rest.trim_start().starts_with('Z')))
-                .unwrap_or(false);
-            assert!(!active, "leaf survived leader cleanup");
+            // Linux exit_files closes pipe writers before exit_notify publishes
+            // EXIT_ZOMBIE. EOF and reaping the leader are not a leaf-exit barrier.
+            // Observe actual termination within the original request deadline.
+            wait_for_terminal(pid, deadline).unwrap_or_else(|error| {
+                panic!("leaf survived leader cleanup: capture={capture}, elapsed={:?}: {error}", start.elapsed());
+            });
         }
         std::fs::remove_dir_all(root).unwrap();
     }

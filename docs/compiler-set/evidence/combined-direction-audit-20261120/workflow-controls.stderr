@@ -1,0 +1,10 @@
+test_compiler_set_covers_the_complete_source_guard_input_families (__main__.WorkflowInputControls.test_compiler_set_covers_the_complete_source_guard_input_families) ... ok
+test_historical_replay_changes_trigger_their_own_controls (__main__.WorkflowInputControls.test_historical_replay_changes_trigger_their_own_controls) ... ok
+test_native_probe_controls_cover_their_input_schema_and_package (__main__.WorkflowInputControls.test_native_probe_controls_cover_their_input_schema_and_package) ... ok
+test_paths_ignore_cannot_replace_positive_trigger_coverage (__main__.WorkflowInputControls.test_paths_ignore_cannot_replace_positive_trigger_coverage) ... ok
+test_single_star_cannot_claim_recursive_source_coverage (__main__.WorkflowInputControls.test_single_star_cannot_claim_recursive_source_coverage) ... ok
+
+----------------------------------------------------------------------
+Ran 5 tests in 0.007s
+
+OK

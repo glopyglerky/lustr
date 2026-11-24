@@ -1,7 +1,7 @@
 use std :: rc :: Rc ; pub type Node = i32 ; pub mod printer { pub struct EmitContext { pub tag : i32
 } # [ automatically_derived ] impl :: core :: fmt :: Debug for EmitContext { # [ inline ] fn fmt ( &
 self , f : & mut :: core :: fmt :: Formatter ) -> :: core :: fmt :: Result { :: core :: fmt ::
-Formatter :: debug_struct_field1_finish ( f , "EmitContext" , "tag" , && self . tag ) } } } pub mod
+Formatter :: debug_struct_field1_finish ( f , "EmitContext tag" , && self . tag ) } } } pub mod
 transformers { pub mod estransforms { pub mod utilities { use crate :: { EmitContext , Node } ; use
 std :: rc :: Rc ; pub trait TxVisitors { fn ec ( & self ) -> Rc < EmitContext > ; fn root_visit ( &
 mut self , node : Node ) -> Node ; fn transform_source_file_impl ( & mut self , file : Node ) ->

@@ -1,0 +1,40 @@
+{
+  "source_revision": "40d2ac3f0b71abaa1e73cd366d8c43f8eb4d4581",
+  "native_tree": "cb797ce8ce82192b87b3835267fc223c295dba70",
+  "binary_source_revision": "b4ae69f676eaf89ae3e4ab087aa5906307b9cb2a",
+  "binary_scope": "existing debug-profile focused package; same native tree, older owned mixed_unit profiling helper; not the recorded release CI binaries",
+  "compiler_sha256": {
+    "/workspace/scratch/6fe2645be9f1/evidence/lib-selection-complete-package/bin/lust": "38599e5e120ca4a2d9c7bcae7362939600b0665e065e19727b9f0c0d7cce5344",
+    "/workspace/scratch/6fe2645be9f1/evidence/lib-selection-complete-package/bin/lust-core": "0eae0f9ff4872e96733cfaaf9b385116ef25d71b72347f03e62302dcc8129f2a"
+  },
+  "rustc_sha256": "f3834d26669b03f6855fa54bd2381443123e860167bc0c7a8dd137e5cf6e5e4f",
+  "argv": [
+    "bash",
+    "scripts/difftest.sh",
+    "unicode_props_hash"
+  ],
+  "cwd": "/workspace/scratch/6fe2645be9f1/evidence/40d2ac3-unicode-probe/native-source",
+  "environment_overrides": {
+    "PATH": "/workspace/scratch/6fe2645be9f1/toolchains/rustup/toolchains/1.99.0-x86_64-unknown-linux-gnu/bin:/usr/local/bin:/usr/bin:/bin",
+    "LANG": "C",
+    "LC_ALL": "C",
+    "TZ": "UTC",
+    "TMPDIR": "/workspace/scratch/6fe2645be9f1/evidence/40d2ac3-unicode-probe/temporary",
+    "SANITIZE": "1",
+    "DIFFTEST_RUSTC_CACHE": "/workspace/scratch/6fe2645be9f1/evidence/40d2ac3-unicode-probe/rustc-cache"
+  },
+  "unchanged_default_limits": {
+    "case_compile_seconds": 30,
+    "runtime_seconds": 10,
+    "san_cc_seconds": 20,
+    "inherited_compile_retry_seconds": 180
+  },
+  "fixture_sha256": "f68662c528f0a470b30856def6fade326b2154b4ebda5a0e5b83c8f70da28b7d",
+  "difftest_sha256": "e6553b35a7199ad61fb59274756494725c7cc47b3be4029eb820fa73b6d9bb6f",
+  "case_pool_sha256": "f90ec0c777b72751f91efb84a8169a00f5d35a1ffd591b46718d606eaeca12fc",
+  "rustc_version": "rustc 1.99.0 (b940084d7 2026-09-28)\nbinary: rustc\ncommit-hash: b940084d7eb6a299eb4bfeb8e34901bc051e7ac4\ncommit-date: 2026-09-28\nhost: x86_64-unknown-linux-gnu\nrelease: 1.99.0\nLLVM version: 23.1.1\n",
+  "gcc_version": "gcc (Debian 14.2.0-19) 14.2.0\nCopyright (C) 2024 Free Software Foundation, Inc.\nThis is free software; see the source for copying conditions.  There is NO\nwarranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.\n\n",
+  "timeout_version": "timeout (GNU coreutils) 9.7\nPackaged by Debian (9.7-3)\nCopyright (C) 2025 Free Software Foundation, Inc.\nLicense GPLv3+: GNU GPL version 3 or later <https://gnu.org/licenses/gpl.html>.\nThis is free software: you are free to change and redistribute it.\nThere is NO WARRANTY, to the extent permitted by law.\n\nWritten by Padraig Brady.\n",
+  "host": "Linux 6.18.57 x86_64\n",
+  "cpu_count": "9\n"
+}

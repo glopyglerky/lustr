@@ -23,6 +23,10 @@
 // left, so one compile that never ends cannot wedge every later request. Every 100
 // requests the log gets a stats line (RSS, sessions, expansion tables).
 // Two safety nets watch the warm answers:
+// The following retry/oracle behavior belongs to the separate donor oracle
+// build. An exclusive-native product request has one compiler attempt. A
+// failure is returned unchanged; damaged state is replaced only for a later
+// request, without an immediate or background retry.
 //   - A panic in one request is caught. That crate's session is dropped, the request is
 //     answered by a fresh session at once, and the daemon keeps serving. A patch oracle
 //     failure (LUST_CHECK_ITEMPATCH, driver/item_oracle.rs) is never retried: the client
@@ -57,12 +61,12 @@ use std::sync::mpsc::{Receiver, Sender};
 
 unsafe extern "C" {
     fn flock(fd: i32, operation: i32) -> i32;
-    fn poll(fds: *mut PollFd, nfds: u64, timeout_ms: i32) -> i32;
+    fn poll(fds: *mut PollFd, nfds: protocol::host_runtime::PollCount, timeout_ms: i32) -> i32;
     fn kill(pid: i32, sig: i32) -> i32;
     fn signal(signum: i32, handler: usize) -> usize;
     fn pipe(fds: *mut i32) -> i32;
     fn write(fd: i32, buf: *const u8, count: usize) -> isize;
-    fn fcntl(fd: i32, cmd: i32, arg: i32) -> i32;
+    fn fcntl(fd: i32, cmd: i32, ...) -> i32;
     fn getuid() -> u32;
     #[cfg(target_os = "linux")]
     fn setpriority(which: i32, who: u32, prio: i32) -> i32;
@@ -131,9 +135,32 @@ fn hang_limit() -> Option<std::time::Duration> {
 /// killed, timed out, or got Ctrl-C). A client that still waits for its
 /// answer has sent its whole request and reads, so no event is pending.
 fn client_gone(fd: i32) -> bool {
-    let mut pfd = PollFd { fd, events: POLLRDHUP, revents: 0 };
+    // Darwin reports a closed read side as readable EOF, without Linux's
+    // POLLRDHUP. Ask for readability there and peek without consuming data or
+    // changing the connection's blocking flags while the serve loop owns it.
+    let events = if cfg!(target_os = "macos") { POLLIN } else { POLLRDHUP };
+    let mut pfd = PollFd { fd, events, revents: 0 };
     // SAFETY: one valid pollfd for the duration of the call; timeout 0.
-    unsafe { poll(&mut pfd, 1, 0) > 0 && pfd.revents & (POLLRDHUP | POLLHUP | POLLERR) != 0 }
+    if unsafe { poll(&mut pfd, 1, 0) } <= 0 {
+        return false;
+    }
+    if pfd.revents & (POLLRDHUP | POLLHUP | POLLERR) != 0 {
+        return true;
+    }
+    #[cfg(target_os = "macos")]
+    if pfd.revents & POLLIN != 0 {
+        unsafe extern "C" {
+            fn recv(fd: i32, buffer: *mut u8, length: usize, flags: i32) -> isize;
+        }
+        let mut byte = 0u8;
+        // SAFETY: one writable byte; fd remains borrowed and MSG_PEEK preserves
+        // queued data. Only an actual EOF proves the peer gone. EAGAIN/EINTR or
+        // another transient receive failure conservatively keeps it alive.
+        return unsafe {
+            recv(fd, &mut byte, 1, crate::protocol::host_runtime::MSG_PEEK | crate::protocol::host_runtime::MSG_DONTWAIT) == 0
+        };
+    }
+    false
 }
 
 /// Starts the hang watchdog. The daemon compiles one request at a time,
@@ -184,6 +211,12 @@ fn wait_readable(listener: &UnixListener, wake: i32, socket_watch: i32, timeout:
         PollFd { fd: wake, events: POLLIN, revents: 0 },
         PollFd { fd: socket_watch, events: POLLIN, revents: 0 },
     ];
+    // When the host has no active removal watch, observe unlink requests once
+    // per second. poll still wakes immediately for connections and signals.
+    let timeout = if socket_watch < 0 {
+        let cap = std::time::Duration::from_secs(1);
+        Some(timeout.map_or(cap, |d| d.min(cap)))
+    } else { timeout };
     let ms = timeout.map_or(-1, |d| d.as_millis().min(i32::MAX as u128) as i32);
     // SAFETY: valid pollfds over live fds (an unavailable socket watch is
     // -1, which poll ignores), for the duration of the call.
@@ -249,7 +282,7 @@ fn socket_removal_event(buf: &[u8], name: &[u8]) -> bool {
 #[cfg(target_os = "linux")]
 fn socket_removed(watch: i32, sock: &Path) -> bool {
     if watch < 0 {
-        return false;
+        return sock.symlink_metadata().is_err_and(|error| error.kind() == std::io::ErrorKind::NotFound);
     }
     let Some(name) = sock.file_name() else { return false };
     let mut buf = [0u8; 4096];
@@ -264,12 +297,11 @@ fn socket_removed(watch: i32, sock: &Path) -> bool {
     socket_removal_event(&buf[..n as usize], name.as_bytes()) || sock.symlink_metadata().is_err()
 }
 
-/// True when the watched socket was removed since the last call. A call
-/// with no pending events is one nonblocking read, so the serve loop can
-/// ask after every wait at no polling cost.
+/// Hosts without inotify inspect the actual bound path after poll wakes.
+/// Permission and other transient failures are not removal requests.
 #[cfg(not(target_os = "linux"))]
-fn socket_removed(_watch: i32, _sock: &Path) -> bool {
-    false
+fn socket_removed(_watch: i32, sock: &Path) -> bool {
+    sock.symlink_metadata().is_err_and(|error| error.kind() == std::io::ErrorKind::NotFound)
 }
 
 /// The pid in a lust temp name (`lust-daemon-<pid>`, `lust-<pid>`,
@@ -291,12 +323,10 @@ fn stale_temp_pid(name: &str) -> Option<u32> {
     None
 }
 
-/// True when a process with `pid` exists. Signal 0 plus the /proc
-/// fallback for a pid owned by another user (where signal 0 fails).
+/// True unless the host proves a positive process ID no longer exists.
 /// A reused pid reads as alive, which only keeps a stale dir longer.
 fn pid_alive(pid: u32) -> bool {
-    // SAFETY: signal 0 only probes whether the pid exists.
-    (pid > 0 && unsafe { kill(pid as i32, 0) } == 0) || Path::new(&format!("/proc/{pid}")).exists()
+    protocol::host_runtime::process_exists(pid)
 }
 
 /// Deletes lust temp dirs and files from processes that are gone:
@@ -363,9 +393,17 @@ fn shutdown(sock: &Path, base: &Path, sessions: &HashMap<SessionKey, Entry>, why
 /// replaced before the request is served. `env` is the request's client
 /// env: build script records are checked and re-run in it.
 fn refresh_key(key: &SessionKey, env: Option<&[(String, String)]>) -> u64 {
+    // Product scripts have one execution owner: the selected native unit's
+    // preparation. Running one here would duplicate failures across Entry::new,
+    // this per-request refresh, and output preparation. That preparation checks
+    // all script inputs before retained semantic reuse and leases its outputs
+    // through native emission. Cargo requests bypass whole-executable caching.
+    #[cfg(feature = "exclusive-native")]
+    let build_script = { let _ = env; 0u64 };
     // Build script first: a stale record re-runs Cargo, which can
     // create or update Cargo.lock, and the graph key must describe
     // the graph as it stands after that run, not before it.
+    #[cfg(not(feature = "exclusive-native"))]
     let build_script = match protocol::manifest_dir(key) {
         Some(dir) => match crate::driver::buildscript::refresh(&dir, &crate::driver::cache::cache_dir(&key.krate.root), env) {
             r @ crate::driver::buildscript::Refresh::Failed { .. } => {
@@ -383,6 +421,8 @@ fn refresh_key(key: &SessionKey, env: Option<&[(String, String)]>) -> u64 {
 
 struct Entry {
     session: Session,
+    #[cfg(feature="exclusive-native")]
+    library: Option<Result<crate::public_library::Owner,crate::public_library::ImportFailure>>,
     /// Directory stem for this crate's sessions; fresh sessions get "<dir>r<n>".
     dir: PathBuf,
     resets: u64,
@@ -414,6 +454,8 @@ impl Entry {
         let rk = refresh_key(&key, env);
         Entry {
             session: Session::new(dir.clone(), true, key),
+            #[cfg(feature="exclusive-native")]
+            library: None,
             dir,
             resets: 0,
             refresh_key: rk,
@@ -431,6 +473,8 @@ impl Entry {
 /// (panic recovery, guard mismatch, graph change) must not leave its
 /// dir behind for the daemon's whole life.
 fn replace_session(entry: &mut Entry, key: &SessionKey) {
+    #[cfg(feature="exclusive-native")]
+    { entry.library=None; }
     let dir = entry.fresh_dir();
     let old = std::mem::replace(&mut entry.session, Session::new(dir, true, key.clone()));
     let _ = std::fs::remove_dir_all(old.obj_dir());
@@ -493,7 +537,7 @@ fn session_inputs(session: &Session, req: &Request) -> Vec<PathBuf> {
     }
     for chunk in &front.chunks {
         for dep in &chunk.expand_deps {
-            if let crate::expand::Dep::File { path, .. } = dep {
+            if let crate::expand::Dep::File { path, .. } | crate::expand::Dep::TrackedPath(path) = dep {
                 paths.push(path.clone());
             }
         }
@@ -864,13 +908,58 @@ fn compile_fresh(entry: &mut Entry, req: &Request) -> (Response, bool) {
     }
 }
 
-/// Compiles with the entry's warm session, with the panic net and the
-/// fresh-session guard. An error answer goes to the client at once and is
-/// rechecked in the background (`jobs`); a panic, or a request marked
-/// recomputed by an earlier mismatch, is answered from a fresh session here.
+/// Product and mixed requests get one attempt in the retained session. The
+/// separately built donor oracle keeps its original fresh-session guard.
 fn compile_guarded(entry: &mut Entry, req: &Request, jobs: &mut GuardJobs) -> Response {
+    #[cfg(feature="exclusive-native")]
+    if req.session.library.is_some() {
+        enum Attempt { InputFailure(Response), Compiled(Response) }
+        entry.served+=1;
+        if entry.recompute_next {entry.recompute_next=false;replace_session(entry,&req.session);}
+        let result=std::panic::catch_unwind(std::panic::AssertUnwindSafe(||{
+            // A failed initial load published no imported facts. Allow the
+            // next independent request to repair it without replacing native
+            // state; existing owners validate their own generation refresh.
+            if entry.library.as_ref().is_some_and(|owner| owner.is_err()) { entry.library = None; }
+            if entry.library.is_none(){entry.library=Some(crate::public_library::Owner::new(req));}
+            match entry.library.as_mut().unwrap() {
+                Ok(owner)=>match owner.refresh_imports(req) {
+                    Ok(())=>Attempt::Compiled(owner.compile(req,&mut entry.session)),
+                    Err(error)=>Attempt::InputFailure(crate::public_library::failed(req,&error)),
+                },
+                Err(error)=>Attempt::InputFailure(crate::public_library::failed(req,error)),
+            }
+        }));
+        return match result {
+            // Input validation has not entered native preparation or changed
+            // the previous imported facts. Keep that known state on failure.
+            Ok(Attempt::InputFailure(response))=>response,
+            Ok(Attempt::Compiled(response))=>terminal_answer(entry,req,Ok(response)),
+            Err(payload)=>terminal_answer(entry,req,Err(payload)),
+        };
+    }
+    compile_guarded_with(entry, req, jobs, driver::compile)
+}
+
+fn compile_guarded_with(
+    entry: &mut Entry,
+    req: &Request,
+    jobs: &mut GuardJobs,
+    compile: impl FnOnce(&Request, &mut Session) -> Response,
+) -> Response {
     entry.served += 1;
     let served = entry.served;
+    if cfg!(feature = "exclusive-native") || req.session.krate.target_kind == "lustr-mixed-native" {
+        // The product and the bounded mixed component never hide an error in
+        // an immediate or background second attempt. A previously invalidated
+        // session is replaced before this request's sole attempt.
+        if entry.recompute_next {
+            entry.recompute_next = false;
+            replace_session(entry, &req.session);
+        }
+        let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| compile(req, &mut entry.session)));
+        return terminal_answer(entry, req, result);
+    }
     if entry.recompute_next {
         entry.recompute_next = false;
         eprintln!("guard-check: recomputing {} in a fresh session (marked by a background mismatch)", req.file.display());
@@ -879,7 +968,7 @@ fn compile_guarded(entry: &mut Entry, req: &Request, jobs: &mut GuardJobs) -> Re
         return compile_fresh(entry, req).0;
     }
     let start = std::time::SystemTime::now();
-    match std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| driver::compile(req, &mut entry.session))) {
+    match std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| compile(req, &mut entry.session))) {
         Ok(r) if r.code == 0 || r.code == 2 => r,
         Ok(r) if r.code == 3 && r.stderr.contains("function count mismatch") => {
             // The warm session's scan and Ast disagree on the fn list
@@ -914,6 +1003,28 @@ fn compile_guarded(entry: &mut Entry, req: &Request, jobs: &mut GuardJobs) -> Re
                 );
             }
             r
+        }
+    }
+}
+
+fn terminal_answer(entry: &mut Entry, req: &Request, result: std::thread::Result<Response>) -> Response {
+    match result {
+        Ok(response) => {
+            // In-process program execution can also exit with status 3. Its
+            // result does not imply that the compiler session is damaged.
+            if response.code == 3 && !response.ran {
+                replace_session(entry, &req.session);
+            }
+            response
+        }
+        Err(payload) => {
+            let mixed = req.session.krate.target_kind == "lustr-mixed-native";
+            let detail = driver::oracle_failure(&*payload).unwrap_or_else(|| "native compilation panicked".into());
+            // Discard state damaged by the panic, but do not run this request
+            // again. A later user request may start from this fresh session.
+            replace_session(entry, &req.session);
+            Response { code: 3, mixed: mixed.then_some(crate::protocol::MixedOutcome::Failed),
+                stderr: format!("error: internal: {detail}; request was not retried\n"), ..Default::default() }
         }
     }
 }
@@ -985,6 +1096,19 @@ fn log_stats(served: u64, sessions: usize) {
 
 /// Serves requests until idle. Each crate selection (`SessionKey`) has its own session.
 pub fn serve(sock: &Path) -> ! {
+    let address = protocol::host_runtime::DaemonSocket::resolve(sock).unwrap_or_else(|error| {
+        eprintln!("error: cannot resolve daemon socket {}: {error}", sock.display());
+        std::process::exit(2);
+    });
+    let sock = address.path();
+    // A Linux long-path client passes a directory descriptor. Keep it for the
+    // daemon's lifetime, but do not leak it into compiler subprocesses.
+    if let Some(fd) = std::env::var("LUST_DAEMON_DIRECTORY_FD").ok().and_then(|v| v.parse::<i32>().ok()) {
+        if unsafe { fcntl(fd, F_SETFD, FD_CLOEXEC) } < 0 {
+            eprintln!("error: daemon socket directory descriptor is unavailable");
+            std::process::exit(2);
+        }
+    }
     // Sessions load std once; a std or adapter source override must be
     // read fresh by every compile (see `protocol::source_override`).
     if let Some(var) = protocol::source_override() {
@@ -1095,6 +1219,7 @@ pub fn serve(sock: &Path) -> ! {
             max_errors: 20,
             run_args: None,
             harness: false, cc: false,
+            library_options: Default::default(),
             client: protocol::Client::default(),
             file: file.clone(),
         };
@@ -1190,8 +1315,142 @@ pub fn serve(sock: &Path) -> ! {
 mod tests {
     use super::*;
 
+    #[cfg(feature = "exclusive-native")]
+    #[test]
+    fn product_daemon_has_one_attempt_for_errors_panics_and_executed_results() {
+        let base = std::env::temp_dir().join(format!("lust-product-once-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&base);
+        std::fs::create_dir_all(&base).unwrap();
+        let req = check_req(&base.join("absent.rs"));
+        std::fs::write(&req.out, b"last successful artifact").unwrap();
+        for (code, diagnostic, ran) in [
+            (1, "original rejected input", false),
+            (2, "original input error", false),
+            (3, "error: internal: function count mismatch; run again", false),
+            (3, "original executed status three", true),
+            (7, "original executed result", true),
+        ] {
+            let mut entry = Entry::new(base.join(format!("case-{code}-{ran}")), req.session.clone(), None);
+            let attempts = std::cell::Cell::new(0);
+            let mut jobs = GuardJobs::new();
+            let response = compile_guarded_with(&mut entry, &req, &mut jobs, |_, _| {
+                attempts.set(attempts.get() + 1);
+                Response { code, stdout: "original output".into(), stderr: diagnostic.into(), ran, mixed: None }
+            });
+            assert_eq!(attempts.get(), 1);
+            assert_eq!(response.code, code, "a hidden fresh compile would read the absent source and return code 2");
+            assert_eq!(response.stdout, "original output");
+            assert_eq!(response.stderr, diagnostic);
+            assert_eq!(response.ran, ran);
+            assert_eq!(response.mixed, None, "ordinary replies retain their wire format");
+            assert_eq!(entry.served, 1);
+            assert_eq!(entry.resets, u64::from(code == 3 && !ran));
+            assert_eq!((jobs.pending, jobs.running.len(), jobs.queued.len()), (0, 0, 0), "no background compiler attempt");
+            assert_eq!(std::fs::read(&req.out).unwrap(), b"last successful artifact");
+        }
+        let mut entry = Entry::new(base.join("panic"), req.session.clone(), None);
+        let attempts = std::cell::Cell::new(0);
+        let mut jobs = GuardJobs::new();
+        let response = compile_guarded_with(&mut entry, &req, &mut jobs, |_, _| {
+            attempts.set(attempts.get() + 1);
+            panic!("injected compiler panic");
+        });
+        assert_eq!(attempts.get(), 1);
+        assert_eq!(response.code, 3);
+        assert_eq!(response.mixed, None);
+        assert!(response.stderr.contains("not retried"));
+        assert_eq!(entry.resets, 1, "discard damaged state for a later request only");
+        assert_eq!((jobs.pending, jobs.running.len(), jobs.queued.len()), (0, 0, 0));
+        assert_eq!(std::fs::read(&req.out).unwrap(), b"last successful artifact");
+        assert!(!req.file.exists());
+        drop(entry);
+        let _ = std::fs::remove_dir_all(base);
+    }
+
+    #[cfg(feature = "exclusive-native")]
+    #[test]
+    fn product_daemon_preserves_real_retained_edits_and_next_request_recovery() {
+        let base = std::env::temp_dir().join(format!("lust-product-retained-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&base);
+        std::fs::create_dir_all(&base).unwrap();
+        let source = "fn value()->i64{41}\nfn main(){println!(\"{}\",value());}\n";
+        let file = base.join("main.rs");
+        std::fs::write(&file, source).unwrap();
+        let mut req = check_req(&file);
+        req.cmd = protocol::Cmd::Build;
+        let mut entry = Entry::new(base.join("session"), req.session.clone(), None);
+        let mut jobs = GuardJobs::new();
+        let run = |expected: &[u8]| {
+            let output = std::process::Command::new(&req.out).output().unwrap();
+            assert!(output.status.success(), "{}", String::from_utf8_lossy(&output.stderr));
+            assert_eq!(output.stdout, expected);
+        };
+        for pass in 0..2 {
+            let response = compile_guarded(&mut entry, &req, &mut jobs);
+            assert_eq!(response.code, 0, "{}", response.stderr);
+            assert_eq!(response.mixed, None);
+            run(b"41\n");
+            if pass == 1 {
+                assert!(entry.session.front.last_visits.contains("checked=0"), "{}", entry.session.front.last_visits);
+            }
+        }
+        let prior = std::fs::read(&req.out).unwrap();
+        std::fs::write(&file, source.replace("{41}", "{true}")).unwrap();
+        let invalid = compile_guarded(&mut entry, &req, &mut jobs);
+        assert_eq!(invalid.code, 1);
+        assert_eq!(invalid.mixed, None);
+        assert_eq!((jobs.pending, jobs.running.len(), jobs.queued.len()), (0, 0, 0));
+        assert_eq!(entry.resets, 0);
+        assert_eq!(std::fs::read(&req.out).unwrap(), prior);
+        std::fs::write(&file, source.replace("{41}", "{42}")).unwrap();
+        assert_eq!(compile_guarded(&mut entry, &req, &mut jobs).code, 0);
+        run(b"42\n");
+        let prior = std::fs::read(&req.out).unwrap();
+        let panicked = compile_guarded_with(&mut entry, &req, &mut jobs, |_, _| panic!("injected after real retained work"));
+        assert_eq!(panicked.code, 3);
+        assert_eq!(entry.resets, 1);
+        assert_eq!(std::fs::read(&req.out).unwrap(), prior);
+        std::fs::write(&file, source.replace("{41}", "{43}")).unwrap();
+        assert_eq!(compile_guarded(&mut entry, &req, &mut jobs).code, 0);
+        run(b"43\n");
+        assert_eq!((jobs.pending, jobs.running.len(), jobs.queued.len()), (0, 0, 0));
+        assert_eq!(entry.resets, 1);
+        drop(entry);
+        let _ = std::fs::remove_dir_all(base);
+    }
+
+    #[test]
+    fn mixed_admission_daemon_keeps_internal_failure_and_panic_without_retry() {
+        let base = std::env::temp_dir().join(format!("lust-mixed-guard-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&base);
+        std::fs::create_dir_all(&base).unwrap();
+        let mut req = check_req(&base.join("absent.rs"));
+        req.session.krate.target_kind = "lustr-mixed-native".into();
+        req.session.krate.target_name = "kernel".into();
+        req.session.krate.package_id = "lustr-mixed-1234".into();
+        let mut sessions = HashMap::new();
+        let entry = entry_for(&mut sessions, &base.join("sessions"), &req.session, None, &mut 0);
+        let first = entry.session.obj_dir().to_owned();
+        let failure = Response { code: 3, stderr: "original emission failure".into(),
+            mixed: Some(crate::protocol::MixedOutcome::Failed), ..Default::default() };
+        let failed = terminal_answer(entry, &req, Ok(failure));
+        assert_eq!(failed.code, 3);
+        assert_eq!(failed.stderr, "original emission failure");
+        assert_eq!(failed.mixed, Some(crate::protocol::MixedOutcome::Failed));
+        assert_ne!(entry.session.obj_dir(), first);
+        let second = entry.session.obj_dir().to_owned();
+        let panicked = terminal_answer(entry, &req, Err(Box::new("injected panic")));
+        assert_eq!(panicked.code, 3);
+        assert_eq!(panicked.mixed, Some(crate::protocol::MixedOutcome::Failed));
+        assert!(panicked.stderr.contains("not retried"));
+        assert_ne!(entry.session.obj_dir(), second);
+        assert!(!req.file.exists(), "there was no source for a hidden second compile");
+        drop(sessions);
+        let _ = std::fs::remove_dir_all(base);
+    }
+
     fn resp(code: i32, stderr: &str) -> Response {
-        Response { stdout: String::new(), stderr: stderr.into(), code, ran: false }
+        Response { stdout: String::new(), stderr: stderr.into(), code, ran: false, mixed: None }
     }
 
     fn done(key: &SessionKey, seq: u64, served: u64, warm: Response, fresh: Response, dir: PathBuf) -> GuardDone {
@@ -1255,6 +1514,7 @@ mod tests {
             max_errors: 20,
             run_args: None,
             harness: false, cc: false,
+            library_options: Default::default(),
             client: protocol::Client::default(),
             file: file.to_path_buf(),
         }
@@ -1610,6 +1870,12 @@ mod tests {
     fn client_gone_sees_a_closed_peer_only() {
         let (ours, theirs) = std::os::unix::net::UnixStream::pair().unwrap();
         assert!(!client_gone(ours.as_raw_fd()));
+        use std::io::{Read, Write};
+        (&theirs).write_all(b"pending").unwrap();
+        assert!(!client_gone(ours.as_raw_fd()), "pending input is not a disconnected client");
+        let mut pending = [0u8; 7];
+        (&ours).read_exact(&mut pending).unwrap();
+        assert_eq!(&pending, b"pending", "peer inspection must not consume input");
         drop(theirs);
         assert!(client_gone(ours.as_raw_fd()));
     }

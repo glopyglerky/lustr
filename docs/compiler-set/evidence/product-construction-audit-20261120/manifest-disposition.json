@@ -1,0 +1,1405 @@
+{
+  "scope": "source manifest inventory and construction-role audit; donor fixtures and immutable historical manifests are preserved, not claimed independently semantically qualified",
+  "manifests": [
+    {
+      "path": "Cargo.toml",
+      "sha256": "3cbe194c029ff28d35f7ae2d5c8ad9a5406c50a36101757637e0d0d5d33ce547",
+      "role": "constructor-selected product package"
+    },
+    {
+      "path": "compiler/native/Cargo.toml",
+      "sha256": "e02ac7490881846b14550a7793cce3c0eb23d87141d564fbc05470f99bdbde64",
+      "role": "constructor-selected product package"
+    },
+    {
+      "path": "compiler/native/bench/slices/items/Cargo.toml",
+      "sha256": "9090089389b64dcf84686ee20febb4a7a867e79fa23b4abe19eac1778579f240",
+      "role": "protected Lust source subtree; donor library or qualification input, not another constructor-selected package"
+    },
+    {
+      "path": "compiler/native/bench/tsrust-tools/Cargo.toml",
+      "sha256": "5491c92687f27b5390c3563f29644a9aada44d1a68fd518cc8ab2f41ff4e19a7",
+      "role": "protected Lust source subtree; donor library or qualification input, not another constructor-selected package"
+    },
+    {
+      "path": "compiler/native/bench/tsrust-tools/tools/ts_ast_codegen/Cargo.toml",
+      "sha256": "456cb91cb998ea10443e0617a70b31c9492d983e44d173e3e7b02dd305fa5512",
+      "role": "protected Lust source subtree; donor library or qualification input, not another constructor-selected package"
+    },
+    {
+      "path": "compiler/native/bench/tsrust-tools/tools/ts_diagnostics_codegen/Cargo.toml",
+      "sha256": "e20ba5d81a3fe31fbebdcc0b322740bff33474bdef6f942330f96d162ef91cdb",
+      "role": "protected Lust source subtree; donor library or qualification input, not another constructor-selected package"
+    },
+    {
+      "path": "compiler/native/library/alloc/Cargo.toml",
+      "sha256": "50dd639d50e226a6bd46a55e2f79fc3d8db7b54102df32cf8d8ca4fe4dfdff25",
+      "role": "protected Lust source subtree; donor library or qualification input, not another constructor-selected package"
+    },
+    {
+      "path": "compiler/native/library/core/Cargo.toml",
+      "sha256": "77bdc33eb4c0dfd746b0b437cac6874dd873ad490ca1ef123bfbced8cb97e69d",
+      "role": "protected Lust source subtree; donor library or qualification input, not another constructor-selected package"
+    },
+    {
+      "path": "compiler/native/library/deps/bumpalo/Cargo.toml",
+      "sha256": "88a73d7ea96fd1f149dfec93c0fb34b9131bb6f00eb600554c9195d32ff7189b",
+      "role": "protected Lust source subtree; donor library or qualification input, not another constructor-selected package"
+    },
+    {
+      "path": "compiler/native/library/deps/flate2/Cargo.toml",
+      "sha256": "69ee39ee710504ba6b547893cedd124c08858318c7e85b6fda1633828f0bc13b",
+      "role": "protected Lust source subtree; donor library or qualification input, not another constructor-selected package"
+    },
+    {
+      "path": "compiler/native/library/deps/indexmap/Cargo.toml",
+      "sha256": "963b84dc4983dfe71ef46ec34ff872932b0e9c111b0ceac1a03697b605f5b69b",
+      "role": "protected Lust source subtree; donor library or qualification input, not another constructor-selected package"
+    },
+    {
+      "path": "compiler/native/library/deps/jiff/Cargo.toml",
+      "sha256": "a25b7a604069bf4f81d22d1d72079d1d2ea3029aabd43e0a43ed688ffaeff9da",
+      "role": "protected Lust source subtree; donor library or qualification input, not another constructor-selected package"
+    },
+    {
+      "path": "compiler/native/library/deps/memchr/Cargo.toml",
+      "sha256": "6a1d294a3b35d938bbdc38b17d72b1fbbc8e64cfa5984b62ee73373a4fa6c72a",
+      "role": "protected Lust source subtree; donor library or qualification input, not another constructor-selected package"
+    },
+    {
+      "path": "compiler/native/library/deps/name-to-handle-at/Cargo.toml",
+      "sha256": "51a41f1119856c6fd580e88162e8f7ec5a4ee671c490da77a425ff111a2d1af5",
+      "role": "protected Lust source subtree; donor library or qualification input, not another constructor-selected package"
+    },
+    {
+      "path": "compiler/native/library/deps/nix/Cargo.toml",
+      "sha256": "4e408a48b1302efbce835254f5efc35f20be25c2f5bdcac8f47fc3ee9f2a1a77",
+      "role": "protected Lust source subtree; donor library or qualification input, not another constructor-selected package"
+    },
+    {
+      "path": "compiler/native/library/deps/num-bigint/Cargo.toml",
+      "sha256": "e83c5d6797b4f54ab7eb20a77104d2a53338a16a4b3764592dfa0782ecedd492",
+      "role": "protected Lust source subtree; donor library or qualification input, not another constructor-selected package"
+    },
+    {
+      "path": "compiler/native/library/deps/num-traits/Cargo.toml",
+      "sha256": "03290adf9f6ac776c55a641284c2b3c7302fd659a3e453427d23a11fa9329418",
+      "role": "protected Lust source subtree; donor library or qualification input, not another constructor-selected package"
+    },
+    {
+      "path": "compiler/native/library/deps/rustc-hash/Cargo.toml",
+      "sha256": "07a05f24dbc2ec24a846d26a4426e39566c96d32558d485d1956c2a2d81c94ab",
+      "role": "protected Lust source subtree; donor library or qualification input, not another constructor-selected package"
+    },
+    {
+      "path": "compiler/native/library/deps/rustix/Cargo.toml",
+      "sha256": "7fcf5aa19af739b40bfe8847aa1fac381f59b38e5592148365e661d58e47caa6",
+      "role": "protected Lust source subtree; donor library or qualification input, not another constructor-selected package"
+    },
+    {
+      "path": "compiler/native/library/deps/ryu-js/Cargo.toml",
+      "sha256": "73b178d5e96318ed7f0a958200b72fd010f5754b042b44ca5e44e70f26ef386b",
+      "role": "protected Lust source subtree; donor library or qualification input, not another constructor-selected package"
+    },
+    {
+      "path": "compiler/native/library/deps/same-file/Cargo.toml",
+      "sha256": "800bcc29f58416a9c69cacdf74cc7ba39a6154e4cb1079909b4201dc69dfe2d1",
+      "role": "protected Lust source subtree; donor library or qualification input, not another constructor-selected package"
+    },
+    {
+      "path": "compiler/native/library/deps/signal-hook/Cargo.toml",
+      "sha256": "ddc1ab57031f583f34e8e72a8a97f7c5a665f59d1c2c293592060da9ba54af14",
+      "role": "protected Lust source subtree; donor library or qualification input, not another constructor-selected package"
+    },
+    {
+      "path": "compiler/native/library/deps/smallvec/Cargo.toml",
+      "sha256": "cb299955610eb8f5412e0832d3a7157e29aa2bd69e82d6766fba69496548f7fe",
+      "role": "protected Lust source subtree; donor library or qualification input, not another constructor-selected package"
+    },
+    {
+      "path": "compiler/native/library/deps/tikv-jemalloc-ctl/Cargo.toml",
+      "sha256": "57874de5aadc78a099dac6c24d0e66ce67a67a2e0f02809254205130ed7402bd",
+      "role": "protected Lust source subtree; donor library or qualification input, not another constructor-selected package"
+    },
+    {
+      "path": "compiler/native/library/deps/tikv-jemallocator/Cargo.toml",
+      "sha256": "10a44a6f20ae8e0bc354e1101ccfe1002652fd2da6be51b1b1681190dc43d372",
+      "role": "protected Lust source subtree; donor library or qualification input, not another constructor-selected package"
+    },
+    {
+      "path": "compiler/native/library/deps/xxhash-rust/Cargo.toml",
+      "sha256": "a0f4a35cdd524359f59afed182d59242e7b8499013724ab9448172f0a737cba0",
+      "role": "protected Lust source subtree; donor library or qualification input, not another constructor-selected package"
+    },
+    {
+      "path": "compiler/native/library/std/Cargo.toml",
+      "sha256": "0fbc02354f60cfbc68b312674a0c5620c2b7fc0d4e5f6249e3d7c80461e82ebe",
+      "role": "protected Lust source subtree; donor library or qualification input, not another constructor-selected package"
+    },
+    {
+      "path": "compiler/native/shims/Cargo.toml",
+      "sha256": "96d609920205cbd69f6a350ec1b8a993826a41fb35cef7ac477ed7de0f5df96b",
+      "role": "protected Lust source subtree; donor library or qualification input, not another constructor-selected package"
+    },
+    {
+      "path": "compiler/native/tests/cargo-proj/Cargo.toml",
+      "sha256": "35a8a066d9adaa84ce18cf3cf49dc92f13e41e3a26bd0f501e6bc4e0c095b9f8",
+      "role": "protected Lust source subtree; donor library or qualification input, not another constructor-selected package"
+    },
+    {
+      "path": "compiler/native/tests/crates/adapter-feature/Cargo.toml",
+      "sha256": "271fc1f3066b499cc492f7e65f8f495e6268841ebbbd565d5fb9d6e56eeb76c8",
+      "role": "protected Lust source subtree; donor library or qualification input, not another constructor-selected package"
+    },
+    {
+      "path": "compiler/native/tests/crates/adapter-feature/vendor/memchr/Cargo.toml",
+      "sha256": "9a1edd0a0bbb114114bbd65040735c7b0edd2f159c6cf9b7a6571f93f927cbca",
+      "role": "protected Lust source subtree; donor library or qualification input, not another constructor-selected package"
+    },
+    {
+      "path": "compiler/native/tests/crates/adapter-missing/Cargo.toml",
+      "sha256": "6347160a977e992ebd6545d7e80af537399a2a3c8dad72d5c9655577300c1f4d",
+      "role": "protected Lust source subtree; donor library or qualification input, not another constructor-selected package"
+    },
+    {
+      "path": "compiler/native/tests/crates/adapter-missing/vendor/hashbrown/Cargo.toml",
+      "sha256": "33b12e445acb82fc01becc4e8e664301f7b50926a28b9cc1b235792dfe7d48db",
+      "role": "protected Lust source subtree; donor library or qualification input, not another constructor-selected package"
+    },
+    {
+      "path": "compiler/native/tests/crates/adapter-version/Cargo.toml",
+      "sha256": "2bc856b8f3ae599af76391a1f319064ddd9194fcef57354a79cd7baedb53f9a2",
+      "role": "protected Lust source subtree; donor library or qualification input, not another constructor-selected package"
+    },
+    {
+      "path": "compiler/native/tests/crates/adapter-version/vendor/memchr/Cargo.toml",
+      "sha256": "d029ff9540d6140ab52f1ac50100bda4e12701635b28f6f89b502fb99f54a713",
+      "role": "protected Lust source subtree; donor library or qualification input, not another constructor-selected package"
+    },
+    {
+      "path": "compiler/native/tests/crates/alias-smart-default-dep/Cargo.toml",
+      "sha256": "e0465d5d1abb06257b735dc6573e46a22e24e599605d79de5e02a2709cab89a8",
+      "role": "protected Lust source subtree; donor library or qualification input, not another constructor-selected package"
+    },
+    {
+      "path": "compiler/native/tests/crates/alias-smart-default-dep/dmap/Cargo.toml",
+      "sha256": "f0ff4e4cda3e8132a6c6ee3baa5f42f589838f92b9fd6799d9dce3f21d6bbbd0",
+      "role": "protected Lust source subtree; donor library or qualification input, not another constructor-selected package"
+    },
+    {
+      "path": "compiler/native/tests/crates/ambig-file/Cargo.toml",
+      "sha256": "0b89cebdeb5d818ae01c2a453d08784907069a4946898595e1216c0ea227f483",
+      "role": "protected Lust source subtree; donor library or qualification input, not another constructor-selected package"
+    },
+    {
+      "path": "compiler/native/tests/crates/anon-const-privacy/Cargo.toml",
+      "sha256": "4a1336890a5c45c91d6c029536b291d425f25aa9b3751c3e7f015703263e8ed0",
+      "role": "protected Lust source subtree; donor library or qualification input, not another constructor-selected package"
+    },
+    {
+      "path": "compiler/native/tests/crates/anon-const-privacy/app/Cargo.toml",
+      "sha256": "5688d4c2b445c1e14884aaa0108a058f2cab2c5398cef190869ff5fca765214a",
+      "role": "protected Lust source subtree; donor library or qualification input, not another constructor-selected package"
+    },
+    {
+      "path": "compiler/native/tests/crates/anon-const-privacy/base/Cargo.toml",
+      "sha256": "0a33ab5f58740ec455fe7dcb84883747823ef53c8d9bb1ac15cc4b8b57cf8936",
+      "role": "protected Lust source subtree; donor library or qualification input, not another constructor-selected package"
+    },
+    {
+      "path": "compiler/native/tests/crates/buildscript/Cargo.toml",
+      "sha256": "8871930e2edee8ab382f84c80ebf8f254e9775113c60bc1f530ed251f8f9d716",
+      "role": "protected Lust source subtree; donor library or qualification input, not another constructor-selected package"
+    },
+    {
+      "path": "compiler/native/tests/crates/cfg-alpha/Cargo.toml",
+      "sha256": "4c3461d0a58855a12fbcca1401e256b48ec1e4056fad50d8b6fbee7104094921",
+      "role": "protected Lust source subtree; donor library or qualification input, not another constructor-selected package"
+    },
+    {
+      "path": "compiler/native/tests/crates/cfg-none/Cargo.toml",
+      "sha256": "af086dab59d6f8ab2033a0060f312bd8a060b255dc34597b1dce245ed4dab256",
+      "role": "protected Lust source subtree; donor library or qualification input, not another constructor-selected package"
+    },
+    {
+      "path": "compiler/native/tests/crates/cfg-target/Cargo.toml",
+      "sha256": "739184440ddb32784dffa5e08b807465f52e4520ffa1b1d4c6f24812262750db",
+      "role": "protected Lust source subtree; donor library or qualification input, not another constructor-selected package"
+    },
+    {
+      "path": "compiler/native/tests/crates/const-patterns/Cargo.toml",
+      "sha256": "e573d9c9cd45a885e9d602e6a2a0c3b0b9605e9734ff7a560ba736e8f266c055",
+      "role": "protected Lust source subtree; donor library or qualification input, not another constructor-selected package"
+    },
+    {
+      "path": "compiler/native/tests/crates/const-patterns/app/Cargo.toml",
+      "sha256": "5688d4c2b445c1e14884aaa0108a058f2cab2c5398cef190869ff5fca765214a",
+      "role": "protected Lust source subtree; donor library or qualification input, not another constructor-selected package"
+    },
+    {
+      "path": "compiler/native/tests/crates/const-patterns/base/Cargo.toml",
+      "sha256": "0a33ab5f58740ec455fe7dcb84883747823ef53c8d9bb1ac15cc4b8b57cf8936",
+      "role": "protected Lust source subtree; donor library or qualification input, not another constructor-selected package"
+    },
+    {
+      "path": "compiler/native/tests/crates/consts-alias/Cargo.toml",
+      "sha256": "13bce7395b16904bc2c075eb4d070158684fac16080414397ace52998070075e",
+      "role": "protected Lust source subtree; donor library or qualification input, not another constructor-selected package"
+    },
+    {
+      "path": "compiler/native/tests/crates/cross-crate-item/Cargo.toml",
+      "sha256": "502dd482bc4b7b6fd0ce0d5310c971c12119e8dfbc95003cb23e9267b347a767",
+      "role": "protected Lust source subtree; donor library or qualification input, not another constructor-selected package"
+    },
+    {
+      "path": "compiler/native/tests/crates/debug-names-dep/Cargo.toml",
+      "sha256": "153715c438d8451414b7cfc98a38d95041a300a848ab3425d4b684720615e960",
+      "role": "protected Lust source subtree; donor library or qualification input, not another constructor-selected package"
+    },
+    {
+      "path": "compiler/native/tests/crates/debug-names-dep/app/Cargo.toml",
+      "sha256": "5688d4c2b445c1e14884aaa0108a058f2cab2c5398cef190869ff5fca765214a",
+      "role": "protected Lust source subtree; donor library or qualification input, not another constructor-selected package"
+    },
+    {
+      "path": "compiler/native/tests/crates/debug-names-dep/base/Cargo.toml",
+      "sha256": "0a33ab5f58740ec455fe7dcb84883747823ef53c8d9bb1ac15cc4b8b57cf8936",
+      "role": "protected Lust source subtree; donor library or qualification input, not another constructor-selected package"
+    },
+    {
+      "path": "compiler/native/tests/crates/debug-names-diag/Cargo.toml",
+      "sha256": "0f285650548350a703c6d4a6211c702685b1c34997492ae21c21e0dc87e91604",
+      "role": "protected Lust source subtree; donor library or qualification input, not another constructor-selected package"
+    },
+    {
+      "path": "compiler/native/tests/crates/debug-names/Cargo.toml",
+      "sha256": "0724a979f95aed5ab52e85123e90cb6fa412a06c15d4705911700f4092dc15bb",
+      "role": "protected Lust source subtree; donor library or qualification input, not another constructor-selected package"
+    },
+    {
+      "path": "compiler/native/tests/crates/dep-edition/Cargo.toml",
+      "sha256": "8e3601081d4ab917555c142d651247b334fdb25e76779b274b15bfcd8b75a0d4",
+      "role": "protected Lust source subtree; donor library or qualification input, not another constructor-selected package"
+    },
+    {
+      "path": "compiler/native/tests/crates/dep-edition/app/Cargo.toml",
+      "sha256": "5688d4c2b445c1e14884aaa0108a058f2cab2c5398cef190869ff5fca765214a",
+      "role": "protected Lust source subtree; donor library or qualification input, not another constructor-selected package"
+    },
+    {
+      "path": "compiler/native/tests/crates/dep-edition/base/Cargo.toml",
+      "sha256": "fa4baf2f981a02f70f0688986ecaa2f687b492eb1a426ebd8bdca83d7169fa7a",
+      "role": "protected Lust source subtree; donor library or qualification input, not another constructor-selected package"
+    },
+    {
+      "path": "compiler/native/tests/crates/dep-module-macro-reexport/Cargo.toml",
+      "sha256": "b322078540727f05027ba529028931038149dc99543493a5b258288c7acc1838",
+      "role": "protected Lust source subtree; donor library or qualification input, not another constructor-selected package"
+    },
+    {
+      "path": "compiler/native/tests/crates/dep-module-macro-reexport/app/Cargo.toml",
+      "sha256": "f548b59b86e567b20c11acf8108a0a2b49c1f65b056843ea32345b3512165d8f",
+      "role": "protected Lust source subtree; donor library or qualification input, not another constructor-selected package"
+    },
+    {
+      "path": "compiler/native/tests/crates/dep-module-macro-reexport/core/Cargo.toml",
+      "sha256": "e7df1fa9f02c0e96e31fa86d62619017bccd178789823d230d4fd03d3cc19ab3",
+      "role": "protected Lust source subtree; donor library or qualification input, not another constructor-selected package"
+    },
+    {
+      "path": "compiler/native/tests/crates/dep-std-diamond/Cargo.toml",
+      "sha256": "ceb33b9e4ab5222a12d5a48b20263888ab636164d73916f4db47e439955a12c6",
+      "role": "protected Lust source subtree; donor library or qualification input, not another constructor-selected package"
+    },
+    {
+      "path": "compiler/native/tests/crates/dep-std-diamond/base/Cargo.toml",
+      "sha256": "0a33ab5f58740ec455fe7dcb84883747823ef53c8d9bb1ac15cc4b8b57cf8936",
+      "role": "protected Lust source subtree; donor library or qualification input, not another constructor-selected package"
+    },
+    {
+      "path": "compiler/native/tests/crates/dep-std-diamond/left/Cargo.toml",
+      "sha256": "f10fee29b6d0f0566994ddfd682bc485e0fa3cabc29877c4e49f23750f1b7d85",
+      "role": "protected Lust source subtree; donor library or qualification input, not another constructor-selected package"
+    },
+    {
+      "path": "compiler/native/tests/crates/dep-std-diamond/right/Cargo.toml",
+      "sha256": "52bc4107c903ee513af8666412cdc82bfc9c6318a7a721e0fb663fb0f57f2caa",
+      "role": "protected Lust source subtree; donor library or qualification input, not another constructor-selected package"
+    },
+    {
+      "path": "compiler/native/tests/crates/dep-std-exit/Cargo.toml",
+      "sha256": "d5d13670401fb1a561b27a2c8a980314c9583f7e44d1fb1a17ee2f3ff68461ce",
+      "role": "protected Lust source subtree; donor library or qualification input, not another constructor-selected package"
+    },
+    {
+      "path": "compiler/native/tests/crates/dep-std-exit/helper/Cargo.toml",
+      "sha256": "3c5232192a455778eafdbe79f9a821b23f4a329ffbf874183e03eda11efdf567",
+      "role": "protected Lust source subtree; donor library or qualification input, not another constructor-selected package"
+    },
+    {
+      "path": "compiler/native/tests/crates/dep-std-mismatch/Cargo.toml",
+      "sha256": "0475368405ff09abc63fde5b87814a230f071b5d6df83e05455f166a66936270",
+      "role": "protected Lust source subtree; donor library or qualification input, not another constructor-selected package"
+    },
+    {
+      "path": "compiler/native/tests/crates/dep-std-mismatch/clock/Cargo.toml",
+      "sha256": "82c3280f4cb0e9554b5c8f3cf5dd5985fc91434d6562334110a0599d9e35c934",
+      "role": "protected Lust source subtree; donor library or qualification input, not another constructor-selected package"
+    },
+    {
+      "path": "compiler/native/tests/crates/dep-std-modules/Cargo.toml",
+      "sha256": "5aff9ad15bc04c1e0ad8b7b5ca64306e30c3283eebf6e3c1fe4ac676115bec62",
+      "role": "protected Lust source subtree; donor library or qualification input, not another constructor-selected package"
+    },
+    {
+      "path": "compiler/native/tests/crates/dep-std-modules/timed/Cargo.toml",
+      "sha256": "470d70e95ed61ecd39333ab321120c9e1d241d4111687d9a94c65f8fe0a99053",
+      "role": "protected Lust source subtree; donor library or qualification input, not another constructor-selected package"
+    },
+    {
+      "path": "compiler/native/tests/crates/dev-features/Cargo.toml",
+      "sha256": "b95c0975f56edbb1532e873514d3e202308d37efed2d5dbea4871497873eb995",
+      "role": "protected Lust source subtree; donor library or qualification input, not another constructor-selected package"
+    },
+    {
+      "path": "compiler/native/tests/crates/dup-across-files/Cargo.toml",
+      "sha256": "75171fca05158559ece5c3892dbe125f5d3fb2f6c1b41f5fbd7e7b2027677d0d",
+      "role": "protected Lust source subtree; donor library or qualification input, not another constructor-selected package"
+    },
+    {
+      "path": "compiler/native/tests/crates/explicit-through-glob/Cargo.toml",
+      "sha256": "00cfda38ab46712fce668c2f4618c7c674f4def2fe567468f57a580e32729530",
+      "role": "protected Lust source subtree; donor library or qualification input, not another constructor-selected package"
+    },
+    {
+      "path": "compiler/native/tests/crates/extra-bin/Cargo.toml",
+      "sha256": "c5522d410d15c85a5c7a4a83c31bc2462c81dd834803f0ad17713b3495878326",
+      "role": "protected Lust source subtree; donor library or qualification input, not another constructor-selected package"
+    },
+    {
+      "path": "compiler/native/tests/crates/featured/Cargo.toml",
+      "sha256": "67313769cf9ffa0b7064046fc31dca1773ec4a773ad8b43ac220243dba21fbe5",
+      "role": "protected Lust source subtree; donor library or qualification input, not another constructor-selected package"
+    },
+    {
+      "path": "compiler/native/tests/crates/field-private/Cargo.toml",
+      "sha256": "031bb5f958e19e63822423695e0b9a891989d3de17c85b90dcae2abca507818a",
+      "role": "protected Lust source subtree; donor library or qualification input, not another constructor-selected package"
+    },
+    {
+      "path": "compiler/native/tests/crates/fn-local-use/Cargo.toml",
+      "sha256": "f46c8bb4e5a900d160fbc18d0e959a6f16c45fea22db687be88e528cfb6f54ed",
+      "role": "protected Lust source subtree; donor library or qualification input, not another constructor-selected package"
+    },
+    {
+      "path": "compiler/native/tests/crates/generic-field-private/Cargo.toml",
+      "sha256": "182c76b37b2f9bdddd1788338ce39a9430649925f2a36e0d20eeaea8eb3c34fb",
+      "role": "protected Lust source subtree; donor library or qualification input, not another constructor-selected package"
+    },
+    {
+      "path": "compiler/native/tests/crates/generic-own-field/Cargo.toml",
+      "sha256": "9f1acf2c5cf67bb78dbc1b3ebfb7d3e54169278fccc731b9365c32289d141e36",
+      "role": "protected Lust source subtree; donor library or qualification input, not another constructor-selected package"
+    },
+    {
+      "path": "compiler/native/tests/crates/glob-ambiguous/Cargo.toml",
+      "sha256": "86a76846ac04ab126e877895c7f38a220a247a9b999321c1b33aec35521e5220",
+      "role": "protected Lust source subtree; donor library or qualification input, not another constructor-selected package"
+    },
+    {
+      "path": "compiler/native/tests/crates/glob-collision-ok/Cargo.toml",
+      "sha256": "40812f7f3c66b0d70ecdd4073676b77609413798fe233c40a2d86ad61b05aaac",
+      "role": "protected Lust source subtree; donor library or qualification input, not another constructor-selected package"
+    },
+    {
+      "path": "compiler/native/tests/crates/hash-user-builder/Cargo.toml",
+      "sha256": "bdeeaa79144bde3eadb639afec59ca64994f4a0d2b708e263da96764289cf8b7",
+      "role": "protected Lust source subtree; donor library or qualification input, not another constructor-selected package"
+    },
+    {
+      "path": "compiler/native/tests/crates/hello/Cargo.toml",
+      "sha256": "8f64ad069a3fb09539a5dabb8ab37339c8f3e646a551ea43ccc3615ad20cc20e",
+      "role": "protected Lust source subtree; donor library or qualification input, not another constructor-selected package"
+    },
+    {
+      "path": "compiler/native/tests/crates/import-forms/Cargo.toml",
+      "sha256": "bf4042c10a5878bca7f2e41c7495b551d39169b1eed2614b2d2f7c1ba321ae25",
+      "role": "protected Lust source subtree; donor library or qualification input, not another constructor-selected package"
+    },
+    {
+      "path": "compiler/native/tests/crates/include-paths/Cargo.toml",
+      "sha256": "08acb624c4ed6a5b358da5f3a6bdebbd4ed5351f073d935d33320394bf58d684",
+      "role": "protected Lust source subtree; donor library or qualification input, not another constructor-selected package"
+    },
+    {
+      "path": "compiler/native/tests/crates/include-paths/genlib/Cargo.toml",
+      "sha256": "508cb1942986dbf486fd94a3a18a2cb299932fbaeb6b0112d6008f6d59e480ba",
+      "role": "protected Lust source subtree; donor library or qualification input, not another constructor-selected package"
+    },
+    {
+      "path": "compiler/native/tests/crates/lexical-scope/Cargo.toml",
+      "sha256": "6755c11147de786e773d53c894c6ff866546cb99fe0450cd787e1846a1fdf09c",
+      "role": "protected Lust source subtree; donor library or qualification input, not another constructor-selected package"
+    },
+    {
+      "path": "compiler/native/tests/crates/lib-mir-lint/Cargo.toml",
+      "sha256": "2a196e158df82046fe96125cd704830818351539d2bfa46404aee698dfd5795b",
+      "role": "protected Lust source subtree; donor library or qualification input, not another constructor-selected package"
+    },
+    {
+      "path": "compiler/native/tests/crates/lib-only-error/Cargo.toml",
+      "sha256": "dc7ea3db0353afbb48858f330002b0e8adad63d1e45c6f845c3c1d212731c76a",
+      "role": "protected Lust source subtree; donor library or qualification input, not another constructor-selected package"
+    },
+    {
+      "path": "compiler/native/tests/crates/lib-only-path/Cargo.toml",
+      "sha256": "171f5bd3d5f20099b3149bc302ad245b06e378b8e40150d43f34c798c0aebad5",
+      "role": "protected Lust source subtree; donor library or qualification input, not another constructor-selected package"
+    },
+    {
+      "path": "compiler/native/tests/crates/lib-only-path/parts/p/Cargo.toml",
+      "sha256": "8b42a419a470bd3dc445f355f325aa551d142d0adacb98d9fe508583813c7f6f",
+      "role": "protected Lust source subtree; donor library or qualification input, not another constructor-selected package"
+    },
+    {
+      "path": "compiler/native/tests/crates/lib-only/Cargo.toml",
+      "sha256": "03bebc9c5e08d8cd401b359b8fabe56c7c3f9c499c3cbce64601395714c827ec",
+      "role": "protected Lust source subtree; donor library or qualification input, not another constructor-selected package"
+    },
+    {
+      "path": "compiler/native/tests/crates/location-module-file/Cargo.toml",
+      "sha256": "0c8a25bb1d0cea9a238623e65089d41f2ddd0dac7031f5f6c850333f2664b736",
+      "role": "protected Lust source subtree; donor library or qualification input, not another constructor-selected package"
+    },
+    {
+      "path": "compiler/native/tests/crates/macro-after-mod/Cargo.toml",
+      "sha256": "4baf7c28cc4e65d8f2afa1df7ff47001c813925fe73881ea7cd77d1a2c299b6d",
+      "role": "protected Lust source subtree; donor library or qualification input, not another constructor-selected package"
+    },
+    {
+      "path": "compiler/native/tests/crates/macro-byte-literals/Cargo.toml",
+      "sha256": "5722d42d29eab6c5b728d1183e40d94113938b3c5569513c08d52068be465687",
+      "role": "protected Lust source subtree; donor library or qualification input, not another constructor-selected package"
+    },
+    {
+      "path": "compiler/native/tests/crates/macro-dollar-crate-missing/Cargo.toml",
+      "sha256": "9997f557d253e38bd5d71f2f872e7ddc1385e5405050e7800797aa39eb14dcfb",
+      "role": "protected Lust source subtree; donor library or qualification input, not another constructor-selected package"
+    },
+    {
+      "path": "compiler/native/tests/crates/macro-dollar-crate-missing/app/Cargo.toml",
+      "sha256": "5688d4c2b445c1e14884aaa0108a058f2cab2c5398cef190869ff5fca765214a",
+      "role": "protected Lust source subtree; donor library or qualification input, not another constructor-selected package"
+    },
+    {
+      "path": "compiler/native/tests/crates/macro-dollar-crate-missing/base/Cargo.toml",
+      "sha256": "0a33ab5f58740ec455fe7dcb84883747823ef53c8d9bb1ac15cc4b8b57cf8936",
+      "role": "protected Lust source subtree; donor library or qualification input, not another constructor-selected package"
+    },
+    {
+      "path": "compiler/native/tests/crates/macro-dollar-crate/Cargo.toml",
+      "sha256": "112f88fdcc1c0d81eebd90f1a6488adb8d83755d4ea5b044214cf39b2c5c5610",
+      "role": "protected Lust source subtree; donor library or qualification input, not another constructor-selected package"
+    },
+    {
+      "path": "compiler/native/tests/crates/macro-dollar-crate/app/Cargo.toml",
+      "sha256": "d4590270918b6a0b5ae51e1feddba59a35b5126cfbe856364d69672a6a0dd915",
+      "role": "protected Lust source subtree; donor library or qualification input, not another constructor-selected package"
+    },
+    {
+      "path": "compiler/native/tests/crates/macro-dollar-crate/base/Cargo.toml",
+      "sha256": "0a33ab5f58740ec455fe7dcb84883747823ef53c8d9bb1ac15cc4b8b57cf8936",
+      "role": "protected Lust source subtree; donor library or qualification input, not another constructor-selected package"
+    },
+    {
+      "path": "compiler/native/tests/crates/macro-dollar-crate/mid/Cargo.toml",
+      "sha256": "5682aa8d4a6c93d04d514fb9b07ff38b65034ee782ff4534095a93cfa16a1c79",
+      "role": "protected Lust source subtree; donor library or qualification input, not another constructor-selected package"
+    },
+    {
+      "path": "compiler/native/tests/crates/macro-generated-mod/Cargo.toml",
+      "sha256": "be8fe81911e1765cee829efc8592b0e1af9a06b4c3c91ca38f5fd67fe7fd5301",
+      "role": "protected Lust source subtree; donor library or qualification input, not another constructor-selected package"
+    },
+    {
+      "path": "compiler/native/tests/crates/macro-glob/Cargo.toml",
+      "sha256": "4c8b8ae7d114b79936f4595d60652ca8c7a19a0424a5975b686ebc19d3535739",
+      "role": "protected Lust source subtree; donor library or qualification input, not another constructor-selected package"
+    },
+    {
+      "path": "compiler/native/tests/crates/macro-mods/Cargo.toml",
+      "sha256": "d6446fc858855bf29a37d00f6dfe90e14f81ddd7c1d5feefba97290cf41625d8",
+      "role": "protected Lust source subtree; donor library or qualification input, not another constructor-selected package"
+    },
+    {
+      "path": "compiler/native/tests/crates/macro-module-limit/Cargo.toml",
+      "sha256": "ec9865d4e2d208ab2aafaec6f6f959fd47b79ba0c803df7c9661aba02a91db5d",
+      "role": "protected Lust source subtree; donor library or qualification input, not another constructor-selected package"
+    },
+    {
+      "path": "compiler/native/tests/crates/macro-path-dep-crate/Cargo.toml",
+      "sha256": "da9676a6589a4966f441910d048142021f4f8c923f46fca4303f9c38be90c034",
+      "role": "protected Lust source subtree; donor library or qualification input, not another constructor-selected package"
+    },
+    {
+      "path": "compiler/native/tests/crates/macro-path-dep-crate/app/Cargo.toml",
+      "sha256": "6e5da86625d910ae84cc9895f21b38298085021720acfa9a87e86c31e350b43a",
+      "role": "protected Lust source subtree; donor library or qualification input, not another constructor-selected package"
+    },
+    {
+      "path": "compiler/native/tests/crates/macro-path-dep-crate/util/Cargo.toml",
+      "sha256": "d7cfdc4118c5ec46f995ac468547af65953e7bef33bff0d4e06f3f431a8622c6",
+      "role": "protected Lust source subtree; donor library or qualification input, not another constructor-selected package"
+    },
+    {
+      "path": "compiler/native/tests/crates/macro-path-dep-shadow/Cargo.toml",
+      "sha256": "da9676a6589a4966f441910d048142021f4f8c923f46fca4303f9c38be90c034",
+      "role": "protected Lust source subtree; donor library or qualification input, not another constructor-selected package"
+    },
+    {
+      "path": "compiler/native/tests/crates/macro-path-dep-shadow/app/Cargo.toml",
+      "sha256": "6e5da86625d910ae84cc9895f21b38298085021720acfa9a87e86c31e350b43a",
+      "role": "protected Lust source subtree; donor library or qualification input, not another constructor-selected package"
+    },
+    {
+      "path": "compiler/native/tests/crates/macro-path-dep-shadow/util/Cargo.toml",
+      "sha256": "d7cfdc4118c5ec46f995ac468547af65953e7bef33bff0d4e06f3f431a8622c6",
+      "role": "protected Lust source subtree; donor library or qualification input, not another constructor-selected package"
+    },
+    {
+      "path": "compiler/native/tests/crates/macro-path-dep/Cargo.toml",
+      "sha256": "da9676a6589a4966f441910d048142021f4f8c923f46fca4303f9c38be90c034",
+      "role": "protected Lust source subtree; donor library or qualification input, not another constructor-selected package"
+    },
+    {
+      "path": "compiler/native/tests/crates/macro-path-dep/app/Cargo.toml",
+      "sha256": "6e5da86625d910ae84cc9895f21b38298085021720acfa9a87e86c31e350b43a",
+      "role": "protected Lust source subtree; donor library or qualification input, not another constructor-selected package"
+    },
+    {
+      "path": "compiler/native/tests/crates/macro-path-dep/util/Cargo.toml",
+      "sha256": "d7cfdc4118c5ec46f995ac468547af65953e7bef33bff0d4e06f3f431a8622c6",
+      "role": "protected Lust source subtree; donor library or qualification input, not another constructor-selected package"
+    },
+    {
+      "path": "compiler/native/tests/crates/macro-textual/Cargo.toml",
+      "sha256": "88bc87f70ea2b02764a50e516ee3749063a929f1cbdcb27780ae59a5a99c792a",
+      "role": "protected Lust source subtree; donor library or qualification input, not another constructor-selected package"
+    },
+    {
+      "path": "compiler/native/tests/crates/missing-mod/Cargo.toml",
+      "sha256": "a5aec8d058b6c96027448ef4de8b2029a19cef04846e265cd3aad0c8109741e7",
+      "role": "protected Lust source subtree; donor library or qualification input, not another constructor-selected package"
+    },
+    {
+      "path": "compiler/native/tests/crates/mods-basic/Cargo.toml",
+      "sha256": "1f02a54e0a7b60a56d7019c26fed897cdfe5dc1168d6205d858bac03882e92b7",
+      "role": "protected Lust source subtree; donor library or qualification input, not another constructor-selected package"
+    },
+    {
+      "path": "compiler/native/tests/crates/non-exhaustive-ctor/Cargo.toml",
+      "sha256": "a2bc779b2ae38dd1264c766824084968e651e71812861a1089addaedd2c99d25",
+      "role": "protected Lust source subtree; donor library or qualification input, not another constructor-selected package"
+    },
+    {
+      "path": "compiler/native/tests/crates/non-exhaustive-ctor/app/Cargo.toml",
+      "sha256": "5688d4c2b445c1e14884aaa0108a058f2cab2c5398cef190869ff5fca765214a",
+      "role": "protected Lust source subtree; donor library or qualification input, not another constructor-selected package"
+    },
+    {
+      "path": "compiler/native/tests/crates/non-exhaustive-ctor/base/Cargo.toml",
+      "sha256": "0a33ab5f58740ec455fe7dcb84883747823ef53c8d9bb1ac15cc4b8b57cf8936",
+      "role": "protected Lust source subtree; donor library or qualification input, not another constructor-selected package"
+    },
+    {
+      "path": "compiler/native/tests/crates/non-exhaustive-lit/Cargo.toml",
+      "sha256": "a2bc779b2ae38dd1264c766824084968e651e71812861a1089addaedd2c99d25",
+      "role": "protected Lust source subtree; donor library or qualification input, not another constructor-selected package"
+    },
+    {
+      "path": "compiler/native/tests/crates/non-exhaustive-lit/app/Cargo.toml",
+      "sha256": "5688d4c2b445c1e14884aaa0108a058f2cab2c5398cef190869ff5fca765214a",
+      "role": "protected Lust source subtree; donor library or qualification input, not another constructor-selected package"
+    },
+    {
+      "path": "compiler/native/tests/crates/non-exhaustive-lit/base/Cargo.toml",
+      "sha256": "0a33ab5f58740ec455fe7dcb84883747823ef53c8d9bb1ac15cc4b8b57cf8936",
+      "role": "protected Lust source subtree; donor library or qualification input, not another constructor-selected package"
+    },
+    {
+      "path": "compiler/native/tests/crates/non-exhaustive-match/Cargo.toml",
+      "sha256": "a2bc779b2ae38dd1264c766824084968e651e71812861a1089addaedd2c99d25",
+      "role": "protected Lust source subtree; donor library or qualification input, not another constructor-selected package"
+    },
+    {
+      "path": "compiler/native/tests/crates/non-exhaustive-match/app/Cargo.toml",
+      "sha256": "5688d4c2b445c1e14884aaa0108a058f2cab2c5398cef190869ff5fca765214a",
+      "role": "protected Lust source subtree; donor library or qualification input, not another constructor-selected package"
+    },
+    {
+      "path": "compiler/native/tests/crates/non-exhaustive-match/base/Cargo.toml",
+      "sha256": "0a33ab5f58740ec455fe7dcb84883747823ef53c8d9bb1ac15cc4b8b57cf8936",
+      "role": "protected Lust source subtree; donor library or qualification input, not another constructor-selected package"
+    },
+    {
+      "path": "compiler/native/tests/crates/non-exhaustive-ok/Cargo.toml",
+      "sha256": "a2bc779b2ae38dd1264c766824084968e651e71812861a1089addaedd2c99d25",
+      "role": "protected Lust source subtree; donor library or qualification input, not another constructor-selected package"
+    },
+    {
+      "path": "compiler/native/tests/crates/non-exhaustive-ok/app/Cargo.toml",
+      "sha256": "5688d4c2b445c1e14884aaa0108a058f2cab2c5398cef190869ff5fca765214a",
+      "role": "protected Lust source subtree; donor library or qualification input, not another constructor-selected package"
+    },
+    {
+      "path": "compiler/native/tests/crates/non-exhaustive-ok/base/Cargo.toml",
+      "sha256": "0a33ab5f58740ec455fe7dcb84883747823ef53c8d9bb1ac15cc4b8b57cf8936",
+      "role": "protected Lust source subtree; donor library or qualification input, not another constructor-selected package"
+    },
+    {
+      "path": "compiler/native/tests/crates/non-exhaustive-pat/Cargo.toml",
+      "sha256": "a2bc779b2ae38dd1264c766824084968e651e71812861a1089addaedd2c99d25",
+      "role": "protected Lust source subtree; donor library or qualification input, not another constructor-selected package"
+    },
+    {
+      "path": "compiler/native/tests/crates/non-exhaustive-pat/app/Cargo.toml",
+      "sha256": "5688d4c2b445c1e14884aaa0108a058f2cab2c5398cef190869ff5fca765214a",
+      "role": "protected Lust source subtree; donor library or qualification input, not another constructor-selected package"
+    },
+    {
+      "path": "compiler/native/tests/crates/non-exhaustive-pat/base/Cargo.toml",
+      "sha256": "0a33ab5f58740ec455fe7dcb84883747823ef53c8d9bb1ac15cc4b8b57cf8936",
+      "role": "protected Lust source subtree; donor library or qualification input, not another constructor-selected package"
+    },
+    {
+      "path": "compiler/native/tests/crates/odd-path/Cargo.toml",
+      "sha256": "8737483d7c03513091dfb387678ab028537fe5d0a56b2fea98f3a9607a7f74b8",
+      "role": "protected Lust source subtree; donor library or qualification input, not another constructor-selected package"
+    },
+    {
+      "path": "compiler/native/tests/crates/odd-path/oddlib/Cargo.toml",
+      "sha256": "bddbd8b42f32a51a4fbff508ebcca9bea91519d055c82857c5db6d8b6b77b6fc",
+      "role": "protected Lust source subtree; donor library or qualification input, not another constructor-selected package"
+    },
+    {
+      "path": "compiler/native/tests/crates/overflow-checks-off/Cargo.toml",
+      "sha256": "e7557d42ce37f9e6263a42745a31bfb5428e1e70cbd85414afbedd7556645012",
+      "role": "protected Lust source subtree; donor library or qualification input, not another constructor-selected package"
+    },
+    {
+      "path": "compiler/native/tests/crates/panic-module-file/Cargo.toml",
+      "sha256": "7a254b2712019e57aa67183b8ffaa3c1e80c00ccdd58848775a241818d792ce4",
+      "role": "protected Lust source subtree; donor library or qualification input, not another constructor-selected package"
+    },
+    {
+      "path": "compiler/native/tests/crates/panic-profile-abort/Cargo.toml",
+      "sha256": "5300b5cb857c20198ad79ab806f6e969a6b316560b82e05e9400cd5dd83e845c",
+      "role": "protected Lust source subtree; donor library or qualification input, not another constructor-selected package"
+    },
+    {
+      "path": "compiler/native/tests/crates/panic-profile-config/Cargo.toml",
+      "sha256": "46917bffe16f42fc11d2102ffbb5818655e22d46c7fad3ff0ecb6dafcbcd5a87",
+      "role": "protected Lust source subtree; donor library or qualification input, not another constructor-selected package"
+    },
+    {
+      "path": "compiler/native/tests/crates/panic-profile-default/Cargo.toml",
+      "sha256": "b6481d40ffea61bd3926b1d8760b925c0d6be65075a2689c23f9ab7254bb86a6",
+      "role": "protected Lust source subtree; donor library or qualification input, not another constructor-selected package"
+    },
+    {
+      "path": "compiler/native/tests/crates/panic-profile-inline/Cargo.toml",
+      "sha256": "e7b6ddb525a012b995d7d4c0418fed34cd94dac828b452d61c0b88e1a265b40c",
+      "role": "protected Lust source subtree; donor library or qualification input, not another constructor-selected package"
+    },
+    {
+      "path": "compiler/native/tests/crates/path-attr-child-dir/Cargo.toml",
+      "sha256": "94376a35c94f3f36095bec40583f425129da1bd0c0b1a7cd6355573b45ccd6b3",
+      "role": "protected Lust source subtree; donor library or qualification input, not another constructor-selected package"
+    },
+    {
+      "path": "compiler/native/tests/crates/path-attr-child-missing/Cargo.toml",
+      "sha256": "6696d9c3c8e54c522f1cdb20d828fae1153acedf411fc0fd8f8bb7d05cab4164",
+      "role": "protected Lust source subtree; donor library or qualification input, not another constructor-selected package"
+    },
+    {
+      "path": "compiler/native/tests/crates/path-attr-inline-root/Cargo.toml",
+      "sha256": "56d15dbc60ebd6f4fbd1716a2cc623274e2d7097d95a56caf9f689493471e765",
+      "role": "protected Lust source subtree; donor library or qualification input, not another constructor-selected package"
+    },
+    {
+      "path": "compiler/native/tests/crates/path-attr/Cargo.toml",
+      "sha256": "3bcc2808f940968acb536de53ebb6c6c5270ed2722e024864ccd4244527395d4",
+      "role": "protected Lust source subtree; donor library or qualification input, not another constructor-selected package"
+    },
+    {
+      "path": "compiler/native/tests/crates/private-edge/Cargo.toml",
+      "sha256": "2c272f028435357a1c5f868e9fce2de8f754889b59554decd1a2959b518b4e97",
+      "role": "protected Lust source subtree; donor library or qualification input, not another constructor-selected package"
+    },
+    {
+      "path": "compiler/native/tests/crates/reexport-private/Cargo.toml",
+      "sha256": "7335c479100e194f60a65e87c7470e76f8b02ca3c1cdcd83b64dfee78eb3a632",
+      "role": "protected Lust source subtree; donor library or qualification input, not another constructor-selected package"
+    },
+    {
+      "path": "compiler/native/tests/crates/same-method-mods/Cargo.toml",
+      "sha256": "79a050689b7da4b5c5236649b9f93e0094bea58e590282c5bb90fbc980c7fd5e",
+      "role": "protected Lust source subtree; donor library or qualification input, not another constructor-selected package"
+    },
+    {
+      "path": "compiler/native/tests/crates/shared-file/Cargo.toml",
+      "sha256": "ba28023c064a7e70a4bea1d6b04bd0c6bd80d24d4f77e77d6c725fbf7100fa08",
+      "role": "protected Lust source subtree; donor library or qualification input, not another constructor-selected package"
+    },
+    {
+      "path": "compiler/native/tests/crates/ts-prelude/Cargo.toml",
+      "sha256": "a86f4327062289568de317d57918d5f40f74b3ccdb427ca3b6456c9eb1747cdb",
+      "role": "protected Lust source subtree; donor library or qualification input, not another constructor-selected package"
+    },
+    {
+      "path": "compiler/native/tests/crates/unwind-profile/Cargo.toml",
+      "sha256": "2dbe6df6aeb75ba712d079d1a32e093ddca326a3ae44bb997623408c268d310c",
+      "role": "protected Lust source subtree; donor library or qualification input, not another constructor-selected package"
+    },
+    {
+      "path": "compiler/native/tests/crates/vis-edges/Cargo.toml",
+      "sha256": "0b6401e4d01db86df6ea21893dab84178b42b309d13f3ed80dce2e3e2a6f6357",
+      "role": "protected Lust source subtree; donor library or qualification input, not another constructor-selected package"
+    },
+    {
+      "path": "compiler/native/tests/crates/workspace-private/Cargo.toml",
+      "sha256": "730ddb31e7b788a4a1ca599b01dc871fe77113d6e72ba28d469279bf8783a0bd",
+      "role": "protected Lust source subtree; donor library or qualification input, not another constructor-selected package"
+    },
+    {
+      "path": "compiler/native/tests/crates/workspace-private/app/Cargo.toml",
+      "sha256": "5688d4c2b445c1e14884aaa0108a058f2cab2c5398cef190869ff5fca765214a",
+      "role": "protected Lust source subtree; donor library or qualification input, not another constructor-selected package"
+    },
+    {
+      "path": "compiler/native/tests/crates/workspace-private/base/Cargo.toml",
+      "sha256": "0a33ab5f58740ec455fe7dcb84883747823ef53c8d9bb1ac15cc4b8b57cf8936",
+      "role": "protected Lust source subtree; donor library or qualification input, not another constructor-selected package"
+    },
+    {
+      "path": "compiler/native/tests/crates/workspace3/Cargo.toml",
+      "sha256": "75958d303b0b2133d9461d723624a04e6cb82d3ab57954fc947437d4a6dee197",
+      "role": "protected Lust source subtree; donor library or qualification input, not another constructor-selected package"
+    },
+    {
+      "path": "compiler/native/tests/crates/workspace3/app/Cargo.toml",
+      "sha256": "cd5c3c26e71104cae49009ff1e3fb441c098be11e2152d9f89700571d8e3bb34",
+      "role": "protected Lust source subtree; donor library or qualification input, not another constructor-selected package"
+    },
+    {
+      "path": "compiler/native/tests/crates/workspace3/base/Cargo.toml",
+      "sha256": "0a33ab5f58740ec455fe7dcb84883747823ef53c8d9bb1ac15cc4b8b57cf8936",
+      "role": "protected Lust source subtree; donor library or qualification input, not another constructor-selected package"
+    },
+    {
+      "path": "compiler/native/tests/crates/workspace3/mid/Cargo.toml",
+      "sha256": "5682aa8d4a6c93d04d514fb9b07ff38b65034ee782ff4534095a93cfa16a1c79",
+      "role": "protected Lust source subtree; donor library or qualification input, not another constructor-selected package"
+    },
+    {
+      "path": "compiler/native/tests/crates/xcrate-dyn-private/Cargo.toml",
+      "sha256": "ccba06d3ae56c08e1ad43abfc53baa691d1da1b3d0e887542a88a2653cbea456",
+      "role": "protected Lust source subtree; donor library or qualification input, not another constructor-selected package"
+    },
+    {
+      "path": "compiler/native/tests/crates/xcrate-dyn-private/app/Cargo.toml",
+      "sha256": "5688d4c2b445c1e14884aaa0108a058f2cab2c5398cef190869ff5fca765214a",
+      "role": "protected Lust source subtree; donor library or qualification input, not another constructor-selected package"
+    },
+    {
+      "path": "compiler/native/tests/crates/xcrate-dyn-private/base/Cargo.toml",
+      "sha256": "0a33ab5f58740ec455fe7dcb84883747823ef53c8d9bb1ac15cc4b8b57cf8936",
+      "role": "protected Lust source subtree; donor library or qualification input, not another constructor-selected package"
+    },
+    {
+      "path": "compiler/native/tests/crates/xcrate-field-private/Cargo.toml",
+      "sha256": "fd48553e550c37687db4d2df4aff554f5da9839fadc6ebd74b6cf4e093ec08b0",
+      "role": "protected Lust source subtree; donor library or qualification input, not another constructor-selected package"
+    },
+    {
+      "path": "compiler/native/tests/crates/xcrate-field-private/app/Cargo.toml",
+      "sha256": "5688d4c2b445c1e14884aaa0108a058f2cab2c5398cef190869ff5fca765214a",
+      "role": "protected Lust source subtree; donor library or qualification input, not another constructor-selected package"
+    },
+    {
+      "path": "compiler/native/tests/crates/xcrate-field-private/base/Cargo.toml",
+      "sha256": "0a33ab5f58740ec455fe7dcb84883747823ef53c8d9bb1ac15cc4b8b57cf8936",
+      "role": "protected Lust source subtree; donor library or qualification input, not another constructor-selected package"
+    },
+    {
+      "path": "compiler/native/tests/crates/xcrate-generic-field/Cargo.toml",
+      "sha256": "df0fcc6e11788be79316a17fc315df1021a4ae991f855743862c3753d2a356d3",
+      "role": "protected Lust source subtree; donor library or qualification input, not another constructor-selected package"
+    },
+    {
+      "path": "compiler/native/tests/crates/xcrate-generic-field/app/Cargo.toml",
+      "sha256": "5688d4c2b445c1e14884aaa0108a058f2cab2c5398cef190869ff5fca765214a",
+      "role": "protected Lust source subtree; donor library or qualification input, not another constructor-selected package"
+    },
+    {
+      "path": "compiler/native/tests/crates/xcrate-generic-field/base/Cargo.toml",
+      "sha256": "0a33ab5f58740ec455fe7dcb84883747823ef53c8d9bb1ac15cc4b8b57cf8936",
+      "role": "protected Lust source subtree; donor library or qualification input, not another constructor-selected package"
+    },
+    {
+      "path": "compiler/native/tests/daemon/cargo01_bin_discovery/v1/Cargo.toml",
+      "sha256": "4e8dbe6f45300f583044d226dcf7acb309f80c7742f094049e21c0b76fb6fd99",
+      "role": "protected Lust source subtree; donor library or qualification input, not another constructor-selected package"
+    },
+    {
+      "path": "compiler/native/tests/daemon/cargo02_lib_discovery/v1/Cargo.toml",
+      "sha256": "4e8dbe6f45300f583044d226dcf7acb309f80c7742f094049e21c0b76fb6fd99",
+      "role": "protected Lust source subtree; donor library or qualification input, not another constructor-selected package"
+    },
+    {
+      "path": "compiler/native/tests/daemon/cargo03_build_rs_discovery/v1/Cargo.toml",
+      "sha256": "d2ea95fc146c9e90b29aca56bf3be16442ce001fe5980a435feb16725ecc1759",
+      "role": "protected Lust source subtree; donor library or qualification input, not another constructor-selected package"
+    },
+    {
+      "path": "compiler/native/tests/daemon/cargo04_features_default/v1/Cargo.toml",
+      "sha256": "052c700e120efc47db422e4e0408169e9b25744e3e7f1f06a7a2aa5bff637975",
+      "role": "protected Lust source subtree; donor library or qualification input, not another constructor-selected package"
+    },
+    {
+      "path": "compiler/native/tests/daemon/cargo04_features_default/v2/Cargo.toml",
+      "sha256": "48b536957c1ac29348eb3fb09566c1d9ff3185a7c147de06855b33d1c020bc52",
+      "role": "protected Lust source subtree; donor library or qualification input, not another constructor-selected package"
+    },
+    {
+      "path": "compiler/native/tests/daemon/cargo04_features_default/v3/Cargo.toml",
+      "sha256": "bc7e276646cd5e76525c94386448a4d3c0970c9ada3063bd194d2bee9af627cd",
+      "role": "protected Lust source subtree; donor library or qualification input, not another constructor-selected package"
+    },
+    {
+      "path": "compiler/native/tests/daemon/cargo04_features_default/v4/Cargo.toml",
+      "sha256": "f0511493ee23eb34d4a7f1b2e6c4dac5170b8c305eb4dd30a533a3a61f53c6bf",
+      "role": "protected Lust source subtree; donor library or qualification input, not another constructor-selected package"
+    },
+    {
+      "path": "compiler/native/tests/daemon/cargo04_features_default/v5/Cargo.toml",
+      "sha256": "f0511493ee23eb34d4a7f1b2e6c4dac5170b8c305eb4dd30a533a3a61f53c6bf",
+      "role": "protected Lust source subtree; donor library or qualification input, not another constructor-selected package"
+    },
+    {
+      "path": "compiler/native/tests/daemon/cargo05_path_dep_manifest/v1/Cargo.toml",
+      "sha256": "191318beaec73f51dd6e412bc35bff4ba4337304afdf6165a4b7a10d4554ad4d",
+      "role": "protected Lust source subtree; donor library or qualification input, not another constructor-selected package"
+    },
+    {
+      "path": "compiler/native/tests/daemon/cargo05_path_dep_manifest/v1/util/Cargo.toml",
+      "sha256": "30fcbbd35bc75fc59caacdc1b4fc292b3faad5f28809005cccaebb2a1075a647",
+      "role": "protected Lust source subtree; donor library or qualification input, not another constructor-selected package"
+    },
+    {
+      "path": "compiler/native/tests/daemon/cargo05_path_dep_manifest/v2/util/Cargo.toml",
+      "sha256": "8af11e4edc72cab0c6e8befed93b311c3a2a233e188966882f04a9d3e7f4738f",
+      "role": "protected Lust source subtree; donor library or qualification input, not another constructor-selected package"
+    },
+    {
+      "path": "compiler/native/tests/daemon/cargo05_path_dep_manifest/v3/util/Cargo.toml",
+      "sha256": "fdc7ac0c7e4e91dd8c19a27f69591c22dbc1b5c7054daef65a647767583b3cb4",
+      "role": "protected Lust source subtree; donor library or qualification input, not another constructor-selected package"
+    },
+    {
+      "path": "compiler/native/tests/daemon/cargo05_path_dep_manifest/v4/util/Cargo.toml",
+      "sha256": "91838295382f3aed1bf99b1f633755fcdd534865a99badeb457ad206a1df49c1",
+      "role": "protected Lust source subtree; donor library or qualification input, not another constructor-selected package"
+    },
+    {
+      "path": "compiler/native/tests/daemon/cargo05_path_dep_manifest/v5/util/Cargo.toml",
+      "sha256": "30fcbbd35bc75fc59caacdc1b4fc292b3faad5f28809005cccaebb2a1075a647",
+      "role": "protected Lust source subtree; donor library or qualification input, not another constructor-selected package"
+    },
+    {
+      "path": "compiler/native/tests/daemon/cargo05_path_dep_manifest/v6/util/Cargo.toml",
+      "sha256": "5cc105281335ebd36324a5914b7d77527ad9c0c24c2e2987863d8bdc4173ca52",
+      "role": "protected Lust source subtree; donor library or qualification input, not another constructor-selected package"
+    },
+    {
+      "path": "compiler/native/tests/daemon/cargo05_path_dep_manifest/v7/util/Cargo.toml",
+      "sha256": "30fcbbd35bc75fc59caacdc1b4fc292b3faad5f28809005cccaebb2a1075a647",
+      "role": "protected Lust source subtree; donor library or qualification input, not another constructor-selected package"
+    },
+    {
+      "path": "compiler/native/tests/daemon/cargo06_edition_lints/v1/Cargo.toml",
+      "sha256": "4e8dbe6f45300f583044d226dcf7acb309f80c7742f094049e21c0b76fb6fd99",
+      "role": "protected Lust source subtree; donor library or qualification input, not another constructor-selected package"
+    },
+    {
+      "path": "compiler/native/tests/daemon/cargo06_edition_lints/v2/Cargo.toml",
+      "sha256": "2ab9bad9db1bf35cbf4358e49ad20e4096a1c05e3809e16065dfb77eacd8da13",
+      "role": "protected Lust source subtree; donor library or qualification input, not another constructor-selected package"
+    },
+    {
+      "path": "compiler/native/tests/daemon/cargo06_edition_lints/v3/Cargo.toml",
+      "sha256": "2f9412f6257afed25ab9b1525aa276c764fece953f87d7796dfc7c6ed2798403",
+      "role": "protected Lust source subtree; donor library or qualification input, not another constructor-selected package"
+    },
+    {
+      "path": "compiler/native/tests/daemon/cargo06_edition_lints/v4/Cargo.toml",
+      "sha256": "673a3a51cbb782384f820492b80de9d87d2ca5edc34d7214705e2d0b26ef0efa",
+      "role": "protected Lust source subtree; donor library or qualification input, not another constructor-selected package"
+    },
+    {
+      "path": "compiler/native/tests/daemon/cargo06_edition_lints/v5/Cargo.toml",
+      "sha256": "b931f4bd0d05b13596f6913063beb8b8f5c49e40e7e2dec9319e853ad87de837",
+      "role": "protected Lust source subtree; donor library or qualification input, not another constructor-selected package"
+    },
+    {
+      "path": "compiler/native/tests/daemon/cargo06_edition_lints/v6/Cargo.toml",
+      "sha256": "4e8dbe6f45300f583044d226dcf7acb309f80c7742f094049e21c0b76fb6fd99",
+      "role": "protected Lust source subtree; donor library or qualification input, not another constructor-selected package"
+    },
+    {
+      "path": "compiler/native/tests/daemon/cargo07_profile_dev/v1/Cargo.toml",
+      "sha256": "4e8dbe6f45300f583044d226dcf7acb309f80c7742f094049e21c0b76fb6fd99",
+      "role": "protected Lust source subtree; donor library or qualification input, not another constructor-selected package"
+    },
+    {
+      "path": "compiler/native/tests/daemon/cargo07_profile_dev/v2/Cargo.toml",
+      "sha256": "5a19e12aabdc2b789433a07bd820d358ead3cd588f3d30055780e0f3250b83d0",
+      "role": "protected Lust source subtree; donor library or qualification input, not another constructor-selected package"
+    },
+    {
+      "path": "compiler/native/tests/daemon/cargo07_profile_dev/v3/Cargo.toml",
+      "sha256": "bb83b51ab9d484802737a57e1fcb6bf79b33f3a24fc949782055323bdcc19775",
+      "role": "protected Lust source subtree; donor library or qualification input, not another constructor-selected package"
+    },
+    {
+      "path": "compiler/native/tests/daemon/cargo07_profile_dev/v4/Cargo.toml",
+      "sha256": "24daeaa7b1a725d20ee45f460893c9990d5441272d19cd27fc9cc2ad3878155c",
+      "role": "protected Lust source subtree; donor library or qualification input, not another constructor-selected package"
+    },
+    {
+      "path": "compiler/native/tests/daemon/cargo07_profile_dev/v5/Cargo.toml",
+      "sha256": "a66139a2aa9ac4f7c6726bc9c54a6fd15b364d0ba332ecff60dcadf460203da9",
+      "role": "protected Lust source subtree; donor library or qualification input, not another constructor-selected package"
+    },
+    {
+      "path": "compiler/native/tests/daemon/cargo07_profile_dev/v6/Cargo.toml",
+      "sha256": "4e8dbe6f45300f583044d226dcf7acb309f80c7742f094049e21c0b76fb6fd99",
+      "role": "protected Lust source subtree; donor library or qualification input, not another constructor-selected package"
+    },
+    {
+      "path": "compiler/native/tests/daemon/cargo08_config_env/v1/Cargo.toml",
+      "sha256": "4e8dbe6f45300f583044d226dcf7acb309f80c7742f094049e21c0b76fb6fd99",
+      "role": "protected Lust source subtree; donor library or qualification input, not another constructor-selected package"
+    },
+    {
+      "path": "compiler/native/tests/daemon/cargo09_workspace_members/v1/Cargo.toml",
+      "sha256": "2fc791402327172faa4c32545441d59633ad9094779ee4360aeab4063876541c",
+      "role": "protected Lust source subtree; donor library or qualification input, not another constructor-selected package"
+    },
+    {
+      "path": "compiler/native/tests/daemon/cargo09_workspace_members/v1/app/Cargo.toml",
+      "sha256": "881d61aac86cdace37e8d0ae78673d6794f3912c0e313fdf7ef5b050e5f04725",
+      "role": "protected Lust source subtree; donor library or qualification input, not another constructor-selected package"
+    },
+    {
+      "path": "compiler/native/tests/daemon/cargo09_workspace_members/v1/util/Cargo.toml",
+      "sha256": "b74804fe22548e8c7c18dd2c6867aa21fdf35361d42e750c3bf13aa9095133b1",
+      "role": "protected Lust source subtree; donor library or qualification input, not another constructor-selected package"
+    },
+    {
+      "path": "compiler/native/tests/daemon/cargo09_workspace_members/v2/Cargo.toml",
+      "sha256": "42eea3ea5510fac68ac53cab979d1b781ff5218287948e98f3c2b53b6045eafb",
+      "role": "protected Lust source subtree; donor library or qualification input, not another constructor-selected package"
+    },
+    {
+      "path": "compiler/native/tests/daemon/cargo09_workspace_members/v3/Cargo.toml",
+      "sha256": "3254221001360c6b0a063cfc023dc0552c5a6331e04829018927778c6e396397",
+      "role": "protected Lust source subtree; donor library or qualification input, not another constructor-selected package"
+    },
+    {
+      "path": "compiler/native/tests/daemon/cargo09_workspace_members/v4/app/Cargo.toml",
+      "sha256": "c39892cb8c6d01b6a8b1a6ea53b145e1e7a5c8c10b31ecbb1f014d7f95aab3d9",
+      "role": "protected Lust source subtree; donor library or qualification input, not another constructor-selected package"
+    },
+    {
+      "path": "compiler/native/tests/daemon/cargo09_workspace_members/v5/app/Cargo.toml",
+      "sha256": "881d61aac86cdace37e8d0ae78673d6794f3912c0e313fdf7ef5b050e5f04725",
+      "role": "protected Lust source subtree; donor library or qualification input, not another constructor-selected package"
+    },
+    {
+      "path": "compiler/native/tests/daemon/cargo09_workspace_members/v6/util/Cargo.toml",
+      "sha256": "8af11e4edc72cab0c6e8befed93b311c3a2a233e188966882f04a9d3e7f4738f",
+      "role": "protected Lust source subtree; donor library or qualification input, not another constructor-selected package"
+    },
+    {
+      "path": "compiler/native/tests/daemon/cargo10_bs_env_rerun/v1/Cargo.toml",
+      "sha256": "4e8dbe6f45300f583044d226dcf7acb309f80c7742f094049e21c0b76fb6fd99",
+      "role": "protected Lust source subtree; donor library or qualification input, not another constructor-selected package"
+    },
+    {
+      "path": "compiler/native/tests/daemon/cargo11_env_macro/v1/Cargo.toml",
+      "sha256": "4e8dbe6f45300f583044d226dcf7acb309f80c7742f094049e21c0b76fb6fd99",
+      "role": "protected Lust source subtree; donor library or qualification input, not another constructor-selected package"
+    },
+    {
+      "path": "compiler/native/tests/daemon/cargo12_dep_bs_env/v1/Cargo.toml",
+      "sha256": "aa90499209559b5dbcbc265c328adb7fdedeb9f2246f6cfcb6e3117dc9b2de00",
+      "role": "protected Lust source subtree; donor library or qualification input, not another constructor-selected package"
+    },
+    {
+      "path": "compiler/native/tests/daemon/cargo12_dep_bs_env/v1/dep/Cargo.toml",
+      "sha256": "3f85fea4e0a0bdedabaaea493681303d7b71545e54ebc31db3b69ef0321b01b1",
+      "role": "protected Lust source subtree; donor library or qualification input, not another constructor-selected package"
+    },
+    {
+      "path": "compiler/native/tests/daemon/fm02_genmacro_modfile/v1/Cargo.toml",
+      "sha256": "191318beaec73f51dd6e412bc35bff4ba4337304afdf6165a4b7a10d4554ad4d",
+      "role": "protected Lust source subtree; donor library or qualification input, not another constructor-selected package"
+    },
+    {
+      "path": "compiler/native/tests/daemon/fm02_genmacro_modfile/v1/util/Cargo.toml",
+      "sha256": "d7cfdc4118c5ec46f995ac468547af65953e7bef33bff0d4e06f3f431a8622c6",
+      "role": "protected Lust source subtree; donor library or qualification input, not another constructor-selected package"
+    },
+    {
+      "path": "compiler/native/tests/daemon/h9ms_depsig/v1/Cargo.toml",
+      "sha256": "191318beaec73f51dd6e412bc35bff4ba4337304afdf6165a4b7a10d4554ad4d",
+      "role": "protected Lust source subtree; donor library or qualification input, not another constructor-selected package"
+    },
+    {
+      "path": "compiler/native/tests/daemon/h9ms_depsig/v1/util/Cargo.toml",
+      "sha256": "d7cfdc4118c5ec46f995ac468547af65953e7bef33bff0d4e06f3f431a8622c6",
+      "role": "protected Lust source subtree; donor library or qualification input, not another constructor-selected package"
+    },
+    {
+      "path": "compiler/native/tests/daemon/h9ms_genmacro/v1/Cargo.toml",
+      "sha256": "191318beaec73f51dd6e412bc35bff4ba4337304afdf6165a4b7a10d4554ad4d",
+      "role": "protected Lust source subtree; donor library or qualification input, not another constructor-selected package"
+    },
+    {
+      "path": "compiler/native/tests/daemon/h9ms_genmacro/v1/util/Cargo.toml",
+      "sha256": "d7cfdc4118c5ec46f995ac468547af65953e7bef33bff0d4e06f3f431a8622c6",
+      "role": "protected Lust source subtree; donor library or qualification input, not another constructor-selected package"
+    },
+    {
+      "path": "compiler/native/tests/daemon/h9ms_glob/v1/Cargo.toml",
+      "sha256": "191318beaec73f51dd6e412bc35bff4ba4337304afdf6165a4b7a10d4554ad4d",
+      "role": "protected Lust source subtree; donor library or qualification input, not another constructor-selected package"
+    },
+    {
+      "path": "compiler/native/tests/daemon/h9ms_glob/v1/util/Cargo.toml",
+      "sha256": "d7cfdc4118c5ec46f995ac468547af65953e7bef33bff0d4e06f3f431a8622c6",
+      "role": "protected Lust source subtree; donor library or qualification input, not another constructor-selected package"
+    },
+    {
+      "path": "compiler/native/tests/daemon/h9ms_late_shadow/v1/Cargo.toml",
+      "sha256": "191318beaec73f51dd6e412bc35bff4ba4337304afdf6165a4b7a10d4554ad4d",
+      "role": "protected Lust source subtree; donor library or qualification input, not another constructor-selected package"
+    },
+    {
+      "path": "compiler/native/tests/daemon/h9ms_late_shadow/v1/util/Cargo.toml",
+      "sha256": "d7cfdc4118c5ec46f995ac468547af65953e7bef33bff0d4e06f3f431a8622c6",
+      "role": "protected Lust source subtree; donor library or qualification input, not another constructor-selected package"
+    },
+    {
+      "path": "compiler/native/tests/daemon/h9ms_late_vec/v1/Cargo.toml",
+      "sha256": "191318beaec73f51dd6e412bc35bff4ba4337304afdf6165a4b7a10d4554ad4d",
+      "role": "protected Lust source subtree; donor library or qualification input, not another constructor-selected package"
+    },
+    {
+      "path": "compiler/native/tests/daemon/h9ms_late_vec/v1/util/Cargo.toml",
+      "sha256": "d7cfdc4118c5ec46f995ac468547af65953e7bef33bff0d4e06f3f431a8622c6",
+      "role": "protected Lust source subtree; donor library or qualification input, not another constructor-selected package"
+    },
+    {
+      "path": "compiler/native/tests/daemon/h9ms_late_vec2/v1/Cargo.toml",
+      "sha256": "191318beaec73f51dd6e412bc35bff4ba4337304afdf6165a4b7a10d4554ad4d",
+      "role": "protected Lust source subtree; donor library or qualification input, not another constructor-selected package"
+    },
+    {
+      "path": "compiler/native/tests/daemon/h9ms_late_vec2/v1/util/Cargo.toml",
+      "sha256": "d7cfdc4118c5ec46f995ac468547af65953e7bef33bff0d4e06f3f431a8622c6",
+      "role": "protected Lust source subtree; donor library or qualification input, not another constructor-selected package"
+    },
+    {
+      "path": "compiler/native/tests/daemon/h9ms_late_vec3/v1/Cargo.toml",
+      "sha256": "191318beaec73f51dd6e412bc35bff4ba4337304afdf6165a4b7a10d4554ad4d",
+      "role": "protected Lust source subtree; donor library or qualification input, not another constructor-selected package"
+    },
+    {
+      "path": "compiler/native/tests/daemon/h9ms_late_vec3/v1/util/Cargo.toml",
+      "sha256": "d7cfdc4118c5ec46f995ac468547af65953e7bef33bff0d4e06f3f431a8622c6",
+      "role": "protected Lust source subtree; donor library or qualification input, not another constructor-selected package"
+    },
+    {
+      "path": "compiler/native/tests/daemon/h9ms_rename/v1/Cargo.toml",
+      "sha256": "191318beaec73f51dd6e412bc35bff4ba4337304afdf6165a4b7a10d4554ad4d",
+      "role": "protected Lust source subtree; donor library or qualification input, not another constructor-selected package"
+    },
+    {
+      "path": "compiler/native/tests/daemon/h9ms_rename/v1/util/Cargo.toml",
+      "sha256": "d7cfdc4118c5ec46f995ac468547af65953e7bef33bff0d4e06f3f431a8622c6",
+      "role": "protected Lust source subtree; donor library or qualification input, not another constructor-selected package"
+    },
+    {
+      "path": "compiler/native/tests/daemon/h9ms_shadow/v1/Cargo.toml",
+      "sha256": "191318beaec73f51dd6e412bc35bff4ba4337304afdf6165a4b7a10d4554ad4d",
+      "role": "protected Lust source subtree; donor library or qualification input, not another constructor-selected package"
+    },
+    {
+      "path": "compiler/native/tests/daemon/h9ms_shadow/v1/util/Cargo.toml",
+      "sha256": "d7cfdc4118c5ec46f995ac468547af65953e7bef33bff0d4e06f3f431a8622c6",
+      "role": "protected Lust source subtree; donor library or qualification input, not another constructor-selected package"
+    },
+    {
+      "path": "compiler/native/tests/daemon/h9ms_subglob/v1/Cargo.toml",
+      "sha256": "191318beaec73f51dd6e412bc35bff4ba4337304afdf6165a4b7a10d4554ad4d",
+      "role": "protected Lust source subtree; donor library or qualification input, not another constructor-selected package"
+    },
+    {
+      "path": "compiler/native/tests/daemon/h9ms_subglob/v1/util/Cargo.toml",
+      "sha256": "d7cfdc4118c5ec46f995ac468547af65953e7bef33bff0d4e06f3f431a8622c6",
+      "role": "protected Lust source subtree; donor library or qualification input, not another constructor-selected package"
+    },
+    {
+      "path": "compiler/native/tests/daemon/h9ms_xcrate_names/v1/Cargo.toml",
+      "sha256": "191318beaec73f51dd6e412bc35bff4ba4337304afdf6165a4b7a10d4554ad4d",
+      "role": "protected Lust source subtree; donor library or qualification input, not another constructor-selected package"
+    },
+    {
+      "path": "compiler/native/tests/daemon/h9ms_xcrate_names/v1/util/Cargo.toml",
+      "sha256": "d7cfdc4118c5ec46f995ac468547af65953e7bef33bff0d4e06f3f431a8622c6",
+      "role": "protected Lust source subtree; donor library or qualification input, not another constructor-selected package"
+    },
+    {
+      "path": "compiler/native/tests/daemon/mb01_dep_macro_body_edits/v1/Cargo.toml",
+      "sha256": "25980a3db7cbb9d4f038adfa31eefa0b1de7b88576a3b28b1efba7cbf0b742a9",
+      "role": "protected Lust source subtree; donor library or qualification input, not another constructor-selected package"
+    },
+    {
+      "path": "compiler/native/tests/daemon/mb01_dep_macro_body_edits/v1/core2/Cargo.toml",
+      "sha256": "d76725a138f5e3fbd2b5c1c696d4d3c7936b5420dc99ab3316937c4fb1d9eb47",
+      "role": "protected Lust source subtree; donor library or qualification input, not another constructor-selected package"
+    },
+    {
+      "path": "compiler/native/tests/daemon/mb02_main_macro_body_edits/v1/Cargo.toml",
+      "sha256": "25980a3db7cbb9d4f038adfa31eefa0b1de7b88576a3b28b1efba7cbf0b742a9",
+      "role": "protected Lust source subtree; donor library or qualification input, not another constructor-selected package"
+    },
+    {
+      "path": "compiler/native/tests/daemon/mb02_main_macro_body_edits/v1/core2/Cargo.toml",
+      "sha256": "d76725a138f5e3fbd2b5c1c696d4d3c7936b5420dc99ab3316937c4fb1d9eb47",
+      "role": "protected Lust source subtree; donor library or qualification input, not another constructor-selected package"
+    },
+    {
+      "path": "compiler/native/tests/daemon/ms01_dep_builtin_body/v1/Cargo.toml",
+      "sha256": "191318beaec73f51dd6e412bc35bff4ba4337304afdf6165a4b7a10d4554ad4d",
+      "role": "protected Lust source subtree; donor library or qualification input, not another constructor-selected package"
+    },
+    {
+      "path": "compiler/native/tests/daemon/ms01_dep_builtin_body/v1/util/Cargo.toml",
+      "sha256": "d7cfdc4118c5ec46f995ac468547af65953e7bef33bff0d4e06f3f431a8622c6",
+      "role": "protected Lust source subtree; donor library or qualification input, not another constructor-selected package"
+    },
+    {
+      "path": "compiler/native/tests/daemon/ms02_dep_macro_alias_glob/v1/Cargo.toml",
+      "sha256": "191318beaec73f51dd6e412bc35bff4ba4337304afdf6165a4b7a10d4554ad4d",
+      "role": "protected Lust source subtree; donor library or qualification input, not another constructor-selected package"
+    },
+    {
+      "path": "compiler/native/tests/daemon/ms02_dep_macro_alias_glob/v1/util/Cargo.toml",
+      "sha256": "d7cfdc4118c5ec46f995ac468547af65953e7bef33bff0d4e06f3f431a8622c6",
+      "role": "protected Lust source subtree; donor library or qualification input, not another constructor-selected package"
+    },
+    {
+      "path": "compiler/native/tests/daemon/r3a16_mod_rs_candidate/v1/Cargo.toml",
+      "sha256": "4e8dbe6f45300f583044d226dcf7acb309f80c7742f094049e21c0b76fb6fd99",
+      "role": "protected Lust source subtree; donor library or qualification input, not another constructor-selected package"
+    },
+    {
+      "path": "compiler/native/tests/hash/oracle/Cargo.toml",
+      "sha256": "a02ddd95661609dd8afa26477e28cdc50f80359c7fa40f961f03fe08d7b92142",
+      "role": "protected Lust source subtree; donor library or qualification input, not another constructor-selected package"
+    },
+    {
+      "path": "compiler/native/tests/kernels/gostring-amalgam/Cargo.toml",
+      "sha256": "30f2a0749d92e9dfeeaacf866e9f843410d0986a1c3276e2788254001e3aa73d",
+      "role": "protected Lust source subtree; donor library or qualification input, not another constructor-selected package"
+    },
+    {
+      "path": "compiler/native/tests/kernels/gostring/Cargo.toml",
+      "sha256": "b012794c5d5b24dc142d4e26eda4b2b2f9de168a56a7ddd3bd9f14a6d380a6f4",
+      "role": "protected Lust source subtree; donor library or qualification input, not another constructor-selected package"
+    },
+    {
+      "path": "compiler/native/tests/kernels/json-amalgam/Cargo.toml",
+      "sha256": "78c50ee2961f20521b1297a99d44913d8e399d8ad30af21d7363c6862332c3e5",
+      "role": "protected Lust source subtree; donor library or qualification input, not another constructor-selected package"
+    },
+    {
+      "path": "compiler/native/tests/kernels/json/Cargo.toml",
+      "sha256": "3e864ade7ff6d7597ef07e53f3e39ffc115693df5510c4ef27e7f61dd58bf43b",
+      "role": "protected Lust source subtree; donor library or qualification input, not another constructor-selected package"
+    },
+    {
+      "path": "compiler/native/tests/kernels/scanner-amalgam/Cargo.toml",
+      "sha256": "af0e59c093d206984835f2d4440953b9a15d9d7e8cacf8a70d0abd98635dbd07",
+      "role": "protected Lust source subtree; donor library or qualification input, not another constructor-selected package"
+    },
+    {
+      "path": "compiler/native/tests/kernels/scanner/Cargo.toml",
+      "sha256": "27a27408dfc3bfdf0ee1d36a9a228d4a30f7d15492c725c37baf95da232e198f",
+      "role": "protected Lust source subtree; donor library or qualification input, not another constructor-selected package"
+    },
+    {
+      "path": "compiler/native/tools/lust-port/Cargo.toml",
+      "sha256": "ca6f23d898a54a393a48780e041dedefb28abad06b73405e7f1812fe8acb8aa3",
+      "role": "protected Lust source subtree; donor library or qualification input, not another constructor-selected package"
+    },
+    {
+      "path": "crates/lustr-bench/Cargo.toml",
+      "sha256": "171da99f41dcbf6c51cbf9401ea885404d441b0873b18f23a51c5d726b56fbbc",
+      "role": "isolated planning, independent Rust oracle or evaluator; not constructor-selected"
+    },
+    {
+      "path": "crates/lustr-bench/fixtures/tiny/Cargo.toml",
+      "sha256": "16e99d215e56533d2358c918005eec67cd986a641cc1a0dd1d610f7b197ff471",
+      "role": "qualification input fixture; not constructor-selected"
+    },
+    {
+      "path": "crates/lustr-metadata-encoder/Cargo.toml",
+      "sha256": "0f63faa420b6c2e1ec91739f61f7ee77ee874233399ed8e744783325168493c2",
+      "role": "isolated selective metadata research; not production-admitted"
+    },
+    {
+      "path": "crates/lustr-metadata-sdk/Cargo.toml",
+      "sha256": "1251d90b032c4d77d9ef6768642ba959679a183a23f4c3d5e15748c4a02cac6a",
+      "role": "isolated selective metadata research; not production-admitted"
+    },
+    {
+      "path": "crates/lustr-native-core/Cargo.toml",
+      "sha256": "5f00a10af2a0c399c19863d08fb8af12f6699993deee8f2bb8dc68efc78b9d3f",
+      "role": "constructor-selected product package"
+    },
+    {
+      "path": "crates/lustr-semantic/Cargo.toml",
+      "sha256": "fa34d853463e26f13ba4319bb0aa72ee148a0f608b57a49e8178726099e287a5",
+      "role": "isolated planning, independent Rust oracle or evaluator; not constructor-selected"
+    },
+    {
+      "path": "crates/lustr/Cargo.toml",
+      "sha256": "391c509b3e49feee2ff862a9d781d439c26f57b9a505417fe81cdab93ce2857b",
+      "role": "isolated planning, independent Rust oracle or evaluator; not constructor-selected"
+    },
+    {
+      "path": "crates/lustr/fixtures/fcntl-variadic/Cargo.toml",
+      "sha256": "d60037fb5cfe2e97bab8a6591539aaaba62ef89252c6805872a069113d6134cc",
+      "role": "qualification input fixture; not constructor-selected"
+    },
+    {
+      "path": "crates/lustr/fixtures/full-rust/Cargo.toml",
+      "sha256": "c5054733d8352fdd6c94290dfd2747294aa7d7cd1ec3ad7c4e353d5ec3522784",
+      "role": "qualification input fixture; not constructor-selected"
+    },
+    {
+      "path": "crates/lustr/fixtures/full-rust/app/Cargo.toml",
+      "sha256": "94e1e54a4f4ff53e497e44ab62c0ff06c23ee56d79fcc5629c6aff8779b17ded",
+      "role": "qualification input fixture; not constructor-selected"
+    },
+    {
+      "path": "crates/lustr/fixtures/full-rust/core/Cargo.toml",
+      "sha256": "e116e06247dc172d8bced63a72eb0481ed0e1fce66b46969791b6332bf3a71cf",
+      "role": "qualification input fixture; not constructor-selected"
+    },
+    {
+      "path": "crates/lustr/fixtures/full-rust/derive/Cargo.toml",
+      "sha256": "7dc0b5e9ff846c18a0ecdcb8f4f1d38d53c90edf63b0beadd4b2e4e000fde74d",
+      "role": "qualification input fixture; not constructor-selected"
+    },
+    {
+      "path": "crates/lustr/fixtures/invalid-borrow/Cargo.toml",
+      "sha256": "9487e48c3d51f87a442916915108c932c62fd0b030916de8f418d8fa6108473a",
+      "role": "qualification input fixture; not constructor-selected"
+    },
+    {
+      "path": "crates/lustr/fixtures/mixed-abi/Cargo.toml",
+      "sha256": "2f218cbfd292b2273b38b06de071a6b210c05e1889e9e5ca0531780fb04c35d6",
+      "role": "qualification input fixture; not constructor-selected"
+    },
+    {
+      "path": "crates/lustr/fixtures/mixed-abi/app/Cargo.toml",
+      "sha256": "236c86cca07e5de55c9d7a9ca2e275bdcd945fae0dfff2e94fdd1db50da8a86a",
+      "role": "qualification input fixture; not constructor-selected"
+    },
+    {
+      "path": "crates/lustr/fixtures/mixed-abi/contract/Cargo.toml",
+      "sha256": "8bad183a5ee6ebc36b0e76464dca47de40ee989b445449a67c7fffa2ce3a369e",
+      "role": "qualification input fixture; not constructor-selected"
+    },
+    {
+      "path": "crates/lustr/fixtures/mixed-abi/provider/Cargo.toml",
+      "sha256": "fb1e533d79cb867839272f4a8bf9de1b20e01bc7a4df38b30b620aaeb20d9983",
+      "role": "qualification input fixture; not constructor-selected"
+    },
+    {
+      "path": "crates/lustr/fixtures/nested-cargo/Cargo.toml",
+      "sha256": "28a7ac7428fd8b347530d8f23fbde3d39de463a50616f17faa833723352911d0",
+      "role": "qualification input fixture; not constructor-selected"
+    },
+    {
+      "path": "crates/lustr/fixtures/nested-cargo/child/Cargo.toml",
+      "sha256": "40ef692030d96761c30e4f326494ae620af1af3fc3fc04afd743f3365ec3fe3b",
+      "role": "qualification input fixture; not constructor-selected"
+    },
+    {
+      "path": "docs/compiler-set/evidence/native-host-script-20261119/timestamps/explicit-v2/work/Cargo.toml",
+      "sha256": "ecceab475b10ededf77c82c694534db17523438ad751caa710aaf319d44f8beb",
+      "role": "frozen historical evidence; not active build policy"
+    },
+    {
+      "path": "docs/compiler-set/evidence/native-host-script-20261119/timestamps/implicit-v2/project/Cargo.toml",
+      "sha256": "fbbfcd03176f295242bc707ef953fd24ab6dafaf4082b08c80dbb781fc36d432",
+      "role": "frozen historical evidence; not active build policy"
+    },
+    {
+      "path": "docs/compiler-set/evidence/native-host-script-20261119/timestamps/v3/explicit-input/project/Cargo.toml",
+      "sha256": "ecceab475b10ededf77c82c694534db17523438ad751caa710aaf319d44f8beb",
+      "role": "frozen historical evidence; not active build policy"
+    },
+    {
+      "path": "docs/compiler-set/evidence/native-host-script-20261119/timestamps/v3/implicit-source/project/Cargo.toml",
+      "sha256": "fbbfcd03176f295242bc707ef953fd24ab6dafaf4082b08c80dbb781fc36d432",
+      "role": "frozen historical evidence; not active build policy"
+    },
+    {
+      "path": "docs/compiler-set/warm-entry-selection-evidence/failed-source/Cargo.toml",
+      "sha256": "cc187d3f8396349cf4cb3a155d45d897a21bc8d927758df9f08b4a5be41e90ec",
+      "role": "frozen historical evidence; not active build policy"
+    },
+    {
+      "path": "docs/compiler-set/warm-entry-selection-nonregular-evidence/failed-source/Cargo.toml",
+      "sha256": "cc187d3f8396349cf4cb3a155d45d897a21bc8d927758df9f08b4a5be41e90ec",
+      "role": "frozen historical evidence; not active build policy"
+    },
+    {
+      "path": "docs/compiler-set/warm-entry-selector-spans-evidence/build/original/Cargo.toml",
+      "sha256": "acadfaaa5fdd599aa66e24c46c01aabb3b16704ece7c239248f5579f48153152",
+      "role": "frozen historical evidence; not active build policy"
+    },
+    {
+      "path": "docs/compiler-set/warm-entry-selector-spans-evidence/build/profiled/Cargo.toml",
+      "sha256": "95923e011d6b0e102a45318a3dd04749693e644099f5e4e297f0a271305ba86c",
+      "role": "frozen historical evidence; not active build policy"
+    },
+    {
+      "path": "docs/compiler-set/warm-entry-selector-spans-evidence/fixture/Cargo.toml",
+      "sha256": "89d7f2243354b127dcc2d2e7fe0c0f14ed2a6087db998ab6bde9559a3db6fda8",
+      "role": "frozen historical evidence; not active build policy"
+    },
+    {
+      "path": "tests/no-std-corpus/Cargo.toml",
+      "sha256": "f335a759a404bd6cac87661da98ba36cdbb90261aaf67c0f7d1e56ffc08cde1a",
+      "role": "qualification input fixture; not constructor-selected"
+    }
+  ]
+}

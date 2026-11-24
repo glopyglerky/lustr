@@ -2,35 +2,39 @@ use std::ffi::OsString;
 use std::io::{self, Write};
 use std::os::unix::process::{CommandExt, ExitStatusExt};
 use std::process::{Command, ExitCode};
-mod native_expansion;
 mod native_link;
+mod native_queries;
 mod owned_child;
 
 #[allow(dead_code)]
 mod lust {
     include!("../compiler/native/src/client.rs");
 
-    mod full {
-        include!("full.rs");
+    mod selection {
+        include!("cargo_selection.rs");
     }
 
-    pub struct Call(protocol::Request, Option<full::Selection>);
+    pub struct Call(protocol::Request, Option<selection::Selection>, Option<Vec<String>>);
+
+    pub fn host_triple() -> &'static str {
+        protocol::host_triple()
+    }
+
+    pub fn prime_selection_tools(parent: &Path) -> std::io::Result<()> {
+        selection::prime_selection_tools(parent)
+    }
 
     impl Call {
-        pub fn expanded(&self, identity: &str) -> Self {
-            let mut request = self.0.clone();
-            request.session.krate.package_id.push_str("#lustr-library-v1:");
-            request.session.krate.package_id.push_str(identity);
-            Call(request, None)
+        pub fn requires_complement(&self, status: i32) -> bool {
+            self.0.session.library.is_some() && status == protocol::RUST_COMPLEMENT_REQUIRED
         }
+
         pub fn needs_rust_artifact(&self) -> bool {
-            matches!(self.0.cmd, protocol::Cmd::Build) && self.0.session.krate.target_kind == "lib"
-                || !matches!(self.0.session.target_triple.as_str(), "" | "x86_64-unknown-linux-gnu")
-                || self.0.session.krate.manifest_path.is_some()
-                    && std::env::var("__CARGO_TEMPORARY_BUILD_DIR_NEW_LAYOUT_OPT_OUT").is_ok_and(|v| v != "1")
+            matches!(self.0.cmd, protocol::Cmd::Build) && self.0.session.krate.target_kind == "lib" && self.0.session.library.is_none()
+                || !(self.0.session.target_triple.is_empty() || self.0.session.target_triple == protocol::host_triple())
         }
         pub fn library_compatible(&self) -> bool {
-            self.0.session.krate.manifest_path.is_none() && self.expansion_compatible()
+            self.0.session.library.is_none() && self.0.session.krate.manifest_path.is_none() && self.expansion_compatible()
         }
         pub fn expansion_compatible(&self) -> bool {
             protocol::source_override().is_none()
@@ -38,20 +42,32 @@ mod lust {
                     .any(|(name, _)| name.to_str().is_some_and(|s| s.starts_with("LUST_FRONT_") || s == "LUST_SOURCES_READY"))
         }
         pub fn validate_selection(&mut self, parent: &Path, args: &[String]) -> std::io::Result<()> {
-            if self.0.session.krate.manifest_path.is_some() {
-                let selection = full::select(&self.0, parent, args)?;
+            if self.0.session.krate.manifest_path.is_some()
+                && (selection::needs_package_binding(args) || !self.0.file.is_file())
+            {
+                let selection = selection::select(&self.0, parent, args)?;
                 // The unchanged native resolver selects within the supplied
                 // manifest. Bind it to the validated member and target too.
                 self.0.session.krate.manifest_path = Some(selection.manifest.clone());
                 self.0.session.krate.target_name = selection.name.clone();
+                self.0.session.krate.target_explicit = true;
                 self.1 = Some(selection);
             }
+            // An ordinary existing-source manifest request already carries
+            // its exact manifest, source and target. The native retained
+            // resolver binds those facts against its one Cargo graph before
+            // body work; repeating public metadata would discard that reuse.
             Ok(())
         }
-        pub fn full(&self, parent: &Path) -> std::io::Result<std::process::ExitStatus> {
-            full::run(&self.0, parent, self.1.as_ref())
-        }
         pub fn bind_native_arguments(&self, args: &mut Vec<String>) {
+            if self.2.is_some() {
+                // Build once through the owned request; only after success may
+                // the public entry execute the unchanged caller's program.
+                args[0] = "build".into();
+                if let Some(at) = args.iter().position(|arg| arg == "--") {
+                    args.truncate(at);
+                }
+            }
             if let Some(selection) = &self.1 {
                 // The daemon receives the bound Request; the original
                 // process reparses argv and needs the identical selection.
@@ -63,46 +79,42 @@ mod lust {
                 args.splice(at..at, bound);
             }
         }
-        pub fn full_entry(&self) -> &'static str {
-            if self.0.session.krate.manifest_path.is_some() { "cargo" } else { "exec" }
+        pub fn run_program(&self) -> Option<std::io::Error> {
+            self.2.as_ref().map(|args| std::process::Command::new(&self.0.out).args(args).exec())
         }
     }
 
     pub fn prepare(args: &[String]) -> Option<Call> {
         match protocol::parse_args(args) {
-            Some(protocol::Invocation::Compile { mut req, run: false, .. }) => {
-                if req.session.krate.manifest_path.is_some() {
-                    if let Some(env) = req.client.env.as_mut() {
-                        if !env.iter().any(|(k, _)| k == "__CARGO_TEMPORARY_BUILD_DIR_NEW_LAYOUT_OPT_OUT") {
-                            env.push(("__CARGO_TEMPORARY_BUILD_DIR_NEW_LAYOUT_OPT_OUT".into(), "1".into()));
-                        }
-                    }
-                }
-                Some(Call(req, None))
+            Some(protocol::Invocation::Compile { mut req, run, args }) => {
+                req.session.krate.package_id.push_str("#lustr-exclusive-v1");
+                Some(Call(req, None, run.then_some(args)))
             }
             _ => None,
         }
     }
 
-    pub fn answer(call: &Call, core: &Path) -> Option<(i32, Vec<u8>, Vec<u8>)> {
+    pub fn native_release(args: &[String]) -> bool {
+        matches!(protocol::parse_args(args), Some(protocol::Invocation::ReleaseCc { reqs: Ok(reqs) })
+            if reqs.iter().all(|request| request.session.krate.manifest_path.is_none()))
+    }
+
+    pub fn answer(call: &Call, core: &Path) -> Result<Option<(i32, Vec<u8>, Vec<u8>)>, String> {
         if env_on("LUST_NO_DAEMON") || protocol::source_override().is_some() {
-            return None;
+            if call.0.session.library.is_some() {
+                return Err("the represented library requires its retained owner; the selected mode cannot retain this session".into());
+            }
+            return Ok(None);
         }
         let socket = protocol::socket_path();
         answer_at(call, core, &socket)
     }
 
-    pub fn expanded_answer(call: &Call, parent: &Path) -> Option<(i32, Vec<u8>, Vec<u8>)> {
-        if env_on("LUST_NO_DAEMON") {
-            return None;
-        }
-        let sealed = crate::native_expansion::sealed(parent, &protocol::socket_path())?;
-        answer_at(&call.expanded(&sealed.identity), &sealed.core, &sealed.socket)
-    }
-
-    fn answer_at(call: &Call, core: &Path, socket: &Path) -> Option<(i32, Vec<u8>, Vec<u8>)> {
-        if let Some(r) = protocol::request(&socket, &call.0) {
-            return Some((r.code, r.stdout.into_bytes(), r.stderr.into_bytes()));
+    fn answer_at(call: &Call, core: &Path, socket: &Path) -> Result<Option<(i32, Vec<u8>, Vec<u8>)>, String> {
+        let address = protocol::host_runtime::DaemonSocket::resolve(socket).map_err(|e| format!("native daemon address: {e}"))?;
+        let socket = address.path();
+        if let Some(r) = protocol::request(&socket, &call.0)? {
+            return Ok(Some((r.code, r.stdout.into_bytes(), r.stderr.into_bytes())));
         }
         let deadline = std::time::Instant::now() + std::time::Duration::from_secs(2);
         let mut started = false;
@@ -111,40 +123,49 @@ mod lust {
                 if let Some(lock) = claim_start(&protocol::daemon_lock_path(&socket)) {
                     let fd = lock.as_raw_fd();
                     let dir = log_dir(&call.0.file);
-                    std::fs::create_dir_all(&dir).ok()?;
-                    let log = std::fs::OpenOptions::new().create(true).append(true).open(dir.join("daemon.log")).ok()?;
+                    std::fs::create_dir_all(&dir).map_err(|e| format!("native daemon log directory: {e}"))?;
+                    let log = std::fs::OpenOptions::new()
+                        .create(true)
+                        .append(true)
+                        .open(dir.join("daemon.log"))
+                        .map_err(|e| format!("native daemon log: {e}"))?;
                     let mut command = std::process::Command::new(core);
                     command
                         .arg("daemon")
                         .envs(daemon_alloc_env())
                         .env("LUST_DAEMON_LOCK_FD", fd.to_string())
                         .env("LUST_DAEMON_SOCKET", socket)
-                        .env("__CARGO_TEMPORARY_BUILD_DIR_NEW_LAYOUT_OPT_OUT", "1")
                         .env_remove("LUST_DAEMON_PREWARM")
                         .env_remove("LUST_DAEMON_PREWARM_AFTER")
                         .stdin(std::process::Stdio::null())
-                        .stdout(log.try_clone().ok()?)
+                        .stdout(log.try_clone().map_err(|e| format!("native daemon log handle: {e}"))?)
                         .stderr(log);
                     // Start the unchanged daemon once. The first request compiles in that
                     // retained session instead of compiling cold and prewarming it again.
+                    let directory_fd = address.inherited_fd();
+                    if let Some(fd) = directory_fd {
+                        command.env("LUST_DAEMON_DIRECTORY_FD", fd.to_string());
+                    } else {
+                        command.env_remove("LUST_DAEMON_DIRECTORY_FD");
+                    }
                     unsafe {
                         command.pre_exec(move || {
-                            if setsid() < 0 || fcntl(fd, F_SETFD, 0) < 0 {
+                            if setsid() < 0 || fcntl(fd, F_SETFD, 0) < 0 || directory_fd.is_some_and(|fd| fcntl(fd, F_SETFD, 0) < 0) {
                                 return Err(std::io::Error::last_os_error());
                             }
                             Ok(())
                         });
                     }
-                    command.spawn().ok()?;
+                    command.spawn().map_err(|e| format!("cannot start the native daemon: {e}"))?;
                     started = true;
                 }
             }
-            if let Some(r) = protocol::request(&socket, &call.0) {
-                return Some((r.code, r.stdout.into_bytes(), r.stderr.into_bytes()));
+            if let Some(r) = protocol::request(&socket, &call.0)? {
+                return Ok(Some((r.code, r.stdout.into_bytes(), r.stderr.into_bytes())));
             }
             std::thread::sleep(std::time::Duration::from_micros(100));
         }
-        None
+        Err("native daemon did not become ready before the startup deadline".into())
     }
 }
 
@@ -172,48 +193,152 @@ fn main() -> ExitCode {
     let mut arguments = std::env::args_os();
     let program = arguments.next();
     let args: Vec<OsString> = arguments.collect();
+    if std::env::var_os("LUST_PROBE_FAKE_DIR").is_some() {
+        return incomplete_integration("an externally selected internal compiler-probe mode");
+    }
+    let compiler_mode = program.is_some_and(|a| std::path::Path::new(&a).file_name().is_some_and(|n| n == "rustc"));
+    let args = if compiler_mode && args.iter().any(|arg| arg.as_encoded_bytes().starts_with(b"@")) {
+        match lustr_compiler::expand_compiler_argfiles(args) {
+            Ok(args) => args,
+            Err(errors) => {
+                for error in errors { eprintln!("error: {error}"); }
+                return ExitCode::from(1);
+            }
+        }
+    } else {
+        args
+    };
     if args == ["--lustr-version"] {
-        println!("lustr-compiler {} (full core {})", env!("CARGO_PKG_VERSION"), env!("LUSTR_CORE_SOURCE"));
+        println!(
+            "lustr-compiler {} (declared Rust source {}; complementary integration incomplete)",
+            env!("CARGO_PKG_VERSION"),
+            env!("LUSTR_CORE_SOURCE")
+        );
         return ExitCode::SUCCESS;
     }
+    for name in ["RUSTC_WRAPPER", "RUSTC_WORKSPACE_WRAPPER"] {
+        if std::env::var_os(name).is_some_and(|value| !value.is_empty()) {
+            return incomplete_integration("a configured external compiler wrapper");
+        }
+    }
     let parent = std::env::current_exe().unwrap().parent().unwrap().to_path_buf();
-    let compiler_mode = program.is_some_and(|a| std::path::Path::new(&a).file_name().is_some_and(|n| n == "rustc"));
+    if compiler_mode && native_queries::needs_rust_query(&args, lust::host_triple())
+        && let Some(compiler) = native_queries::host_proc_macro_compiler(&parent, lust::host_triple())
+    {
+        // Resolve target facts before the native host query can consume stdin.
+        trace_entry("pinned-rust", "rust-discovery");
+        let error = Command::new(compiler).arg("--lustr-build-rust-unit").args(&args).exec();
+        eprintln!("cannot query the installed Rust target: {error}");
+        return ExitCode::from(2);
+    }
+    if let Some(result) = native_queries::answer(&args, &parent, lust::host_triple()) {
+        return match result {
+            Ok(()) => ExitCode::SUCCESS,
+            Err(error) => incomplete_integration(&error),
+        };
+    }
+    if compiler_mode
+        && (args.iter().any(|arg| arg == "--crate-type=proc-macro")
+            || args.windows(2).any(|pair| pair[0] == "--crate-type" && pair[1] == "proc-macro"))
+        && let Some(compiler) = native_queries::host_proc_macro_compiler(&parent, lust::host_triple())
+    {
+        // The upstream driver verifies the parsed kind and host target before
+        // compiling. This role supplies Cargo's executable macro provider.
+        trace_entry("pinned-rust", "host-proc-macro");
+        let error = Command::new(compiler).args(&args).exec();
+        eprintln!("cannot execute the host procedural macro compiler: {error}");
+        return ExitCode::from(2);
+    }
+    if !compiler_mode && args == ["--lustr-prime-selection-tools"] {
+        return match lust::prime_selection_tools(&parent) {
+            Ok(()) => ExitCode::SUCCESS,
+            Err(error) => {
+                eprintln!("cannot preverify Cargo selection tools: {error}");
+                ExitCode::from(2)
+            }
+        };
+    }
     let native_cli = !compiler_mode && lustr_compiler::is_native_command(&args);
     if !compiler_mode && !native_cli && lustr_compiler::cargo_command(&args) {
-        let mut command = Command::new(parent.join("cargo-lustr"));
-        if !args.iter().any(|a| a == "--bluefe-root" || a == "--engine" || a.to_str().is_some_and(|a| a.starts_with("--engine="))) {
-            command.arg("--bluefe-root").arg(parent.parent().unwrap());
-        }
-        let error = command.args(&args).exec();
-        eprintln!("cannot execute Cargo integration: {error}");
+        return incomplete_integration("Cargo compilation and alternate compiler selection");
+    }
+    let mut invalid_metadata_option = false;
+    let rust = (!native_cli).then(|| lustr_compiler::native_request_with_diagnostics(&args, &mut invalid_metadata_option)).flatten();
+    if compiler_mode && invalid_metadata_option {
+        return incomplete_integration("an invalid value for the native metadata option");
+    }
+    if compiler_mode && rust.is_none()
+        && let Some(compiler) = native_queries::host_proc_macro_compiler(&parent, lust::host_triple())
+    {
+        let (operation, entry) = if lustr_compiler::freestanding_request(&args) {
+            ("--lustr-build-freestanding", "freestanding")
+        } else {
+            ("--lustr-build-rust-unit", "rust-request")
+        };
+        trace_entry("lustr", entry);
+        let error = Command::new(compiler).arg(operation).args(&args).exec();
+        eprintln!("cannot execute the Rust compiler component: {error}");
         return ExitCode::from(2);
+    }
+    if let Some(request) = rust.as_ref().filter(|request| request.stdin) {
+        let mut command = Command::new(parent.join("lust-core"));
+        command.arg("--lustr-stdin-source").args(&request.args).stdin(std::process::Stdio::inherit());
+        match owned_child::output(&mut command) {
+            Ok(output) => {
+                trace_entry(if output.status.success() { "lust" } else { "lust-failed" }, "stdin");
+                native_diagnostic(&output.stderr);
+                io::stdout().write_all(&output.stdout).expect("cannot write compiler stdout");
+                io::stderr().write_all(&output.stderr).expect("cannot write compiler stderr");
+                if let Some(signal) = output.status.signal() { propagate_signal(signal); }
+                std::process::exit(output.status.code().unwrap_or(2));
+            }
+            Err(error) => {
+                eprintln!("cannot execute native Lust for stdin: {error}");
+                return ExitCode::from(2);
+            }
+        }
     }
     let native = if native_cli {
         args.iter().map(|a| a.to_str().map(str::to_owned)).collect::<Option<Vec<_>>>()
     } else {
-        lustr_compiler::native_request(&args).map(|r| r.args)
+        rust.map(|r| r.args)
     };
     let prepared = native.and_then(|args| lust::prepare(&args).map(|call| (args, call)));
     if native_cli && prepared.is_none() {
-        trace("upstream-lust-command");
-        let error = Command::new(parent.join("lust")).args(&args).env("RUSTC", parent.join("rustc-full")).exec();
-        eprintln!("cannot execute the upstream Lust command: {error}");
-        return ExitCode::from(2);
+        // The upstream parser distinguishes real native release compilation
+        // from its Cargo/rustc delegation. Never run the latter through Lustr.
+        let native = args.iter().map(|a| a.to_str().map(str::to_owned)).collect::<Option<Vec<_>>>();
+        if args.first().is_some_and(|arg| arg == "test") || native.as_ref().is_some_and(|args| lust::native_release(args)) {
+            trace("lust-native-command");
+            let error = Command::new(parent.join("lust-core")).args(&args).exec();
+            eprintln!("cannot execute the native release compiler: {error}");
+            return ExitCode::from(2);
+        }
+        return incomplete_integration("this native CLI profile, oracle or argument contract");
     }
     if let Some((mut native, mut call)) = prepared {
+        if call.needs_rust_artifact() {
+            return incomplete_integration("the requested Rust artifact, target or Cargo layout");
+        }
         if let Err(error) = call.validate_selection(&parent, &native) {
-            eprintln!("invalid Cargo target selection: {error}");
+            eprintln!("error: invalid Cargo target selection: {error}");
             return ExitCode::from(2);
         }
         call.bind_native_arguments(&mut native);
-        let mut entry = "unattempted";
-        let mut result = if call.needs_rust_artifact() {
-            None
-        } else if let Some(response) = lust::answer(&call, &parent.join("lust-core")) {
+        let entry;
+        let result = if let Some(response) = match lust::answer(&call, &parent.join("lust-core")) {
+            Ok(response) => response,
+            Err(error) => {
+                eprintln!("{error}");
+                return ExitCode::from(3);
+            }
+        } {
             entry = "daemon";
             Some(response)
-        } else if let Some(result) =
-            call.library_compatible().then(|| native_link::compile(&parent.join("../lib/liblustr_native_core.so"), &native)).flatten()
+        } else if let Some(result) = call
+            .library_compatible()
+            .then(|| native_link::compile(&parent.join("../lib").join(native_link::NATIVE_LIBRARY), &native))
+            .flatten()
         {
             entry = "native-library";
             match result {
@@ -225,9 +350,7 @@ fn main() -> ExitCode {
             }
         } else {
             entry = "upstream-process";
-            match owned_child::output(
-                Command::new(parent.join("lust")).args(&native).env("__CARGO_TEMPORARY_BUILD_DIR_NEW_LAYOUT_OPT_OUT", "1"),
-            ) {
+            match owned_child::output(Command::new(parent.join("lust")).args(&native)) {
                 Ok(output) if output.status.signal().is_none() => Some((output.status.code().unwrap_or(2), output.stdout, output.stderr)),
                 Ok(output) => {
                     // Compiler crashes are failures. Do not turn them into successful fallback builds.
@@ -235,96 +358,43 @@ fn main() -> ExitCode {
                     propagate_signal(output.status.signal().unwrap());
                 }
                 Err(error) => {
-                    eprintln!("cannot execute pristine Lust: {error}");
+                    eprintln!("cannot execute native Lust: {error}");
                     return ExitCode::from(2);
                 }
             }
         };
-        let mut engine = "lust";
-        // A diagnostic is only a retry hint. The unchanged compiler must
-        // check the complete program with the explicitly composed library.
-        // Never alter source or reuse the pristine daemon/cache for this tree.
-        let library = parent.join("../lib/lustr");
-        if result.as_ref().is_some_and(|(code, _, stderr)| {
-            *code == 1
-                && [
-                    b"std::env::consts::".as_slice(),
-                    b"`From` for `std::path::PathBuf`".as_slice(),
-                    b"no method `reserve` on type `std::ffi::OsStr`".as_slice(),
-                    b"no method `reserve_exact` on type `std::ffi::OsStr`".as_slice(),
-                    b"no method `reserve` on type `std::path::Path`".as_slice(),
-                    b"no method `reserve_exact` on type `std::path::Path`".as_slice(),
-                ]
-                .iter()
-                .any(|hint| stderr.windows(hint.len()).any(|s| s == *hint))
-        }) && call.expansion_compatible()
-            && library.join("std/src/platform.rs").is_file()
-        {
-            let (_, _, stderr) = result.as_ref().unwrap();
-            trace_entry("lust-rejected", entry);
-            native_diagnostic(stderr);
-            entry = "source-library-extension";
-            engine = "lustr-native";
-            result = if let Some(answer) = lust::expanded_answer(&call, &parent) {
-                entry = "source-library-daemon";
-                Some(answer)
-            } else {
-                match owned_child::output(
-                    Command::new(parent.join("lust"))
-                        .args(&native)
-                        .env("LUST_LIBRARY", &library)
-                        .env("__CARGO_TEMPORARY_BUILD_DIR_NEW_LAYOUT_OPT_OUT", "1"),
-                ) {
-                    Ok(output) if output.status.signal().is_none() => {
-                        Some((output.status.code().unwrap_or(2), output.stdout, output.stderr))
-                    }
-                    Ok(output) => {
-                        let _ = io::stderr().write_all(&output.stderr);
-                        propagate_signal(output.status.signal().unwrap());
-                    }
-                    Err(error) => {
-                        eprintln!("cannot execute the native library expansion: {error}");
-                        return ExitCode::from(2);
-                    }
-                }
-            };
-        }
         if let Some((code, stdout, stderr)) = result {
-            if code == 0 {
-                trace_entry(engine, entry);
-                io::stdout().write_all(&stdout).expect("cannot write compiler stdout");
-                io::stderr().write_all(&stderr).expect("cannot write compiler stderr");
-                std::process::exit(0);
+            if compiler_mode && call.requires_complement(code)
+                && let Some(compiler) = native_queries::host_proc_macro_compiler(&parent, lust::host_triple())
+            {
+                trace_entry("lustr", "rust-complement");
+                let error = Command::new(compiler).arg("--lustr-build-rust-unit").args(&args).exec();
+                eprintln!("cannot execute the complementary Rust compiler: {error}");
+                return ExitCode::from(2);
             }
-            if code != 1 {
-                let _ = io::stdout().write_all(&stdout);
-                let _ = io::stderr().write_all(&stderr);
-                std::process::exit(code);
-            }
-            trace_entry(if engine == "lust" { "lust-rejected" } else { "lustr-native-rejected" }, entry);
+            trace_entry(if code == 0 { "lust" } else { "lust-failed" }, entry);
             native_diagnostic(&stderr);
-        }
-        if native_cli {
-            trace_entry("full-rust-core", call.full_entry());
-            return match call.full(&parent) {
-                Ok(status) => {
-                    if let Some(signal) = status.signal() {
-                        propagate_signal(signal);
-                    }
-                    ExitCode::from(status.code().unwrap_or(2) as u8)
+            io::stdout().write_all(&stdout).expect("cannot write compiler stdout");
+            io::stderr().write_all(&stderr).expect("cannot write compiler stderr");
+            if code == 0 {
+                if let Some(error) = call.run_program() {
+                    eprintln!("lustr: cannot execute the compiled program: {error}");
+                    return ExitCode::from(2);
                 }
-                Err(error) => {
-                    eprintln!("full Rust compilation failed: {error}");
-                    ExitCode::from(2)
-                }
-            };
+            }
+            // A native diagnostic or exit status is not a capability result.
+            // Preserve it once. No second implementation may retry this work.
+            std::process::exit(code);
         }
+        eprintln!("lustr: the native compiler returned no result");
+        return ExitCode::from(2);
     }
-    trace("full-rust-core");
-    let full_args = native_cli.then(|| lustr_compiler::native_command(&args).expect("recognized native command"));
-    let compiler_args = full_args.as_deref().unwrap_or(&args);
-    let error = Command::new(parent.join("rustc-full")).args(compiler_args).exec();
-    eprintln!("cannot execute the matched full Rust core: {error}");
+    incomplete_integration("this rustc request or compiler command")
+}
+
+fn incomplete_integration(request: &str) -> ExitCode {
+    trace("integration-unimplemented");
+    eprintln!("lustr: integration is incomplete for {request}; no stock compiler was invoked");
     ExitCode::from(2)
 }
 

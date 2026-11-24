@@ -309,7 +309,7 @@ pub fn gen_spec(spec: &CcSpec) -> Result<CcSpec, String> {
     if have != want {
         return Err(format!("LUST_PGO_CC ({}) is LLVM {have}, zig cc LLVM {want}: its profile would not match", words.join(" ")));
     }
-    Ok(CcSpec { triple: spec.triple.clone(), cxx: super::cxx_for(&words), cmd: words, statik: false, exe_suffix: spec.exe_suffix })
+    Ok(CcSpec { triple: spec.triple.clone(), cxx: super::cxx_for(&words), cmd: words, statik: false, exe_suffix: spec.exe_suffix, rust_debug: spec.rust_debug, test_runtime: spec.test_runtime.clone(), cargo_codegen: spec.cargo_codegen })
 }
 
 /// The LLVM major version of a clang command; an error for another compiler (gcc writes

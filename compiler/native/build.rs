@@ -76,6 +76,12 @@ fn main() {
         println!("cargo:rustc-link-lib=dylib=pthread");
         println!("cargo:rustc-link-lib=dylib=m");
     }
+    if std::env::var("CARGO_CFG_TARGET_OS").as_deref() == Ok("macos") {
+        // Darwin caps the main stack's setrlimit growth. Reserve the same
+        // 256 MiB as pool::STACK_SIZE in the Mach-O entry point, so accepted
+        // deep expressions also fit on the compiler's main thread.
+        println!("cargo:rustc-link-arg-bin=lust-core=-Wl,-stack_size,0x10000000");
+    }
     println!("cargo:rustc-env=LUST_TCC_LIB_PATH={}", lib.join("tcc").display());
     println!("cargo:rustc-env=LUST_TCC_BIN={}", tcc.join("bin/tcc").display());
     println!("cargo:rerun-if-env-changed=LUST_TCC_HOME");
@@ -93,11 +99,60 @@ fn main() {
     // Build hash: compiler sources, the shipped library sources (built into
     // the binary by src/stdload.rs, S5), the manifest, and the tcc tree.
     let mut h = std::collections::hash_map::DefaultHasher::new();
+    let exclusive_native = std::env::var_os("CARGO_FEATURE_EXCLUSIVE_NATIVE").is_some();
+    println!("cargo:rustc-env=LUST_EXCLUSIVE_NATIVE={}", u8::from(exclusive_native));
+    // A product helper must never reuse an oracle-enabled daemon or artifact,
+    // even when both binaries were built from the same source tree.
+    ("exclusive-native", exclusive_native).hash(&mut h);
     hash_tree(&mut h, &root.join("src"));
+    let host_runtime = root.join("../../src/host_runtime.rs");
+    ("lustr-host-runtime", std::fs::read(&host_runtime).expect("native host adapter is required")).hash(&mut h);
+    println!("cargo:rerun-if-changed={}", host_runtime.display());
+    let mixed = root.join("../../crates/lustr-native-core/src/mixed_unit.rs");
+    if mixed.is_file() {
+        std::fs::read(&mixed).expect("read mixed compiler boundary").hash(&mut h);
+        println!("cargo:rerun-if-changed={}", mixed.display());
+    }
+    let mixed_symbols = root.join("../../crates/lustr-native-core/src/mixed_symbols.rs");
+    ("lustr-mixed-symbols", std::fs::read(&mixed_symbols).expect("mixed object symbol validator is required")).hash(&mut h);
+    println!("cargo:rerun-if-changed={}", mixed_symbols.display());
+    // External native completion and artifact modules participate in the same
+    // daemon identity. Changing the caller/serializer must not reach old state.
+    for relative in ["../../src/library_contract.rs","../../src/library_request.rs",
+        "../../crates/lustr-native-core/src/native_library.rs",
+        "../../crates/lustr-native-core/src/library_history.rs",
+        "../../crates/lustr-native-core/src/native_completion.rs",
+        "../../crates/lustr-native-core/src/library_artifact.rs",
+        "../../crates/lustr-native-core/src/metadata_archive.rs",
+        "../../crates/lustr-native-core/src/public_library.rs",
+        "../../crates/lustr-native-core/src/unit_object.rs",
+        "../../crates/lustr-native-core/src/unit_publication.rs",
+        "../../upstream/metadata-artifact-tools.json",
+        "../../docs/compiler-set/evidence/metadata-sdk-receipt-20261120/receipt.json"] {
+        let path=root.join(relative);
+        (relative,std::fs::read(&path).expect("public library source input is required")).hash(&mut h);
+        println!("cargo:rerun-if-changed={}",path.display());
+    }
+    for relative in ["../../crates/lustr-metadata-encoder/src","../../crates/lustr-metadata-sdk/src"] {
+        let path=root.join(relative);hash_tree(&mut h,&path);
+        println!("cargo:rerun-if-changed={}",path.display());
+    }
     hash_tree(&mut h, &root.join("library"));
     if let Ok(bytes) = std::fs::read(root.join("Cargo.toml")) {
         bytes.hash(&mut h);
     }
+    // Identifier semantics are implemented by the exact upstream dependency
+    // closure. Both build entry points must invalidate old artifacts if their
+    // resolved source identities change, even when this file is unchanged.
+    for lock in [root.join("Cargo.lock"), root.join("../../crates/lustr-native-core/Cargo.lock")] {
+        std::fs::read(&lock).expect("native compiler dependency lockfile is required").hash(&mut h);
+        println!("cargo:rerun-if-changed={}", lock.display());
+    }
+    // The explicit owned cache-policy join is a compiler input for both the
+    // standalone build and the native-core wrapper that runs this helper.
+    let input_policy = root.join("../../crates/lustr-native-core/src/native_cache_inputs.rs");
+    ("lustr-native-cache-inputs", std::fs::read(&input_policy).expect("native cache input policy is required")).hash(&mut h);
+    println!("cargo:rerun-if-changed={}", input_policy.display());
     hash_tree(&mut h, &tcc.join("bin"));
     hash_tree(&mut h, &lib);
     println!("cargo:rustc-env=LUST_BUILD_HASH={:016x}", h.finish());

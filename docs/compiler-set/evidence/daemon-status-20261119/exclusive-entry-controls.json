@@ -1,0 +1,221 @@
+{
+  "schema": "lustr-exclusive-entry-controls-v2",
+  "status": "completed",
+  "entry_sha256": "18697af9413015dadc72a1272e6d9ca721eaa5044acdfe82267da547b4a30282",
+  "runner_sha256": "8d95ad7c00193164d4bba08252ead95684eb824da25f8a1ae80a28f26edf670f",
+  "controls": [
+    {
+      "case": "native-status-0",
+      "status": 0,
+      "children": [
+        "native"
+      ]
+    },
+    {
+      "case": "native-status-1",
+      "status": 1,
+      "children": [
+        "native"
+      ]
+    },
+    {
+      "case": "native-status-2",
+      "status": 2,
+      "children": [
+        "native"
+      ]
+    },
+    {
+      "case": "native-status-7",
+      "status": 7,
+      "children": [
+        "native"
+      ]
+    },
+    {
+      "case": "native-status-101",
+      "status": 101,
+      "children": [
+        "native"
+      ]
+    },
+    {
+      "case": "native-signal",
+      "status": -15,
+      "children": [
+        "native"
+      ]
+    },
+    {
+      "case": "release-delegation",
+      "status": 2,
+      "children": []
+    },
+    {
+      "case": "oracle-delegation",
+      "status": 2,
+      "children": []
+    },
+    {
+      "case": "profile-delegation",
+      "status": 2,
+      "children": []
+    },
+    {
+      "case": "metadata-complement",
+      "status": 2,
+      "children": []
+    },
+    {
+      "case": "engine-rustc",
+      "status": 2,
+      "children": []
+    },
+    {
+      "case": "engine-cranelift",
+      "status": 2,
+      "children": []
+    },
+    {
+      "case": "toolchain-selection",
+      "status": 2,
+      "children": []
+    },
+    {
+      "case": "bluefe-selection",
+      "status": 2,
+      "children": []
+    },
+    {
+      "case": "cargo-build",
+      "status": 2,
+      "children": []
+    },
+    {
+      "case": "native-test-retained",
+      "status": 0,
+      "children": [
+        "native-core"
+      ]
+    },
+    {
+      "case": "native-release-cc-retained",
+      "status": 0,
+      "children": [
+        "native-core"
+      ]
+    },
+    {
+      "case": "configured-wrapper-refused",
+      "status": 2,
+      "children": []
+    },
+    {
+      "case": "external-probe-mode-build-empty",
+      "status": 2,
+      "children": []
+    },
+    {
+      "case": "external-probe-mode-test-empty",
+      "status": 2,
+      "children": []
+    },
+    {
+      "case": "external-probe-mode-build-set",
+      "status": 2,
+      "children": []
+    },
+    {
+      "case": "external-probe-mode-test-set",
+      "status": 2,
+      "children": []
+    },
+    {
+      "case": "complete-cold-child-environment-preserved",
+      "status": 0,
+      "children": [
+        "native"
+      ]
+    },
+    {
+      "case": "native-spawn-failure-is-terminal",
+      "status": 2,
+      "children": []
+    },
+    {
+      "case": "native-library-identity-failure-is-terminal",
+      "status": 2,
+      "children": []
+    },
+    {
+      "case": "native-library-load-failure-is-terminal",
+      "status": 2,
+      "children": []
+    },
+    {
+      "case": "native-transport-failure-is-terminal",
+      "status": 3,
+      "children": []
+    },
+    {
+      "case": "query-refuses---emit=obj",
+      "status": 2,
+      "children": []
+    },
+    {
+      "case": "query-refuses--o",
+      "status": 2,
+      "children": []
+    },
+    {
+      "case": "query-refuses-<entry-fixture>/main.rs",
+      "status": 2,
+      "children": []
+    },
+    {
+      "case": "query-refuses---target",
+      "status": 2,
+      "children": []
+    },
+    {
+      "case": "query-refuses-source-dependent-name",
+      "status": 2,
+      "children": []
+    },
+    {
+      "case": "query-refuses-nonempty-source",
+      "status": 2
+    },
+    {
+      "case": "dependency-host-probe",
+      "status": 2,
+      "children": [
+        "metadata"
+      ]
+    },
+    {
+      "case": "build-script-host-probe",
+      "status": 2,
+      "children": [
+        "metadata"
+      ]
+    },
+    {
+      "case": "proc-macro-host-probe",
+      "status": 2,
+      "children": [
+        "metadata"
+      ]
+    },
+    {
+      "case": "workspace-host-probe",
+      "status": 2,
+      "children": [
+        "metadata"
+      ]
+    }
+  ],
+  "daemon_required": false,
+  "scope": "synthetic entry failures and named real native witnesses; no whole-Rust or speed qualification",
+  "full_rust_coverage": false
+}

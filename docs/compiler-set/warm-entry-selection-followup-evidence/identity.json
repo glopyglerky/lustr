@@ -1,0 +1,35 @@
+{
+  "schema": "lustr-selection-review-followup-v1",
+  "scope": "selection and initialization correctness; no performance/native runtime claim",
+  "seed": {
+    "revision": "a0f2b79ee70952e8227a18663cb0aae2e9e7aa11",
+    "tree": "bd08959de47e01064da5637c6932a9de85f2ee40"
+  },
+  "sets": [
+    {
+      "assertions": 85,
+      "name": "seed",
+      "original_results_sha256": "b2a9557846c837a9777577d7542610b02d17ecdcc2c68f5c0a1b8b40bb53e6fa",
+      "public_results_sha256": "55a8eee72e6b34bd6459474ccf03aebc9441c4144a21710c5a3e1621e946d07c",
+      "records": 38
+    },
+    {
+      "assertions": 250,
+      "name": "stamp-reuse",
+      "original_results_sha256": "fe25c301feb39e120dc0a9bd8648cc6952fc5603684c3fc12a7b6d4f424bb4a8",
+      "public_results_sha256": "13d10c7c641c993a1c1dd494b79a7a4a9a12c62b317bbf5eb51b8ce30b3cb3f4",
+      "records": 132
+    },
+    {
+      "assertions": 0,
+      "name": "credentials",
+      "original_results_sha256": "7b1ebb4d57c1eff055c117b70da4b3141855bfba9656c0ee3d8c17d1bb8db012",
+      "public_results_sha256": "74336e5c2dd624b3c8bf5d62fdaa90e087f37592a5cf45b3d410473e7049748c",
+      "records": 4
+    }
+  ],
+  "stamp_reuse": {
+    "revision": "1aff7f7331d1d4293d3f5c74c740318c9686b030",
+    "tree": "7553100fe259c3a45dcb5640fe9dd50c3f0ed2dd"
+  }
+}

@@ -19,6 +19,7 @@
 // the compiler identity, the flag string, the Rust target triple, and with
 // PGO (`cc/pgo.rs`) the unit's own part of the profile; an object is a
 // function of those alone.
+use std::io::Write;
 use std::path::{Path, PathBuf};
 use std::process::Command;
 
@@ -44,6 +45,16 @@ pub struct CcSpec {
     pub statik: bool,
     /// File name suffix of the output (".exe" on Windows triples).
     pub exe_suffix: &'static str,
+    rust_debug: bool,
+    test_runtime: Option<PathBuf>,
+    cargo_codegen: Option<(crate::protocol::OptLevel, crate::protocol::library_contract::Strip)>,
+}
+
+impl CcSpec {
+    fn with_cargo_optimization(&self, flags: String) -> String {
+        let Some((level, _)) = self.cargo_codegen else { return flags; };
+        flags.replacen("-O2", &format!("-O{}", level.value()), 1)
+    }
 }
 
 /// The zig target spelling of a Rust triple. The front end keeps the Rust
@@ -163,12 +174,12 @@ pub fn spec_for(triple: &str) -> Result<CcSpec, String> {
             cmd.extend(["-target".into(), zt.into()]);
         }
         let cxx = cxx_for(&cmd);
-        return Ok(CcSpec { triple: triple.into(), cmd, cxx, statik, exe_suffix });
+        return Ok(CcSpec { triple: triple.into(), cmd, cxx, statik, exe_suffix, rust_debug: false, test_runtime: None, cargo_codegen: None });
     }
     if on_path("zig") {
         let cmd: Vec<String> = vec!["zig".into(), "cc".into(), "-target".into(), zt.into()];
         let cxx = cxx_for(&cmd);
-        return Ok(CcSpec { triple: triple.into(), cmd, cxx, statik, exe_suffix });
+        return Ok(CcSpec { triple: triple.into(), cmd, cxx, statik, exe_suffix, rust_debug: false, test_runtime: None, cargo_codegen: None });
     }
     let (arch, os) = (triple.split('-').next().unwrap_or(""), triple);
     let host_like = arch == std::env::consts::ARCH
@@ -179,11 +190,151 @@ pub fn spec_for(triple: &str) -> Result<CcSpec, String> {
         // musl toolchain, which the link error will name).
         let cmd = vec!["cc".to_string()];
         let cxx = cxx_for(&cmd);
-        return Ok(CcSpec { triple: triple.into(), cmd, cxx, statik, exe_suffix });
+        return Ok(CcSpec { triple: triple.into(), cmd, cxx, statik, exe_suffix, rust_debug: false, test_runtime: None, cargo_codegen: None });
     }
     Err(format!(
         "no C compiler for target `{triple}`: install zig (zig cc cross-compiles it) or set LUST_CC to a cross compiler command"
     ))
+}
+
+pub(crate) fn spec_for_native_cargo(
+    triple: &str, rust_debug: bool, test: bool,
+    cargo_codegen: Option<(crate::protocol::OptLevel, crate::protocol::library_contract::Strip)>,
+) -> Result<CcSpec, String> {
+    if triple != "x86_64-unknown-linux-gnu" || !on_path("clang") || !on_path("clang++") {
+        return Err("native Cargo emission requires clang and clang++ for x86_64 Linux GNU".into());
+    }
+    let test_runtime = if test {
+        let exe = std::env::current_exe().map_err(|e| e.to_string())?;
+        let path = exe.parent().and_then(Path::parent).ok_or("compiler has no toolchain root")?
+            .join("lib/liblustr_test_runtime.a");
+        if !path.is_file() { return Err("the native Cargo test runtime is absent from this toolchain".into()); }
+        Some(path)
+    } else { None };
+    Ok(CcSpec {
+        triple: triple.into(), cmd: vec!["clang".into()], cxx: vec!["clang++".into()],
+        statik: false, exe_suffix: "", rust_debug, test_runtime, cargo_codegen,
+    })
+}
+
+pub(crate) fn compile_scalar_cargo_object(
+    path: &Path, text: &str, uses_llvm: bool, unwind: bool, optimization: crate::protocol::OptLevel,
+) -> Result<(), String> {
+    let input = path.with_extension(if uses_llvm { "ll" } else { "c" });
+    let mut source = std::fs::File::options().write(true).create_new(true).open(&input)
+        .map_err(|error| format!("stage native scalar object input: {error}"))?;
+    source.write_all(text.as_bytes()).map_err(|error| format!("write native scalar object input: {error}"))?;
+    drop(source);
+    let built = scalar_cargo_object_command(uses_llvm, unwind, optimization)
+        .arg("-c").arg(&input).arg("-o").arg(path).output();
+    std::fs::remove_file(&input).map_err(|error| format!("remove native scalar object input: {error}"))?;
+    let result = built.map_err(|error| format!("run Clang for a native scalar object: {error}"))?;
+    if !result.status.success() {
+        return Err(format!("Clang rejected native scalar object input ({}): {}", result.status, String::from_utf8_lossy(&result.stderr)));
+    }
+    Ok(())
+}
+
+pub(crate) fn scalar_cargo_object_command(
+    uses_llvm: bool, unwind: bool, optimization: crate::protocol::OptLevel,
+) -> Command {
+    let mut command = cc_command("clang");
+    command.arg("--target=x86_64-unknown-linux-gnu");
+    let level = format!("-O{}", optimization.value());
+    if uses_llvm {
+        command.arg("-Wno-override-module").arg(level).args(["-x", "ir"]);
+    } else {
+        let flags = cflags(false).replacen("-O2", &level, 1);
+        command.args(flags.split_whitespace()).args(["-x", "c"]);
+        if unwind { command.arg("-funwind-tables"); }
+    }
+    command
+}
+
+#[cfg(feature = "exclusive-native")]
+fn installed_cargo_runtime_dir() -> Option<PathBuf> {
+    let executable = std::env::current_exe().ok()?;
+    let root = executable.parent()?.parent()?;
+    Some(root.join("lib/lustr-cargo-runtime"))
+}
+
+/// Build the invariant runtime units during toolchain construction with the
+/// same compiler, options and headers as an ordinary native Cargo build.
+#[cfg(feature = "exclusive-native")]
+pub(crate) fn prime_cargo_runtime() -> Result<(), String> {
+    if crate::protocol::host_triple() != "x86_64-unknown-linux-gnu"
+        || !on_path("clang") || !on_path("clang++") || cargo_runtime_driver_overridden() {
+        return Ok(());
+    }
+    let directory = installed_cargo_runtime_dir().ok_or("cannot locate the toolchain runtime directory")?;
+    std::fs::create_dir(&directory).map_err(|error| format!("create runtime object directory: {error}"))?;
+    let spec = spec_for_native_cargo(crate::protocol::host_triple(), true, false, None)?;
+    let flags_text = cflags(false);
+    let flags: Vec<_> = flags_text.split_whitespace().map(str::to_owned).collect();
+    let source = directory.join("u2.c");
+    for test in [false, true] {
+        let text = crate::cgen::cargo_runtime_unit(test);
+        let preprocessed = preprocessed(&text, &spec.cmd, &flags_text, false)
+            .ok_or("could not preprocess the native Cargo runtime")?;
+        let key = unit_key(&text, Some(&preprocessed), &spec, false, None, false);
+        let recipe = cargo_runtime_recipe(&spec.cmd, &key)
+            .ok_or("could not identify the native Cargo runtime compiler options")?;
+        let object = directory.join(format!("unit-{key}.o"));
+        std::fs::write(&source, text).map_err(|error| format!("stage native Cargo runtime: {error}"))?;
+        let output = unit_command(&spec.cmd, &flags, &object, Some(&key), None, &source)
+            .output().map_err(|error| format!("compile native Cargo runtime: {error}"))?;
+        std::fs::remove_file(&source).map_err(|error| format!("remove native Cargo runtime source: {error}"))?;
+        if !output.status.success() {
+            return Err(format!("native Cargo runtime compilation failed: {}", String::from_utf8_lossy(&output.stderr)));
+        }
+        let bytes = std::fs::read(&object).map_err(|error| format!("read native Cargo runtime object: {error}"))?;
+        let digest = cargo_runtime_digest(&bytes);
+        std::fs::write(object.with_extension("receipt"), format!("{digest}\n{recipe}\n"))
+            .map_err(|error| format!("record native Cargo runtime object: {error}"))?;
+    }
+    Ok(())
+}
+
+#[cfg(feature = "exclusive-native")]
+fn cargo_runtime_digest(bytes: &[u8]) -> String {
+    use sha2::Digest;
+    sha2::Sha256::digest(bytes).iter().map(|byte| format!("{byte:02x}")).collect()
+}
+
+#[cfg(feature = "exclusive-native")]
+fn cargo_runtime_driver_overridden() -> bool {
+    std::env::vars_os().any(|(name, _)| name.as_encoded_bytes().starts_with(b"CCC_"))
+}
+
+/// Clang can add its default configuration without changing preprocessed
+/// text. Bind the effective compiler invocation independently of file paths.
+#[cfg(feature = "exclusive-native")]
+fn cargo_runtime_recipe(words: &[String], key: &str) -> Option<String> {
+    let output = cc_command(&words[0]).args(&words[1..])
+        .args(cflags(false).split_whitespace())
+        .arg(format!("-DLUST_UNIT_KEY={key}"))
+        // There is no C debug info or coverage in these runtime objects.
+        // Diagnostic color only changes the driver's reported options.
+        .args(["-fdebug-compilation-dir=.", "-fcoverage-compilation-dir=."])
+        .arg("-fno-color-diagnostics")
+        .args(["-###", "-x", "c", "-c", "-", "-o", "u2.o"])
+        .env("LC_ALL", "C")
+        .stdin(std::process::Stdio::null()).output().ok()?;
+    let diagnostics = std::str::from_utf8(&output.stderr).ok()?;
+    (output.status.success() && !diagnostics.lines().any(|line| line.starts_with("Configuration file:")))
+        .then(|| cargo_runtime_digest(&output.stderr))
+}
+
+#[cfg(feature = "exclusive-native")]
+fn reuse_cargo_runtime(directory: &Path, compiler: &[String], key: &str, destination: &Path) -> bool {
+    let source = directory.join(format!("unit-{key}.o"));
+    let Ok(receipt) = std::fs::read_to_string(source.with_extension("receipt")) else { return false; };
+    let Some((digest, recipe)) = receipt.trim_end().split_once('\n') else { return false; };
+    if cargo_runtime_recipe(compiler, key).as_deref() != Some(recipe) { return false; }
+    let Ok(bytes) = std::fs::read(source) else { return false; };
+    if cargo_runtime_digest(&bytes) != digest { return false; }
+    let _ = std::fs::remove_file(destination);
+    std::fs::write(destination, bytes).is_ok()
 }
 
 /// The C flags of every unit, one string so the cache key and the command
@@ -237,7 +388,13 @@ fn ldflags(spec: &CcSpec, debug: bool) -> Vec<String> {
     if spec.statik {
         v.push("-static".into());
     }
-    if !debug {
+    if let Some((_, strip)) = spec.cargo_codegen {
+        if strip == crate::protocol::library_contract::Strip::DebugInfo {
+            v.push("-Wl,--strip-debug".into());
+        } else if debug || spec.rust_debug {
+            v.push("-g".into());
+        }
+    } else if !debug && !spec.rust_debug {
         v.push("-s".into());
     } else {
         v.push("-g".into());
@@ -281,7 +438,7 @@ fn compiler_id(cmd: &[String]) -> String {
 
 /// The file a command name runs: the first PATH entry that has it, links resolved (the name
 /// as given when none does).
-fn resolve_bin(prog: &str) -> PathBuf {
+pub(crate) fn resolve_bin(prog: &str) -> PathBuf {
     let bin = std::env::var_os("PATH")
         .and_then(|path| std::env::split_paths(&path).map(|d| d.join(prog)).find(|p| p.is_file()))
         .unwrap_or_else(|| PathBuf::from(prog));
@@ -297,6 +454,7 @@ fn resolve_bin(prog: &str) -> PathBuf {
 pub fn unit_key(c_text: &str, pre: Option<&[u8]>, spec: &CcSpec, debug: bool, profile: Option<&str>, cxx: bool) -> String {
     let sys_headers = pre.is_some() || c_text.contains("#include <");
     let (words, flags) = if cxx { (spec.cxx.as_slice().into(), cxxflags(debug)) } else { (unit_words(spec, debug, sys_headers), cflags(debug)) };
+    let flags = spec.with_cargo_optimization(flags);
     let id = compiler_id(&words);
     let own = pre.is_none().then(|| sys_headers.then(|| preprocessed(c_text, &words, &flags, cxx)).flatten()).flatten();
     let text = pre.or(own.as_deref()).unwrap_or(c_text.as_bytes());
@@ -311,7 +469,7 @@ pub fn unit_key(c_text: &str, pre: Option<&[u8]>, spec: &CcSpec, debug: bool, pr
 /// parts, with `extra` (the IR compile's flags, the runtime IR's digest), not copied into one
 /// text first (~1 MB a unit, every unit every build). Its C has no `#include`.
 fn ll_unit_key(c: &str, ll: &str, hc: &str, extra: &str, spec: &CcSpec, debug: bool, profile: Option<&str>) -> String {
-    let flags = cflags(debug);
+    let flags = spec.with_cargo_optimization(cflags(debug));
     let (a, b) = crate::driver::cache::hash128(
         &[
             b"cc-v2 llvm-v5",
@@ -485,6 +643,12 @@ pub fn llflags(debug: bool) -> String {
     if debug { format!("{base} -g") } else { base }
 }
 
+fn unit_llflags(spec: &CcSpec, debug: bool) -> String {
+    if let Some((level, _)) = spec.cargo_codegen {
+        format!("-O{} -w -fexceptions", level.value())
+    } else if spec.rust_debug { "-O0 -w -fexceptions".into() } else { llflags(debug) }
+}
+
 /// Compiles one LLVM backend unit into `obj`: the C unit `src` and the helpers' C `hc` to
 /// bitcode with the C flags (no LLVM passes yet), then the IR `ll` with both linked in, so
 /// the optimizer sees one module (cgen/ll.rs: the C helpers inline into the LLVM fns). The
@@ -565,7 +729,7 @@ fn compile_pair(
     // A relative compiler path must not resolve against the work dir (PGO compiles there).
     let prog = if words[0].contains('/') { std::fs::canonicalize(&words[0]).unwrap_or_else(|_| PathBuf::from(&words[0])) } else { PathBuf::from(&words[0]) };
     let mut cmd = cc_command(prog);
-    cmd.args(&words[1..]).args(llflags(debug).split_whitespace()).arg("-c");
+    cmd.args(&words[1..]).args(unit_llflags(spec, debug).split_whitespace()).arg("-c");
     if nopre {
         cmd.args(["-mllvm", "-disable-preinline"]);
     }
@@ -665,8 +829,8 @@ fn memo_tag(spec: &CcSpec, debug: bool, work: &Path) -> String {
             env!("LUST_BUILD_HASH").as_bytes(),
             spec.triple.as_bytes(),
             compiler_id(&spec.cmd).as_bytes(),
-            cflags(debug).as_bytes(),
-            llflags(debug).as_bytes(),
+            spec.with_cargo_optimization(cflags(debug)).as_bytes(),
+            unit_llflags(spec, debug).as_bytes(),
             pgo_env.join(" ").as_bytes(),
             profile.as_bytes(),
         ],
@@ -738,7 +902,7 @@ pub fn memo_misses(units: &[UnitIn], spec: &CcSpec, debug: bool, cache: Option<&
 /// units to pass again with text (an LLVM unit's three parts come with text or without as
 /// one). Returns a one-line summary, or the compiler's error text.
 pub fn build(units: &[UnitIn], spec: &CcSpec, out: &Path, debug: bool, cache: Option<&crate::driver::cache::Cache>, work: &Path) -> Result<String, CcError> {
-    build_with(units, spec, out, debug, cache, work, None)
+    build_with(units, spec, out, debug, cache, work, None, &[])
 }
 
 /// `build`, with the units a `Stream` took while they assembled: for each, the stream's key,
@@ -751,14 +915,15 @@ pub fn build_with(
     cache: Option<&crate::driver::cache::Cache>,
     work: &Path,
     stream: Option<Stream>,
+    imported_objects: &[PathBuf],
 ) -> Result<String, CcError> {
     // The streamed units compile on from here, `jobs` at once, while this prepares the rest.
     if let Some(s) = &stream {
         s.go();
     }
     std::fs::create_dir_all(work).map_err(|e| format!("cannot create {}: {e}", work.display()))?;
-    let flags: Vec<String> = cflags(debug).split_whitespace().map(str::to_string).collect();
-    let cxx_flags: Vec<String> = cxxflags(debug).split_whitespace().map(str::to_string).collect();
+    let flags: Vec<String> = spec.with_cargo_optimization(cflags(debug)).split_whitespace().map(str::to_string).collect();
+    let cxx_flags: Vec<String> = spec.with_cargo_optimization(cxxflags(debug)).split_whitespace().map(str::to_string).collect();
     let is_cxx = |name: &str| name.ends_with(".cc");
     let rt_max: usize = std::env::var("LUST_LL_RTINL").ok().and_then(|v| v.parse().ok()).unwrap_or(0);
     let instrumented = std::env::var_os("LUST_PGO_GEN").is_some_and(|v| v == "1");
@@ -816,7 +981,9 @@ pub fn build_with(
     });
     // The text a unit with system headers keys on (`unit_key`), kept for the next build
     // (`preprocessed_kept`); the C++ unit's with its own driver and flags, as `unit_key` makes it.
-    let (cflags_text, cxxflags_text) = (cflags(debug), cxxflags(debug));
+    let (cflags_text, cxxflags_text) = (
+        spec.with_cargo_optimization(cflags(debug)), spec.with_cargo_optimization(cxxflags(debug)),
+    );
     let pre: Vec<Option<Vec<u8>>> = crate::pool::par_map(&idx, |&i| {
         let (name, cxx) = (&units[i].name, is_cxx(&units[i].name));
         let (words, flags) = if cxx { (&spec.cxx, &cxxflags_text) } else { (&spec.cmd, &cflags_text) };
@@ -912,7 +1079,7 @@ pub fn build_with(
             keyed.then(|| match ll_of.get(unit.as_str()) {
                 Some(ll) => {
                     let hc = hc_of.get(unit.as_str()).copied().unwrap_or("");
-                    ll_unit_key(c, ll, hc, &format!("{} {nopre} rtinl {rt_digest}", llflags(debug)), spec, debug, part.as_deref())
+                    ll_unit_key(c, ll, hc, &format!("{} {nopre} rtinl {rt_digest}", unit_llflags(spec, debug)), spec, debug, part.as_deref())
                 }
                 None => unit_key(c, pre_of(i), spec, debug, part.as_deref(), is_cxx(&names[i])),
             })
@@ -981,6 +1148,14 @@ pub fn build_with(
     let lost = std::sync::Mutex::new(Vec::new());
     let limit = crate::pool::threads().max(1).min(units.len().max(1));
     let t_compile = std::time::Instant::now();
+    #[cfg(feature = "exclusive-native")]
+    let installed_runtime = if !pgo_on && !debug && (spec.rust_debug || spec.test_runtime.is_some())
+        && !cargo_runtime_driver_overridden()
+    {
+        installed_cargo_runtime_dir()
+    } else {
+        None
+    };
     std::thread::scope(|scope| {
         for _ in 0..limit {
             scope.spawn(|| loop {
@@ -1015,6 +1190,15 @@ pub fn build_with(
                 if let (Some(cache), Some(key)) = (cache, &keys[i])
                     && cache.unit_object(key, obj)
                 {
+                    hits.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+                    continue;
+                }
+                #[cfg(feature = "exclusive-native")]
+                if name == "u2" && pre_of(i).is_some()
+                    && let (Some(directory), Some(cache), Some(key)) = (&installed_runtime, cache, &keys[i])
+                    && reuse_cargo_runtime(directory, &spec.cmd, key, obj)
+                {
+                    cache.store_unit_object(key, obj);
                     hits.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
                     continue;
                 }
@@ -1125,7 +1309,12 @@ pub fn build_with(
         // A build with a C++ unit links with the C++ driver (its runtime and personality).
         let link = if units.iter().any(|u| is_cxx(&u.name)) { &spec.cxx } else { &spec.cmd };
         let mut cmd = cc_command(&link[0]);
-        cmd.args(&link[1..]).args(ldflags(spec, debug)).args(pgo.as_ref().map(pgo::Mode::link_flags).unwrap_or_default()).args(&objs).arg("-o").arg(out);
+        cmd.args(&link[1..]).args(ldflags(spec, debug)).args(pgo.as_ref().map(pgo::Mode::link_flags).unwrap_or_default()).args(&objs);
+        cmd.args(imported_objects);
+        if let Some(runtime) = &spec.test_runtime {
+            cmd.arg(runtime).args(["-ldl", "-lm", "-pthread"]);
+        }
+        cmd.arg("-o").arg(out);
         match cmd.output() {
             Ok(o) if o.status.success() => Ok(format!(
                 "{} units ({} from cache, clang {:.2}s, {}link {:.2}s{}), linked {}",
@@ -1199,6 +1388,8 @@ mod tests {
         let units = || vec![UnitIn::text("u0", main.into()), UnitIn::text("u1", f.into()), UnitIn::text("u2", g.into())];
         let plain = crate::driver::cache::Cache::at(&root.join("c1"));
         super::build(&units(), &spec, &root.join("a"), false, Some(&plain), &root.join("w1")).unwrap();
+        let plain_bytes = std::fs::read(root.join("a")).unwrap();
+        assert_eq!(std::process::Command::new(root.join("a")).status().ok().and_then(|s| s.code()), Some(7));
         // The stream's cache already holds g's object (a build of another main and g): u2 is a
         // hit, u1 a miss the stream compiles, u0 a miss build compiles.
         let streamed = crate::driver::cache::Cache::at(&root.join("c2"));
@@ -1207,10 +1398,13 @@ mod tests {
         let Some(stream) = super::Stream::start(&spec.triple, false, Some(crate::driver::cache::Cache::at(&root.join("c2"))), root.join("w2")) else { return };
         stream.add("u1", f);
         stream.add("u2", g);
-        let r = super::build_with(&units(), &spec, &root.join("b"), false, Some(&streamed), &root.join("w2"), Some(stream)).unwrap();
+        // Apple ld includes the output filename in its required ad-hoc code
+        // signature. Hold that filename fixed while comparing the two paths;
+        // no signature or executable bytes are stripped from this assertion.
+        let r = super::build_with(&units(), &spec, &root.join("a"), false, Some(&streamed), &root.join("w2"), Some(stream), &[]).unwrap();
         assert!(r.contains("3 units (1 from cache"), "u2 hit, u1 compiled by the stream, u0 by build: {r}");
-        assert_eq!(std::fs::read(root.join("a")).unwrap(), std::fs::read(root.join("b")).unwrap(), "the same binary");
-        assert_eq!(std::process::Command::new(root.join("b")).status().ok().and_then(|s| s.code()), Some(7));
+        assert_eq!(plain_bytes, std::fs::read(root.join("a")).unwrap(), "the same binary");
+        assert_eq!(std::process::Command::new(root.join("a")).status().ok().and_then(|s| s.code()), Some(7));
         let _ = std::fs::remove_dir_all(&root);
     }
 
@@ -1305,7 +1499,7 @@ mod tests {
 
     fn zig_spec(target: &str) -> super::CcSpec {
         let cmd: Vec<String> = ["zig", "cc", "-target", target].into_iter().map(str::to_string).collect();
-        super::CcSpec { triple: String::new(), cxx: super::cxx_for(&cmd), cmd, statik: true, exe_suffix: "" }
+        super::CcSpec { triple: String::new(), cxx: super::cxx_for(&cmd), cmd, statik: true, exe_suffix: "", rust_debug: false, test_runtime: None, cargo_codegen: None }
     }
 
     #[test]
@@ -1461,7 +1655,7 @@ mod tests {
     /// begins (the parts are hashed with their lengths).
     #[test]
     fn an_llvm_unit_key_moves_with_each_text() {
-        let spec = super::CcSpec { triple: "x86_64-unknown-linux-musl".into(), cxx: vec!["c++".into()], cmd: vec!["cc".into()], statik: false, exe_suffix: "" };
+        let spec = super::CcSpec { triple: "x86_64-unknown-linux-musl".into(), cxx: vec!["c++".into()], cmd: vec!["cc".into()], statik: false, exe_suffix: "", rust_debug: false, test_runtime: None, cargo_codegen: None };
         let key = |c: &str, ll: &str, hc: &str, extra: &str| super::ll_unit_key(c, ll, hc, extra, &spec, false, None);
         let base = key("c", "ll", "hc", "x");
         for other in [key("c2", "ll", "hc", "x"), key("c", "ll2", "hc", "x"), key("c", "ll", "hc2", "x"), key("c", "ll", "hc", "y"), key("cl", "l", "hc", "x")] {
@@ -1474,7 +1668,7 @@ mod tests {
     fn unit_key_moves_with_every_input() {
         let spec = |triple: &str, cmd: &str| {
             let cmd: Vec<String> = cmd.split_whitespace().map(str::to_string).collect();
-            super::CcSpec { triple: triple.into(), cxx: super::cxx_for(&cmd), cmd, statik: false, exe_suffix: "" }
+            super::CcSpec { triple: triple.into(), cxx: super::cxx_for(&cmd), cmd, statik: false, exe_suffix: "", rust_debug: false, test_runtime: None, cargo_codegen: None }
         };
         let key = |text: &str, triple: &str, cmd: &str, debug: bool, profile: Option<&str>, cxx: bool| super::unit_key(text, None, &spec(triple, cmd), debug, profile, cxx);
         let base = key("int f(void);", "aarch64-unknown-linux-musl", "zig cc", false, None, false);

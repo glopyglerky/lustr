@@ -1,0 +1,47 @@
+[
+  {
+    "tool": "cargo",
+    "argv": [
+      "build",
+      "-q",
+      "--offline",
+      "--bin",
+      "e",
+      "--message-format=json"
+    ],
+    "exit": 101,
+    "stdout": "00.stdout",
+    "stderr": "00.stderr",
+    "source_rejection": false
+  },
+  {
+    "tool": "cargo",
+    "argv": [
+      "check",
+      "-q",
+      "--offline",
+      "--bin",
+      "e",
+      "--message-format=json"
+    ],
+    "exit": 101,
+    "stdout": "01.stdout",
+    "stderr": "01.stderr",
+    "source_rejection": false
+  },
+  {
+    "tool": "cargo",
+    "argv": [
+      "build",
+      "-q",
+      "--offline",
+      "--bin",
+      "e",
+      "--message-format=json"
+    ],
+    "exit": 0,
+    "stdout": "02.stdout",
+    "stderr": "02.stderr",
+    "source_rejection": false
+  }
+]

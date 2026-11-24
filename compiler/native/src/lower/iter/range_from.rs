@@ -5,7 +5,7 @@
 //! and `nth(n)` is `plus = forward(start, n); start = forward(plus, 1)`,
 //! so the step past the last value panics before that value comes out.
 //! An integer `forward` with no room left runs `Self::MAX + 1` at the
-//! `step_integer_impls!` line (core/src/iter/range.rs:548:1), which
+//! `step_integer_impls!` line (core/src/iter/range.rs:549:1), which
 //! panics with overflow checks on (`#[rustc_inherit_overflow_checks]`);
 //! the step itself is a wrapping add. A char `forward` past `char::MAX`
 //! is the trait default's `expect` (range.rs:118:45) in every build;
@@ -28,7 +28,7 @@ impl Ex<'_, '_> {
             let (bad, ok) = self.branch(over);
             self.cur = bad;
             self.term(Terminator::Panic(vec![FmtPart::Lit("overflow in `Step::forward`".into())]));
-            self.body.blocks[self.cur.0 as usize].term_span = Span::std_site(8, 118, 45);
+            self.body.blocks[self.cur.0 as usize].term_span = Span::std_site(8, 119, 45);
             self.cur = ok;
             let i2 = self.cast_local(Operand::Copy(Place::local(plus)), int(IntTy::U32));
             return Ok(self.char_of_idx(Operand::Copy(Place::local(i2))));
@@ -45,7 +45,7 @@ impl Ex<'_, '_> {
         // build checks overflow.
         let max_v: u128 = if it.signed() { (1u128 << (it.bits() - 1)) - 1 } else if it.bits() == 128 { u128::MAX } else { (1u128 << it.bits()) - 1 };
         let dead = self.local(elem);
-        let at = std::mem::replace(&mut self.span, Span::std_site(8, 548, 1));
+        let at = std::mem::replace(&mut self.span, Span::std_site(8, 549, 1));
         self.assign(Place::local(dead), Rvalue::Bin(Add, Operand::Const(Const::Int(max_v, it)), Operand::Const(Const::Int(1, it))));
         self.span = at;
         self.goto(ok);

@@ -3,7 +3,7 @@ name = "lustr-semantic"
 version = "0.1.0"
 edition = "2024"
 publish = false
-description = "Pinned rustc semantic inspection for the lustr compiler bridge"
+description = "Independent pinned Rust SDK oracle; excluded from Lustr product compilation"
 
 [workspace]
 

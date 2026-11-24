@@ -1,0 +1,79 @@
+{
+  "archive_sha256": "1fa5cea1ac4a4165594583288393f6141fd74384608306cf6eb47627cd773c12",
+  "gates": {
+    "entry-contract": {
+      "failed": 0,
+      "log_sha256": "1261a83e2b3efdb6c38260533e01d496963131182ab33919b051937aa831f806",
+      "passed": 16
+    },
+    "lustr-warm-compact-selection-contract": {
+      "assertions": 486,
+      "invocations": 103,
+      "status": "completed"
+    },
+    "lustr-warm-selection-contract": {
+      "assertions": 290,
+      "invocations": 154,
+      "status": "completed"
+    },
+    "lustr-warm-selection-seed-contract": {
+      "assertions": 85,
+      "invocations": 38,
+      "status": "completed"
+    }
+  },
+  "lustr-warm-comparison": {
+    "kinds": {
+      "build-identity": 525,
+      "cache-edit-completed": 1,
+      "cache-edit-proof": 8,
+      "cache-edit-source": 4,
+      "cache-edit-start": 1,
+      "cache-edit-step": 4,
+      "command": 1268,
+      "daemon-start": 157,
+      "daemon-stop": 157,
+      "entry-route": 12,
+      "excluded-prime": 576,
+      "group-end": 48,
+      "group-start": 48,
+      "identities": 1,
+      "qualification": 2,
+      "qualification-start": 2,
+      "retained-route": 12,
+      "runtime-identity": 212,
+      "runtime-oracle": 1,
+      "selection-cache": 8,
+      "timing": 384
+    },
+    "records": 3431
+  },
+  "lustr-warm-diagnostics": {
+    "kinds": {
+      "build-identity": 105,
+      "command": 347,
+      "daemon-start": 18,
+      "daemon-stop": 18,
+      "diagnostic-timing": 144,
+      "public-proof": 4,
+      "retained-proof": 12,
+      "runtime-identity": 78,
+      "selector-hit": 2,
+      "selector-timing": 48
+    },
+    "records": 776
+  },
+  "notes": [
+    "Primary and diagnostic exact executed runner replays passed independently after download.",
+    "Source-built candidate and baseline constructor log/certificate archive bindings passed; no live binary restamping is claimed.",
+    "The baseline is d57f485e, not PR21. Native/runtime source equality remains required; comparison isolates the compact/access continuation.",
+    "Current host is Intel Xeon6975P-C; prior third host was AMD EPYC9V74. Cross-run absolute changes are not attributed to code."
+  ],
+  "schema": "lustr-fourth-warm-campaign-replay-summary-v1",
+  "source": {
+    "revision": "d3b14dc637b6343bbb329dfcf6d5e1b420c06009",
+    "tree": "0256606d5793bfb890130f05fae013d0c5c5f9e1"
+  },
+  "status": "completed",
+  "warm_target_met": false
+}

@@ -536,11 +536,22 @@ class Harness:
         if RESTART:
             return 0.0
         try:
-            with open(f"/proc/{self.daemon.pid}/status") as f:
-                kb = next(int(l.split()[1]) for l in f if l.startswith("VmRSS:"))
+            if sys.platform == "darwin":
+                # Darwin ps reports resident memory in KiB. /proc is absent;
+                # silently reporting zero would disable this regression gate.
+                result = subprocess.run(["ps", "-o", "rss=", "-p", str(self.daemon.pid)],
+                                        check=True, capture_output=True, text=True, timeout=5)
+                kb = int(result.stdout.strip())
+                if kb <= 0:
+                    raise RuntimeError("Darwin ps reported no resident memory")
+            else:
+                with open(f"/proc/{self.daemon.pid}/status") as f:
+                    kb = next(int(l.split()[1]) for l in f if l.startswith("VmRSS:"))
             return kb / 1024
-        except Exception:
-            return 0.0
+        except (OSError, ValueError, RuntimeError, StopIteration, subprocess.SubprocessError) as error:
+            if self.daemon.poll() is not None:
+                return 0.0
+            raise RuntimeError(f"cannot measure live daemon resident memory: {error}") from error
 
     def rss_sample(self):
         """Samples the daemon RSS after one edit (see RSS_WARM)."""

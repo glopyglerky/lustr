@@ -1,0 +1,134 @@
+diff --git a/src/librustdoc/config.rs b/src/librustdoc/config.rs
+index 9acf150b3b3545246fa0eb875521676a5c5ac45a..19d408b9f446c4633d87b0722530a345c63b9b7e 100644
+--- a/src/librustdoc/config.rs
++++ b/src/librustdoc/config.rs
+@@ -138,6 +138,9 @@ pub(crate) struct Options {
+     /// default to loading from `$sysroot/bin/rustc`.
+     pub(crate) test_builder: Option<PathBuf>,
+ 
++    /// The compiler that decides whether a compile-fail test is invalid Rust.
++    pub(crate) compile_fail_test_builder: Option<PathBuf>,
++
+     /// Run these wrapper instead of rustc directly
+     pub(crate) test_builder_wrappers: Vec<PathBuf>,
+ 
+@@ -214,6 +217,7 @@ fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+             .field("test_runtool_args", &self.test_runtool_args)
+             .field("run_check", &self.run_check)
+             .field("no_run", &self.no_run)
++            .field("compile_fail_test_builder", &self.compile_fail_test_builder)
+             .field("test_builder_wrappers", &self.test_builder_wrappers)
+             .field("remap-file-prefix", &self.remap_path_prefix)
+             .field("remap-file-scope", &self.remap_path_scope)
+@@ -860,6 +864,14 @@ pub(crate) fn from_matches(
+         let test_run_directory = matches.opt_str("test-run-directory").map(PathBuf::from);
+         let persist_doctests = matches.opt_str("persist-doctests").map(PathBuf::from);
+         let test_builder = matches.opt_str("test-builder").map(PathBuf::from);
++        let default_builders = if test_builder.is_none() {
++            lustr_documentation_builders()
++        } else {
++            None
++        };
++        let test_builder = test_builder.or_else(|| default_builders.as_ref().map(|(native, _)| native.clone()));
++        let compile_fail_test_builder = matches.opt_str("compile-fail-test-builder").map(PathBuf::from)
++            .or_else(|| default_builders.map(|(_, validator)| validator));
+         let codegen_options_strs = matches.opt_strs("C");
+         let unstable_opts_strs = matches.opt_strs("Z");
+         let lib_strs = matches.opt_strs("L");
+@@ -937,6 +949,7 @@ pub(crate) fn from_matches(
+             test_runtool,
+             test_runtool_args,
+             test_builder,
++            compile_fail_test_builder,
+             run_check,
+             no_run,
+             test_builder_wrappers,
+@@ -1144,3 +1157,20 @@ fn parse_merge_doctests(
+         }
+     }
+ }
++
++
++/// An installed Lustr documentation tool has its own matching Rust sysroot.
++/// The ordinary compiler and the compile-fail builder are separate entries.
++fn lustr_documentation_builders() -> Option<(PathBuf, PathBuf)> {
++    let executable = std::env::current_exe().ok()?;
++    let bin = executable.parent()?;
++    let documentation = bin.parent()?;
++    let libexec = documentation.parent()?;
++    if bin.file_name()? != "bin" || documentation.file_name()? != "lustr-rustdoc"
++        || libexec.file_name()? != "libexec"
++    {
++        return None;
++    }
++    let root = libexec.parent()?;
++    Some((root.join("bin/rustc"), bin.join("lustr-rustdoc-compile-fail")))
++}
+diff --git a/src/librustdoc/doctest.rs b/src/librustdoc/doctest.rs
+index ce8505dfdc811ea0409727c96b3fe2c1673db224..6f7056d639ac15e5f1391b98484fac7772d95196 100644
+--- a/src/librustdoc/doctest.rs
++++ b/src/librustdoc/doctest.rs
+@@ -675,9 +675,13 @@ fn run_test(
+         }
+     }
+ 
+-    let rustc_binary = rustdoc_options
+-        .test_builder
+-        .as_deref()
++    let compile_fail_builder = if langstr.compile_fail {
++        rustdoc_options.compile_fail_test_builder.as_deref()
++    } else {
++        None
++    };
++    let rustc_binary = compile_fail_builder
++        .or(rustdoc_options.test_builder.as_deref())
+         .unwrap_or_else(|| rustc_interface::util::rustc_path(sysroot).expect("found rustc"));
+     let mut compiler = wrapped_rustc_command(&rustdoc_options.test_builder_wrappers, rustc_binary);
+ 
+@@ -834,6 +838,10 @@ fn drop(&mut self) {
+     }
+ 
+     let _bomb = Bomb(&out);
++    if compile_fail_builder.is_some() && !matches!(output.status.code(), Some(0 | 1)) {
++        eprintln!("The compile-fail test builder did not complete normally: {}", output.status);
++        return (instant.elapsed(), Err(TestFailure::CompileError));
++    }
+     match (output.status.success(), langstr.compile_fail) {
+         (true, true) => {
+             return (instant.elapsed(), Err(TestFailure::UnexpectedCompilePass));
+diff --git a/src/librustdoc/lib.rs b/src/librustdoc/lib.rs
+index 4f974b35cf0bacb673d002717e23eea7be7eb487..5a8630668f531c40ea50c4eebb118bd2914d05da 100644
+--- a/src/librustdoc/lib.rs
++++ b/src/librustdoc/lib.rs
+@@ -527,6 +527,14 @@ fn opts() -> Vec<RustcOptGroup> {
+             "The rustc-like binary to use as the test builder",
+             "PATH",
+         ),
++        opt(
++            Unstable,
++            Opt,
++            "",
++            "compile-fail-test-builder",
++            "The rustc-like binary to use for compile-fail tests",
++            "PATH",
++        ),
+         opt(
+             Unstable,
+             Multi,
+diff --git a/src/tools/rustdoc/main.rs b/src/tools/rustdoc/main.rs
+index 15fd67a50383072910b53562fe0298c4a5459f18..968c4d092d871eb226d0a729b0125a7f802f7ae6 100644
+--- a/src/tools/rustdoc/main.rs
++++ b/src/tools/rustdoc/main.rs
+@@ -9,5 +9,11 @@
+ rustc_driver::override_c_allocator_in_binary!();
+ 
+ fn main() -> ExitCode {
+-    rustdoc::main()
++    // The documentation tool already links the pinned compiler driver. Run
++    // Rustdoc's compile-fail validation in a separate process of this tool.
++    let validate = std::env::args_os().next().is_some_and(|path| {
++        std::path::Path::new(&path).file_name()
++            == Some(std::ffi::OsStr::new("lustr-rustdoc-compile-fail"))
++    });
++    if validate { rustc_driver::main() } else { rustdoc::main() }
+ }

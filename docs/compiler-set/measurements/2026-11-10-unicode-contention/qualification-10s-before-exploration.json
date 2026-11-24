@@ -1,0 +1,700 @@
+{
+  "reproduced_10s_failed": true,
+  "runtime": [
+    {
+      "checks_pass": true,
+      "cleanup_verified": null,
+      "command": [
+        "/usr/bin/time",
+        "-v",
+        "-o",
+        "/home/runner/work/_temp/lustr-unicode-diagnostic/isolated-0-10s.time",
+        "timeout",
+        "10",
+        "/home/runner/work/_temp/lustr-unicode-diagnostic/reproduced-build/unicode_props_hash.san"
+      ],
+      "cwd": "/home/runner/work/_temp/lustr-unicode-diagnostic/reproduced-build",
+      "environment_overrides": {
+        "ASAN_OPTIONS": "detect_leaks=1:allocator_may_return_null=1"
+      },
+      "label": "isolated-0-10s",
+      "load_after": [
+        1.515625,
+        1.134765625,
+        0.58447265625
+      ],
+      "load_before": [
+        1.6103515625,
+        1.1396484375,
+        0.57958984375
+      ],
+      "matches_oracle": true,
+      "max_rss_kib": 295152.0,
+      "outer_watchdog_fired": false,
+      "outer_watchdog_seconds": 70,
+      "returncode": 0,
+      "sanitizer_error": false,
+      "session_id": 15310,
+      "started_utc": "2026-11-10T04:51:16.633874+00:00",
+      "status": "finished",
+      "system_seconds": 0.24,
+      "timeout_seconds": 10,
+      "user_seconds": 6.26,
+      "wall_seconds": 6.52971237700001
+    },
+    {
+      "checks_pass": false,
+      "cleanup_verified": null,
+      "command": [
+        "/usr/bin/time",
+        "-v",
+        "-o",
+        "/home/runner/work/_temp/lustr-unicode-diagnostic/concurrent-0-0-10s.time",
+        "timeout",
+        "10",
+        "/home/runner/work/_temp/lustr-unicode-diagnostic/reproduced-build/unicode_props_hash.san"
+      ],
+      "cwd": "/home/runner/work/_temp/lustr-unicode-diagnostic/reproduced-build",
+      "environment_overrides": {
+        "ASAN_OPTIONS": "detect_leaks=1:allocator_may_return_null=1"
+      },
+      "label": "concurrent-0-0-10s",
+      "load_after": [
+        2.20556640625,
+        1.29541015625,
+        0.64306640625
+      ],
+      "load_before": [
+        1.515625,
+        1.134765625,
+        0.58447265625
+      ],
+      "matches_oracle": false,
+      "max_rss_kib": 232992.0,
+      "outer_watchdog_fired": false,
+      "outer_watchdog_seconds": 70,
+      "returncode": 124,
+      "sanitizer_error": false,
+      "session_id": 15319,
+      "started_utc": "2026-11-10T04:51:23.167428+00:00",
+      "status": "finished",
+      "system_seconds": 0.43,
+      "timeout_seconds": 10,
+      "user_seconds": 9.32,
+      "wall_seconds": 10.05038085600006
+    },
+    {
+      "checks_pass": false,
+      "cleanup_verified": null,
+      "command": [
+        "/usr/bin/time",
+        "-v",
+        "-o",
+        "/home/runner/work/_temp/lustr-unicode-diagnostic/concurrent-0-1-10s.time",
+        "timeout",
+        "10",
+        "/home/runner/work/_temp/lustr-unicode-diagnostic/reproduced-build/unicode_props_hash.san"
+      ],
+      "cwd": "/home/runner/work/_temp/lustr-unicode-diagnostic/reproduced-build",
+      "environment_overrides": {
+        "ASAN_OPTIONS": "detect_leaks=1:allocator_may_return_null=1"
+      },
+      "label": "concurrent-0-1-10s",
+      "load_after": [
+        2.20556640625,
+        1.29541015625,
+        0.64306640625
+      ],
+      "load_before": [
+        1.515625,
+        1.134765625,
+        0.58447265625
+      ],
+      "matches_oracle": false,
+      "max_rss_kib": 231848.0,
+      "outer_watchdog_fired": false,
+      "outer_watchdog_seconds": 70,
+      "returncode": 124,
+      "sanitizer_error": false,
+      "session_id": 15322,
+      "started_utc": "2026-11-10T04:51:23.167530+00:00",
+      "status": "finished",
+      "system_seconds": 0.47,
+      "timeout_seconds": 10,
+      "user_seconds": 9.23,
+      "wall_seconds": 10.045939833000034
+    },
+    {
+      "checks_pass": false,
+      "cleanup_verified": null,
+      "command": [
+        "/usr/bin/time",
+        "-v",
+        "-o",
+        "/home/runner/work/_temp/lustr-unicode-diagnostic/concurrent-0-2-10s.time",
+        "timeout",
+        "10",
+        "/home/runner/work/_temp/lustr-unicode-diagnostic/reproduced-build/unicode_props_hash.san"
+      ],
+      "cwd": "/home/runner/work/_temp/lustr-unicode-diagnostic/reproduced-build",
+      "environment_overrides": {
+        "ASAN_OPTIONS": "detect_leaks=1:allocator_may_return_null=1"
+      },
+      "label": "concurrent-0-2-10s",
+      "load_after": [
+        2.20556640625,
+        1.29541015625,
+        0.64306640625
+      ],
+      "load_before": [
+        1.515625,
+        1.134765625,
+        0.58447265625
+      ],
+      "matches_oracle": false,
+      "max_rss_kib": 237976.0,
+      "outer_watchdog_fired": false,
+      "outer_watchdog_seconds": 70,
+      "returncode": 124,
+      "sanitizer_error": false,
+      "session_id": 15320,
+      "started_utc": "2026-11-10T04:51:23.167680+00:00",
+      "status": "finished",
+      "system_seconds": 0.45,
+      "timeout_seconds": 10,
+      "user_seconds": 9.48,
+      "wall_seconds": 10.045894392999912
+    },
+    {
+      "checks_pass": false,
+      "cleanup_verified": null,
+      "command": [
+        "/usr/bin/time",
+        "-v",
+        "-o",
+        "/home/runner/work/_temp/lustr-unicode-diagnostic/concurrent-0-3-10s.time",
+        "timeout",
+        "10",
+        "/home/runner/work/_temp/lustr-unicode-diagnostic/reproduced-build/unicode_props_hash.san"
+      ],
+      "cwd": "/home/runner/work/_temp/lustr-unicode-diagnostic/reproduced-build",
+      "environment_overrides": {
+        "ASAN_OPTIONS": "detect_leaks=1:allocator_may_return_null=1"
+      },
+      "label": "concurrent-0-3-10s",
+      "load_after": [
+        2.20556640625,
+        1.29541015625,
+        0.64306640625
+      ],
+      "load_before": [
+        1.515625,
+        1.134765625,
+        0.58447265625
+      ],
+      "matches_oracle": false,
+      "max_rss_kib": 234068.0,
+      "outer_watchdog_fired": false,
+      "outer_watchdog_seconds": 70,
+      "returncode": 124,
+      "sanitizer_error": false,
+      "session_id": 15321,
+      "started_utc": "2026-11-10T04:51:23.167274+00:00",
+      "status": "finished",
+      "system_seconds": 0.44,
+      "timeout_seconds": 10,
+      "user_seconds": 9.36,
+      "wall_seconds": 10.050354481
+    },
+    {
+      "checks_pass": false,
+      "cleanup_verified": null,
+      "command": [
+        "/usr/bin/time",
+        "-v",
+        "-o",
+        "/home/runner/work/_temp/lustr-unicode-diagnostic/concurrent-1-0-10s.time",
+        "timeout",
+        "10",
+        "/home/runner/work/_temp/lustr-unicode-diagnostic/reproduced-build/unicode_props_hash.san"
+      ],
+      "cwd": "/home/runner/work/_temp/lustr-unicode-diagnostic/reproduced-build",
+      "environment_overrides": {
+        "ASAN_OPTIONS": "detect_leaks=1:allocator_may_return_null=1"
+      },
+      "label": "concurrent-1-0-10s",
+      "load_after": [
+        2.64208984375,
+        1.41796875,
+        0.68994140625
+      ],
+      "load_before": [
+        2.20556640625,
+        1.29541015625,
+        0.64306640625
+      ],
+      "matches_oracle": false,
+      "max_rss_kib": 231048.0,
+      "outer_watchdog_fired": false,
+      "outer_watchdog_seconds": 70,
+      "returncode": 124,
+      "sanitizer_error": false,
+      "session_id": 15341,
+      "started_utc": "2026-11-10T04:51:33.220919+00:00",
+      "status": "finished",
+      "system_seconds": 0.42,
+      "timeout_seconds": 10,
+      "user_seconds": 9.26,
+      "wall_seconds": 10.043062574000032
+    },
+    {
+      "checks_pass": false,
+      "cleanup_verified": null,
+      "command": [
+        "/usr/bin/time",
+        "-v",
+        "-o",
+        "/home/runner/work/_temp/lustr-unicode-diagnostic/concurrent-1-1-10s.time",
+        "timeout",
+        "10",
+        "/home/runner/work/_temp/lustr-unicode-diagnostic/reproduced-build/unicode_props_hash.san"
+      ],
+      "cwd": "/home/runner/work/_temp/lustr-unicode-diagnostic/reproduced-build",
+      "environment_overrides": {
+        "ASAN_OPTIONS": "detect_leaks=1:allocator_may_return_null=1"
+      },
+      "label": "concurrent-1-1-10s",
+      "load_after": [
+        2.64208984375,
+        1.41796875,
+        0.68994140625
+      ],
+      "load_before": [
+        2.20556640625,
+        1.29541015625,
+        0.64306640625
+      ],
+      "matches_oracle": false,
+      "max_rss_kib": 239136.0,
+      "outer_watchdog_fired": false,
+      "outer_watchdog_seconds": 70,
+      "returncode": 124,
+      "sanitizer_error": false,
+      "session_id": 15340,
+      "started_utc": "2026-11-10T04:51:33.221027+00:00",
+      "status": "finished",
+      "system_seconds": 0.47,
+      "timeout_seconds": 10,
+      "user_seconds": 9.47,
+      "wall_seconds": 10.043442322000033
+    },
+    {
+      "checks_pass": false,
+      "cleanup_verified": null,
+      "command": [
+        "/usr/bin/time",
+        "-v",
+        "-o",
+        "/home/runner/work/_temp/lustr-unicode-diagnostic/concurrent-1-2-10s.time",
+        "timeout",
+        "10",
+        "/home/runner/work/_temp/lustr-unicode-diagnostic/reproduced-build/unicode_props_hash.san"
+      ],
+      "cwd": "/home/runner/work/_temp/lustr-unicode-diagnostic/reproduced-build",
+      "environment_overrides": {
+        "ASAN_OPTIONS": "detect_leaks=1:allocator_may_return_null=1"
+      },
+      "label": "concurrent-1-2-10s",
+      "load_after": [
+        2.64208984375,
+        1.41796875,
+        0.68994140625
+      ],
+      "load_before": [
+        2.20556640625,
+        1.29541015625,
+        0.64306640625
+      ],
+      "matches_oracle": false,
+      "max_rss_kib": 236444.0,
+      "outer_watchdog_fired": false,
+      "outer_watchdog_seconds": 70,
+      "returncode": 124,
+      "sanitizer_error": false,
+      "session_id": 15342,
+      "started_utc": "2026-11-10T04:51:33.221129+00:00",
+      "status": "finished",
+      "system_seconds": 0.49,
+      "timeout_seconds": 10,
+      "user_seconds": 9.35,
+      "wall_seconds": 10.042354699000043
+    },
+    {
+      "checks_pass": false,
+      "cleanup_verified": null,
+      "command": [
+        "/usr/bin/time",
+        "-v",
+        "-o",
+        "/home/runner/work/_temp/lustr-unicode-diagnostic/concurrent-1-3-10s.time",
+        "timeout",
+        "10",
+        "/home/runner/work/_temp/lustr-unicode-diagnostic/reproduced-build/unicode_props_hash.san"
+      ],
+      "cwd": "/home/runner/work/_temp/lustr-unicode-diagnostic/reproduced-build",
+      "environment_overrides": {
+        "ASAN_OPTIONS": "detect_leaks=1:allocator_may_return_null=1"
+      },
+      "label": "concurrent-1-3-10s",
+      "load_after": [
+        2.64208984375,
+        1.41796875,
+        0.68994140625
+      ],
+      "load_before": [
+        2.20556640625,
+        1.29541015625,
+        0.64306640625
+      ],
+      "matches_oracle": false,
+      "max_rss_kib": 233720.0,
+      "outer_watchdog_fired": false,
+      "outer_watchdog_seconds": 70,
+      "returncode": 124,
+      "sanitizer_error": false,
+      "session_id": 15339,
+      "started_utc": "2026-11-10T04:51:33.220778+00:00",
+      "status": "finished",
+      "system_seconds": 0.49,
+      "timeout_seconds": 10,
+      "user_seconds": 9.27,
+      "wall_seconds": 10.042859049000072
+    },
+    {
+      "checks_pass": true,
+      "cleanup_verified": null,
+      "command": [
+        "/usr/bin/time",
+        "-v",
+        "-o",
+        "/home/runner/work/_temp/lustr-unicode-diagnostic/isolated-1-10s.time",
+        "timeout",
+        "10",
+        "/home/runner/work/_temp/lustr-unicode-diagnostic/reproduced-build/unicode_props_hash.san"
+      ],
+      "cwd": "/home/runner/work/_temp/lustr-unicode-diagnostic/reproduced-build",
+      "environment_overrides": {
+        "ASAN_OPTIONS": "detect_leaks=1:allocator_may_return_null=1"
+      },
+      "label": "isolated-1-10s",
+      "load_after": [
+        2.51025390625,
+        1.41064453125,
+        0.69189453125
+      ],
+      "load_before": [
+        2.64208984375,
+        1.41796875,
+        0.68994140625
+      ],
+      "matches_oracle": true,
+      "max_rss_kib": 295240.0,
+      "outer_watchdog_fired": false,
+      "outer_watchdog_seconds": 70,
+      "returncode": 0,
+      "sanitizer_error": false,
+      "session_id": 15351,
+      "started_utc": "2026-11-10T04:51:43.268207+00:00",
+      "status": "finished",
+      "system_seconds": 0.32,
+      "timeout_seconds": 10,
+      "user_seconds": 6.23,
+      "wall_seconds": 6.581627968000021
+    },
+    {
+      "checks_pass": true,
+      "cleanup_verified": null,
+      "command": [
+        "/usr/bin/time",
+        "-v",
+        "-o",
+        "/home/runner/work/_temp/lustr-unicode-diagnostic/isolated-2-10s.time",
+        "timeout",
+        "10",
+        "/home/runner/work/_temp/lustr-unicode-diagnostic/reproduced-build/unicode_props_hash.san"
+      ],
+      "cwd": "/home/runner/work/_temp/lustr-unicode-diagnostic/reproduced-build",
+      "environment_overrides": {
+        "ASAN_OPTIONS": "detect_leaks=1:allocator_may_return_null=1"
+      },
+      "label": "isolated-2-10s",
+      "load_after": [
+        2.38916015625,
+        1.40380859375,
+        0.69384765625
+      ],
+      "load_before": [
+        2.51025390625,
+        1.41064453125,
+        0.69189453125
+      ],
+      "matches_oracle": true,
+      "max_rss_kib": 295132.0,
+      "outer_watchdog_fired": false,
+      "outer_watchdog_seconds": 70,
+      "returncode": 0,
+      "sanitizer_error": false,
+      "session_id": 15356,
+      "started_utc": "2026-11-10T04:51:49.851338+00:00",
+      "status": "finished",
+      "system_seconds": 0.38,
+      "timeout_seconds": 10,
+      "user_seconds": 6.22,
+      "wall_seconds": 6.68001270100001
+    },
+    {
+      "checks_pass": false,
+      "cleanup_verified": null,
+      "command": [
+        "/usr/bin/time",
+        "-v",
+        "-o",
+        "/home/runner/work/_temp/lustr-unicode-diagnostic/concurrent-2-0-10s.time",
+        "timeout",
+        "10",
+        "/home/runner/work/_temp/lustr-unicode-diagnostic/reproduced-build/unicode_props_hash.san"
+      ],
+      "cwd": "/home/runner/work/_temp/lustr-unicode-diagnostic/reproduced-build",
+      "environment_overrides": {
+        "ASAN_OPTIONS": "detect_leaks=1:allocator_may_return_null=1"
+      },
+      "label": "concurrent-2-0-10s",
+      "load_after": [
+        3.0986328125,
+        1.5888671875,
+        0.76171875
+      ],
+      "load_before": [
+        2.38916015625,
+        1.40380859375,
+        0.69384765625
+      ],
+      "matches_oracle": false,
+      "max_rss_kib": 234812.0,
+      "outer_watchdog_fired": false,
+      "outer_watchdog_seconds": 70,
+      "returncode": 124,
+      "sanitizer_error": false,
+      "session_id": 15364,
+      "started_utc": "2026-11-10T04:51:56.533778+00:00",
+      "status": "finished",
+      "system_seconds": 0.5,
+      "timeout_seconds": 10,
+      "user_seconds": 9.33,
+      "wall_seconds": 10.049567424000088
+    },
+    {
+      "checks_pass": false,
+      "cleanup_verified": null,
+      "command": [
+        "/usr/bin/time",
+        "-v",
+        "-o",
+        "/home/runner/work/_temp/lustr-unicode-diagnostic/concurrent-2-1-10s.time",
+        "timeout",
+        "10",
+        "/home/runner/work/_temp/lustr-unicode-diagnostic/reproduced-build/unicode_props_hash.san"
+      ],
+      "cwd": "/home/runner/work/_temp/lustr-unicode-diagnostic/reproduced-build",
+      "environment_overrides": {
+        "ASAN_OPTIONS": "detect_leaks=1:allocator_may_return_null=1"
+      },
+      "label": "concurrent-2-1-10s",
+      "load_after": [
+        3.0986328125,
+        1.5888671875,
+        0.76171875
+      ],
+      "load_before": [
+        2.38916015625,
+        1.40380859375,
+        0.69384765625
+      ],
+      "matches_oracle": false,
+      "max_rss_kib": 231752.0,
+      "outer_watchdog_fired": false,
+      "outer_watchdog_seconds": 70,
+      "returncode": 124,
+      "sanitizer_error": false,
+      "session_id": 15366,
+      "started_utc": "2026-11-10T04:51:56.534035+00:00",
+      "status": "finished",
+      "system_seconds": 0.47,
+      "timeout_seconds": 10,
+      "user_seconds": 9.2,
+      "wall_seconds": 10.043586546000029
+    },
+    {
+      "checks_pass": false,
+      "cleanup_verified": null,
+      "command": [
+        "/usr/bin/time",
+        "-v",
+        "-o",
+        "/home/runner/work/_temp/lustr-unicode-diagnostic/concurrent-2-2-10s.time",
+        "timeout",
+        "10",
+        "/home/runner/work/_temp/lustr-unicode-diagnostic/reproduced-build/unicode_props_hash.san"
+      ],
+      "cwd": "/home/runner/work/_temp/lustr-unicode-diagnostic/reproduced-build",
+      "environment_overrides": {
+        "ASAN_OPTIONS": "detect_leaks=1:allocator_may_return_null=1"
+      },
+      "label": "concurrent-2-2-10s",
+      "load_after": [
+        3.0986328125,
+        1.5888671875,
+        0.76171875
+      ],
+      "load_before": [
+        2.38916015625,
+        1.40380859375,
+        0.69384765625
+      ],
+      "matches_oracle": false,
+      "max_rss_kib": 230116.0,
+      "outer_watchdog_fired": false,
+      "outer_watchdog_seconds": 70,
+      "returncode": 124,
+      "sanitizer_error": false,
+      "session_id": 15365,
+      "started_utc": "2026-11-10T04:51:56.533909+00:00",
+      "status": "finished",
+      "system_seconds": 0.44,
+      "timeout_seconds": 10,
+      "user_seconds": 9.19,
+      "wall_seconds": 10.043184904999976
+    },
+    {
+      "checks_pass": false,
+      "cleanup_verified": null,
+      "command": [
+        "/usr/bin/time",
+        "-v",
+        "-o",
+        "/home/runner/work/_temp/lustr-unicode-diagnostic/concurrent-2-3-10s.time",
+        "timeout",
+        "10",
+        "/home/runner/work/_temp/lustr-unicode-diagnostic/reproduced-build/unicode_props_hash.san"
+      ],
+      "cwd": "/home/runner/work/_temp/lustr-unicode-diagnostic/reproduced-build",
+      "environment_overrides": {
+        "ASAN_OPTIONS": "detect_leaks=1:allocator_may_return_null=1"
+      },
+      "label": "concurrent-2-3-10s",
+      "load_after": [
+        3.0986328125,
+        1.5888671875,
+        0.76171875
+      ],
+      "load_before": [
+        2.38916015625,
+        1.40380859375,
+        0.69384765625
+      ],
+      "matches_oracle": false,
+      "max_rss_kib": 234864.0,
+      "outer_watchdog_fired": false,
+      "outer_watchdog_seconds": 70,
+      "returncode": 124,
+      "sanitizer_error": false,
+      "session_id": 15367,
+      "started_utc": "2026-11-10T04:51:56.533584+00:00",
+      "status": "finished",
+      "system_seconds": 0.41,
+      "timeout_seconds": 10,
+      "user_seconds": 9.41,
+      "wall_seconds": 10.044460061999985
+    }
+  ],
+  "upstream": [
+    {
+      "cleanup_verified": null,
+      "command": [
+        "/usr/bin/time",
+        "-v",
+        "-o",
+        "/home/runner/work/_temp/lustr-unicode-diagnostic/upstream-isolated-10s.time",
+        "bash",
+        "scripts/difftest.sh",
+        "unicode_props_hash"
+      ],
+      "cwd": "/home/runner/work/lustr/lustr/compiler/native",
+      "environment_overrides": {
+        "DIFFTEST_JOBS": "1",
+        "SANITIZE": "1"
+      },
+      "label": "upstream-isolated-10s",
+      "load_after": [
+        1.4140625,
+        1.0361328125,
+        0.52392578125
+      ],
+      "load_before": [
+        1.39599609375,
+        1.0048828125,
+        0.50146484375
+      ],
+      "max_rss_kib": 295064.0,
+      "outer_watchdog_fired": false,
+      "outer_watchdog_seconds": 900,
+      "returncode": 0,
+      "session_id": 3110,
+      "started_utc": "2026-11-10T04:50:17.172266+00:00",
+      "status": "finished",
+      "system_seconds": 9.91,
+      "timeout_seconds": null,
+      "user_seconds": 19.61,
+      "wall_seconds": 22.42116529699996
+    },
+    {
+      "cleanup_verified": null,
+      "command": [
+        "/usr/bin/time",
+        "-v",
+        "-o",
+        "/home/runner/work/_temp/lustr-unicode-diagnostic/upstream-unicode-pool-10s.time",
+        "bash",
+        "scripts/difftest.sh",
+        "unicode_"
+      ],
+      "cwd": "/home/runner/work/lustr/lustr/compiler/native",
+      "environment_overrides": {
+        "SANITIZE": "1"
+      },
+      "label": "upstream-unicode-pool-10s",
+      "load_after": [
+        1.7216796875,
+        1.14453125,
+        0.57470703125
+      ],
+      "load_before": [
+        1.4140625,
+        1.0361328125,
+        0.52392578125
+      ],
+      "max_rss_kib": 295120.0,
+      "outer_watchdog_fired": false,
+      "outer_watchdog_seconds": 900,
+      "returncode": 0,
+      "session_id": 8860,
+      "started_utc": "2026-11-10T04:50:39.594014+00:00",
+      "status": "finished",
+      "system_seconds": 13.76,
+      "timeout_seconds": null,
+      "user_seconds": 48.17,
+      "wall_seconds": 25.757305304000056
+    }
+  ],
+  "upstream_failed": false
+}

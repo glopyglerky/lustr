@@ -131,7 +131,7 @@ fn tcc_hash() -> (u64, u64) {
 }
 
 /// The compiler id for cache keys. See the module docs.
-fn compiler_id() -> (u64, u64) {
+pub(crate) fn compiler_id() -> (u64, u64) {
     let tcc = tcc_hash();
     let extra = std::env::var("LUST_CACHE_COMPILER_ID").unwrap_or_default();
     hash128(&[env!("LUST_BUILD_HASH").as_bytes(), &tcc.0.to_le_bytes(), &tcc.1.to_le_bytes(), extra.as_bytes()], 7)
@@ -239,12 +239,18 @@ fn forget_used(dir: &Path) {
 /// outside the source bytes (`env!`, `option_env!`, the `include!`
 /// family): such a request never enters this cache, since its key
 /// cannot see env vars or included files (added for W-MACRO).
+#[path = "../../../../crates/lustr-native-core/src/native_cache_inputs.rs"]
+mod native_inputs;
 fn src_reads_outside(src: &[u8]) -> bool {
-    const NEEDLES: &[&[u8]] = &[b"env!", b"option_env!", b"include!", b"include_str!", b"include_bytes!"];
-    NEEDLES.iter().any(|n| src.windows(n.len()).any(|w| w == *n))
+    native_inputs::reads_outside(src)
 }
 
 impl Cache {
+    /// The compiler identity already read when this cache was opened.
+    pub(crate) fn compiler_id(&self) -> (u64, u64) {
+        self.id
+    }
+
     /// Opens the cache for `src_file`. None when turned off or the dir cannot be made.
     pub fn open(src_file: &Path) -> Option<Cache> {
         // A std or adapter source override: the compiler id does not cover that tree.
@@ -267,10 +273,10 @@ impl Cache {
         Cache { dir: dir.to_path_buf(), id: (1, 2) }
     }
 
-    /// The disk key of one C unit's object: compiler id, debug flag, and
-    /// the unit's C text. See the module docs.
-    pub fn unit_key(&self, c_text: &str, debug: bool) -> String {
-        let (a, b) = hash128(&[&self.id.0.to_le_bytes(), &self.id.1.to_le_bytes(), &[debug as u8], b"unit-v3", c_text.as_bytes()], 29);
+    /// The disk key binds the compiler, emission options and unit text.
+    pub fn unit_key(&self, c_text: &str, debug: bool, unwind_frames: bool) -> String {
+        let profile: &[u8] = if unwind_frames { b"unit-v3-async-unwind" } else { b"unit-v3" };
+        let (a, b) = hash128(&[&self.id.0.to_le_bytes(), &self.id.1.to_le_bytes(), &[debug as u8], profile, c_text.as_bytes()], 29);
         format!("{a:016x}{b:016x}")
     }
 
@@ -375,6 +381,11 @@ impl Cache {
     /// The caller gives the source bytes it read, so the file is read once per process.
     /// A stored `--timings` text never exists; a hit with timings gets one fresh line.
     pub fn lookup(&self, req: &Request, src: &[u8], start: Instant) -> Option<Response> {
+        // This legacy whole-executable format carries no mixed admission
+        // proof. Mixed units retain their checked daemon state instead.
+        if req.session.krate.target_kind == "lustr-mixed-native" {
+            return None;
+        }
         // A multi-file crate (or a manifest-selected one) is not keyed by
         // the root file's bytes alone: module files and Cargo inputs are
         // outside this key, so those requests skip the cache entirely
@@ -401,7 +412,7 @@ impl Cache {
     /// A successful response keeps no stderr: its only stderr text is `--timings` output,
     /// which must not replay. After the write, oldest entries are evicted past the cap.
     pub fn store(&self, req: &Request, src: &[u8], resp: &Response) {
-        if resp.code == 3 || src_reads_outside(src) {
+        if req.session.krate.target_kind == "lustr-mixed-native" || resp.code == 3 || src_reads_outside(src) {
             return;
         }
         if req.session.krate.manifest_path.is_some() || src_needs_resolve(src) {
@@ -416,6 +427,7 @@ impl Cache {
             stderr: if resp.code == 0 { String::new() } else { resp.stderr.clone() },
             code: resp.code,
             ran: false,
+            mixed: None,
         };
         self.write(&self.entry_path(&key, ""), &encode_response(&clean));
         self.evict(&format!("req-{key}"));
@@ -516,7 +528,7 @@ fn decode_response(b: &[u8]) -> Option<Response> {
     let n = u64::from_le_bytes(b.get(4..12)?.try_into().ok()?) as usize;
     let stdout = String::from_utf8(b.get(12..12 + n)?.to_vec()).ok()?;
     let stderr = String::from_utf8(b.get(12 + n..)?.to_vec()).ok()?;
-    Some(Response { stdout, stderr, code, ran: false })
+    Some(Response { stdout, stderr, code, ran: false, mixed: None })
 }
 
 #[cfg(test)]
@@ -537,6 +549,7 @@ mod tests {
             max_errors: 20,
             run_args: None,
             harness: false, cc: false,
+            library_options: Default::default(),
             client: Default::default(),
         }
     }
@@ -588,11 +601,12 @@ mod tests {
         let _ = std::fs::remove_dir_all(&dir);
         std::fs::create_dir_all(&dir).unwrap();
         let cache = Cache { dir: dir.clone(), id: (3, 4) };
-        let base = cache.unit_key("int f(void);", false);
+        let base = cache.unit_key("int f(void);", false, false);
         // Any C change misses, even one only a slot number apart.
-        assert_ne!(base, cache.unit_key("int g(void);", false), "C text");
-        assert_ne!(base, cache.unit_key("int f(void);", true), "debug flag");
-        assert_ne!(base, Cache { dir: dir.clone(), id: (5, 4) }.unit_key("int f(void);", false), "compiler id");
+        assert_ne!(base, cache.unit_key("int g(void);", false, false), "C text");
+        assert_ne!(base, cache.unit_key("int f(void);", true, false), "debug flag");
+        assert_ne!(base, cache.unit_key("int f(void);", false, true), "unwind frames");
+        assert_ne!(base, Cache { dir: dir.clone(), id: (5, 4) }.unit_key("int f(void);", false, false), "compiler id");
         let obj = dir.join("made.o");
         std::fs::write(&obj, b"fake-object").unwrap();
         let dest = dir.join("dest.o");
@@ -659,7 +673,7 @@ mod tests {
 
     #[test]
     fn response_round_trips() {
-        let r = Response { stdout: "{\"code\":\"L0301\"}\n".into(), stderr: "err\n".into(), code: 1, ran: false };
+        let r = Response { stdout: "{\"code\":\"L0301\"}\n".into(), stderr: "err\n".into(), code: 1, ran: false, mixed: None };
         let back = decode_response(&encode_response(&r)).unwrap();
         assert_eq!((back.stdout.as_str(), back.stderr.as_str(), back.code), (r.stdout.as_str(), r.stderr.as_str(), 1));
         assert!(decode_response(b"short").is_none());

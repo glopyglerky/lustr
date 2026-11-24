@@ -1,0 +1,138 @@
+[
+  {
+    "tool": "rustc",
+    "argv": [
+      "--edition=2024",
+      "-C",
+      "overflow-checks=on",
+      "main.rs",
+      "--error-format=json",
+      "--emit=metadata",
+      "-o",
+      "metadata.rmeta"
+    ],
+    "exit": 0,
+    "stdout": "00.stdout",
+    "stderr": "00.stderr",
+    "source_rejection": false
+  },
+  {
+    "tool": "rustc",
+    "argv": [
+      "--edition=2024",
+      "-C",
+      "overflow-checks=on",
+      "main.rs",
+      "--error-format=json",
+      "--emit=llvm-ir",
+      "-o",
+      "check.ll"
+    ],
+    "exit": 1,
+    "stdout": "01.stdout",
+    "stderr": "01.stderr",
+    "source_rejection": true
+  },
+  {
+    "tool": "rustc",
+    "argv": [
+      "--edition=2024",
+      "-C",
+      "overflow-checks=on",
+      "main.rs",
+      "--error-format=json",
+      "--emit=metadata",
+      "-o",
+      "metadata.rmeta"
+    ],
+    "exit": 0,
+    "stdout": "02.stdout",
+    "stderr": "02.stderr",
+    "source_rejection": false
+  },
+  {
+    "tool": "rustc",
+    "argv": [
+      "--edition=2024",
+      "-C",
+      "overflow-checks=on",
+      "main.rs",
+      "--error-format=json",
+      "--emit=llvm-ir",
+      "-o",
+      "check.ll"
+    ],
+    "exit": 1,
+    "stdout": "03.stdout",
+    "stderr": "03.stderr",
+    "source_rejection": true
+  },
+  {
+    "tool": "rustc",
+    "argv": [
+      "--edition=2024",
+      "-C",
+      "overflow-checks=on",
+      "main.rs",
+      "--error-format=json",
+      "--emit=metadata",
+      "-o",
+      "metadata.rmeta"
+    ],
+    "exit": 0,
+    "stdout": "04.stdout",
+    "stderr": "04.stderr",
+    "source_rejection": false
+  },
+  {
+    "tool": "rustc",
+    "argv": [
+      "--edition=2024",
+      "-C",
+      "overflow-checks=on",
+      "main.rs",
+      "--error-format=json",
+      "--emit=llvm-ir",
+      "-o",
+      "check.ll"
+    ],
+    "exit": 1,
+    "stdout": "05.stdout",
+    "stderr": "05.stderr",
+    "source_rejection": true
+  },
+  {
+    "tool": "rustc",
+    "argv": [
+      "--edition=2024",
+      "-C",
+      "overflow-checks=on",
+      "main.rs",
+      "--error-format=json",
+      "--emit=metadata",
+      "-o",
+      "metadata.rmeta"
+    ],
+    "exit": 0,
+    "stdout": "06.stdout",
+    "stderr": "06.stderr",
+    "source_rejection": false
+  },
+  {
+    "tool": "rustc",
+    "argv": [
+      "--edition=2024",
+      "-C",
+      "overflow-checks=on",
+      "main.rs",
+      "--error-format=json",
+      "--emit=llvm-ir",
+      "-o",
+      "check.ll"
+    ],
+    "exit": 1,
+    "stdout": "07.stdout",
+    "stderr": "07.stderr",
+    "source_rejection": true
+  }
+]

@@ -12,21 +12,67 @@ fn test_summary(stdout: &[u8]) -> Result<Value, String> {
     let text = std::str::from_utf8(stdout).map_err(|_| "test output is not UTF-8")?;
     let mut groups = Vec::new();
     let mut names = Vec::new();
+    let mut ignored_names = Vec::new();
+    let mut group_names = Vec::new();
+    let mut group_ignored_names = Vec::new();
+    let mut observed: std::collections::BTreeMap<String, bool> = std::collections::BTreeMap::new();
     for line in text.lines() {
         if let Some(result) = line.strip_prefix("test result: ok. ") {
             let counts = result.split("; finished in ").next().ok_or("missing test counts")?;
-            groups.push(counts.to_owned());
-        }
-        if line.starts_with("test ") && line.ends_with(" ... ok") {
-            names.push(line.to_owned());
+            let fields: Vec<_> = counts.split("; ").collect();
+            if fields.len() != 5 {
+                return Err("incomplete test summary".into());
+            }
+            let mut parsed = Vec::new();
+            for (field, label) in fields.iter().zip(["passed", "failed", "ignored", "measured", "filtered out"]) {
+                let number = field.strip_suffix(&format!(" {label}")).ok_or("unrecognized test counts")?;
+                if number.is_empty() || !number.bytes().all(|byte| byte.is_ascii_digit()) {
+                    return Err("test counts must be nonnegative integers".into());
+                }
+                parsed.push(number.parse::<usize>().map_err(|_| "test count overflow")?);
+            }
+            if parsed[1] != 0 || parsed[3] != 0 || parsed[4] != 0 {
+                return Err("test summary reports failed, measured or filtered tests".into());
+            }
+            if parsed[0] != observed.values().filter(|&&ignored| !ignored).count()
+                || parsed[2] != observed.values().filter(|&&ignored| ignored).count()
+            {
+                return Err("test counts differ from observed individual outcomes".into());
+            }
+            observed.clear();
+            group_names.sort();
+            group_ignored_names.sort();
+            groups.push(json!({
+                "counts": counts,
+                "passed_test_names": std::mem::take(&mut group_names),
+                "ignored_test_names": std::mem::take(&mut group_ignored_names),
+            }));
+        } else if line.starts_with("test result:") {
+            return Err("failed or unrecognized test summary".into());
+        } else if let Some((name, status)) = line.strip_prefix("test ").and_then(|line| line.rsplit_once(" ... ")) {
+            let ignored = status == "ignored" || status.starts_with("ignored, ");
+            if name.is_empty() || !(ignored || status == "ok") {
+                return Err("failed or unrecognized individual test result".into());
+            }
+            if observed.insert(name.to_owned(), ignored).is_some() {
+                return Err("duplicated individual test result".into());
+            }
+            if ignored {
+                ignored_names.push(line.to_owned());
+                group_ignored_names.push(line.to_owned());
+            } else {
+                names.push(line.to_owned());
+                group_names.push(line.to_owned());
+            }
         }
     }
-    if groups.is_empty() || names.is_empty() {
+    if groups.is_empty() || names.is_empty() || !observed.is_empty() {
         return Err("no completed, nonempty test harness observed".into());
     }
-    groups.sort();
+    groups.sort_by_cached_key(Value::to_string);
     names.sort();
-    Ok(json!({"kind":"tests","groups":groups,"passed_test_names":names}))
+    ignored_names.sort();
+    Ok(json!({"kind":"tests","groups":groups,"passed_test_names":names,"ignored_test_names":ignored_names}))
 }
 
 fn has_error_code(stderr: &[u8], code: &str) -> bool {
@@ -44,48 +90,16 @@ fn validate_tests(args: &[OsString]) -> Result<(), &'static str> {
     Ok(())
 }
 
-fn routed_tests(mut args: impl Iterator<Item = OsString>) -> Result<Command, Box<dyn std::error::Error>> {
-    let coordinator = args.next().ok_or("missing coordinator executable")?;
-    if !Path::new(&coordinator).is_absolute() {
-        return Err("coordinator must be absolute".into());
-    }
-    if args.next().as_deref() != Some(std::ffi::OsStr::new("--bluefe-root")) {
-        return Err("routed tests require --bluefe-root".into());
-    }
-    let root = args.next().ok_or("missing toolchain root")?;
-    if !Path::new(&root).is_absolute() {
-        return Err("toolchain root must be absolute".into());
-    }
-    if args.next().as_deref() != Some(std::ffi::OsStr::new("--engine")) {
-        return Err("routed tests require an explicit --engine".into());
-    }
-    let engine = args.next().ok_or("missing engine")?;
-    if !["auto", "rustc", "cranelift"].iter().any(|name| engine == *name) {
-        return Err("routed tests require auto, rustc or cranelift".into());
-    }
-    let cargo_args: Vec<_> = args.collect();
-    validate_tests(&cargo_args)?;
-    for (variable, executable) in [("CARGO", "cargo"), ("RUSTC", "rustc"), ("RUSTDOC", "rustdoc")] {
-        let selected = std::env::var_os(variable).ok_or("explicit tool selection is required")?;
-        if selected.as_os_str() != Path::new(&root).join("bin").join(executable).as_os_str() {
-            return Err(format!("routed {variable} selection must match --bluefe-root").into());
-        }
-    }
-    let mut command = Command::new(coordinator);
-    command.arg("--bluefe-root").arg(root).arg("--engine").arg(engine).args(cargo_args);
-    Ok(command)
-}
-
 fn execute() -> Result<u8, Box<dyn std::error::Error>> {
     let mut args = std::env::args_os().skip(1);
-    let mode = args.next().ok_or("usage: lustr-bench-gate tests <Cargo args...> | tests-via <coordinator> --bluefe-root <root> --engine <engine> test <args...> | reject <source>")?;
+    let mode = args.next().ok_or("usage: lustr-bench-gate tests <Cargo args...> | reject <source>")?;
     if mode == "--version" && args.next().is_none() {
         println!("lustr-bench-gate {}", env!("CARGO_PKG_VERSION"));
         return Ok(0);
     }
     let rejection = mode == "reject";
     let mut command = if mode == "tests-via" {
-        routed_tests(args)?
+        return Err("Retired whole-rustc tests-via acquisition is disabled; use an explicit direct Cargo oracle".into());
     } else {
         let variable = if rejection {
             "RUSTC"
@@ -163,7 +177,42 @@ mod tests {
         let b = b"test x ... ok\ntest result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 5.10s\n";
         assert_eq!(test_summary(a).unwrap(), test_summary(b).unwrap());
         let changed = b"test x ... ok\ntest result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s\n";
-        assert_ne!(test_summary(a).unwrap(), test_summary(changed).unwrap());
+        assert!(test_summary(changed).is_err());
         assert!(test_summary(b"build succeeded").is_err());
+    }
+
+    #[test]
+    fn success_label_cannot_hide_missing_filtered_failed_or_duplicate_tests() {
+        for output in [
+            "test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s\n",
+            "test x ... ok\ntest result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 2 filtered out; finished in 0.01s\n",
+            "test x ... ok\ntest y ... FAILED\ntest result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s\n",
+            "test x ... ok\ntest x ... ok\ntest result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s\n",
+            "test x ... ok\ntest result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s\ntest y ... ok\n",
+        ] {
+            assert!(test_summary(output.as_bytes()).is_err(), "{output}");
+        }
+    }
+
+    #[test]
+    fn ignored_names_and_every_harness_remain_visible() {
+        let output = b"test x ... ok\ntest y ... ignored, explicit upstream reason\ntest result: ok. 1 passed; 0 failed; 1 ignored; 0 measured; 0 filtered out; finished in 0.01s\ntest result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s\n";
+        let result = test_summary(output).unwrap();
+        assert_eq!(result["groups"].as_array().unwrap().len(), 2);
+        assert_eq!(result["ignored_test_names"], json!(["test y ... ignored, explicit upstream reason"]));
+    }
+
+    #[test]
+    fn names_cannot_move_between_differently_sized_harnesses() {
+        let summary = |names: &[&str]| {
+            format!(
+                "{}test result: ok. {} passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s\n",
+                names.iter().map(|name| format!("test {name} ... ok\n")).collect::<String>(),
+                names.len()
+            )
+        };
+        let a = summary(&["x"]) + &summary(&["y", "z"]);
+        let b = summary(&["y"]) + &summary(&["x", "z"]);
+        assert_ne!(test_summary(a.as_bytes()).unwrap(), test_summary(b.as_bytes()).unwrap());
     }
 }

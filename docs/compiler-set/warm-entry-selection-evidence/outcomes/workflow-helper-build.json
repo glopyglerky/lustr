@@ -1,0 +1,49 @@
+{
+  "binary_sha256": "a6ee667fab58c9e35c960179b080a8d4de0bb03633adde52b84c7ad4eb2f58d9",
+  "commands": [
+    {
+      "argv": [
+        "<RUST_SDK>/bin/cargo",
+        "generate-lockfile",
+        "--offline",
+        "--manifest-path",
+        "<WORKFLOW_HELPER_BUILD>/Cargo.toml"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "<RUST_SDK>/bin/cargo",
+        "build",
+        "--release",
+        "--locked",
+        "--offline",
+        "--manifest-path",
+        "<WORKFLOW_HELPER_BUILD>/Cargo.toml",
+        "--target-dir",
+        "<WORKFLOW_HELPER_BUILD>/target",
+        "--config",
+        "build.build-dir=\"<WORKFLOW_HELPER_BUILD>/intermediates\""
+      ],
+      "exit": 0
+    }
+  ],
+  "lock_sha256": "f7760201a2d7a3e6781de074b4a425b40b35fc106f08bb80d522c2e9d68c7381",
+  "manifest_sha256": "7f428689f506d1ee34edb35fdfb700342cdf1035e73464bc8d0282c9028fc9ff",
+  "native_build_hash": "dc82dab611c87e7e",
+  "schema": "lustr-warm-entry-comparison-v1",
+  "scope": "Production parser/selector/child owner component only; no compiler timing claim.",
+  "source": {
+    "revision": "53057e72f1853bf2ec005e5a798975b4f951044f",
+    "tree": "b568e8bf4d9970418b7c1f4ef2984ce391ffa5f5"
+  },
+  "source_sha256": {
+    "<CANDIDATE_SOURCE>/compiler/native/src/protocol.rs": "4da4c32fb16b62f3819a3d774ef63b76e201e2414c3b4540b4a6ccb27133fe1c",
+    "<CANDIDATE_SOURCE>/src/full.rs": "e002ef19ed459dffc721f2fdef6312b46841e89c58103e6583a6dad5d8fd57c5",
+    "<CANDIDATE_SOURCE>/src/host_runtime.rs": "8ebc63c1ac92252816cd2dd092c5b0fad528c1d3a0f479b3889a6b7204f0c223",
+    "<CANDIDATE_SOURCE>/src/owned_child.rs": "5c890f584d281e984405fce5a9810b8f5d2461e2dfedea173613c5813c4f5d20",
+    "<CANDIDATE_SOURCE>/src/selection_cache.rs": "81ffa68fb52cea1a9bf8fb91524c71611e1f6b9f2203511ca6f65b407c0f779a",
+    "<CANDIDATE_SOURCE>/tools/profile-native-preflight.rs": "2d4442a7a2267b6e3e064acbb6fe00c3e3aafde325e2516f265425958cc3e1a6"
+  },
+  "status": "completed"
+}

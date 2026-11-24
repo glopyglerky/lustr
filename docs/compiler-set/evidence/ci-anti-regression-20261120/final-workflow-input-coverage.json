@@ -1,0 +1,34 @@
+{
+  "argv": [
+    "python3",
+    "tools/test-workflow-inputs.py",
+    "-v"
+  ],
+  "cwd": "<CHECKOUT>",
+  "exit_code": 0,
+  "source_before": {
+    "tools/test-workflow-inputs.py": "187b14be61a40b3e58c0d5bb8005903e0a32abe6e821c096adcc9cfa79ee8768",
+    ".github/workflows/compiler-set.yml": "31de7b07e2cc9ce4477a3bc77d8ff677b1deb31e1fc165967850dedad79f0e17",
+    ".github/workflows/native-probe-tests.yml": "0c13e54efbab9f7e06efae5908e17554a826a79e24ea19cdd273633ec7a192f8",
+    ".github/workflows/warm-entry-performance.yml": "f1dc5e1d88db509cdd8a3d65f1f13f251a8f9756ce7a620a31b963a26e18cb84",
+    ".github/workflows/warm-native-performance.yml": "3e9ddba3536f95ee1983fd7d9cf1506f04f95a31bb0dfb0c0df8d11f4e6a1aff"
+  },
+  "source_after": {
+    "tools/test-workflow-inputs.py": "187b14be61a40b3e58c0d5bb8005903e0a32abe6e821c096adcc9cfa79ee8768",
+    ".github/workflows/compiler-set.yml": "31de7b07e2cc9ce4477a3bc77d8ff677b1deb31e1fc165967850dedad79f0e17",
+    ".github/workflows/native-probe-tests.yml": "0c13e54efbab9f7e06efae5908e17554a826a79e24ea19cdd273633ec7a192f8",
+    ".github/workflows/warm-entry-performance.yml": "f1dc5e1d88db509cdd8a3d65f1f13f251a8f9756ce7a620a31b963a26e18cb84",
+    ".github/workflows/warm-native-performance.yml": "3e9ddba3536f95ee1983fd7d9cf1506f04f95a31bb0dfb0c0df8d11f4e6a1aff"
+  },
+  "current_compiler_qualification": false,
+  "streams": {
+    "stdout": {
+      "path": "final-workflow-input-coverage.stdout",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "stderr": {
+      "path": "final-workflow-input-coverage.stderr",
+      "sha256": "ee2c748e9c58c13f40dcdf077e3cb333b7607141d9980554477d4943f26c0b93"
+    }
+  }
+}

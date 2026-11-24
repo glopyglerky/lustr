@@ -30,7 +30,7 @@ use crate::check::collect::{self, LocalDefId};
 use crate::def::{self, CrateIds, DiskDefId, StableCrateHash};
 use crate::diag::{self, Diag, FileId, LineIndex, SourceMap};
 use crate::expand;
-use crate::intern::{FxMap, Interner, Sym};
+use crate::intern::{FxMap, Interner, Known, Sym};
 use crate::lexer;
 use crate::stdload::StdPlan;
 use crate::scan;
@@ -59,6 +59,7 @@ fn expand_tokens(
 ) -> Result<(lexer::Lexed, Vec<expand::Dep>), Diag> {
     let mut ctx = expand::ExpandCtx::for_file(&front.interner, &front.known, file, src, test);
     ctx.client = &front.client;
+    ctx.crate_name = Some(session.krate.target_name.clone());
     // The root file sees the session target's cfg facts, as every other
     // file of a crate session does through the worklist: a foreign
     // `--target` must change `cfg!` and `#[cfg]` here too, not leave
@@ -98,33 +99,61 @@ fn post_mono(p: &collect::Program, f: LocalDefId) -> bool {
 /// `rustc-cfg` values ride along for the resolver's per-crate cfg env.
 /// Only path packages compile from source here; adapter and shim
 /// units keep no Cargo env (their root is a lust-owned crate).
+#[cfg(feature = "exclusive-native")]
+type BuildOutputKey = crate::resolve::cargo::BuildScriptUnit;
+#[cfg(not(feature = "exclusive-native"))]
+type BuildOutputKey = PathBuf;
+
+fn apply_build_env(env: &mut Vec<(String, String)>, output: &[(String, String)]) {
+    for (name, value) in output {
+        env.retain(|(old, _)| old != name);
+        env.push((name.clone(), value.clone()));
+    }
+}
+
 fn fill_dep_build_outputs(
     deps: &mut [crate::resolve::cargo::DepUnit],
     cache: &Path,
-    env: super::buildscript::ClientEnv,
-    memo: &mut FxMap<PathBuf, Option<super::buildscript::Outputs>>,
+    request: &Request,
+    memo: &mut FxMap<BuildOutputKey, Option<super::buildscript::Outputs>>,
+    retained: &mut Vec<super::buildscript::Outputs>,
 ) -> Result<(), String> {
     for dep in deps {
         if dep.source.is_none() {
+            #[cfg(feature = "exclusive-native")]
+            let out = match &dep.build_script {
+                None => None,
+                Some(plan) => match memo.get(plan) {
+                    Some(out) => out.clone(),
+                    None => {
+                        let out = super::buildscript::outputs_native(plan, cache, request)
+                            .map_err(|e| format!("build script of `{}` failed: {e}", dep.package_name))?;
+                        memo.insert(plan.clone(), out.clone());
+                        out
+                    }
+                },
+            };
+            #[cfg(not(feature = "exclusive-native"))]
             let out = match memo.get(&dep.manifest_dir) {
                 Some(o) => o.clone(),
                 None => {
-                    let o = super::buildscript::outputs(&dep.manifest_dir, cache, env)
+                    let o = super::buildscript::outputs(&dep.manifest_dir, cache, request.client.env.as_deref())
                         .map_err(|e| format!("build script of `{}` failed: {e}", dep.package_name))?;
                     memo.insert(dep.manifest_dir.clone(), o.clone());
                     o
                 }
             };
             if let Some(out) = out {
+                retained.push(out.clone());
                 if let Some(dir) = &out.out_dir {
-                    dep.cargo_env.push(("OUT_DIR".into(), dir.to_string_lossy().into_owned()));
+                    apply_build_env(&mut dep.cargo_env, &[("OUT_DIR".into(), dir.to_string_lossy().into_owned())]);
                 }
-                dep.cargo_env.extend(out.rustc_env);
+                apply_build_env(&mut dep.cargo_env, &out.rustc_env);
                 dep.build_cfgs = out.rustc_cfg;
                 dep.build_check_cfgs = out.rustc_check_cfg;
             }
         }
-        fill_dep_build_outputs(&mut dep.deps, cache, env, memo)?;
+        fill_dep_build_outputs(&mut dep.deps, cache, request, memo, retained)?;
     }
     Ok(())
 }
@@ -134,7 +163,7 @@ fn client_view(req: &Request) -> expand::ClientView {
         (Some(typed), None) => req.file.parent().zip(typed.parent()).map(|(abs, shown)| (abs.to_path_buf(), shown.to_path_buf())),
         _ => None,
     };
-    expand::ClientView { env: req.client.env.clone().map(std::sync::Arc::new), shown_root }
+    expand::ClientView { env: req.client.env.clone().map(std::sync::Arc::new), shown_root, stdin_origin: None }
 }
 
 /// Wall time per stage.
@@ -391,7 +420,7 @@ fn log_visits(line: &str) {
 /// reused answer makes fresh). None for requests that must run:
 /// anything but a check, and a check that asks for C output.
 fn check_fingerprint(req: &Request) -> Option<u64> {
-    if req.cmd != Cmd::Check || req.emit_c.is_some() {
+    if req.cmd != Cmd::Check || req.emit_c.is_some() || req.session.library.as_ref().is_some_and(|key| key.is_executable()) {
         return None;
     }
     let key =
@@ -399,6 +428,24 @@ fn check_fingerprint(req: &Request) -> Option<u64> {
     let mut h = crate::intern::FxHasher::default();
     std::hash::Hash::hash(&key, &mut h);
     Some(std::hash::Hasher::finish(&h))
+}
+
+fn reused_check_response(req: &Request, front: &mut Front, t: &mut Timer, fn_count: usize, reusable: (u64, Response)) -> Response {
+    let (fp, mut resp) = reusable;
+    front.last_check = Some((fp, resp.clone()));
+    front.last_visits.clear();
+    Visits { path: "reuse", ..Default::default() }.render(&mut front.last_visits);
+    log_visits(&front.last_visits);
+    if stats_on() {
+        Stats { mode: "reuse", fns: fn_count, ..Default::default() }.render(&mut resp.stderr);
+        resp.stderr.push_str(&front.last_visits);
+    }
+    if req.timings {
+        t.lap("reuse last answer");
+        let _ = writeln!(resp.stderr, "lust check {}: ok (no change since the last check)", req.file.to_string_lossy());
+        t.render(&mut resp.stderr);
+    }
+    resp
 }
 
 /// Arena nodes of one Ast (expressions, patterns, types, blocks).
@@ -559,6 +606,43 @@ fn base_tmp_seq() -> u64 {
     SEQ.fetch_add(1, std::sync::atomic::Ordering::Relaxed)
 }
 
+/// Mach-O embeds its final install name while linking, so a Darwin base
+/// is named from the ordered link inputs before the single link. The
+/// object dir preserves per-session ownership, as in the ELF bytes key.
+/// All other identities are stable for the same build inputs; output and
+/// temporary paths, timestamps, and generation counters are not keyed.
+/// This adds one object-byte hash pass on a Darwin base rebuild only.
+fn darwin_base_name(
+    objs: &[PathBuf],
+    obj_dir: &Path,
+    compiler_id: (u64, u64),
+    session: &str,
+    target: &str,
+    debug: bool,
+) -> Result<String, String> {
+    use crate::driver::cache::hash128;
+    let (mut a, mut b) = hash128(
+        &[
+            b"darwin-base-v1:@rpath",
+            &compiler_id.0.to_le_bytes(),
+            &compiler_id.1.to_le_bytes(),
+            &[debug as u8],
+            target.as_bytes(),
+            session.as_bytes(),
+            obj_dir.as_os_str().as_encoded_bytes(),
+            &(objs.len() as u64).to_le_bytes(),
+        ],
+        41,
+    );
+    // Fold in link order, holding at most one object's bytes at a time.
+    // Both lanes remain part of the next step's state.
+    for obj in objs {
+        let bytes = std::fs::read(obj).map_err(|e| format!("cannot read {}: {e}", obj.display()))?;
+        (a, b) = hash128(&[&a.to_le_bytes(), &b.to_le_bytes(), &bytes], 41);
+    }
+    Ok(format!("base-{}-{a:016x}{b:016x}", std::process::id()))
+}
+
 /// True if `out` exists and still names `soname` (an overwritten output names its newer base instead).
 fn output_names_base(out: &Path, soname: &str) -> bool {
     std::fs::read(out).is_ok_and(|bytes| bytes.windows(soname.len()).any(|w| w == soname.as_bytes()))
@@ -647,7 +731,7 @@ fn record_base_user(base_dir: &Path, soname: &str, out: &Path) {
     }
 }
 
-/// The pid in a base file name (`libbase-<pid>-<hash>.so`): the process
+/// The pid in a base file name (`libbase-<pid>-<hash>.so` or `.dylib`): the process
 /// that built it. Base files are also unique per session instance (the
 /// session's object dir is mixed into the hash), so one session never
 /// links against, and must never delete, another live session's file.
@@ -655,6 +739,12 @@ fn base_owner_pid(soname: &str) -> Option<u32> {
     let rest = soname.strip_prefix("libbase-")?;
     let pid = rest.split('-').next()?;
     if !pid.is_empty() && pid.bytes().all(|b| b.is_ascii_digit()) { pid.parse().ok() } else { None }
+}
+
+/// A reused PID conservatively keeps a stale base longer. Only a positive
+/// process ID proven gone permits cleanup; no host depends on /proc here.
+fn base_owner_alive(pid: u32) -> bool {
+    crate::protocol::host_runtime::process_exists(pid)
 }
 
 /// Deletes base files in `base_dir` that the manifest proves dead: every
@@ -667,20 +757,19 @@ fn base_owner_pid(soname: &str) -> Option<u32> {
 /// entry are kept (an entry is appended right after its executable
 /// links, so an unrecorded file may be in use by a concurrent build).
 /// Also deletes half-written rebuild temp files
-/// (`libbase-tmp-<pid>-*.so`) whose pid is gone. The manifest is
+/// (`libbase-tmp-<pid>-*` with the native suffix) whose pid is gone. The manifest is
 /// rewritten with only the kept, deduplicated entries. Called on a
 /// session's first base build and on daemon exit.
 pub fn sweep_bases(base_dir: &Path, exiting_pid: u32) {
-    // Half-written temp bases from crashed builds. /proc presence is
-    // the liveness probe (Linux hosts only; elsewhere the file stays).
+    // Half-written temp bases from crashed builds. A live native owner
+    // may still be writing its temporary file.
     if let Ok(rd) = std::fs::read_dir(base_dir) {
         for e in rd.flatten() {
             let name = e.file_name().to_string_lossy().into_owned();
             if let Some(rest) = name.strip_prefix("libbase-tmp-")
                 && let Some(pid) = rest.split('-').next()
-                && pid.parse::<u32>().is_ok()
-                && pid != std::process::id().to_string()
-                && !Path::new(&format!("/proc/{pid}")).exists()
+                && let Ok(pid) = pid.parse::<u32>()
+                && !base_owner_alive(pid)
             {
                 let _ = std::fs::remove_file(e.path());
             }
@@ -707,7 +796,7 @@ pub fn sweep_bases(base_dir: &Path, exiting_pid: u32) {
     }
     let owner_alive = |soname: &str| match base_owner_pid(soname) {
         Some(pid) if pid == exiting_pid => false,
-        Some(pid) => pid == std::process::id() || Path::new(&format!("/proc/{pid}")).exists(),
+        Some(pid) => base_owner_alive(pid),
         None => false,
     };
     let mut kept = String::new();
@@ -1254,9 +1343,20 @@ fn errors(diags: &mut [Diag], map: &SourceMap, src: &str, req: &Request) -> Resp
     // fresh session's (render order itself is `diag::diag_order`).
     let n = diag::dedup_exact(diags, map);
     let diags = &mut diags[..n];
+    let code = if cfg!(feature = "exclusive-native") && req.session.library.is_some()
+        && !diags.is_empty() && diags.iter().all(|diagnostic| diagnostic.rust_complement)
+    {
+        crate::protocol::RUST_COMPLEMENT_REQUIRED
+    } else {
+        1
+    };
+    #[cfg(feature="exclusive-native")]
+    if req.session.library.is_some() && req.json {
+        return Response{code,stderr:diag::render_cargo(diags,map,src,req.max_errors),..Default::default()};
+    }
     let json = req.json;
     let text = diag::render(diags, map, src, json, req.max_errors);
-    let mut r = Response { code: 1, ..Default::default() };
+    let mut r = Response { code, ..Default::default() };
     if json {
         r.stdout = text;
     } else {
@@ -2055,6 +2155,8 @@ fn resolved_setup(
     t: &mut Timer,
     visits: &mut Visits,
     reusable: Option<(u64, Response)>,
+    imports: Option<&dyn super::imports::Definitions>,
+    build_outputs: &mut Vec<super::buildscript::Outputs>,
 ) -> Result<(SourceMap, Vec<usize>, Vec<usize>, bool, usize, &'static str, Vec<u32>, Vec<u64>, Option<std::sync::Arc<crate::resolve::imports::ResolvedTables>>), Response> {
     use crate::resolve::cargo::{self, GraphRequest};
     use crate::resolve::cfg::CfgEnv;
@@ -2063,9 +2165,30 @@ fn resolved_setup(
     let request_start = std::time::SystemTime::now();
     let key = &req.session;
     let code2 = |msg: String| Response { stderr: format!("error: {msg}\n"), code: 2, ..Default::default() };
-    // Crate selection: through the Cargo graph when a manifest names the
-    // crate, else the synthetic one-file package of the session key.
-    let (root_path, mut root_text, crate_ids, env, externs, crate_name, cargo_env) = if let Some(manifest) = &key.krate.manifest_path {
+    let supplied_unit = key.library.as_ref().filter(|artifact| {
+        let (Some(manifest), Some(environment)) = (&key.krate.manifest_path, &req.client.env) else {
+            return false;
+        };
+        environment.iter().any(|(name, value)| name == "CARGO_MANIFEST_PATH" && Path::new(value) == manifest)
+            && environment.iter().any(|(name, value)| name == "CARGO_CRATE_NAME" && value == &artifact.crate_name)
+    });
+    // A public rustc-compatible request already carries Cargo's selected
+    // source, features, environment and extern artifacts. Starting Cargo
+    // again against a path dependency's manifest resolves a different graph.
+    let (root_path, mut root_text, crate_ids, mut env, externs, crate_name, cargo_env) = if let Some(artifact) = supplied_unit {
+        if (artifact.is_executable() || artifact.external.is_some()) != imports.is_some() {
+            return Err(code2("Cargo compiler request is missing its selected artifact inputs".into()));
+        }
+        let cwd = &artifact.working_directory;
+        let relative = req.client.shown.as_ref().is_some_and(|path| path.is_relative());
+        front.display_root = relative.then(|| cwd.clone());
+        front.client.shown_root = Some((cwd.clone(), if relative { PathBuf::new() } else { cwd.clone() }));
+        let env = CfgEnv::new(&key.target_triple, &key.features, key.krate.test, key.profile);
+        t.lap("Cargo compiler request");
+        // The resolver reads env! from the original client's environment.
+        // Imported crates are mounted from their actual metadata by the owner.
+        (req.file.clone(), user_src.to_owned(), crate_ids_default, env, Vec::new(), artifact.crate_name.clone(), Vec::new())
+    } else if let Some(manifest) = &key.krate.manifest_path {
         let greq = GraphRequest {
             manifest_path: manifest.clone(),
             package: None,
@@ -2081,8 +2204,55 @@ fn resolved_setup(
         front.display_root = Some(graph.workspace_root.clone());
         let pre_env = CfgEnv::new(&key.target_triple, &key.features, key.krate.test, key.profile);
         let unit =
-            cargo::select_unit(&graph, &greq, &key.krate.target_kind, &key.krate.target_name, &pre_env, &front.interner, key.krate.test)
+            cargo::select_unit(&graph, &greq, &key.krate.target_kind, &key.krate.target_name, &pre_env, &front.interner, key.krate.test, &req.file, key.krate.target_explicit, req.cmd, key.profile)
                 .map_err(code2)?;
+        #[cfg(feature = "exclusive-native")]
+        if req.cmd == Cmd::Build && !unit.target.kind.iter().any(|kind| kind == "bin")
+            && req.session.library.is_none() {
+            return Err(code2("Lustr integration is incomplete for the requested Rust library artifact; no stock compiler was invoked".into()));
+        }
+        if let Some(library) = &key.library {
+            let matched_dependencies = if let Some(executable) = &library.executable_dependencies {
+                executable.len() == unit.deps.len() && imports.is_some_and(|imports| unit.deps.iter().all(|dep| {
+                    #[cfg(feature = "exclusive-native")]
+                    if dep.build_script.is_some() { return false; }
+                    imports.cargo_extern_matches(&dep.extern_name, &dep.lib_name.replace('-', "_"))
+                        && dep.edition == "2024" && dep.features.is_empty()
+                }))
+            } else { match (&library.external, unit.deps.as_slice()) {
+                (None, []) => imports.is_none(),
+                (Some(request), [dep]) => imports.and_then(|i| i.cargo_crate_name()).is_some_and(|name| {
+                    #[cfg(feature = "exclusive-native")]
+                    if dep.build_script.is_some() { return false; }
+                    dep.extern_name == request.alias && dep.lib_name.replace('-', "_") == name
+                        && dep.edition == "2024"
+                        && dep.features.is_empty() && dep.deps.is_empty()
+                }),
+                _ => false,
+            }};
+            let target_matches = if key.krate.test {
+                unit.target.test_flag && unit.target.kind.iter().any(|kind| matches!(kind.as_str(), "bin" | "lib" | "rlib" | "test"))
+                    && library.matches_target_name(&unit.target.name)
+            } else {
+                unit.target.kind.iter().any(|kind| kind == library.target_kind() || !library.is_executable() && kind == "rlib")
+                    && unit.target.name == key.krate.target_name
+            };
+            if !target_matches || !matched_dependencies
+                // Cargo metadata names the actual script target in every
+                // build mode; UnitInfo's planned script is product-only.
+                || unit.package.targets.iter().any(|target|target.kind.iter().any(|kind|kind=="custom-build"))
+                || unit.features.len() != key.features.len()
+                || unit.features.iter().any(|feature| key.features.binary_search(feature).is_err()) {
+                return Err(code2("public scalar-library integration requires the matching Cargo dependency and script-free unit".into()));
+            }
+        } else if imports.is_some() {
+            return Err(code2("Cargo artifact import requires a public library context".into()));
+        }
+        let selected_source = std::fs::canonicalize(&unit.target.src_path).map_err(|e| code2(format!("cannot bind selected Cargo source: {e}")))?;
+        let requested_source = std::fs::canonicalize(&req.file).map_err(|e| code2(format!("cannot bind requested Cargo source: {e}")))?;
+        if requested_source != selected_source {
+            return Err(code2("package, target name, kind and source do not identify exactly one Cargo target".into()));
+        }
         let root_text = std::fs::read_to_string(&unit.target.src_path)
             .map_err(|e| code2(format!("cannot read {}: {e}", unit.target.src_path.display())))?;
         // Edition and lint gates for the selected unit (section 1.1),
@@ -2097,19 +2267,26 @@ fn resolved_setup(
         let mut env = CfgEnv::new(&key.target_triple, &unit.features, key.krate.test, key.profile);
         // Cargo env for the selected unit plus its build script
         // outputs (section 1.1): `OUT_DIR` and `rustc-env` pairs for
-        // `env!`, `rustc-cfg` values for `#[cfg]`. The script re-runs
-        // through Cargo when its recorded inputs changed.
+        // `env!`, `rustc-cfg` values for `#[cfg]`. Product scripts use their
+        // owned native host units when recorded inputs change.
         let cache = super::cache::cache_dir(&req.file);
         let manifest_dir = unit.package.manifest_path.parent().map_or_else(PathBuf::new, Path::to_path_buf);
         let mut cargo_env = unit.cargo_env.clone();
-        let client_env = req.client.env.as_deref();
-        let selected_out = super::buildscript::outputs(&manifest_dir, &cache, client_env)
+        #[cfg(not(feature = "exclusive-native"))]
+        let selected_out = super::buildscript::outputs(&manifest_dir, &cache, req.client.env.as_deref())
             .map_err(|e| code2(format!("build script of `{}` failed: {e}", unit.package.name)))?;
+        #[cfg(feature = "exclusive-native")]
+        let selected_out = match &unit.build_script {
+            Some(plan) => super::buildscript::outputs_native(plan, &cache, req)
+                .map_err(|e| code2(format!("build script of `{}` failed: {e}", unit.package.name)))?,
+            None => None,
+        };
         if let Some(out) = &selected_out {
+            build_outputs.push(out.clone());
             if let Some(dir) = &out.out_dir {
-                cargo_env.push(("OUT_DIR".into(), dir.to_string_lossy().into_owned()));
+                apply_build_env(&mut cargo_env, &[("OUT_DIR".into(), dir.to_string_lossy().into_owned())]);
             }
-            cargo_env.extend(out.rustc_env.iter().cloned());
+            apply_build_env(&mut cargo_env, &out.rustc_env);
             for c in &out.rustc_cfg {
                 env.add_rustc_cfg(c);
             }
@@ -2117,10 +2294,13 @@ fn resolved_setup(
                 env.add_check_cfg(c);
             }
         }
-        let mut deps = unit.deps.clone();
-        let mut memo: FxMap<PathBuf, Option<super::buildscript::Outputs>> = FxMap::default();
+        let mut deps = if key.library.is_some() { Vec::new() } else { unit.deps.clone() };
+        let mut memo: FxMap<BuildOutputKey, Option<super::buildscript::Outputs>> = FxMap::default();
+        #[cfg(not(feature = "exclusive-native"))]
         memo.insert(manifest_dir, selected_out);
-        fill_dep_build_outputs(&mut deps, &cache, client_env, &mut memo).map_err(code2)?;
+        #[cfg(feature = "exclusive-native")]
+        if let Some(plan) = &unit.build_script { memo.insert(plan.clone(), selected_out); }
+        fill_dep_build_outputs(&mut deps, &cache, req, &mut memo, build_outputs).map_err(code2)?;
         t.lap("build script outputs");
         // Cargo runs rustc from the workspace root, so `file!` shows member paths relative to it.
         front.client.shown_root = Some((graph.workspace_root.clone(), PathBuf::new()));
@@ -2131,10 +2311,20 @@ fn resolved_setup(
         (unit.target.src_path.clone(), root_text, ids, env, deps, unit.package.name.replace('-', "_"), cargo_env)
     } else {
         front.display_root = None;
-        let stem = key.krate.root.file_stem().and_then(|s| s.to_str()).unwrap_or("main").to_string();
+        let stem = key.krate.target_name.clone();
         let env = CfgEnv::new(&key.target_triple, &key.features, key.krate.test, key.profile);
         (key.krate.root.clone(), user_src.to_string(), crate_ids_default, env, Vec::new(), stem, Vec::new())
     };
+    if let Some(library) = &key.library {
+        for cfg in &library.check_cfg {
+            env.add_check_cfg(cfg);
+        }
+        #[cfg(feature = "exclusive-native")]
+        for cfg in &library.cfg {
+            let cfg = super::buildscript::cfg_directive("rustc-cfg", cfg).map_err(code2)?;
+            env.add_rustc_cfg(&cfg);
+        }
+    }
     // Body patch (driver/patch.rs): when every edit since the last full
     // resolve sits inside a fn body, edit the merged Ast in place.
     let inputs = super::patch::inputs_fingerprint(&(
@@ -2153,8 +2343,28 @@ fn resolved_setup(
     // PatchBase below asks `macro_scope::dep_macros_shut`).
     let patch_expand = (env.clone(), crate_name.clone());
     let has_deps = !externs.is_empty();
-    let patched =
-        if ast_bloated(front) { Err("ast compaction") } else { super::patch::try_patch(front, caches, inputs, &root_text, request_start) };
+    let procedural_macros = imports.and_then(|provider| provider.procedural_macros());
+    let reuse_check = reusable.is_some() && caches.library.is_none() && !super::resolve_oracle::on();
+    let patched = if procedural_macros.is_some() {
+        // A macro may observe external state before reporting its reads.
+        // Re-expand on an actual compiler request; compare the result below
+        // and keep checked work whose native semantic inputs still hold.
+        Err("procedural macro expansion")
+    } else if ast_bloated(front) {
+        Err("ast compaction")
+    } else {
+        super::patch::try_patch(front, caches, inputs, &root_text, request_start, reuse_check)
+    };
+    let patched = match patched {
+        Ok(super::patch::PatchOutcome::ReuseCheck { fn_count }) => {
+            return Err(reused_check_response(req, front, t, fn_count, reusable.unwrap()));
+        }
+        Ok(super::patch::PatchOutcome::Materialized(p)) => {
+            if p.files != 0 && let Some(library) = &mut caches.library { library.changed(); }
+            Ok(p)
+        },
+        Err(why) => Err(why),
+    };
     if super::resolve_oracle::on()
         && let Ok(p) = &patched
     {
@@ -2165,22 +2375,8 @@ fn resolved_setup(
     match patched {
         // Nothing changed since the last check of this same request:
         // its answer stands (`check_fingerprint`).
-        Ok(p) if p.files == 0 && reusable.is_some() => {
-            let (fp, mut resp) = reusable.unwrap();
-            front.last_check = Some((fp, resp.clone()));
-            front.last_visits.clear();
-            Visits { path: "reuse", ..Default::default() }.render(&mut front.last_visits);
-            log_visits(&front.last_visits);
-            if stats_on() {
-                Stats { mode: "reuse", fns: p.fn_count, ..Default::default() }.render(&mut resp.stderr);
-                resp.stderr.push_str(&front.last_visits);
-            }
-            if req.timings {
-                t.lap("reuse last answer");
-                let _ = writeln!(resp.stderr, "lust check {}: ok (no change since the last check)", req.file.to_string_lossy());
-                t.render(&mut resp.stderr);
-            }
-            return Err(resp);
+        Ok(p) if p.files == 0 && reusable.is_some() && caches.library.is_none() => {
+            return Err(reused_check_response(req, front, t, p.fn_count, reusable.unwrap()));
         }
         // An item patch (sigedit P1.3): the new item scans take the
         // resolve path's slot update, in signatures mode with the edited
@@ -2307,6 +2503,7 @@ fn resolved_setup(
             front.resolve_cache.seed_root(&root_path, &root_text, lexed);
         }
         let input = CrateInput {
+            procedural_macros: procedural_macros.clone(),
             root_path: root_path.clone(),
             root_text: root_text.clone(),
             env: env.clone(),
@@ -2321,7 +2518,24 @@ fn resolved_setup(
         // The cache's final chunks are parts of the session's merged Ast: the resolve takes
         // its hits out of it, and lets go of it before any patch writes it.
         front.resolve_cache.set_merged(front.ast.clone(), front.ast_gen);
-        let out = worklist::resolve_crate_with(&input, &front.interner, &front.known, &mut front.resolve_cache, plan.platform);
+        let out = if caches.library.is_some() {
+            let mut mount = |tables: &mut crate::resolve::imports::ResolvedTables| imports.unwrap().mount(tables, &front.interner);
+            let parse = |lexed: &lexer::Lexed, interner: &Interner, known: &Known| {
+                super::library::parse_root(lexed, interner, known, key.library.is_some())
+            };
+            worklist::resolve_native_library(&input, &front.interner, &front.known, &mut front.resolve_cache,
+                &parse, imports.map(|_| &mut mount as _))
+        } else if let Some(imports) = imports {
+            let mut mount = |tables: &mut crate::resolve::imports::ResolvedTables| imports.mount(tables, &front.interner);
+            if key.library.as_ref().is_some_and(|key| key.is_executable()) {
+                worklist::resolve_native_executable(&input, &front.interner, &front.known, &mut front.resolve_cache,
+                    plan.platform, &mut mount, key.krate.test)
+            } else {
+                worklist::resolve_crate_with_imports(&input, &front.interner, &front.known, plan.platform, &mut mount)
+            }
+        } else {
+            worklist::resolve_crate_with(&input, &front.interner, &front.known, &mut front.resolve_cache, plan.platform)
+        };
         front.resolve_cache.clear_merged();
         if super::item_oracle::on() || super::resolve_oracle::on() {
             oracle_input = Some(super::item_oracle::ColdInput { input: input.clone(), platform: plan.platform });
@@ -2379,6 +2593,7 @@ fn resolved_setup(
     let old_kept = std::mem::take(&mut front.kept);
     let old_ast = std::mem::replace(&mut front.ast, Arc::new(ast));
     front.ast_gen = generation;
+    if let Some(library) = &mut caches.library { library.changed(); }
     front.fresh_exprs = front.ast.exprs.len();
     if (old_ast.exprs.len() > 20_000 || old_kept.iter().any(Option::is_some)) && caches.persistent {
         // Nested token trees in the Ast drop recursively; use the
@@ -2552,10 +2767,406 @@ fn location_path(p: &str, library: &Path, display_root: Option<&Path>, client: &
 }
 
 pub fn compile(req: &Request, session: &mut Session) -> Response {
+    compile_observed(req, session, None)
+}
+
+pub fn compile_observed(req: &Request, session: &mut Session, observer: Option<&dyn super::PhaseObserver>) -> Response {
+    match prepare_observed(req, session, observer) {
+        Preparation::Ready(prepared) => prepared.emit_unobserved(),
+        Preparation::Complete(response) | Preparation::Rejected(response)
+        | Preparation::Failed(response) | Preparation::IntegrationIncomplete(response) => response,
+    }
+}
+
+/// Preparation either owns the exact passing native state or has already
+/// finished before that boundary. A native rejection does not establish that
+/// Rust is invalid or complementary. IntegrationIncomplete identifies a bridge
+/// that cannot compose this request, without reassigning Lust-owned work.
+/// No rejection, integration gap or failure permits a compiler retry.
+pub enum Preparation<'a> {
+    Ready(PreparedRequest<'a>),
+    Complete(Response),
+    Rejected(Response),
+    Failed(Response),
+    IntegrationIncomplete(Response),
+}
+
+impl Preparation<'_> {
+    pub(super) fn finished(response: Response) -> Self {
+        match (response.code, response.mixed) {
+            (4, Some(crate::protocol::MixedOutcome::IntegrationIncomplete)) => Self::IntegrationIncomplete(response),
+            (0, _) => Self::Complete(response),
+            (1, _) => Self::Rejected(response),
+            _ => Self::Failed(response),
+        }
+    }
+}
+
+/// One native request between checking and emission. There is no Clone and no
+/// constructor outside this module. The session and request remain exclusively
+/// borrowed, so no later request can mutate the retained facts before emission.
+/// Program, IR, local type arenas and read sets are moved here, never rebuilt.
+pub struct PreparedRequest<'a> {
+    request: &'a Request,
+    session: &'a mut Session,
+    state: Option<CheckedRequest>,
+}
+
+struct OwnedBody {
+    body: ir::BodyData<crate::ty::OwnedTys>,
+    environment: Option<LocalDefId>,
+}
+
+impl OwnedBody {
+    fn take(body: ir::Body<'_>, program: &collect::Program) -> Result<Self, &'static str> {
+        if !std::ptr::eq(body.tys.global, &program.tys) {
+            return Err("checked body belongs to another global type store");
+        }
+        let environment = if body.tys.env.is_empty() {
+            None
+        } else {
+            let expected = program.gx.fn_scopes.get(body.fn_id.0 as usize)
+                .ok_or("checked body has no owning predicate environment")?;
+            if !std::ptr::eq(body.tys.env, expected.env.as_slice()) {
+                return Err("checked body belongs to another predicate environment");
+            }
+            Some(body.fn_id)
+        };
+        Ok(Self { body: body.map_types(crate::ty::Tys::detach), environment })
+    }
+
+    fn attach(self, program: &collect::Program) -> ir::Body<'_> {
+        // Both the program and this body are privately owned by CheckedRequest;
+        // no mutation or substitution can occur between take and attach.
+        let env = self.environment.map_or(&[][..], |id| program.gx.fn_scopes[id.0 as usize].env.as_slice());
+        self.body.map_types(|tys| tys.attach(&program.tys, env))
+    }
+}
+
+struct CheckedRequest {
+    program: collect::Program,
+    results: Vec<(Option<OwnedBody>, Vec<Diag>)>,
+    reemit: Vec<(usize, OwnedBody)>,
+    map: SourceMap,
+    source: String,
+    path: String,
+    work: Vec<usize>,
+    fn_count: usize,
+    fn_lines_all: Vec<u32>,
+    body_hashes_all: Vec<u64>,
+    inst_ids: Vec<(u32, u64)>,
+    mode: &'static str,
+    check_fp: Option<u64>,
+    verified: u64,
+    reads_reused: usize,
+    reads_invalidated: usize,
+    reemitted: usize,
+    mixed: bool,
+    release: bool,
+    foreign: bool,
+    visits: Visits,
+    timer: Timer,
+    imported_dependencies: Vec<super::imports::Dependency>,
+    imported_emission: Option<Box<dyn super::imports::Emission + 'static>>,
+    build_outputs: Vec<super::buildscript::Outputs>,
+}
+
+impl PreparedRequest<'_> {
+    pub fn request(&self) -> &Request {
+        self.request
+    }
+
+    /// Actual semantic facts for this request, held immutable until emission.
+    pub fn program(&self) -> &collect::Program {
+        &self.state.as_ref().expect("checked request is consumed").program
+    }
+
+    /// Body ids checked in this invocation. Other passing bodies were reused
+    /// only after the existing native dependency-read validation.
+    pub fn checked_functions(&self) -> &[usize] {
+        &self.state.as_ref().expect("checked request is consumed").work
+    }
+
+    pub fn source_map(&self) -> &SourceMap {
+        &self.state.as_ref().expect("checked request is consumed").map
+    }
+
+    pub fn source(&self) -> &str {
+        &self.state.as_ref().expect("checked request is consumed").source
+    }
+
+    /// Collect the original resolver's file inventory and actual expansion reads.
+    pub(crate) fn executable_source_inputs(&self) -> Result<ExecutableSourceInputs, &'static str> {
+        let map = self.source_map();
+        let cwd = &self.request.session.library.as_ref().ok_or("missing executable context")?.working_directory;
+        let mut inputs = ExecutableSourceInputs::default();
+        for index in 1..map.file_count() {
+            let file = FileId(index as u32);
+            let path = std::path::Path::new(map.path(file));
+            if path.as_os_str().is_empty() { continue; } // A retired source-map slot.
+            if !path.is_absolute() || map.text(file).is_none() {
+                return Err("unrepresented executable source file");
+            }
+            inputs.files.push(path.strip_prefix(cwd).unwrap_or(path).to_path_buf());
+        }
+        for dep in self.session.front.chunks.iter().flat_map(|chunk| &chunk.expand_deps) {
+            match dep {
+                expand::Dep::File { path, .. } | expand::Dep::TrackedPath(path) => {
+                    if !path.is_absolute() { return Err("unbound executable include file"); }
+                    inputs.files.push(path.strip_prefix(cwd).unwrap_or(path).to_path_buf());
+                    inputs.has_include = true;
+                }
+                expand::Dep::Env { name, value } => {
+                    if inputs.environment.insert(name.clone(), value.clone()).is_some_and(|old| old != *value) {
+                        return Err("conflicting executable environment reads");
+                    }
+                }
+                _ => {}
+            }
+        }
+        Ok(inputs)
+    }
+
+    /// Combine resolved module imports with actual signature reads from
+    /// checked and reused bodies.
+    pub(crate) fn executable_extern_uses(&self) -> Option<std::collections::BTreeSet<crate::def::CrateId>> {
+        let program = self.program();
+        if program.ast.items.iter().chain(&program.ast.stmt_items).any(|item| {
+            matches!(item.kind, crate::ast::ItemKind::Use(_) | crate::ast::ItemKind::ExternCrate(_))
+        }) { return None; }
+        let mut used = program.resolved.as_ref()?.executable_import_uses.clone()?;
+        let caches = &self.session.caches;
+        for &slot in &self.session.front.fn_slot {
+            if let Some(Some(reads)) = caches.slot_reads.get(slot as usize) {
+                for (key, read) in reads.iter(&caches.read_keys) {
+                    if let super::graph::ReadKey::Sig(definition) = key
+                        && !read.failed && program.imported_crates.contains_key(&definition.krate) {
+                        used.insert(definition.krate);
+                    }
+                }
+            }
+        }
+        Some(used)
+    }
+
+    /// Exact imported input snapshots held by this checked continuation.
+    pub fn imported_dependencies(&self) -> &[super::imports::Dependency] {
+        &self.state.as_ref().expect("checked request is consumed").imported_dependencies
+    }
+
+    /// Keep the freshly checked native bodies when publication can reuse the
+    /// executable bytes. A later relink may still need to generate their code.
+    #[cfg(feature = "exclusive-native")]
+    pub(crate) fn retain_executable_ir(&mut self) {
+        let state = self.state.as_mut().expect("checked request is consumed");
+        if state.program.gx.has_generics { return; }
+        let front = &self.session.front;
+        let caches = &mut self.session.caches;
+        let mut file_hashes = FxMap::default();
+        for (&i, (body, _)) in state.work.iter().zip(&mut state.results) {
+            let slot = front.fn_slot[i] as usize;
+            if caches.has_out[slot] { continue; }
+            let Some(body) = body.take() else { continue };
+            let body = body.attach(&state.program);
+            let file = state.program.fn_def(LocalDefId(i as u32)).name_span.file;
+            let hash = *file_hashes.entry(file).or_insert_with(|| file_text_hash(&state.map, file));
+            let fingerprint = super::ir_cache::ir_fingerprint(
+                &state.program, &body, &state.map, state.fn_lines_all[i],
+            );
+            let mut cached = super::ir_cache::cache_body(
+                &state.program, &body, hash, slot as u32, Vec::new(), fingerprint,
+            );
+            cached.pending_codegen = true;
+            caches.slot_ir[slot] = Some(cached);
+        }
+    }
+
+    /// Consume the same checked state once. A check finishes without emitting;
+    /// a build enters the original generator, object builder and linker.
+    pub fn emit(mut self) -> Response {
+        let state = self.state.take().expect("checked request is consumed");
+        let response = super::mixed_response(self.request, emit_checked(self.request, self.session, state));
+        if super::item_oracle::on() {
+            super::item_oracle::compare_response(self.request, self.session, &response);
+        }
+        response
+    }
+
+    fn emit_unobserved(mut self) -> Response {
+        let state = self.state.take().expect("checked request is consumed");
+        emit_checked(self.request, self.session, state)
+    }
+}
+
+#[derive(Default)]
+pub(crate) struct ExecutableSourceInputs {
+    pub files: Vec<std::path::PathBuf>,
+    pub environment: std::collections::BTreeMap<String, Option<String>>,
+    pub has_include: bool,
+}
+
+impl Drop for PreparedRequest<'_> {
+    fn drop(&mut self) {
+        if let Some(mut state) = self.state.take() {
+            // Abandoning a prepared request cannot emit or replace artifacts.
+            // Preserve its passing semantic state for the session's next request.
+            drop((state.results, state.reemit));
+            state.program.verified = state.verified;
+            super::patch::keep(&mut self.session.front, state.program);
+        }
+    }
+}
+
+pub(super) fn prepare_observed<'a>(req: &'a Request, session: &'a mut Session, observer: Option<&dyn super::PhaseObserver>) -> Preparation<'a> {
+    if session.imported_request {
+        return Preparation::Failed(Response { code: 3, stderr: "error: imported semantic state cannot be reused without its dependency generation\n".into(), ..Default::default() });
+    }
+    prepare_with_definitions(req, session, observer, None, None)
+}
+
+#[cfg(feature = "exclusive-native")]
+pub(crate) fn compile_stdin(req: &Request, session: &mut Session, source: StdinSource) -> Response {
+    match prepare_with_definitions(req, session, None, None, Some(source)) {
+        Preparation::Ready(prepared) => prepared.emit(),
+        Preparation::Complete(response) | Preparation::Rejected(response)
+        | Preparation::Failed(response) | Preparation::IntegrationIncomplete(response) => response,
+    }
+}
+
+pub(crate) struct StdinSource {
+    pub text: String,
+    pub origin: Arc<expand::StdinOrigin>,
+}
+
+pub(super) fn prepare_imported<'a>(req: &'a Request, session: &'a mut Session, definitions: &dyn super::imports::Definitions) -> Result<Preparation<'a>, super::imports::Unintegrated> {
+    let metadata_only = definitions.metadata_only();
+    if session.imported_request || session.caches.persistent || session.front.env_hash.is_some()
+        || !session.front.src.is_empty() || !session.front.slot_of.is_empty()
+        || req.session.krate.manifest_path.is_some() || req.session.krate.target_kind != "bin"
+        || (!metadata_only && !req.session.profile.panic_abort) || req.run_args.is_some() || req.harness || req.cc || req.emit_c.is_some()
+        || session.caches.output != super::OutputKind::Standalone || crate::image::state_dir().is_some()
+        || std::env::var_os("LUST_FRONT_ARENA").is_some() {
+        return Err(super::imports::Unintegrated("imported definitions require a fresh standalone abort-profile native request"));
+    }
+    // None of the old per-source cache keys includes an imported generation.
+    // Keep them unavailable until the joined retained contract is implemented.
+    session.imported_request = true;
+    session.cache_tried = true;
+    session.disk_cache = None;
+    struct Guard<'a> { inner: &'a dyn super::imports::Definitions, failed: std::cell::Cell<bool> }
+    impl super::imports::Definitions for Guard<'_> {
+        fn mount(&self, tables: &mut crate::resolve::imports::ResolvedTables, interner: &Interner) -> Result<(), Diag> {
+            let answer = self.inner.mount(tables, interner);
+            if answer.is_err() { self.failed.set(true); }
+            answer
+        }
+        fn install(&self, program: &mut collect::Program) -> Result<(), Vec<Diag>> {
+            let answer = self.inner.install(program);
+            if answer.is_err() { self.failed.set(true); }
+            answer
+        }
+        fn validate_checked(&self, program: &collect::Program) -> Result<(), String> { self.inner.validate_checked(program) }
+        fn dependencies(&self) -> Vec<super::imports::Dependency> { self.inner.dependencies() }
+        fn procedural_macros(&self) -> Option<Arc<dyn crate::expand::ProceduralMacros>> {
+            self.inner.procedural_macros()
+        }
+        fn metadata_only(&self) -> bool { self.inner.metadata_only() }
+        fn take_emission(&self) -> Result<Box<dyn super::imports::Emission + 'static>, String> { self.inner.take_emission() }
+    }
+    let guard = Guard { inner: definitions, failed: std::cell::Cell::new(false) };
+    let outcome = prepare_with_definitions(req, session, None, Some(&guard), None);
+    Ok(match outcome {
+        Preparation::Rejected(mut response) if guard.failed.get() => {
+            response.code = 3;
+            Preparation::Failed(response)
+        }
+        outcome => outcome,
+    })
+}
+
+#[cfg(feature = "upstream-semantic")]
+pub(crate) fn prepare_projection_import<'a>(
+    req: &'a Request,
+    session: &'a mut Session,
+    definitions: &dyn super::imports::Definitions,
+) -> Result<Preparation<'a>, super::imports::Unintegrated> {
+    let previous = session.imported_generation.as_ref();
+    if req.session != session.key || !session.caches.persistent || session.caches.output != super::OutputKind::Standalone
+        || previous.is_none() && (session.imported_request || session.front.env_hash.is_some()
+            || !session.front.src.is_empty() || !session.front.slot_of.is_empty())
+        || req.session.krate.manifest_path.is_some() || req.session.krate.target_kind != "bin"
+        || (!definitions.metadata_only() && !req.session.profile.panic_abort)
+        || req.run_args.is_some() || req.harness || req.cc || req.emit_c.is_some()
+        || crate::image::state_dir().is_some() || std::env::var_os("LUST_FRONT_ARENA").is_some() {
+        return Err(super::imports::Unintegrated("projection imports require a standalone retained research session"));
+    }
+    update_imported_generation(session, definitions);
+    Ok(prepare_with_definitions(req, session, None, Some(definitions), None))
+}
+
+/// Refresh declarations under stable definition identities. Native body reads,
+/// slots and emitted objects survive; their normal full-mode replay determines
+/// which results still hold. Only validated providers enter this boundary.
+fn update_imported_generation(session: &mut Session, definitions: &dyn super::imports::Definitions) {
+    use super::imports::Generation;
+    let generation = match definitions.cargo_definitions() {
+        Some(facts) => Generation::Cargo(facts),
+        None => Generation::Inputs(definitions.dependencies()),
+    };
+    if session.imported_generation.as_ref().is_some_and(|previous| *previous != generation) {
+        // Recollect signatures from the new metadata. Keep the slots, types,
+        // and read sets: the normal full-mode walk reuses bodies whose
+        // signature and other dependencies still hold.
+        session.front.patch = None;
+        session.front.last_check = None;
+        session.front.walk_after_reject = true;
+        session.front.env_hash = None;
+        super::patch::drop_kept(&mut session.front, &mut session.caches);
+    }
+    session.imported_request = true;
+    session.imported_generation = Some(generation);
+    session.cache_tried = true;
+    session.disk_cache = None;
+}
+
+#[cfg(feature = "exclusive-native")]
+pub(crate) fn prepare_library_import<'a>(req: &'a Request, session: &'a mut Session, definitions: &dyn super::imports::Definitions,
+    stdin: Option<StdinSource>,
+) -> Preparation<'a> {
+    // The owner has validated the exact current metadata/archive bytes. Refresh
+    // actual readers without discarding unrelated bodies on an import edit.
+    // General disk-cache keys do not yet encode this imported generation.
+    update_imported_generation(session, definitions);
+    prepare_with_definitions(req, session, None, Some(definitions), stdin)
+}
+
+fn cargo_codegen(req: &Request) -> Option<(crate::protocol::OptLevel, crate::protocol::library_contract::Strip)> {
+    let key = req.session.library.as_ref()?;
+    (req.cmd == Cmd::Build && key.is_executable() && key.optimization != crate::protocol::OptLevel::None)
+        .then_some((key.optimization, req.library_options.debug.strip))
+}
+
+fn prepare_with_definitions<'a>(req: &'a Request, session: &'a mut Session, observer: Option<&dyn super::PhaseObserver>,
+    imports: Option<&dyn super::imports::Definitions>, stdin_source: Option<StdinSource>,
+) -> Preparation<'a> {
+    if imports.is_some_and(|provider| provider.metadata_only()) && req.cmd != Cmd::Check {
+        return Preparation::IntegrationIncomplete(Response {
+            code: 4, stderr: "error: metadata-only imports require a check request\n".into(), ..Default::default()
+        });
+    }
+    // A public library key belongs only to the product owner. Refuse it before
+    // entering research graph selection, which retains its original probe.
+    // The separate retained research library uses no public LibraryKey.
+    #[cfg(not(feature = "exclusive-native"))]
+    if req.session.library.is_some() {
+        return Preparation::IntegrationIncomplete(Response {code:4,
+            stderr:"public library requests require the exclusive-native retained owner\n".into(),..Default::default()});
+    }
+    let phase_id = observer.map(|_| super::PhaseId::next());
     let mut t = Timer::new();
     crate::driver::cache::begin_build(&req.file);
     if req.session != session.key {
-        return Response {
+        return Preparation::finished(Response {
             stderr: format!(
                 "error: internal: request routed to the wrong session\n  request: {}\n  session: {}\n",
                 req.session.describe(),
@@ -2563,16 +3174,26 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
             ),
             code: 3,
             ..Default::default()
-        };
+        });
+    }
+    if !super::library::request_supported(req) {
+        return Preparation::Failed(Response {code:3, stderr:"public library request context is not represented\n".into(), ..Default::default()});
+    }
+    let rust_debug = req.cmd == Cmd::Build && req.library_options.debug.native_rust();
+    let cargo_optimized = cargo_codegen(req).is_some();
+    let public_executable = req.session.library.as_ref().is_some_and(|key| key.is_executable());
+    let cargo_test = req.session.krate.test && req.session.library.as_ref().is_some_and(|key| !key.custom_test);
+    if session.caches.library.is_some() && (req.cc || req.debug || req.emit_c.is_some() || req.harness || req.run_args.is_some()) {
+        return Preparation::Failed(Response {code:3, stderr:"native library output context changed\n".into(), ..Default::default()});
     }
     // A lib target has no `main` to link and lust has no rlib format: `check --lib` works,
     // `build`/`run --lib` is a clear error (Cargo release builds still build libs).
-    if req.session.krate.target_kind == "lib" && !req.harness && !matches!(req.cmd, crate::protocol::Cmd::Check) {
-        return Response {
+    if req.session.krate.target_kind == "lib" && session.caches.library.is_none() && !req.harness && !matches!(req.cmd, crate::protocol::Cmd::Check) {
+        return Preparation::finished(Response {
             stderr: "error: lust builds bin targets only: use `lust check --lib` for a lib target\n".into(),
             code: 1,
             ..Default::default()
-        };
+        });
     }
     // Lust links for the host target only (tcc). A named non-host triple
     // is a clear error for a link, not a host binary under a foreign
@@ -2591,23 +3212,29 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
     // product; no link runs).
     let cc_build = req.cc && (triple.is_empty() || crate::resolve::cfg::CfgEnv::is_release_target(triple));
     if foreign && !foreign_check && !cc_build && req.emit_c.is_none() {
-        return Response {
+        return Preparation::finished(Response {
             stderr: format!(
                 "error: unsupported target `{triple}`: lust builds for the host target `{}` today\n",
                 crate::protocol::host_triple()
             ),
             code: 2,
             ..Default::default()
-        };
+        });
     }
-    let path = req.file.to_string_lossy().to_string();
-    let mut src = match std::fs::read_to_string(&req.file) {
-        Ok(s) => s,
-        Err(e) => return Response { stderr: format!("error: cannot read {path}: {e}\n"), code: 2, ..Default::default() },
+    let path = stdin_source.as_ref().map_or_else(|| req.file.to_string_lossy().into_owned(), |source| source.origin.display.clone());
+    let (mut src, stdin_origin) = match stdin_source {
+        Some(source) => (source.text, Some(source.origin)),
+        None => match std::fs::read_to_string(&req.file) {
+            Ok(source) => (source, None),
+            Err(error) => return Preparation::finished(Response {
+                stderr: format!("error: cannot read {path}: {error}\n"), code: 2, ..Default::default()
+            }),
+        },
     };
     // The crate identity for stable defs comes from the session's key (its
     // package and target identity, `Session::crate_ids`). For a single-file
     // program that is the synthetic one-file bin crate, as before.
+    if let Some(library) = &mut session.caches.library { library.begin(&src); }
     let crate_ids = session.crate_ids();
     // Open the disk cache once per session and seed slot assignment from
     // the stored manifest, so a restarted daemon gives every fn the slot
@@ -2643,6 +3270,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
     }
     let session_key = session.key.clone();
     session.front.client = client_view(req);
+    session.front.client.stdin_origin = stdin_origin;
     let Session { front, caches, std_cache, disk_cache, .. } = session;
     // The last check's answer, kept only for this same request (a no-op
     // check reuses it on the resolver path; anything else recomputes).
@@ -2670,7 +3298,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
     } else {
         crate::resolve::worklist::route_root_std(&src, &front.interner, true)
     };
-    let wants_resolver = wants_resolver || std_mods != 0;
+    let wants_resolver = caches.library.is_some() || imports.is_some() || wants_resolver || std_mods != 0;
     let route_std_mods = req.session.krate.manifest_path.is_none().then_some(std_mods);
     if front.resolved_crate && !wants_resolver {
         front.ast = Arc::default();
@@ -2719,16 +3347,18 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
     if needs.any() {
         match splice_std(&mut src, std_cache, needs) {
             Ok(sp) => (std_ranges, std_routes, std_methods) = (sp.ranges, sp.routes, sp.methods),
-            Err(resp) => return resp,
+            Err(resp) => return Preparation::finished(resp),
         }
         t.lap("std load+splice");
     }
 
+    // Own generated-input leases until all checking and emission have finished.
+    let mut build_outputs = Vec::new();
     // Both front ends produce the same locals for the shared tail.
     let (map, mut changed, mut mention_only, mut const_fn_changed, fn_count, mode, fn_lines_all, body_hashes_all, resolved_tables) = if use_resolver {
-        match resolved_setup(req, front, caches, std_cache, &src, root_lexed, route_std_mods, crate_ids, &mut std_ranges, &mut std_routes, &mut std_methods, &mut t, &mut visits, reusable) {
+        match resolved_setup(req, front, caches, std_cache, &src, root_lexed, route_std_mods, crate_ids, &mut std_ranges, &mut std_routes, &mut std_methods, &mut t, &mut visits, reusable, imports, &mut build_outputs) {
             Ok(x) => x,
-            Err(resp) => return resp,
+            Err(resp) => return Preparation::finished(resp),
         }
     } else {
     // Lex and scan in chunks of whole items, in parallel. Only the region an edit touched is
@@ -2849,6 +3479,9 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
             if old_len == 0 { LineIndex::new(&src) } else { map.lines(ROOT_FILE).splice(&src, region_start, region_end_old, region_end) };
         map.set_file(ROOT_FILE, &path, lines, &src);
     }
+    if let Some(offset) = front.client.stdin_origin.as_ref().and_then(|origin| origin.doctest_offset) {
+        map.set_doctest_offset(ROOT_FILE, offset);
+    }
     let mut ranges: Vec<(usize, usize)> = kept_front.iter().map(|c| (c.start, c.start + c.text.len())).collect();
     let headers = if region_start == 0 && region_end == src.len() { fresh_headers.as_deref() } else { None };
     let middle =
@@ -2873,7 +3506,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
     // A macro error in a chunk is the answer, not a lexing fallback.
     if let Some(Err(d)) = fresh.iter().find(|l| matches!(l, Err(d) if d.code.starts_with("L08"))) {
         let mut d = d.clone();
-        return errors(std::slice::from_mut(&mut d), &map, &src, req);
+        return Preparation::finished(errors(std::slice::from_mut(&mut d), &map, &src, req));
     }
     let split_inner_attr = ranges.len() > 1
         && (reused.iter().flatten().any(|c| c.inner_attr) || fresh.iter().flatten().any(|&(_, _, _, inner_attr)| inner_attr));
@@ -2889,7 +3522,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
         // file has an inner attribute (`has_inner_attr`): lex the whole file. Its error is the
         // answer; if it lexes, compile as one chunk. Never panic.
         match lexer::lex(&src, ROOT_FILE, 0, &front.interner).and_then(|l| expand_tokens(front, l, &req.file, &src, test_mode, req.session.profile, &req.session)) {
-            Err(mut d) => return errors(std::slice::from_mut(&mut d), &map, &src, req),
+            Err(mut d) => return Preparation::finished(errors(std::slice::from_mut(&mut d), &map, &src, req)),
             Ok((whole, deps)) => {
                 let mut sc = scan::scan(&whole);
                 fold_fn_text(&mut sc, &whole, &src);
@@ -3072,7 +3705,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
                     front.chunks[fn_at[i].0].items = None;
                 }
                 front.chunks_blanked = true;
-                return errors(&mut [d], &map, &src, req);
+                return Preparation::finished(errors(&mut [d], &map, &src, req));
             }
             for (&i, (body_ast, body, exprs, pats)) in changed.iter().zip(parsed) {
                 let before = (front.ast.exprs.len() as u32, front.ast.pats.len() as u32, front.ast.blocks.len() as u32);
@@ -3145,7 +3778,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
         if let Some(Err(d)) = parsed.iter().find(|p| p.is_err()) {
             let d = d.clone();
             front.chunks_blanked = old_len > 0;
-            return errors(&mut [d], &map, &src, req);
+            return Preparation::finished(errors(&mut [d], &map, &src, req));
         }
         let mut new_asts: FxMap<usize, Ast> = todo.iter().copied().zip(parsed.into_iter().map(|p| p.unwrap())).collect();
         // Splice every per-chunk list in chunk order: a re-parsed chunk
@@ -3221,7 +3854,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
             Ok(c) => c,
             Err(e) => {
                 front.env_hash = None;
-                return Response { stderr: format!("error: {e}\n"), code: 3, ..Default::default() };
+                return Preparation::finished(Response { stderr: format!("error: {e}\n"), code: 3, ..Default::default() });
             }
         }
     } else {
@@ -3255,14 +3888,14 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
                     Ok((w, _deps)) => w,
                     Err(mut d) => {
                         front.env_hash = None;
-                        return errors(std::slice::from_mut(&mut d), &map, &src, req);
+                        return Preparation::finished(errors(std::slice::from_mut(&mut d), &map, &src, req));
                     }
                 };
             match parser::parse(&whole, &front.interner, &front.known) {
                 Ok(a) => a,
                 Err(d) => {
                     front.env_hash = None;
-                    return errors(&mut [d], &map, &src, req);
+                    return Preparation::finished(errors(&mut [d], &map, &src, req));
                 }
             }
         };
@@ -3273,7 +3906,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
             Ok(c) => c,
             Err(e) => {
                 front.env_hash = None;
-                return Response { stderr: format!("error: {e}\n"), code: 3, ..Default::default() };
+                return Preparation::finished(Response { stderr: format!("error: {e}\n"), code: 3, ..Default::default() });
             }
         }
     };
@@ -3567,6 +4200,14 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
     // Template check errors from the kept program are collect's errors
     // (`gen_reuse.template_errors` counts them).
     let collect = |front: &mut Front, caches: &mut Caches| {
+        if let Some(imports) = imports {
+            let mut definitions = |program: &mut collect::Program| imports.install(program);
+            return collect::collect_reuse_with_definitions(
+                front.ast.clone(), front.interner.clone(), front.known.clone(), crate_ids,
+                req.cmd == Cmd::Build, &mut front.def_order, resolved_tables.clone(),
+                &mut caches.gen_reuse, &std_routes, &mut definitions,
+            );
+        }
         collect::collect_reuse(
             front.ast.clone(),
             front.interner.clone(),
@@ -3666,7 +4307,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
             front.last_visits.clear();
             visits.render(&mut front.last_visits);
             log_visits(&front.last_visits);
-            return errors(&mut ds, &map, &src, req);
+            return Preparation::finished(errors(&mut ds, &map, &src, req));
         }
     };
     // Every body of a generic program rechecks when the trait system
@@ -3735,7 +4376,9 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
     // catch_unwind would return Ok after a panic (rel-opt).
     let tables_env = std::env::var("LUST_UNWIND_TABLES").ok();
     program.unwind_tables = program.unwind
-        && if req.cc {
+        && if rust_debug || cargo_test || cargo_optimized {
+            true
+        } else if req.cc {
             tables_env.as_deref() != Some("0")
         } else {
             !caches.persistent && req.emit_c.is_some() && tables_env.as_deref() == Some("1")
@@ -3757,11 +4400,11 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
                 }
                 None => {
                     front.env_hash = None;
-                    return Response {
+                    return Preparation::finished(Response {
                         stderr: format!("error: lust std load failed: spliced std fn `{}` is missing after collect\n", def.path.join("::")),
                         code: 3,
                         ..Default::default()
-                    };
+                    });
                 }
             }
         }
@@ -3772,7 +4415,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
     if program.fns.len() < fn_count {
         // The scanner and the parser disagree (only possible with unusual syntax). Start over.
         front.env_hash = None;
-        return Response { stderr: "error: internal: function count mismatch; run again\n".into(), code: 3, ..Default::default() };
+        return Preparation::finished(Response { stderr: "error: internal: function count mismatch; run again\n".into(), code: 3, ..Default::default() });
     }
     // Mono instance slots (docs/ARCH.md section 4.2; W-TRAITS-CORE
     // through W-DRIVER): collect appends materialized instances
@@ -3790,7 +4433,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
             let disk = program.disk_id(LocalDefId(i as u32));
             if let Err(c) = def::insert_path(&mut front.slot_paths, disk, &format!("instance#{}", disk.hash.0)) {
                 front.env_hash = None;
-                return Response { stderr: format!("error: {c}\n"), code: 3, ..Default::default() };
+                return Preparation::finished(Response { stderr: format!("error: {c}\n"), code: 3, ..Default::default() });
             }
             let slot = match front.slot_of.get(&disk) {
                 Some(&slot) => slot,
@@ -4040,7 +4683,9 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
                 continue;
             }
             let s = slot(i);
-            if !caches.has_out[s] {
+            let pending = public_executable && caches.ok[s]
+                && caches.slot_ir[s].as_ref().is_some_and(|body| body.pending_codegen);
+            if !caches.has_out[s] && caches.library.is_none() && !pending {
                 continue;
             }
             let Some(Some(cached)) = caches.slot_ir.get(s) else {
@@ -4054,12 +4699,15 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
             };
             let moved = cached.slot_at_gen != s as u32
                 || cached.used_at_gen.iter().any(|(disk, at_gen)| front.slot_of.get(disk) != Some(at_gen));
-            if !moved {
+            if !moved && !pending && (caches.library.is_none() || caches.has_out[s]) {
                 continue;
             }
             let file = program.fn_def(LocalDefId(i as u32)).name_span.file;
-            let fh = *file_hashes.entry(file).or_insert_with(|| file_text_hash(&map, file));
-            let rebuilt = if fh == cached.file_hash {
+            let library_ir = caches.library.is_some() && !caches.has_out[s];
+            let fh = if library_ir {0} else {*file_hashes.entry(file).or_insert_with(|| file_text_hash(&map, file))};
+            let rebuilt = if library_ir {
+                super::library::rebuild(&program,LocalDefId(i as u32),front,caches,&map,scan_of(front,i).1)
+            } else if fh == cached.file_hash {
                 super::ir_cache::rebuild(&program, cached, LocalDefId(i as u32))
             } else {
                 None
@@ -4067,6 +4715,10 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
             match rebuilt {
                 Some(body) if super::ir_cache::ir_fingerprint(&program, &body, &map, scan_of(front, i).1) == cached.ir_fp => {
                     reemit.push((i, body))
+                }
+                _ if caches.library.is_some() && !caches.has_out[s] => {
+                    return Preparation::Failed(Response {code:3,
+                        stderr:"native retained library IR could not be rebound to its current checked generation\n".into(),..Default::default()});
                 }
                 _ => reemit_failed.push(i),
             }
@@ -4081,9 +4733,13 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
     // switches, debug info, unwind tables) makes every slot's C again, as a one-shot build
     // does: its slot cache holds C of the other form (a front image saved by a tcc build,
     // then a release driver build). A check makes no C and keeps the key.
-    let release = super::release_c::on(caches.persistent, req.cc);
+    let mixed = req.session.krate.target_kind == "lustr-mixed-native";
+    let library = caches.library.is_some();
+    let release = rust_debug || cargo_test || cargo_optimized || library || mixed || super::release_c::on(caches.persistent, req.cc);
     if req.cmd == Cmd::Build {
-        let key = super::release_c::codegen_key(release, req.debug, program.unwind_tables);
+        let key = super::release_c::codegen_key(release, req.debug, program.unwind_tables)
+            ^ if library { 0x6c69_622d_746f_7461 } else { 0 }
+            ^ if rust_debug { 0x7275_7374_6462_7567 } else { 0 };
         if caches.codegen_key != key {
             caches.codegen_key = key;
             caches.has_out.iter_mut().for_each(|h| *h = false);
@@ -4091,12 +4747,26 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
             caches.glue = GlueSet::default();
             caches.objects = None;
         }
+        if rust_debug {
+            for (i, &s) in front.fn_slot.iter().enumerate() {
+                let s = s as usize;
+                if caches.has_out[s] && i < program.fns.len()
+                    && caches.out[s].rust_debug_source != cgen::rust_debug_source(&program, LocalDefId(i as u32), &map) {
+                    caches.has_out[s] = false;
+                }
+            }
+        }
     }
     // Front end for the functions that need it. A build also needs IR for functions with no C yet.
     let mut work = changed.clone();
     work.extend(reemit_failed.iter().copied());
     if req.cmd == Cmd::Build {
-        work.extend((0..program.fns.len()).filter(|&i| !caches.has_out[slot(i)] && !in_changed[i]));
+        if library || public_executable {
+            let rebuilt: std::collections::BTreeSet<_> = reemit.iter().map(|(i,_)|*i).collect();
+            work.extend((0..program.fns.len()).filter(|&i| !caches.has_out[slot(i)] && !in_changed[i] && !rebuilt.contains(&i)));
+        } else {
+            work.extend((0..program.fns.len()).filter(|&i| !caches.has_out[slot(i)] && !in_changed[i]));
+        }
     }
     // The instance Adt ids this build generates C under, and whether one
     // names another instance than in the C made since the last full
@@ -4285,28 +4955,64 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
     // A one-shot check needs no IR after borrowck: dropping each body on
     // its worker lets the allocator reuse the memory for the next body,
     // instead of touching fresh pages for every function.
-    let keep_bodies = req.cmd == Cmd::Build || caches.persistent;
+    let keep_bodies = req.cmd == Cmd::Build || caches.persistent || mixed;
     // `lust check` skips std platform bodies (`Program::check_skips`).
     // A skipped slot keeps its last marks; one that needed a check lost
     // its C above, so the next build checks it.
     work.retain(|&i| !program.check_skips(LocalDefId(i as u32)));
+    if public_executable {
+        for &i in &work {
+            let cached = &mut caches.slot_ir[slot(i)];
+            if cached.as_ref().is_some_and(|body| body.pending_codegen) {
+                *cached = None;
+            }
+        }
+    }
     if super::item_oracle::on() {
         let (build, tables) = (req.cmd == Cmd::Build, resolved_tables.as_ref());
         let (lines, hashes) = (&fn_lines_all, &body_hashes_all);
         super::item_oracle::check(front, caches, Ok(&program), &work, fn_count, hashes, lines, visits.path, crate_ids, build, tables);
         t.lap("item oracle");
     }
+    let phase = phase_id.map(|id| super::Prepared { id, request: req, input: &front.ast, program: &program, map: &map, source: &src, work: &work });
+    if let (Some(observer), Some(phase)) = (observer, phase) { observer.prepared(phase); }
+    if let Some(library)=&mut caches.library {
+        library.current((0..program.fns.len()).map(|i|program.disk_id(LocalDefId(i as u32))));
+        // The admitted graph has no explicit extern dependencies. Rust reports
+        // its unused-dependency result at this resolved-program boundary, even
+        // if the following body check diagnoses a type error.
+        library.dependency_lint_ready=true;
+        library.checked=work.iter().map(|&i|program.disk_id(LocalDefId(i as u32))).collect();
+        library.checked_names=work.iter().map(|&i|{let id=LocalDefId(i as u32);(program.disk_id(id),program.interner.get(program.fns[i].name).to_owned())}).collect();
+    }
+    let library_facts=library.then(||std::sync::Mutex::new(std::collections::BTreeMap::new()));
+    let imported_library = library && imports.is_some();
+    let extern_used_on_error = std::sync::atomic::AtomicBool::new(false);
     let results = par_map(&work, |&i| {
         let f = LocalDefId(i as u32);
         // Lowering and borrowck read derive lists too (Copy operands,
         // moves): their notes join the body's reads (check/derive_delta.rs).
         let ((body, errs), noted) = check::derive_delta::scoped(program.record_reads, || {
             let (checked, mut errs) = check::check_fn(&program, f);
+            if let (Some(observer), Some(phase)) = (observer, phase) {
+                check::derive_delta::unlogged(|| observer.checked(phase, f, &checked, &errs));
+            }
             if !errs.is_empty() {
+                if imported_library && checked.expr_res.iter().any(|resolution| matches!(resolution, check::Res::NativeFn(_))) {
+                    extern_used_on_error.store(true, std::sync::atomic::Ordering::Relaxed);
+                }
                 return (None, errs);
             }
+            let mut facts = library.then(|| super::library::capture(&program, f, &checked));
             let body = lower::lower(&program, f, checked);
+            if let Some(facts) = &mut facts { super::library::lowered(&program, facts, &body); }
             errs.extend(borrowck::borrowck(&program, &body));
+            if let (Some(observer), Some(phase)) = (observer, phase) {
+                check::derive_delta::unlogged(|| observer.lowered(phase, f, &body, &errs));
+            }
+            if errs.is_empty() && let Some(facts)=facts && let Some(stored)=&library_facts {
+                stored.lock().unwrap_or_else(|e|e.into_inner()).insert(i,facts);
+            }
             (Some(body), errs)
         });
         let body = body.filter(|_| keep_bodies).map(|mut b| {
@@ -4315,6 +5021,10 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
         });
         (body, errs)
     });
+    if let Some(library) = &mut caches.library {
+        library.extern_used_on_error = extern_used_on_error.into_inner();
+    }
+    let mut library_facts=library_facts.map(|facts|facts.into_inner().unwrap_or_else(|e|e.into_inner()));
     let mut diags: Vec<Diag> = Vec::new();
     for (k, &i) in work.iter().enumerate() {
         caches.ok[slot(i)] = results[k].1.is_empty();
@@ -4350,6 +5060,13 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
             stored.verified[mode_at] = verified;
             caches.slot_reads[slot(i)] = Some(stored);
         }
+        if results[k].1.is_empty() && let Some(facts) = library_facts.as_mut().and_then(|facts|facts.remove(&i))
+            && let Some(library) = &mut caches.library {
+            let body=results[k].0.as_ref().expect("passing library check retains its native body");
+            let fp=super::ir_cache::ir_fingerprint(&program,body,&map,fn_lines_all[i]);
+            caches.slot_ir[slot(i)]=Some(super::ir_cache::cache_body(&program,body,0,slot(i) as u32,Vec::new(),fp));
+            super::library::store(&program, library, facts, front.slot_hash[slot(i)], front.slot_head[slot(i)]);
+        }
         diags.extend(results[k].1.iter().cloned());
     }
     // rustc stops before monomorphization once a pre-mono check fails, so an
@@ -4366,10 +5083,11 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
     // A lust file is a bin crate, so check needs `main` too, as `rustc --emit=metadata`
     // does. `lust test` sets `harness`: it adds a generated `main` after this check.
     // A Cargo lib target (`--lib`) is a lib crate: rustc needs no `main` there.
-    if !req.harness && req.session.krate.target_kind != "lib" && program.main.is_none() {
+    if !req.harness && !cargo_test && req.session.krate.target_kind != "lib" && program.main.is_none() {
         diags.push(Diag::new("L0130", diag::Span::default(), "no `main` function", "Add `fn main() { ... }`."));
     }
     t.lap(if mode == "full" { "check+borrowck (par)" } else { "check changed fns (par)" });
+    if let (Some(observer), Some(phase)) = (observer, phase) { observer.diagnostics(phase, &diags); }
     // A one-shot process (`leak_at_exit`) exits right after this call. Freeing the IR and
     // program arenas, mostly built on worker threads, costs about 10 ms on a 31k-line crate,
     // so leak them on every return below and let the OS reclaim the memory at exit. A
@@ -4396,10 +5114,150 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
                 }
             }
         }
-        return resp;
+        return Preparation::finished(resp);
     }
+    if let Some(imports) = imports
+        && let Err(error) = imports.validate_checked(&program) {
+        return Preparation::Failed(Response { code: 3, stderr: format!("error: imported checked-state contract failed: {error}\n"), ..Default::default() });
+    }
+    // Move the lowered arenas and read sets out of their temporary Program
+    // borrows. This is not the structural IR cache: ids and allocations stay
+    // exactly as checked, and only this same Program can reattach the bodies.
+    let owned_results = results.into_iter().map(|(body, diagnostics)| {
+        body.map(|body| OwnedBody::take(body, &program)).transpose().map(|body| (body, diagnostics))
+    }).collect::<Result<Vec<_>, _>>();
+    let owned_reemit = reemit.into_iter().map(|(id, body)| OwnedBody::take(body, &program).map(|body| (id, body)))
+        .collect::<Result<Vec<_>, _>>();
+    let (results, reemit) = match (owned_results, owned_reemit) {
+        (Ok(results), Ok(reemit)) => (results, reemit),
+        (Err(error), _) | (_, Err(error)) => return Preparation::finished(Response {
+            code: 3, stderr: format!("error: checked request ownership failed: {error}\n"), ..Default::default()
+        }),
+    };
+    let imported_dependencies = imports.map_or_else(Vec::new, |i| i.dependencies());
+    let imported_emission = match imports.filter(|provider| !provider.metadata_only()
+        && req.session.library.as_ref().is_none_or(|key| key.is_executable() && req.cmd == Cmd::Build))
+        .map(|i| i.take_emission()).transpose() {
+        Ok(emission) => emission,
+        Err(error) => return Preparation::Failed(Response {
+            code: 3, stderr: format!("error: imported emission ownership failed: {error}\n"), ..Default::default()
+        }),
+    };
+    let state = CheckedRequest {
+        program, results, reemit, map, source: src, path, work, fn_count, fn_lines_all, body_hashes_all,
+        inst_ids, mode, check_fp, verified, reads_reused, reads_invalidated, reemitted, mixed, release,
+        foreign, visits, timer: t,
+        imported_dependencies, imported_emission, build_outputs,
+    };
+    Preparation::Ready(PreparedRequest { request: req, session, state: Some(state) })
+}
+
+fn stage_imported_objects(dir: &Path, objects: &[Arc<[u8]>]) -> Result<Vec<PathBuf>, String> {
+    if !objects.is_empty() {
+        std::fs::create_dir_all(dir).map_err(|error| format!("create imported object scope: {error}"))?;
+    }
+    objects.iter().enumerate().map(|(index, bytes)| {
+        // The supplied immutable bytes were bound during preparation.
+        let path = dir.join(format!("imported-{index}.o"));
+        std::fs::write(&path, bytes).map_err(|error| format!("cannot materialize imported object: {error}"))?;
+        Ok(path)
+    }).collect()
+}
+
+fn emit_checked(req: &Request, session: &mut Session, state: CheckedRequest) -> Response {
+    let rust_debug = req.cmd == Cmd::Build && req.library_options.debug.native_rust();
+    let cargo_codegen = cargo_codegen(req);
+    let cargo_test = req.session.library.as_ref().filter(|key| req.session.krate.test && !key.custom_test);
+    let CheckedRequest {
+        mut program, results, reemit, map, source: src, path, work, fn_count, fn_lines_all, body_hashes_all,
+        inst_ids, mode, check_fp, verified, reads_reused, reads_invalidated, reemitted, mixed, release,
+        foreign, visits, timer: mut t, imported_dependencies: _imported_dependencies, imported_emission,
+        build_outputs: _build_outputs,
+    } = state;
+    let results: Vec<_> = results.into_iter().map(|(body, diagnostics)| (body.map(|b| b.attach(&program)), diagnostics)).collect();
+    let reemit: Vec<_> = reemit.into_iter().map(|(id, body)| (id, body.attach(&program))).collect();
+    let Session { front, caches, disk_cache, .. } = session;
+    let leak_at_exit = caches.leak_at_exit;
+    let slot = |i: usize| front.fn_slot[i] as usize;
+    let scan_of = |_: &Front, i: usize| (body_hashes_all[i], fn_lines_all[i]);
+    // The mixed bridge admits work from the same checked/lowered state that
+    // codegen consumes below. Ordinary checks, including the early NoChange
+    // return, do not allocate a mixed plan or compute release names.
+    let mixed_names = mixed.then(|| super::release_c::names(&program, &front.fn_slot, front.slot_of.len().max(caches.out.len()), &inst_adt_ids(&program)));
+    let prepared_mixed = if mixed {
+        let admission = cgen::names::with(mixed_names.as_ref(), || super::mixed::prepare(
+            req, &program, &front.fn_slot,
+            |id| work.iter().position(|&i| i == id).and_then(|k| results[k].0.as_ref())
+                .or_else(|| reemit.iter().find(|(i, _)| *i == id).map(|(_, body)| body)),
+            |id| work.contains(&id),
+            &front.slot_hash, &front.slot_head, &caches.ok, &mut caches.mixed_checked,
+        ));
+        match admission {
+            Ok(super::mixed::Admission::Native(prepared)) => Some(prepared),
+            Ok(super::mixed::Admission::IntegrationIncomplete(reason)) => {
+                let response = super::mixed::integration_incomplete(reason);
+                if req.cmd == Cmd::Check && let Some(fp) = check_fp {
+                    front.last_check = Some((fp, response.clone()));
+                }
+                if leak_at_exit {
+                    std::mem::forget(results);
+                    std::mem::forget(program);
+                } else {
+                    drop(results);
+                    program.verified = verified;
+                    super::patch::keep(front, program);
+                }
+                return response;
+            }
+            Err(error) => return Response { code: 3, mixed: Some(crate::protocol::MixedOutcome::Failed),
+                stderr: format!("lustr mixed preparation failed: {error}\n"), ..Default::default() },
+        }
+    } else { None };
+    let library_functions = if caches.library.is_some() {
+        match super::library::complete(&program, &map, &src, front, caches, verified)
+            .and_then(|definitions| {
+                if req.cmd != Cmd::Check {
+                    super::library::completion::require_library_integer_abi(&definitions.functions)?;
+                }
+                Ok(definitions)
+            }) {
+            Ok(definitions) => {
+                let functions = definitions.functions.clone();
+                super::library::remember(caches, definitions, program.ast.inner_attrs.is_empty());
+                Some(functions)
+            }
+            Err(error) => {
+                let code = match error {
+                    // The native checks succeeded, but this library cannot
+                    // be encoded by the native artifact service. No native
+                    // artifact has been emitted for this request.
+                    super::library::completion::Error::Unintegrated(_) if cfg!(feature = "exclusive-native") => {
+                        crate::protocol::RUST_COMPLEMENT_REQUIRED
+                    }
+                    super::library::completion::Error::Unintegrated(_) => 4,
+                    super::library::completion::Error::Failed(_) => 3,
+                };
+                drop(results); drop(reemit);
+                program.verified = verified; super::patch::keep(front, program);
+                return Response {code, stderr:format!("native library completion: {error:?}\n"), ..Default::default()};
+            }
+        }
+    } else { None };
     let mut resp = Response::default();
+    let tests = match cargo_test.map(|key| cgen::rust_tests::collect(&program, &map, &key.working_directory, &key.source_path)).transpose() {
+        Ok(tests) => tests,
+        Err(error) => {
+            drop(results); drop(reemit);
+            program.verified = verified;
+            super::patch::keep(front, program);
+            return Response { code: 4, stderr: format!("error: {error}\n"), ..Default::default() };
+        }
+    };
     if req.cmd == Cmd::Check {
+        if prepared_mixed.is_some() {
+            resp.mixed = Some(crate::protocol::MixedOutcome::Checked);
+        }
+        drop(prepared_mixed);
         // The answer, before the timing and stats lines, for a no-op
         // check of the same request to reuse.
         if let Some(fp) = check_fp {
@@ -4446,10 +5304,34 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
         return resp;
     }
 
+    // A completed type-only provider has no bodies or native code to emit.
+    // Its archive and metadata are published together by the same library owner.
+    if super::library::finish_declaration_only(caches, req.library_options.debug.native_rust()) {
+        drop(results);
+        drop(reemit);
+        program.verified = verified;
+        super::patch::keep(front, program);
+        return resp;
+    }
+
+    // Only an admitted build consumes the imported code plan. Check and every
+    // earlier return merely drop it; preparation never invokes its emitter.
+    let imported_objects = match imported_emission {
+        Some(emission) => match emission.emit() {
+            Ok(objects) => objects,
+            Err(error) => return Response {
+                code: 3, stderr: format!("error: imported code emission failed: {error}\n"), ..Default::default()
+            },
+        },
+        None => Vec::new(),
+    };
+
     // Codegen for the work set, plus any slot-moved re-emits rebuilt
     // from cached IR above.
     let mut bodies: Vec<(usize, ir::Body)> = work.iter().copied().zip(results).filter_map(|(i, r)| r.0.map(|b| (i, b))).collect();
     bodies.extend(reemit);
+    // An admitted mixed function is proved nounwind, not a different panic
+    // strategy. Checking/lowering above retained the requested strategy.
     // Each fn's base line: cgen stores its line numbers relative to it
     // and the main unit adds each slot's base back, so a reused body's
     // C stays right when its source text moves. An instance's base is
@@ -4471,7 +5353,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
     let line_base_of = |_: &Front, i: usize| -> u32 { line_bases.get(i).copied().unwrap_or(0) };
     // Release C (driver/release_c.rs): content-addressed names, set as cgen's naming
     // context around every step that prints C.
-    let rnames = release.then(|| super::release_c::names(&program, &front.fn_slot, front.slot_of.len().max(caches.out.len()), &inst_adt_ids(&program)));
+    let rnames = mixed_names.or_else(|| release.then(|| super::release_c::names(&program, &front.fn_slot, front.slot_of.len().max(caches.out.len()), &inst_adt_ids(&program))));
     let rn = rnames.as_ref();
     // A release C build to the release driver streams its cc step (`cc::Stream`): each unit the
     // assembly makes compiles from the time its text exists. Not with --emit-c nor LLVM units.
@@ -4495,10 +5377,25 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
     // FnOuts share their extern declarations.
     let layout_tag = cgen::layout_phase();
     cgen::clear_extern_pool();
+    let library_llvm = library_functions.as_deref().map_or_else(Default::default, |functions| {
+        super::library::completion::llvm_scalar_bodies(functions)
+    });
     let (outs, cg_noted): (Vec<_>, Vec<_>) = par_map(&bodies, |(i, b)| {
         check::derive_delta::scoped(program.record_reads, || {
             cgen::in_layout_phase(layout_tag, || {
-                cgen::names::with(rn, || cgen::gen_fn(&program, b, &map, line_base_of(front, *i), &front.fn_slot))
+                cgen::names::with(rn, || {
+                    let total = library_functions.is_some() || mixed && super::mixed::total(b);
+                    let mut output = if rust_debug || library_llvm.contains(&b.fn_id) {
+                        cgen::gen_fn_cargo_llvm(&program, b, &map, line_base_of(front, *i),
+                            &front.fn_slot, rust_debug.then_some(cargo_codegen.is_some()), library_functions.is_some())
+                    } else if total {
+                        cgen::gen_fn_total(&program, b, &map, line_base_of(front, *i), &front.fn_slot)
+                    } else {
+                        cgen::gen_fn(&program, b, &map, line_base_of(front, *i), &front.fn_slot)
+                    };
+                    output.mixed_total = total;
+                    output
+                })
             })
         })
     })
@@ -4519,7 +5416,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
     // Cached IR serves only the slot-moved re-emit, which runs only in a
     // program with no generics: a generic program caches none (on tsgo it
     // was 1.5 GB of a daemon session, made serially per generated body).
-    let keep_ir = !program.gx.has_generics;
+    let keep_ir = !program.gx.has_generics && library_functions.is_none();
     // The stable id of each fn whose slot the new C prints (`FnOut::used`),
     // by slot: the pairs below are the next renumber's re-emit trigger.
     let mut wanted = vec![false; if keep_ir { front.slot_of.len() } else { 0 }];
@@ -4552,9 +5449,21 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
         caches.out[s] = out;
         caches.has_out[s] = true;
         dirty_slots.push(s);
-        if let Some(slot_ir) = caches.slot_ir.get_mut(s) {
+        if caches.library.is_none() && let Some(slot_ir) = caches.slot_ir.get_mut(s) {
             *slot_ir = cached;
         }
+    }
+    // Consume the same generated slots before executable-only glue/table/link
+    // work. Each function object is independently retained; metadata belongs to
+    // the caller and cannot cause native functions to be recompiled as a unit.
+    if let Some(functions) = library_functions {
+        let generated: Vec<_> = bodies.iter().map(|(i, _)| *i).collect();
+        let response = super::library::finish(req, &program, front, caches, functions,
+            rn.expect("native libraries use stable names"), &generated, &library_llvm);
+        drop(bodies);
+        program.verified = verified; super::patch::keep(front, program);
+        cgen::clear_extern_pool();
+        return response;
     }
     // LUST_CHECK_GENREUSE=1 (genreuse_oracle.rs): every concrete body a release C build keeps
     // is checked, lowered and generated again without reuse (nothing stored), and its C must
@@ -4602,7 +5511,10 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
     // a daemon keeps units smaller, about four per core, so a warm
     // edit recompiles little code.
     let covered = caches.groups.last().map_or(0, |g| g.end);
-    if caches.groups.is_empty() || covered > n_slots || caches.objects != Some(req.debug) || !caches.persistent {
+    if req.session.library.as_ref().is_some_and(|key| key.single_codegen_unit) {
+        caches.groups.clear();
+        caches.groups.extend((n_slots != 0).then_some(0..n_slots));
+    } else if caches.groups.is_empty() || covered > n_slots || caches.objects != Some(req.debug) || !caches.persistent {
         let sizes: Vec<usize> = caches.out.iter().map(FnOut::code_len).collect();
         if caches.unit_bytes == 0 {
             let cores = crate::pool::threads().max(1);
@@ -4681,6 +5593,14 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
     }
     let glue_changed = shared_changed || regenerated || statics_changed;
     t.lap("codegen (par)");
+    if let Some(prepared) = prepared_mixed {
+        let response = cgen::names::with(rn, || super::mixed::emit(
+            prepared, &caches.out, rn.expect("mixed units use stable native names"), bodies.len(),
+        ));
+        program.verified = verified;
+        super::patch::keep(front, program);
+        return response;
+    }
     // Nothing reads the IR after codegen. A one-shot build leaks it at exit
     // (`leak_at_exit`), but on a large program it is the largest block
     // alive at the peak (ts-rust's bins: about 2.4 GB of 9.4 GB, through
@@ -4718,7 +5638,12 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
     const SHARD_RECORD: &str = "glue shard ";
     let fn_units: Vec<usize> = (0..groups.len()).map(|g| g + FIRST_FN_UNIT).collect();
     let dirty_fn_units: Vec<usize> = (0..groups.len()).filter(|&g| dirty_groups[g]).map(|g| g + FIRST_FN_UNIT).collect();
-    let main_slot = front.fn_slot[program.main.unwrap().0 as usize];
+    let main_slot = if tests.is_some() { u32::MAX } else { front.fn_slot[program.main.unwrap().0 as usize] };
+    let main_unit = |overlays| cgen::main_unit_with_tests(
+        main_slot, overlays, cgen::unwind_init(&program, |f| front.fn_slot[f.0 as usize]),
+        tests.as_deref().map(|tests| (tests, front.fn_slot.as_slice())),
+    );
+    let runtime_unit = || cgen::cargo_runtime_unit(tests.is_some());
     // Instance slots take their template's line: cgen stores an
     // instance's panic lines relative to it (see `line_base_of`).
     let mut slot_lines = vec![0u32; n_slots];
@@ -4751,7 +5676,14 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
     // rebuilds and the base
     // relinks over the existing unit objects. Unrelated units keep
     // their objects, in the session and in the disk unit cache.
-    let fresh_base = caches.objects != Some(req.debug) || !caches.persistent;
+    let standalone = caches.output == super::session::OutputKind::Standalone;
+    let retain_standalone = req.session.library.as_ref().is_some_and(|key| key.is_executable())
+        || session.imported_generation.is_some();
+    // Cargo's dependency-free unwind binaries use the existing native panic
+    // propagation. TinyCC's own linker also preserves its multi-body frame
+    // relocations, which cannot be passed to another linker in this form.
+    let unwind_frames = standalone && retain_standalone && !req.session.profile.panic_abort;
+    let fresh_base = caches.objects != Some(req.debug) || !caches.persistent || (standalone && !retain_standalone);
     let cap_grown = n_slots > caches.table_cap;
     if fresh_base || cap_grown {
         caches.table_cap = n_slots * 2 + 64;
@@ -4760,7 +5692,9 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
         caches.base_units = groups.len();
     }
     let table_dirty = cap_grown || groups.len() != caches.base_units;
-    let rebuild_base = fresh_base || table_dirty || caches.overlays.len() + dirty_fn_units.len() > MAX_OVERLAYS;
+    // A Cargo executable must be self-contained. Update changed units in
+    // their original object slots and link with the unchanged objects.
+    let rebuild_base = standalone || fresh_base || table_dirty || caches.overlays.len() + dirty_fn_units.len() > MAX_OVERLAYS;
     let dir = caches.obj_dir.clone();
     let base_obj = |u: usize| dir.join(format!("u{u}.o"));
     let overlay_obj = |u: usize| dir.join(format!("o{u}.o"));
@@ -4842,9 +5776,9 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
         super::release_c::groups(&caches.out, names, &file, &line)
     };
     let gen_unit = |u: usize, overlay: bool| match u {
-        0 => cgen::main_unit(main_slot, &registered, cgen::unwind_init(&program, |f| front.fn_slot[f.0 as usize])),
+        0 => main_unit(&registered),
         1 => cgen::glue_unit(&program, &caches.glue),
-        2 => cgen::runtime_unit(),
+        2 => runtime_unit(),
         3 => cgen::table_unit(caches.table_cap, &fn_units),
         LOC_UNIT => cgen::loc_unit(&files, &slot_lines),
         g => {
@@ -4853,7 +5787,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
         }
     };
     // Release C: whether fn bodies are LLVM IR (cgen/ll.rs), and B1's switches.
-    let llvm_on = cgen::names::with(rn, || cgen::ll::on(&program));
+    let llvm_on = rust_debug || cgen::names::with(rn, || cgen::ll::on(&program));
     // B1 (`cgen::record`): each C fn unit records the pieces it is made of and what it
     // read, and the next build sets the record against its program
     // (`Caches::unit_records`). A session that keeps its caches (a daemon, a front
@@ -5007,7 +5941,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
             let assemble = |u: usize, inl: &[Vec<usize>], c_refs: Option<&cgen::ll::CRefs>, copy_hot: Option<&cgen::CopyHot>| {
                 let t = Instant::now();
                 let (c, helpers) = cgen::in_layout_phase(asm_tag, || cgen::names::with(rn, || match u {
-                    0 => (cgen::main_unit(main_slot, &[], cgen::unwind_init(&program, |f| front.fn_slot[f.0 as usize])), String::new()),
+                    0 => (main_unit(&[]), String::new()),
                     1 => match super::release_c::statics_bytes() {
                         0 => (adapt(cgen::names::statics_unit(&program, &caches.glue), &Default::default()), String::new()),
                         target => {
@@ -5023,7 +5957,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
                             (adapt(index, &Default::default()), String::new())
                         }
                     },
-                    2 => (cgen::runtime_unit(), String::new()),
+                    2 => (runtime_unit(), String::new()),
                     3 => {
                         let rg = rg_cell.get().expect("the fn units are cut before unit 3");
                         (super::release_c::table_unit(&rg.iter().filter(|(_, s)| s.contains(&(main_slot as usize))).map(|(r, _)| r.clone()).collect::<Vec<_>>()), String::new())
@@ -5291,7 +6225,9 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
                         if k < n_early {
                             Ok(assemble(first[k], &[], None, None))
                         } else {
-                            Err(cgen::ll::ll_inline_set(&caches.out, &rg[first[k]].1, &slot_of, hot.as_ref()))
+                            Err(if rust_debug { Vec::new() } else {
+                                cgen::ll::ll_inline_set(&caches.out, &rg[first[k]].1, &slot_of, hot.as_ref())
+                            })
                         }
                     })
                     .into_iter()
@@ -5617,7 +6553,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
     };
     let rgroups = rg_cell.into_inner();
     // The LLVM backend (cgen/ll.rs) wrote `.ll` companions: only cc.rs builds them.
-    let llvm = rgroups.is_some() && cgen::names::with(rn, || cgen::ll::on(&program));
+    let llvm = rgroups.is_some() && llvm_on;
     // The units the link takes after 1..4: release C has its own fn units, glue shards and
     // statics parts.
     let link_fn_units: Vec<usize> = match &rgroups {
@@ -5656,7 +6592,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
             return Response { code: 0, ..Default::default() };
         }
     }
-    if llvm && !req.cc {
+    if llvm && !req.cc && !rust_debug && tests.is_none() && cargo_codegen.is_none() {
         return Response {
             stderr: "error: LUST_RELEASE_BACKEND=llvm builds through the release driver (`lust build --release --target <triple>`) or with --emit-c\n".into(),
             code: 2,
@@ -5671,7 +6607,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
     // frozen, so a clean unit's C is the same as last time and its object
     // comes from the cache. Overlays do not exist here: every build emits
     // the base form of each unit.
-    if req.cc {
+    if req.cc || rust_debug || tests.is_some() || cargo_codegen.is_some() {
         // The release driver returns before the visits line at the end: its log line is here
         // (front-check's path coverage).
         front.last_visits.clear();
@@ -5688,7 +6624,10 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
                 }
             }
         }
-        let prepared = crate::cc::spec_for(triple).and_then(|spec| {
+        let spec = if rust_debug || tests.is_some() || cargo_codegen.is_some() {
+            crate::cc::spec_for_native_cargo(triple, rust_debug, tests.is_some(), cargo_codegen)
+        } else { crate::cc::spec_for(triple) };
+        let prepared = spec.and_then(|spec| {
             // Release C (`LUST_RELEASE_C=1`) already holds the content-addressed units.
             let mut all: Vec<(String, String)> = if rgroups.is_some() {
                 // An LLVM companion keeps its `.ll` name (cc.rs pairs it with its C unit). The
@@ -5749,8 +6688,12 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
         {
             let _ = writeln!(resp.stderr, "b1: {l}");
         }
+        let imported = match stage_imported_objects(&dir, &imported_objects) {
+            Ok(paths) => paths,
+            Err(error) => return Response { code: 3, stderr: format!("error: {error}\n"), ..Default::default() },
+        };
         let job = move || {
-            let built = crate::cc::build_with(&all, &spec, &out, debug, cache.as_ref(), &cc_dir, stream).map_err(|e| e.to_string());
+            let built = crate::cc::build_with(&all, &spec, &out, debug, cache.as_ref(), &cc_dir, stream, &imported).map_err(|e| e.to_string());
             // A build that leaks at exit leaks the unit texts too (they moved out of `units`).
             if leak_at_exit {
                 std::mem::forget(all);
@@ -5807,6 +6750,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
     // this check keeps that a pin, not a hope.
     if let Some(run_args) = &req.run_args
         && !caches.persistent
+        && standalone
         && fresh_base
         && groups.len() == 1
         && !req.debug
@@ -5837,7 +6781,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
         }
     }
     // Disk unit objects key on each unit's full C text (see cache.rs):
-    // tcc's output is a function of the C, the debug flag, and the
+    // tcc's output is a function of the C, emission options, and the
     // compiler, so a hit can never serve an object whose C differs. The
     // C is already built here for every unit in `todo`, so the key costs
     // one hash per unit.
@@ -5847,7 +6791,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
         return Response { stderr: format!("error: {e}\n"), code: 3, ..Default::default() };
     }
     let keys: Vec<Option<String>> = match &disk_cache {
-        Some(cache) => par_map(&units, |(_, c)| Some(cache.unit_key(c, req.debug))),
+        Some(cache) => par_map(&units, |(_, c)| Some(cache.unit_key(c, req.debug, unwind_frames))),
         None => vec![None; units.len()],
     };
     // The units move into the miss list, and their C is freed before the
@@ -5866,7 +6810,7 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
             miss_keys.push(key);
         }
     }
-    if let Err(e) = crate::tcc::compile_units(&miss_units, req.debug) {
+    if let Err(e) = crate::tcc::compile_units_with_frames(&miss_units, req.debug, unwind_frames) {
         caches.objects = None;
         return Response { stderr: format!("error: {e}\n"), code: 3, ..Default::default() };
     }
@@ -5883,10 +6827,18 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
     caches.objects = Some(req.debug);
     t.lap("tcc compile");
     let all_base: Vec<PathBuf> = [1, 2, 3, LOC_UNIT].into_iter().chain(link_fn_units.iter().copied()).map(base_obj).collect();
-    let linked = if !caches.persistent {
+    let linked = if standalone {
         let mut objs = vec![base_obj(0)];
         objs.extend(all_base);
-        crate::tcc::link(&objs, &req.out, req.debug)
+        match stage_imported_objects(&caches.obj_dir, &imported_objects) {
+            Ok(paths) => objs.extend(paths),
+            Err(error) => return Response { code: 3, stderr: format!("error: {error}\n"), ..Default::default() },
+        }
+        if unwind_frames {
+            crate::tcc::link_with_frames(&objs, &req.out, req.debug, true)
+        } else {
+            crate::tcc::link(&objs, &req.out, req.debug)
+        }
     } else {
         // The base library lives in a persistent dir under a content name
         // (see `resolve_base_dir`): the executable loads it by absolute
@@ -5901,18 +6853,31 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
         }
         let base = if rebuild_base {
             caches.base_gen += 1;
-            let tmp = base_dir.join(format!("libbase-tmp-{}-{}-{}.so", std::process::id(), caches.base_gen, base_tmp_seq()));
+            let tmp = base_dir.join(format!(
+                "libbase-tmp-{}-{}-{}{}",
+                std::process::id(), caches.base_gen, base_tmp_seq(), crate::tcc::SHARED_LIBRARY_SUFFIX
+            ));
             let built = std::fs::create_dir_all(&base_dir)
                 .map_err(|e| format!("cannot create {}: {e}", base_dir.display()))
-                .and_then(|_| crate::tcc::link_shared(&all_base, &tmp, req.debug))
                 .and_then(|_| {
-                    let bytes = std::fs::read(&tmp).map_err(|e| format!("cannot read {}: {e}", tmp.display()))?;
-                    // The object dir in the hash makes the name unique to this
-                    // session instance, and the pid names the owning process:
-                    // see `base_owner_pid`.
-                    let (a, b) = crate::driver::cache::hash128(&[&bytes, caches.obj_dir.to_string_lossy().as_bytes()], 41);
-                    caches.base_name = format!("base-{}-{a:016x}{b:016x}", std::process::id());
-                    let soname = format!("lib{}.so", caches.base_name);
+                    let install_name = if cfg!(target_os = "macos") {
+                        let compiler_id = disk_cache.as_ref().map_or_else(crate::driver::cache::compiler_id, |cache| cache.compiler_id());
+                        caches.base_name = darwin_base_name(
+                            &all_base, &caches.obj_dir, compiler_id, &req.session.describe(), crate::protocol::host_triple(), req.debug,
+                        )?;
+                        Some(caches.base_name.as_str())
+                    } else {
+                        None
+                    };
+                    crate::tcc::link_shared(&all_base, &tmp, req.debug, install_name)?;
+                    if !cfg!(target_os = "macos") {
+                        let bytes = std::fs::read(&tmp).map_err(|e| format!("cannot read {}: {e}", tmp.display()))?;
+                        // Keep the ELF identity on the linked bytes plus this
+                        // session's object dir. The pid names the owner.
+                        let (a, b) = crate::driver::cache::hash128(&[&bytes, caches.obj_dir.to_string_lossy().as_bytes()], 41);
+                        caches.base_name = format!("base-{}-{a:016x}{b:016x}", std::process::id());
+                    }
+                    let soname = crate::tcc::shared_library_filename(&caches.base_name);
                     install_base(&tmp, &base_dir.join(&soname))?;
                     if !caches.base_files.contains(&soname) {
                         caches.base_files.push_back(soname);
@@ -5922,24 +6887,25 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
             if built.is_err() {
                 let _ = std::fs::remove_file(&tmp);
             }
-            t.lap("link libbase.so");
+            t.lap(if cfg!(target_os = "macos") { "link base library" } else { "link libbase.so" });
             built
-        } else if !caches.base_name.is_empty() && !base_dir.join(format!("lib{}.so", caches.base_name)).exists() {
+        } else if !caches.base_name.is_empty() && !base_dir.join(crate::tcc::shared_library_filename(&caches.base_name)).exists() {
             // The base file vanished under a live session. The bases dir
             // is in `.lust-cache`, state outside tools may delete as a
             // cache (the edit fuzzer rewrites the crate tree every edit).
             // The base objects still live in the session object dir, so
             // relink the same base under the same name.
-            let dest = base_dir.join(format!("lib{}.so", caches.base_name));
-            let tmp = base_dir.join(format!("libbase-tmp-{}-relink-{}.so", std::process::id(), base_tmp_seq()));
+            let dest = base_dir.join(crate::tcc::shared_library_filename(&caches.base_name));
+            let tmp = base_dir.join(format!("libbase-tmp-{}-relink-{}{}", std::process::id(), base_tmp_seq(), crate::tcc::SHARED_LIBRARY_SUFFIX));
+            let install_name = cfg!(target_os = "macos").then_some(caches.base_name.as_str());
             let built = std::fs::create_dir_all(&base_dir)
                 .map_err(|e| format!("cannot create {}: {e}", base_dir.display()))
-                .and_then(|_| crate::tcc::link_shared(&all_base, &tmp, req.debug))
+                .and_then(|_| crate::tcc::link_shared(&all_base, &tmp, req.debug, install_name))
                 .and_then(|_| install_base(&tmp, &dest));
             if built.is_err() {
                 let _ = std::fs::remove_file(&tmp);
             }
-            t.lap("link libbase.so");
+            t.lap(if cfg!(target_os = "macos") { "link base library" } else { "link libbase.so" });
             built
         } else {
             Ok(())
@@ -5958,8 +6924,8 @@ pub fn compile(req: &Request, session: &mut Session) -> Response {
     // a small grace count while no known output file still references them. A binary the user
     // kept keeps its base; one that was overwritten or deleted does not. A running program
     // keeps its mapped copy after unlink.
-    if caches.persistent && !caches.base_name.is_empty() {
-        let soname = format!("lib{}.so", caches.base_name);
+    if !standalone && !caches.base_name.is_empty() {
+        let soname = crate::tcc::shared_library_filename(&caches.base_name);
         if let Some(base_dir) = caches.base_dir.clone() {
             record_base_user(&base_dir, &soname, &req.out);
         }
@@ -6034,7 +7000,7 @@ mod tests {
     /// is installed, and a workspace file relative to the workspace root.
     #[test]
     fn location_paths_do_not_hold_the_install_path() {
-        let client = expand::ClientView { env: None, shown_root: None };
+        let client = expand::ClientView::PROCESS;
         let at = |lust: &str, p: &str| location_path(&format!("{lust}{p}"), &Path::new(lust).join("library"), Some(Path::new("/ws")), &client);
         for lust in ["/opt/lust", "/home/u/tools/lust-0.2"] {
             assert_eq!(at(lust, "/library/deps/bumpalo/src/lib.rs"), "library/deps/bumpalo/src/lib.rs");
@@ -6056,6 +7022,66 @@ mod tests {
             }
         }
         panic!("{}: still busy", bin.display())
+    }
+
+    #[test]
+    fn darwin_base_names_cover_inputs_and_owner() {
+        let dir = std::env::temp_dir().join(format!("lust-base-key-test-{}-{}", std::process::id(), base_tmp_seq()));
+        std::fs::create_dir_all(&dir).unwrap();
+        let objs = vec![dir.join("one.o"), dir.join("two.o")];
+        std::fs::write(&objs[0], b"one").unwrap();
+        std::fs::write(&objs[1], b"two").unwrap();
+        let key = || darwin_base_name(&objs, &dir, (1, 2), "session", "target", false).unwrap();
+        let original = key();
+        assert_eq!(key(), original, "identical inputs retain their immutable name");
+        assert!(original.starts_with(&format!("base-{}-", std::process::id())), "the pid names the owner");
+        assert_ne!(darwin_base_name(&[objs[1].clone(), objs[0].clone()], &dir, (1, 2), "session", "target", false).unwrap(), original);
+        assert_ne!(darwin_base_name(&objs[..1], &dir, (1, 2), "session", "target", false).unwrap(), original);
+        std::fs::write(&objs[0], b"changed").unwrap();
+        assert_ne!(key(), original, "changed bytes cannot replace an older base in place");
+        std::fs::write(&objs[0], b"one").unwrap();
+        assert_eq!(key(), original);
+        for different in [
+            darwin_base_name(&objs, &dir.join("another-session"), (1, 2), "session", "target", false),
+            darwin_base_name(&objs, &dir, (3, 2), "session", "target", false),
+            darwin_base_name(&objs, &dir, (1, 3), "session", "target", false),
+            darwin_base_name(&objs, &dir, (1, 2), "another-session", "target", false),
+            darwin_base_name(&objs, &dir, (1, 2), "session", "another-target", false),
+            darwin_base_name(&objs, &dir, (1, 2), "session", "target", true),
+        ] {
+            assert_ne!(different.unwrap(), original);
+        }
+        std::fs::remove_file(&objs[0]).unwrap();
+        assert!(darwin_base_name(&objs, &dir, (1, 2), "session", "target", false).is_err(), "a missing input cannot acquire a name");
+        std::fs::remove_dir_all(dir).unwrap();
+    }
+
+    #[test]
+    #[cfg(any(target_os = "linux", target_os = "macos"))]
+    fn base_owner_liveness() {
+        unsafe extern "C" {
+            fn getppid() -> i32;
+        }
+        // SAFETY: getppid has no arguments or memory preconditions.
+        let parent = u32::try_from(unsafe { getppid() }).unwrap();
+        assert!(parent > 0);
+        assert!(base_owner_alive(parent), "another live native process is protected");
+        assert!(base_owner_alive(std::process::id()));
+        assert!(!base_owner_alive(0), "zero must not probe the process group");
+        assert!(!base_owner_alive(u32::MAX), "an overflowing pid must not become -1");
+        let dir = std::env::temp_dir().join(format!("lust-base-owner-test-{}-{}", std::process::id(), base_tmp_seq()));
+        std::fs::create_dir_all(&dir).unwrap();
+        let base = crate::tcc::shared_library_filename(&format!("base-{parent}-aaaa"));
+        let tmp = crate::tcc::shared_library_filename(&format!("base-tmp-{parent}-1"));
+        std::fs::write(dir.join(&base), b"base").unwrap();
+        std::fs::write(dir.join(&tmp), b"in progress").unwrap();
+        std::fs::write(dir.join("manifest"), format!("{base}\t{}\n", dir.join("gone.bin").display())).unwrap();
+        sweep_bases(&dir, 0);
+        assert!(dir.join(&base).exists(), "another live owner's unreferenced base stays");
+        assert!(dir.join(&tmp).exists(), "another live owner's unfinished link stays");
+        sweep_bases(&dir, parent);
+        assert!(!dir.join(&base).exists(), "an exiting owner's unreferenced base is swept");
+        std::fs::remove_dir_all(dir).unwrap();
     }
 
     /// The base sweep never deletes a live owner's base (it may be a live
@@ -6417,7 +7443,544 @@ fn main() { println!(\"{}\", f0() + 5i64.d()); }
             max_errors: 20,
             run_args: None,
             harness: false, cc: false,
+            library_options: Default::default(),
             client: Default::default(),
+        }
+    }
+
+    mod checked_request {
+        use super::*;
+        use std::sync::{Mutex, atomic::{AtomicUsize, Ordering}};
+
+        struct Fixture { root: PathBuf, request: Request, session: Session }
+        impl Fixture {
+            fn new(source: &str, persistent: bool) -> Self {
+                static NEXT: AtomicUsize = AtomicUsize::new(0);
+                let root = std::env::temp_dir().join(format!("lust-checked-request-{}-{}", std::process::id(), NEXT.fetch_add(1, Ordering::Relaxed)));
+                std::fs::create_dir(&root).unwrap();
+                let file = root.join("input.rs");
+                std::fs::write(&file, source).unwrap();
+                let key = crate::protocol::SessionKey::synthetic(&file, false);
+                let request = Request { cmd: Cmd::Build, out: root.join("program"), ..req_for(key.clone()) };
+                let mut session = Session::new(root.join("objects"), persistent, key);
+                session.caches.output = crate::driver::OutputKind::Standalone;
+                Self { root, request, session }
+            }
+        }
+        impl Drop for Fixture {
+            fn drop(&mut self) {
+                if !std::thread::panicking() { let _ = std::fs::remove_dir_all(&self.root); }
+            }
+        }
+        fn ready(preparation: Preparation<'_>) -> PreparedRequest<'_> {
+            match preparation {
+                Preparation::Ready(prepared) => prepared,
+                Preparation::Complete(r) | Preparation::Rejected(r) | Preparation::Failed(r) | Preparation::IntegrationIncomplete(r) =>
+                    panic!("expected an owned checked request, got {}: {}", r.code, r.stderr),
+            }
+        }
+        fn assert_run(path: &Path, expected: &str) {
+            let output = run_bin(path);
+            assert!(output.status.success(), "{}", String::from_utf8_lossy(&output.stderr));
+            assert_eq!(String::from_utf8_lossy(&output.stdout), expected);
+            assert!(output.stderr.is_empty());
+        }
+        const SOURCE: &str = "struct Pair { a:i64, b:i64 }\nfn id<T:Copy>(x:T)->T{x}\nfn sum(p:&Pair)->i64{p.a+p.b}\nfn value()->i64{41}\nfn main(){let p=Pair{a:value(),b:1};let f=|x:i64|x+1;println!(\"{}\",id(sum(&p))+f(1));}\n";
+
+        #[derive(Default)]
+        struct Probe {
+            phases: AtomicUsize,
+            checks: AtomicUsize,
+            lowered: Mutex<Vec<(usize, usize, usize)>>,
+        }
+        impl crate::driver::PhaseObserver for Probe {
+            fn prepared(&self, _: crate::driver::Prepared<'_>) { self.phases.fetch_add(1, Ordering::Relaxed); }
+            fn checked(&self, _: crate::driver::Prepared<'_>, _: LocalDefId, _: &crate::check::Checked<'_>, _: &[Diag]) {
+                self.checks.fetch_add(1, Ordering::Relaxed);
+            }
+            fn lowered(&self, _: crate::driver::Prepared<'_>, function: LocalDefId, body: &ir::Body<'_>, diagnostics: &[Diag]) {
+                assert!(diagnostics.is_empty());
+                self.lowered.lock().unwrap().push((function.0 as usize, body.blocks.as_ptr() as usize, body.locals.as_ptr() as usize));
+            }
+        }
+
+        #[test]
+        fn owns_checked_snapshot_and_emits_without_another_frontend_pass() {
+            for persistent in [false, true] {
+                let mut f = Fixture::new(SOURCE, persistent);
+                let probe = Probe::default();
+                let prepared = ready(prepare_observed(&f.request, &mut f.session, Some(&probe)));
+                assert_eq!(prepared.source(), SOURCE);
+                assert_eq!(prepared.request().out, f.request.out);
+                assert!(!f.request.out.exists(), "preparation did not link");
+                assert!(prepared.session.caches.out.iter().all(|out| !out.has_code()), "preparation did not generate C");
+                let checks = probe.checks.load(Ordering::Relaxed);
+                assert!(checks >= 5, "the aggregate, reference, generic instance and closure were checked");
+                assert_eq!(probe.phases.load(Ordering::Relaxed), 1);
+                assert_eq!(prepared.checked_functions().len(), checks);
+                for (id, blocks, locals) in probe.lowered.lock().unwrap().iter() {
+                    let state = prepared.state.as_ref().unwrap();
+                    let at = state.work.iter().position(|f| f == id).unwrap();
+                    let body = &state.results[at].0.as_ref().unwrap().body;
+                    assert_eq!(body.blocks.as_ptr() as usize, *blocks, "IR allocation moved without cloning");
+                    assert_eq!(body.locals.as_ptr() as usize, *locals, "local allocation moved without cloning");
+                }
+                // The continuation owns a snapshot. If emission reparsed/rechecked,
+                // this deliberately invalid replacement would prevent the build.
+                std::fs::write(&f.request.file, "fn main(){let x:u32=true;}\n").unwrap();
+                let result = prepared.emit();
+                assert_eq!(result.code, 0, "{}", result.stderr);
+                assert_eq!(probe.checks.load(Ordering::Relaxed), checks);
+                assert_eq!(probe.phases.load(Ordering::Relaxed), 1);
+                assert_run(&f.request.out, "44\n");
+
+                std::fs::write(&f.request.file, SOURCE.replace("value()->i64{41}", "value()->i64{43}")).unwrap();
+                let result = crate::driver::compile(&f.request, &mut f.session);
+                assert_eq!(result.code, 0, "{}", result.stderr);
+                assert_run(&f.request.out, "46\n");
+            }
+        }
+
+        #[test]
+        fn retains_warm_edits_and_rejects_invalid_source_before_emission() {
+            let original = "fn value()->i64{41}\nfn main(){println!(\"{}\",value());}\n";
+            let mut f = Fixture::new(original, true);
+            let first = ready(crate::driver::prepare(&f.request, &mut f.session));
+            assert_eq!(first.checked_functions().len(), 2);
+            assert_eq!(first.emit().code, 0);
+            assert_run(&f.request.out, "41\n");
+            let no_change = ready(crate::driver::prepare(&f.request, &mut f.session));
+            assert!(no_change.checked_functions().is_empty(), "unchanged native bodies retained");
+            assert_eq!(no_change.emit().code, 0);
+            std::fs::write(&f.request.file, original.replace("{41}", "{42}")).unwrap();
+            let edit = ready(crate::driver::prepare(&f.request, &mut f.session));
+            assert_eq!(edit.checked_functions().len(), 1, "only the edited body is checked");
+            assert_eq!(edit.emit().code, 0);
+            assert_run(&f.request.out, "42\n");
+            let previous = std::fs::read(&f.request.out).unwrap();
+            std::fs::write(&f.request.file, original.replace("{41}", "{true}")).unwrap();
+            match crate::driver::prepare(&f.request, &mut f.session) {
+                Preparation::Rejected(r) => assert_eq!(r.code, 1),
+                _ => panic!("invalid source must not produce a prepared emission or complementary result"),
+            }
+            assert_eq!(std::fs::read(&f.request.out).unwrap(), previous);
+            std::fs::write(&f.request.file, original.replace("{41}", "{43}")).unwrap();
+            assert_eq!(ready(crate::driver::prepare(&f.request, &mut f.session)).emit().code, 0);
+            assert_run(&f.request.out, "43\n");
+        }
+
+        #[test]
+        fn abandoning_preparation_does_not_replace_artifacts_and_session_recovers() {
+            let mut f = Fixture::new(SOURCE, true);
+            std::fs::write(&f.request.out, b"previous artifact").unwrap();
+            let prepared = ready(crate::driver::prepare(&f.request, &mut f.session));
+            drop(prepared);
+            assert_eq!(std::fs::read(&f.request.out).unwrap(), b"previous artifact");
+            assert!(f.session.caches.out.iter().all(|out| !out.has_code()));
+            assert_eq!(ready(crate::driver::prepare(&f.request, &mut f.session)).emit().code, 0);
+            assert_run(&f.request.out, "44\n");
+            let previous = std::fs::read(&f.request.out).unwrap();
+            std::fs::write(&f.request.file, SOURCE.replace("value()->i64{41}", "value()->i64{43}")).unwrap();
+            let edited = ready(crate::driver::prepare(&f.request, &mut f.session));
+            assert!(!edited.checked_functions().is_empty());
+            drop(edited);
+            assert_eq!(std::fs::read(&f.request.out).unwrap(), previous);
+            // Revert after the abandoned edit: retained C from the original
+            // build must not be confused with checked state from the edit.
+            std::fs::write(&f.request.file, SOURCE).unwrap();
+            assert_eq!(ready(crate::driver::prepare(&f.request, &mut f.session)).emit().code, 0);
+            assert_run(&f.request.out, "44\n");
+            std::fs::write(&f.request.file, SOURCE.replace("value()->i64{41}", "value()->i64{45}")).unwrap();
+            drop(ready(crate::driver::prepare(&f.request, &mut f.session)));
+            assert_eq!(ready(crate::driver::prepare(&f.request, &mut f.session)).emit().code, 0);
+            assert_run(&f.request.out, "48\n");
+        }
+
+        #[test]
+        fn prepared_link_failure_is_terminal_and_can_recover_natively() {
+            let mut f = Fixture::new("fn main(){println!(\"42\");}\n", true);
+            let prepared = ready(crate::driver::prepare(&f.request, &mut f.session));
+            std::fs::create_dir(&f.request.out).unwrap();
+            let result = prepared.emit();
+            assert_eq!(result.code, 3, "{}", result.stderr);
+            assert!(f.request.out.is_dir());
+            std::fs::remove_dir(&f.request.out).unwrap();
+            assert_eq!(ready(crate::driver::prepare(&f.request, &mut f.session)).emit().code, 0);
+            assert_run(&f.request.out, "42\n");
+        }
+
+        #[test]
+        fn preserves_the_exact_predicate_environment_without_cloning_it() {
+            let mut f = Fixture::new(SOURCE, true);
+            let prepared = ready(crate::driver::prepare(&f.request, &mut f.session));
+            let program = prepared.program();
+            let (id, scope) = program.gx.fn_scopes.iter().enumerate().find(|(id, scope)|
+                !scope.env.is_empty() && program.interner.get(program.fns[*id].name) == "id").unwrap();
+            let function = LocalDefId(id as u32);
+            let (checked, diagnostics) = check::check_fn(program, function);
+            assert!(diagnostics.is_empty());
+            let body = lower::lower(program, function, checked);
+            assert!(std::ptr::eq(body.tys.env, scope.env.as_slice()));
+            let before = body.blocks.as_ptr();
+            let owned = OwnedBody::take(body, program).unwrap();
+            assert_eq!(owned.environment, Some(function));
+            let body = owned.attach(program);
+            assert!(std::ptr::eq(body.tys.env, scope.env.as_slice()));
+            assert!(std::ptr::eq(body.tys.global, &program.tys));
+            assert_eq!(body.blocks.as_ptr(), before);
+            drop(body);
+            drop(prepared);
+        }
+
+        #[test]
+        fn read_and_session_failures_do_not_create_a_checked_request() {
+            let mut f = Fixture::new(SOURCE, true);
+            std::fs::remove_file(&f.request.file).unwrap();
+            match crate::driver::prepare(&f.request, &mut f.session) {
+                Preparation::Failed(r) => assert_eq!(r.code, 2),
+                _ => panic!("I/O failure must remain a failure"),
+            }
+            f.request.session.krate.package_id.push_str("-different");
+            match crate::driver::prepare(&f.request, &mut f.session) {
+                Preparation::Failed(r) => assert_eq!(r.code, 3),
+                _ => panic!("session mismatch must remain a failure"),
+            }
+            assert!(!f.request.out.exists());
+        }
+
+        #[test]
+        fn check_completion_does_not_generate_and_still_reuses_checked_state() {
+            let mut f = Fixture::new(SOURCE, true);
+            f.request.cmd = Cmd::Check;
+            assert_eq!(ready(crate::driver::prepare(&f.request, &mut f.session)).emit().code, 0);
+            assert!(!f.request.out.exists());
+            assert!(f.session.caches.out.iter().all(|out| !out.has_code()));
+            match crate::driver::prepare(&f.request, &mut f.session) {
+                Preparation::Complete(r) => assert_eq!(r.code, 0),
+                Preparation::Ready(prepared) => {
+                    assert!(prepared.checked_functions().is_empty());
+                    assert_eq!(prepared.emit().code, 0);
+                }
+                _ => panic!("unchanged checked request should reuse its passing native state"),
+            }
+            assert!(!f.request.out.exists());
+        }
+    }
+
+    #[cfg(all(target_os = "linux", target_arch = "x86_64"))]
+    mod mixed_admission {
+        use super::*;
+        use crate::protocol::MixedOutcome;
+        use std::sync::atomic::{AtomicUsize, Ordering};
+
+        struct Fixture { root: PathBuf, req: Request, session: Session }
+        impl Fixture {
+            fn new(source: &str, persistent: bool) -> Self {
+                static NEXT: AtomicUsize = AtomicUsize::new(0);
+                let root = std::env::temp_dir().join(format!("lust-mixed-admission-{}-{}", std::process::id(), NEXT.fetch_add(1, Ordering::Relaxed)));
+                std::fs::create_dir(&root).unwrap();
+                let file = root.join("kernel.rs");
+                std::fs::write(&file, source).unwrap();
+                let mut key = crate::protocol::SessionKey::synthetic(&file, false);
+                key.krate.target_kind = "lustr-mixed-native".into();
+                key.krate.target_name = "kernel".into();
+                key.krate.package_id = "lustr-mixed-1234".into();
+                let req = Request { out: root.join("native.o"), ..req_for(key.clone()) };
+                let session = Session::new(root.join("state"), persistent, key);
+                Self { root, req, session }
+            }
+            fn run(&mut self) -> Response { crate::driver::compile(&self.req, &mut self.session) }
+        }
+        impl Drop for Fixture {
+            fn drop(&mut self) {
+                if !std::thread::panicking() { let _ = std::fs::remove_dir_all(&self.root); }
+            }
+        }
+        fn bounded(command: &mut std::process::Command) -> std::process::Output {
+            command.stdout(std::process::Stdio::piped()).stderr(std::process::Stdio::piped());
+            let mut child = command.spawn().unwrap();
+            let deadline = std::time::Instant::now() + std::time::Duration::from_secs(10);
+            loop {
+                if child.try_wait().unwrap().is_some() { break child.wait_with_output().unwrap(); }
+                if std::time::Instant::now() >= deadline {
+                    let _ = child.kill();
+                    let output = child.wait_with_output().unwrap();
+                    panic!("mixed object caller child timed out: {command:?}: {}", String::from_utf8_lossy(&output.stderr));
+                }
+                std::thread::sleep(std::time::Duration::from_millis(5));
+            }
+        }
+
+        const SCALAR: &str = "fn kernel(x:u64)->u64{x ^ 17}\nfn main(){let _=kernel(0);}\n";
+
+        #[test]
+        fn check_retains_lowered_proof_without_generating_c() {
+            let mut f = Fixture::new(SCALAR, true);
+            for pass in 0..2 {
+                let response = f.run();
+                assert_eq!(response.code, 0, "{}", response.stderr);
+                assert_eq!(response.mixed, Some(MixedOutcome::Checked));
+                assert!(!f.req.out.exists());
+                assert!(!f.req.out.with_extension("c").exists());
+                assert!(f.session.caches.has_out.iter().all(|generated| !generated));
+                assert!(f.session.caches.mixed_checked.is_some());
+                if pass == 1 { assert!(f.session.front.last_visits.contains("checked=0"), "{}", f.session.front.last_visits); }
+            }
+            std::fs::write(&f.req.file, SCALAR.replace("x ^ 17", "x ^ true")).unwrap();
+            let failed = f.run();
+            assert_eq!(failed.code, 1);
+            assert_eq!(failed.mixed, Some(MixedOutcome::Failed));
+            std::fs::write(&f.req.file, SCALAR.replace("x ^ 17", "x ^ 19")).unwrap();
+            let recovered = f.run();
+            assert_eq!(recovered.code, 0, "{}", recovered.stderr);
+            assert_eq!(recovered.mixed, Some(MixedOutcome::Checked));
+        }
+
+        #[test]
+        fn lust_supported_runtime_and_wide_types_remain_integration_gaps() {
+            for (body, expected) in [("x / 2", 2), ("(x as u128).wrapping_add(1) as u64", 5), ("{let unit=(); let _=unit; x}", 4)] {
+                let source = format!("fn kernel(x:u64)->u64{{{body}}}\nfn main(){{assert_eq!(kernel(4),{expected});}}\n");
+                // Establish support through the actual ordinary Lust pipeline,
+                // independently of what the scalar object bridge represents.
+                let mut ordinary = Fixture::new(&source, false);
+                ordinary.req.session = crate::protocol::SessionKey::synthetic(&ordinary.req.file, false);
+                ordinary.req.cmd = Cmd::Build;
+                ordinary.req.out = ordinary.root.join("ordinary-native");
+                ordinary.session = Session::new(ordinary.root.join("ordinary-state"), false, ordinary.req.session.clone());
+                let accepted = ordinary.run();
+                assert_eq!(accepted.code, 0, "ordinary native {body}: {}", accepted.stderr);
+                assert_eq!(accepted.mixed, None);
+                let executed = bounded(&mut std::process::Command::new(&ordinary.req.out));
+                assert!(executed.status.success(), "ordinary native {body}: {}", String::from_utf8_lossy(&executed.stderr));
+                for cmd in [Cmd::Check, Cmd::Build] {
+                    let mut f = Fixture::new(&source, false);
+                    f.req.cmd = cmd;
+                    for _ in 0..2 {
+                        let response = f.run();
+                        assert_eq!(response.code, 4, "{body}: {}", response.stderr);
+                        assert_eq!(response.mixed, Some(MixedOutcome::IntegrationIncomplete), "{body}: {}", response.stderr);
+                        assert!(!f.req.out.exists());
+                        assert!(!f.req.out.with_extension("c").exists());
+                        assert!(f.session.caches.has_out.iter().all(|generated| !generated));
+                    }
+                }
+            }
+        }
+
+        #[test]
+        fn admitted_output_error_is_failure_and_preserves_existing_bytes() {
+            let mut f = Fixture::new(SCALAR, true);
+            f.req.cmd = Cmd::Build;
+            std::fs::write(&f.req.out, b"existing caller output").unwrap();
+            let response = f.run();
+            assert_eq!(response.code, 3, "{}", response.stderr);
+            assert_eq!(response.mixed, Some(MixedOutcome::Failed));
+            assert!(response.stderr.contains("mixed output already exists"));
+            assert_eq!(std::fs::read(&f.req.out).unwrap(), b"existing caller output");
+            assert!(f.session.caches.mixed_checked.is_some(), "the failure happened after admission");
+            assert!(f.session.caches.has_out.iter().any(|generated| *generated));
+            assert!(!f.req.out.with_extension("c").exists());
+        }
+
+        #[test]
+        fn emits_from_the_same_checked_state_and_keeps_reuse() {
+            #[derive(Default)]
+            struct Probe { prepared: AtomicUsize, checked: AtomicUsize, lowered: AtomicUsize }
+            impl crate::driver::PhaseObserver for Probe {
+                fn prepared(&self, _: crate::driver::Prepared<'_>) { self.prepared.fetch_add(1, Ordering::Relaxed); }
+                fn checked(&self, _: crate::driver::Prepared<'_>, _: LocalDefId, _: &crate::check::Checked<'_>, _: &[Diag]) {
+                    self.checked.fetch_add(1, Ordering::Relaxed);
+                }
+                fn lowered(&self, _: crate::driver::Prepared<'_>, _: LocalDefId, _: &crate::ir::Body<'_>, _: &[Diag]) {
+                    self.lowered.fetch_add(1, Ordering::Relaxed);
+                }
+            }
+            let mut f = Fixture::new(SCALAR, true);
+            f.req.cmd = Cmd::Build;
+            for (index, operand) in [17, 17, 19].into_iter().enumerate() {
+                f.req.out = f.root.join(format!("native-{index}.o"));
+                std::fs::write(&f.req.file, SCALAR.replace("x ^ 17", &format!("x ^ {operand}"))).unwrap();
+                let probe = Probe::default();
+                let response = crate::driver::compile_observed(&f.req, &mut f.session, Some(&probe));
+                assert_eq!(response.code, 0, "{}", response.stderr);
+                assert_eq!(response.mixed, Some(MixedOutcome::Emitted));
+                assert_eq!(response.stdout, "lustr_mixed_1234");
+                assert_eq!(&std::fs::read(&f.req.out).unwrap()[..4], b"\x7fELF");
+                assert_eq!(probe.prepared.load(Ordering::Relaxed), 1);
+                assert_eq!(probe.checked.load(Ordering::Relaxed), probe.lowered.load(Ordering::Relaxed));
+                assert!(probe.checked.load(Ordering::Relaxed) <= 2, "no repeated checking after admission");
+                if index == 1 {
+                    assert_eq!(probe.checked.load(Ordering::Relaxed), 0);
+                    assert!(response.stderr.contains("0 function(s) generated"), "{}", response.stderr);
+                }
+                // Exercise the actual wrapper, slot and parameter handoff.
+                // ELF shape alone cannot establish the generated function's
+                // meaning, especially after a retained literal edit.
+                let caller = f.root.join(format!("caller-{index}.rs"));
+                let executable = f.root.join(format!("caller-{index}"));
+                std::fs::write(&caller, format!(
+                    "unsafe extern \"C\"{{fn lustr_mixed_1234(x:u64)->u64;}}\n\
+                     fn main(){{for x in [0u64,1,42,u64::MAX]{{let actual=unsafe{{lustr_mixed_1234(x)}};\
+                     assert_eq!(actual,x ^ {operand});println!(\"{{x}}:{{actual}}\");}}}}\n"
+                )).unwrap();
+                let rustc = std::env::var_os("RUSTC").unwrap_or_else(|| "rustc".into());
+                let built = bounded(std::process::Command::new(rustc)
+                    .env_remove("LD_LIBRARY_PATH")
+                    .args(["--edition=2024", "--crate-name", "mixed_native_caller"])
+                    .arg(&caller).arg("-o").arg(&executable)
+                    .arg(format!("-Clink-arg={}", f.req.out.display())));
+                assert!(built.status.success(), "Rust caller {index}: {}", String::from_utf8_lossy(&built.stderr));
+                let runtime = bounded(std::process::Command::new(&executable).env_remove("LD_LIBRARY_PATH"));
+                assert!(runtime.status.success(), "native object caller {index}: {}", String::from_utf8_lossy(&runtime.stderr));
+                let expected = [0u64, 1, 42, u64::MAX].into_iter().map(|x| format!("{x}:{}\n", x ^ operand)).collect::<String>();
+                assert_eq!(runtime.stdout, expected.as_bytes());
+                assert!(runtime.stderr.is_empty(), "native object caller {index}: {}", String::from_utf8_lossy(&runtime.stderr));
+            }
+        }
+
+        #[test]
+        fn integer32_native_objects_match_wide_integer_oracles_after_retained_edits() {
+            for signed in [false, true] {
+                let ty = if signed { "i32" } else { "u32" };
+                let factor = if signed { "-1" } else { "4294967295" };
+                let source = format!("fn kernel(x:{ty})->{ty}{{x.wrapping_mul({factor}).wrapping_add(17).rotate_left(13)}}\nfn main(){{let _=kernel(0);}}\n");
+                let mut f = Fixture::new(&source, true);
+                f.req.cmd = Cmd::Build;
+                for (index, bias) in [17, 17, 19].into_iter().enumerate() {
+                    f.req.out = f.root.join(format!("native-{index}.o"));
+                    std::fs::write(&f.req.file, source.replace("wrapping_add(17)", &format!("wrapping_add({bias})"))).unwrap();
+                    let response = f.run();
+                    assert_eq!(response.code, 0, "{ty}: {}", response.stderr);
+                    assert_eq!(response.mixed, Some(MixedOutcome::Emitted));
+                    if index == 1 { assert!(response.stderr.contains("0 function(s) generated"), "{}", response.stderr); }
+                    let caller = f.root.join(format!("caller-{index}.rs"));
+                    let executable = f.root.join(format!("caller-{index}"));
+                    // Every 16-bit pattern plus the wide sign/overflow boundaries.
+                    // u64/i64 arithmetic computes the exact mathematical product;
+                    // the mask implements the modulo-2^32 result independently
+                    // of the compiled wrapping/rotate implementation.
+                    let exact = if signed {
+                        format!("let raw=((-(input as i32 as i64)+{bias}) as u64)&0xffff_ffff;")
+                    } else {
+                        format!("let raw=(u64::from(input)*4294967295+{bias})&0xffff_ffff;")
+                    };
+                    std::fs::write(&caller, format!(
+                        "unsafe extern \"C\"{{fn lustr_mixed_1234(x:{ty})->{ty};}}\n\
+                         fn main(){{let mut count=0;for input in (0u32..=65535).chain([65536,0x7fff_ffff,0x8000_0000,0xffff_0000,0xffff_ffff]){{\
+                         {exact}let expected=(((raw<<13)|(raw>>19))&0xffff_ffff) as u32 as {ty};\
+                         let actual=unsafe{{lustr_mixed_1234(input as {ty})}};assert_eq!(actual,expected,\"input {{input}}\");count+=1;}}\
+                         println!(\"{{count}}\");}}\n"
+                    )).unwrap();
+                    let rustc = std::env::var_os("RUSTC").unwrap_or_else(|| "rustc".into());
+                    let built = bounded(std::process::Command::new(rustc).env_remove("LD_LIBRARY_PATH")
+                        .args(["--edition=2024", "--crate-name", "integer32_native_caller"])
+                        .arg(&caller).arg("-o").arg(&executable).arg(format!("-Clink-arg={}", f.req.out.display())));
+                    assert!(built.status.success(), "Rust caller {ty}/{index}: {}", String::from_utf8_lossy(&built.stderr));
+                    let runtime = bounded(std::process::Command::new(&executable).env_remove("LD_LIBRARY_PATH"));
+                    assert!(runtime.status.success(), "native {ty}/{index}: {}", String::from_utf8_lossy(&runtime.stderr));
+                    assert_eq!(runtime.stdout, b"65541\n");
+                    assert!(runtime.stderr.is_empty());
+                }
+            }
+        }
+
+        #[test]
+        fn narrow_native_returns_match_exact_modular_oracles() {
+            for (ty, width, signed) in [("i8", 8, true), ("u8", 8, false), ("i16", 16, true), ("u16", 16, false)] {
+                let source = format!("fn kernel(x:u32)->{ty}{{(x ^ 17) as {ty}}}\nfn main(){{let _=kernel(0);}}\n");
+                let mut f = Fixture::new(&source, true);
+                f.req.cmd = Cmd::Build;
+                for (index, bias) in [17, 17, 19].into_iter().enumerate() {
+                    f.req.out = f.root.join(format!("native-{index}.o"));
+                    std::fs::write(&f.req.file, source.replace("x ^ 17", &format!("x ^ {bias}"))).unwrap();
+                    let response = f.run();
+                    assert_eq!(response.code, 0, "{ty}: {}", response.stderr);
+                    assert_eq!(response.mixed, Some(MixedOutcome::Emitted));
+                    if index == 1 { assert!(response.stderr.contains("0 function(s) generated"), "{}", response.stderr); }
+                    let caller = f.root.join(format!("caller-{index}.rs"));
+                    let executable = f.root.join(format!("caller-{index}"));
+                    std::fs::write(&caller, format!(
+                        "unsafe extern \"C\"{{fn lustr_mixed_1234(x:u32)->{ty};}}\n\
+                         fn main(){{let mut count=0;for input in (0u32..=65535).chain([65536,0x7fff_ffff,0x8000_0000,0xffff_0000,0xffff_ffff]){{\
+                         let bits=((u64::from(input)^{bias})&((1u64<<{width})-1)) as i64;\
+                         let expected=if {signed} && bits>=(1i64<<({width}-1)){{bits-(1i64<<{width})}}else{{bits}};\
+                         let actual=unsafe{{lustr_mixed_1234(input)}};assert_eq!(i64::from(actual),expected,\"input {{input}}\");count+=1;}}\
+                         println!(\"{{count}}\");}}\n"
+                    )).unwrap();
+                    let rustc = std::env::var_os("RUSTC").unwrap_or_else(|| "rustc".into());
+                    let built = bounded(std::process::Command::new(rustc).env_remove("LD_LIBRARY_PATH")
+                        .args(["--edition=2024", "--crate-name", "narrow_native_caller"])
+                        .arg(&caller).arg("-o").arg(&executable).arg(format!("-Clink-arg={}", f.req.out.display())));
+                    assert!(built.status.success(), "Rust caller {ty}/{index}: {}", String::from_utf8_lossy(&built.stderr));
+                    let runtime = bounded(std::process::Command::new(&executable).env_remove("LD_LIBRARY_PATH"));
+                    assert!(runtime.status.success(), "native {ty}/{index}: {}", String::from_utf8_lossy(&runtime.stderr));
+                    assert_eq!(runtime.stdout, b"65541\n");
+                    assert!(runtime.stderr.is_empty());
+                }
+            }
+        }
+
+        #[test]
+        fn target_and_request_bridge_gaps_do_not_establish_a_complement() {
+            for variant in 0..5 {
+                let mut f = Fixture::new(SCALAR, false);
+                match variant {
+                    0 => {
+                        f.req.session.target_triple = "wasm32-wasip1".into();
+                        f.session = Session::new(f.root.join("foreign-state"), false, f.req.session.clone());
+                    }
+                    1 => f.req.debug = true,
+                    2 => f.req.cc = true,
+                    3 => f.req.emit_c = Some(f.root.join("requested.c")),
+                    4 => f.req.harness = true,
+                    _ => unreachable!(),
+                }
+                for cmd in [Cmd::Check, Cmd::Build] {
+                    f.req.cmd = cmd;
+                    let response = f.run();
+                    assert_eq!(response.code, 4, "{}", response.stderr);
+                    assert_eq!(response.mixed, Some(MixedOutcome::IntegrationIncomplete));
+                    assert!(!f.req.out.exists());
+                    assert!(!f.root.join("requested.c").exists());
+                    assert!(matches!(crate::driver::prepare(&f.req, &mut f.session),
+                        Preparation::IntegrationIncomplete(response) if response.code == 4));
+                }
+            }
+            let mut f = Fixture::new(SCALAR, false);
+            f.req.run_args = Some(Vec::new());
+            let response = f.run();
+            assert_eq!(response.code, 4);
+            assert_eq!(response.mixed, Some(MixedOutcome::IntegrationIncomplete));
+            assert!(!response.ran);
+        }
+
+        #[test]
+        fn missing_definition_and_invalid_rust_are_failures() {
+            let mut f = Fixture::new(SCALAR, false);
+            f.req.session.krate.target_name = "missing".into();
+            f.session = Session::new(f.root.join("missing-state"), false, f.req.session.clone());
+            let response = f.run();
+            assert_eq!(response.code, 3, "{}", response.stderr);
+            assert_eq!(response.mixed, Some(MixedOutcome::Failed));
+            let mut invalid = Fixture::new(&SCALAR.replace("x ^ 17", "x ^ true"), false);
+            let response = invalid.run();
+            assert_eq!(response.code, 1);
+            assert_eq!(response.mixed, Some(MixedOutcome::Failed));
+        }
+
+        #[test]
+        fn wrong_session_is_a_failure_not_a_bridge_gap() {
+            let mut f = Fixture::new(SCALAR, false);
+            f.req.session.target_triple = "wasm32-wasip1".into();
+            for background in [false, true] {
+                let response = if background {
+                    crate::driver::compile_background(&f.req, &mut f.session)
+                } else { f.run() };
+                assert_eq!(response.code, 3, "{}", response.stderr);
+                assert_eq!(response.mixed, Some(MixedOutcome::Failed));
+                assert!(response.stderr.contains("wrong session"), "{}", response.stderr);
+                assert!(!f.req.out.exists());
+            }
         }
     }
 

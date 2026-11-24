@@ -1,0 +1,90 @@
+{
+  "schema": 1,
+  "rust_source": "5b7b37aefcb5b2fba3c2392bc9065b9e4602d494",
+  "rustc_vV": "rustc 1.102.0-nightly (5b7b37aef 2026-11-08)\nbinary: rustc\ncommit-hash: 5b7b37aefcb5b2fba3c2392bc9065b9e4602d494\ncommit-date: 2026-11-08\nhost: x86_64-unknown-linux-gnu\nrelease: 1.102.0-nightly\nLLVM version: 23.1.5\n",
+  "identities": {
+    "native_core_sha256": "5b58156a946dbde21275b0b3a354c1e6d31176aa37a94b452a24db0c8d5a50bb",
+    "rustc_sha256": "ca9d833d09469a534ca1449e71ca9961608409cdb257df96cf8035338fac28de"
+  },
+  "scalar_values": 1112064,
+  "comparisons": [
+    {
+      "fixture": "compiler/native/tests/pass/unicode_const_runtime_semantics.rs",
+      "fixture_sha256": "845bac5c75ac68951acb0e8c569ad0309ed71480e309b14ae3554d7196c4f010",
+      "bytes": 31,
+      "sha256": "eb6cf2759dbd1616cc0ebb73297300d23b3c103f740dbc1ba9df4850b077ba36",
+      "byte_for_byte_equal": true
+    },
+    {
+      "fixture": "compiler/native/tools/unicode_runtime_exact.rs",
+      "fixture_sha256": "e73dce88e4ed7797f9136a0aa21e1f69ce7d8880bd6546aa3654a7bc90c0c0ba",
+      "bytes": 114666345,
+      "sha256": "d8d2c58bf07f1acd5faadb78b78c9b732e79d5e6d4a019b7ce620e6cbb0ed69b",
+      "byte_for_byte_equal": true
+    },
+    {
+      "fixture": "compiler/native/tests/pass/identifier_nfc.rs",
+      "fixture_sha256": "fc71e01f6c89126f39df8fc17b0c3ccf8e6f6754c8010fa82cace33d92bebd15",
+      "bytes": 12,
+      "sha256": "90e248c6de2c8733bd99247f06ba62fe52199fcffe9d3b83ef145a4c1a921bc5",
+      "byte_for_byte_equal": true
+    },
+    {
+      "fixture": "compiler/native/tests/pass/identifier_nfc_macros.rs",
+      "fixture_sha256": "2d96c66b7f732429150240cbfdd275bb1ec75faca6359b12f7e052957ff510e7",
+      "bytes": 93,
+      "sha256": "632f55ace0695cd5420d874853ec863960dccb6f0240205b27b20f744f9b986b",
+      "byte_for_byte_equal": true
+    },
+    {
+      "fixture": "compiler/native/tests/pass/identifier_nfc_includes.rs",
+      "fixture_sha256": "7016ef5d20f20b427aca32b0afc0b06d828f5e5b2a16289b9fbdf0326e7beaeb",
+      "bytes": 25,
+      "sha256": "37ab62b07ef18e786d41eda332cc5816b1807682c53ed98d534a92ccfa3d1262",
+      "byte_for_byte_equal": true
+    },
+    {
+      "fixture": "compiler/native/tests/pass/identifier_nfc_modules.rs",
+      "fixture_sha256": "f8f5c30189629e4700b71525e13d95e6978458dda0c20ac72f81a100c6bf1a45",
+      "bytes": 6,
+      "sha256": "b0e35de7ed8b81054f65be9a66d09f9c06b642e04df0a156871fdabbbeecddee",
+      "byte_for_byte_equal": true
+    },
+    {
+      "fixture": "compiler/native/tests/pass/lex_ident_normalized.rs",
+      "fixture_sha256": "2aeb150ca5d3f2ceb3d8be3f495524eede6e8c748ad1c10ed161a131f3a87fed",
+      "bytes": 3,
+      "sha256": "25d4f2a86deb5e2574bb3210b67bb24fcc4afb19f93a7b65a057daa874a9d18e",
+      "byte_for_byte_equal": true
+    },
+    {
+      "fixture": "compiler/native/tests/pass/identifier_nfc_assertions.rs",
+      "fixture_sha256": "ac2a3486d5ef6a3c1aaff151528f072aa548a106905f9bf4dd7093401b5f2926",
+      "bytes": 426,
+      "sha256": "23695bca0b076d94bc39eec68ec25fd4dbc6a0381f7ff68ccb2730ed6285ff94",
+      "byte_for_byte_equal": true
+    }
+  ],
+  "commands": 39,
+  "duplicate_normalized_identifiers": [
+    {
+      "implementation": "native",
+      "diagnostic": "L0106",
+      "artifact_written": false
+    },
+    {
+      "implementation": "rust",
+      "diagnostic": "E0428",
+      "artifact_written": false
+    }
+  ],
+  "normalization_dependency_lockfiles": [
+    "compiler/native/Cargo.lock",
+    "crates/lustr-native-core/Cargo.lock"
+  ],
+  "limits": [
+    "Direct cold compilation; retained behavior is covered by the separate native test.",
+    "Unicode data and exercised operations only; not a proof of all Rust semantics.",
+    "No timing or release-admission claim."
+  ]
+}

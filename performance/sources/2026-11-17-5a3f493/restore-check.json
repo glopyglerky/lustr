@@ -1,0 +1,12 @@
+{
+  "schema": "lustr-exact-source-restore-v1",
+  "head": "5a3f4937d94e8f028dd85385ea65d51fcfe35a3b",
+  "checkout": "b3393a4a2907228516546cd34f1a5c60aaf6aaaa",
+  "tree": "2fca60e57829890b10a4a23da57bafab2581b092",
+  "prerequisite_source": "fresh two-commit bare public clone; blobs remain lazy",
+  "merge_absent_before_bundle": true,
+  "source_entries": 13443,
+  "source_inventory_sha256": "597927b9bc55d148c2182e66ac4d97f4be8d88e0ad41d58b861e1b23f97c9394",
+  "source_inventory_matches_original": true,
+  "scope": "Isolated recovery of exact Git commit/tree and complete blob-ID inventory; no new compiler execution, individual source-blob rehash or original binary recovery."
+}

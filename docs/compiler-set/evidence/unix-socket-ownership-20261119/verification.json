@@ -1,0 +1,487 @@
+{
+  "schema": 1,
+  "source_revision": "af0a281f2d1fae04e8ebfd5aa2c4872b20245c04",
+  "native_tree": "a3f37f8a4d2364757a3bebf476e530e6ddf4735a",
+  "native_core_sha256": "066f71a26794945a3a704e692268483be96776b2a064a3ca02b8cda3462d1793",
+  "rust_source_revision": "5b7b37aefcb5b2fba3c2392bc9065b9e4602d494",
+  "scope": "Linux actual native source with deterministic socket syscall stand-ins; separate simulated Apple helper controls; not macOS runtime qualification",
+  "matrix": [
+    {
+      "native_sha256": "ea28136a1c2174a07eb4df16f7bd79d3dd02c645d47793537f3dbe381f4c64b3",
+      "tables": false,
+      "matrix.rs_sha256": "893d9fce3e91dd2ef80784dc22410ef60f65ebf09d7148691b407bce4c266896",
+      "wrapper.c_sha256": "3d5708351ace39142ef621c459fd073c496c710726376363ed028500863adbf1",
+      "verify.py_sha256": "0dcc18d3345788454ceaf721a9845aa48801474e9c593db8e7f88c898a6a7448",
+      "cases": [
+        {
+          "mode": "valid",
+          "case": "socket-fail",
+          "native_status": 0,
+          "rust_status": 0,
+          "equal": false
+        },
+        {
+          "mode": "valid",
+          "case": "success",
+          "native_status": 0,
+          "rust_status": 0,
+          "equal": false
+        },
+        {
+          "mode": "valid",
+          "case": "connect-fail",
+          "native_status": 0,
+          "rust_status": 0,
+          "equal": false
+        },
+        {
+          "mode": "valid",
+          "case": "bind-fail",
+          "native_status": 0,
+          "rust_status": 0,
+          "equal": true
+        },
+        {
+          "mode": "valid",
+          "case": "listen-fail",
+          "native_status": 0,
+          "rust_status": 0,
+          "equal": false
+        },
+        {
+          "mode": "long",
+          "case": "socket-fail",
+          "native_status": 0,
+          "rust_status": 0,
+          "equal": false
+        },
+        {
+          "mode": "long",
+          "case": "success",
+          "native_status": 0,
+          "rust_status": 0,
+          "equal": false
+        },
+        {
+          "mode": "long",
+          "case": "connect-fail",
+          "native_status": 0,
+          "rust_status": 0,
+          "equal": false
+        },
+        {
+          "mode": "long",
+          "case": "bind-fail",
+          "native_status": 0,
+          "rust_status": 0,
+          "equal": false
+        },
+        {
+          "mode": "long",
+          "case": "listen-fail",
+          "native_status": 0,
+          "rust_status": 0,
+          "equal": false
+        },
+        {
+          "mode": "nul",
+          "case": "socket-fail",
+          "native_status": 0,
+          "rust_status": 0,
+          "equal": false
+        },
+        {
+          "mode": "nul",
+          "case": "success",
+          "native_status": 0,
+          "rust_status": 0,
+          "equal": false
+        },
+        {
+          "mode": "nul",
+          "case": "connect-fail",
+          "native_status": 0,
+          "rust_status": 0,
+          "equal": false
+        },
+        {
+          "mode": "nul",
+          "case": "bind-fail",
+          "native_status": 0,
+          "rust_status": 0,
+          "equal": false
+        },
+        {
+          "mode": "nul",
+          "case": "listen-fail",
+          "native_status": 0,
+          "rust_status": 0,
+          "equal": false
+        },
+        {
+          "mode": "panic",
+          "case": "socket-fail",
+          "native_status": 0,
+          "rust_status": 0,
+          "equal": false
+        },
+        {
+          "mode": "panic",
+          "case": "success",
+          "native_status": 0,
+          "rust_status": 0,
+          "equal": false
+        },
+        {
+          "mode": "panic",
+          "case": "connect-fail",
+          "native_status": 0,
+          "rust_status": 0,
+          "equal": false
+        },
+        {
+          "mode": "panic",
+          "case": "bind-fail",
+          "native_status": 0,
+          "rust_status": 0,
+          "equal": false
+        },
+        {
+          "mode": "panic",
+          "case": "listen-fail",
+          "native_status": 0,
+          "rust_status": 0,
+          "equal": false
+        }
+      ],
+      "passed": false,
+      "label": "mock-before",
+      "full_record_sha256": "8627593581b897c0b32e368bb1d7ae7d71a0e11fbf90e762aa66810906ad1c84",
+      "library_source_revision": "cf9914034"
+    },
+    {
+      "native_sha256": "066f71a26794945a3a704e692268483be96776b2a064a3ca02b8cda3462d1793",
+      "tables": false,
+      "matrix.rs_sha256": "893d9fce3e91dd2ef80784dc22410ef60f65ebf09d7148691b407bce4c266896",
+      "wrapper.c_sha256": "3d5708351ace39142ef621c459fd073c496c710726376363ed028500863adbf1",
+      "verify.py_sha256": "0dcc18d3345788454ceaf721a9845aa48801474e9c593db8e7f88c898a6a7448",
+      "cases": [
+        {
+          "mode": "valid",
+          "case": "socket-fail",
+          "native_status": 0,
+          "rust_status": 0,
+          "equal": true
+        },
+        {
+          "mode": "valid",
+          "case": "success",
+          "native_status": 0,
+          "rust_status": 0,
+          "equal": true
+        },
+        {
+          "mode": "valid",
+          "case": "connect-fail",
+          "native_status": 0,
+          "rust_status": 0,
+          "equal": true
+        },
+        {
+          "mode": "valid",
+          "case": "bind-fail",
+          "native_status": 0,
+          "rust_status": 0,
+          "equal": true
+        },
+        {
+          "mode": "valid",
+          "case": "listen-fail",
+          "native_status": 0,
+          "rust_status": 0,
+          "equal": true
+        },
+        {
+          "mode": "long",
+          "case": "socket-fail",
+          "native_status": 0,
+          "rust_status": 0,
+          "equal": true
+        },
+        {
+          "mode": "long",
+          "case": "success",
+          "native_status": 0,
+          "rust_status": 0,
+          "equal": true
+        },
+        {
+          "mode": "long",
+          "case": "connect-fail",
+          "native_status": 0,
+          "rust_status": 0,
+          "equal": true
+        },
+        {
+          "mode": "long",
+          "case": "bind-fail",
+          "native_status": 0,
+          "rust_status": 0,
+          "equal": true
+        },
+        {
+          "mode": "long",
+          "case": "listen-fail",
+          "native_status": 0,
+          "rust_status": 0,
+          "equal": true
+        },
+        {
+          "mode": "nul",
+          "case": "socket-fail",
+          "native_status": 0,
+          "rust_status": 0,
+          "equal": true
+        },
+        {
+          "mode": "nul",
+          "case": "success",
+          "native_status": 0,
+          "rust_status": 0,
+          "equal": true
+        },
+        {
+          "mode": "nul",
+          "case": "connect-fail",
+          "native_status": 0,
+          "rust_status": 0,
+          "equal": true
+        },
+        {
+          "mode": "nul",
+          "case": "bind-fail",
+          "native_status": 0,
+          "rust_status": 0,
+          "equal": true
+        },
+        {
+          "mode": "nul",
+          "case": "listen-fail",
+          "native_status": 0,
+          "rust_status": 0,
+          "equal": true
+        },
+        {
+          "mode": "panic",
+          "case": "socket-fail",
+          "native_status": 0,
+          "rust_status": 0,
+          "equal": true
+        },
+        {
+          "mode": "panic",
+          "case": "success",
+          "native_status": 0,
+          "rust_status": 0,
+          "equal": true
+        },
+        {
+          "mode": "panic",
+          "case": "connect-fail",
+          "native_status": 0,
+          "rust_status": 0,
+          "equal": true
+        },
+        {
+          "mode": "panic",
+          "case": "bind-fail",
+          "native_status": 0,
+          "rust_status": 0,
+          "equal": true
+        },
+        {
+          "mode": "panic",
+          "case": "listen-fail",
+          "native_status": 0,
+          "rust_status": 0,
+          "equal": true
+        }
+      ],
+      "passed": true,
+      "label": "mock-after",
+      "full_record_sha256": "6d7b4c3919b97390b7805fc9f65ed33edc1e61e47a4945640fa79f54436223e6",
+      "library_source_revision": "af0a281f2d1fae04e8ebfd5aa2c4872b20245c04"
+    },
+    {
+      "native_sha256": "066f71a26794945a3a704e692268483be96776b2a064a3ca02b8cda3462d1793",
+      "tables": true,
+      "matrix.rs_sha256": "893d9fce3e91dd2ef80784dc22410ef60f65ebf09d7148691b407bce4c266896",
+      "wrapper.c_sha256": "3d5708351ace39142ef621c459fd073c496c710726376363ed028500863adbf1",
+      "verify.py_sha256": "0dcc18d3345788454ceaf721a9845aa48801474e9c593db8e7f88c898a6a7448",
+      "cases": [
+        {
+          "mode": "valid",
+          "case": "socket-fail",
+          "native_status": 0,
+          "rust_status": 0,
+          "equal": true
+        },
+        {
+          "mode": "valid",
+          "case": "success",
+          "native_status": 0,
+          "rust_status": 0,
+          "equal": true
+        },
+        {
+          "mode": "valid",
+          "case": "connect-fail",
+          "native_status": 0,
+          "rust_status": 0,
+          "equal": true
+        },
+        {
+          "mode": "valid",
+          "case": "bind-fail",
+          "native_status": 0,
+          "rust_status": 0,
+          "equal": true
+        },
+        {
+          "mode": "valid",
+          "case": "listen-fail",
+          "native_status": 0,
+          "rust_status": 0,
+          "equal": true
+        },
+        {
+          "mode": "long",
+          "case": "socket-fail",
+          "native_status": 0,
+          "rust_status": 0,
+          "equal": true
+        },
+        {
+          "mode": "long",
+          "case": "success",
+          "native_status": 0,
+          "rust_status": 0,
+          "equal": true
+        },
+        {
+          "mode": "long",
+          "case": "connect-fail",
+          "native_status": 0,
+          "rust_status": 0,
+          "equal": true
+        },
+        {
+          "mode": "long",
+          "case": "bind-fail",
+          "native_status": 0,
+          "rust_status": 0,
+          "equal": true
+        },
+        {
+          "mode": "long",
+          "case": "listen-fail",
+          "native_status": 0,
+          "rust_status": 0,
+          "equal": true
+        },
+        {
+          "mode": "nul",
+          "case": "socket-fail",
+          "native_status": 0,
+          "rust_status": 0,
+          "equal": true
+        },
+        {
+          "mode": "nul",
+          "case": "success",
+          "native_status": 0,
+          "rust_status": 0,
+          "equal": true
+        },
+        {
+          "mode": "nul",
+          "case": "connect-fail",
+          "native_status": 0,
+          "rust_status": 0,
+          "equal": true
+        },
+        {
+          "mode": "nul",
+          "case": "bind-fail",
+          "native_status": 0,
+          "rust_status": 0,
+          "equal": true
+        },
+        {
+          "mode": "nul",
+          "case": "listen-fail",
+          "native_status": 0,
+          "rust_status": 0,
+          "equal": true
+        },
+        {
+          "mode": "panic",
+          "case": "socket-fail",
+          "native_status": 0,
+          "rust_status": 0,
+          "equal": true
+        },
+        {
+          "mode": "panic",
+          "case": "success",
+          "native_status": 0,
+          "rust_status": 0,
+          "equal": true
+        },
+        {
+          "mode": "panic",
+          "case": "connect-fail",
+          "native_status": 0,
+          "rust_status": 0,
+          "equal": true
+        },
+        {
+          "mode": "panic",
+          "case": "bind-fail",
+          "native_status": 0,
+          "rust_status": 0,
+          "equal": true
+        },
+        {
+          "mode": "panic",
+          "case": "listen-fail",
+          "native_status": 0,
+          "rust_status": 0,
+          "equal": true
+        }
+      ],
+      "passed": true,
+      "label": "mock-after-eh",
+      "full_record_sha256": "985df6ff363fb496915c2e18f03bc2eedd0bc5cb7c0dfc1d4c472f3085ec9885",
+      "library_source_revision": "af0a281f2d1fae04e8ebfd5aa2c4872b20245c04"
+    }
+  ],
+  "darwin_helper_model": {
+    "record_sha256": "185e2d886af7b397e8e7eb13a24c7fd4d138578e4c95332e7134fd0c1426dd50",
+    "helper_sha256": "c5ad313e477898e14e6d2fb4818073458abf919cb8bb03c5da20b7f0ab82f523",
+    "cases": 57,
+    "passed": true,
+    "negative_mutations_rejected": 2,
+    "scope": "Exact helper bytes compiled on Linux with simulated Apple ioctl/socket/setsockopt calls, including errno preservation on close"
+  },
+  "permanent_fixtures": [
+    {
+      "path": "compiler/native/tests/pass/unix_socket_path_evaluation.rs",
+      "sha256": "a72bafdf7b134828d9abbe3cdb3074d5cce7977f3522bec28f2813406e3e5cea"
+    },
+    {
+      "path": "compiler/native/tests/unwind/unix_socket_path_panic.rs",
+      "sha256": "82ab544f4eb4022451116a577be41003cc3f3bbb4b36b55dd569e18330651930"
+    }
+  ]
+}

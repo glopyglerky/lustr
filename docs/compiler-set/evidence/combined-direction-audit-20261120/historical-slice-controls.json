@@ -1,0 +1,22 @@
+{
+  "command": [
+    "python3",
+    "tools/test-upstream-slice-benchmark.py"
+  ],
+  "cwd": "<CHECKOUT>",
+  "explicit_environment": {},
+  "expected_exit": 0,
+  "exit_code": 0,
+  "duration_seconds": 8.192569971084595,
+  "expected_result_observed": true,
+  "stdout": {
+    "path": "historical-slice-controls.stdout",
+    "bytes": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "stderr": {
+    "path": "historical-slice-controls.stderr",
+    "bytes": 129,
+    "sha256": "1102e0532d59c09615881924f67def8e2cc2d9ffd1df0f87b0788026cadbd3d3"
+  }
+}

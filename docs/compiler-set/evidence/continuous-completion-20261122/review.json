@@ -1,0 +1,219 @@
+{
+  "schema": 1,
+  "scope": "source and saved-record review; planning/continuation change; no new compiler runtime qualification",
+  "observation_utc": "2026-11-23T01:57:19Z",
+  "source": {
+    "commit": "bc38dece7a734b97c0108582b7f61f98ccb819db",
+    "tree": "82afa54968f68dbbb5f99540fffc1e67ebc7d3d5",
+    "native_tree": "9f65da81325b5428f0e286425310216d8139fb49",
+    "rust": "5b7b37aefcb5b2fba3c2392bc9065b9e4602d494"
+  },
+  "saved_records": {
+    "stable_identity_source_manifest_sha256": "22e1a313625ff51e3aa8b673b23f2ec2a8a10569fa01f3e9144fac5bd86afb79",
+    "retained_history_stderr_sha256": "da0649583e8948b6bd919911f3b72c91841e80202efebf1f0b3fa4ed3556c242",
+    "lifetime_escape_stderr_sha256": "5f566611751db22069e20cddc3ef384de0acc2cdbadab1022fc3def064c5acc3",
+    "native_and_original_stdout_sha256": "bb83eea3d04ad09f34a034ddc2291456e3352cec2873c287e049471b89b5adee",
+    "original_stdout": "34 1\n",
+    "checked_bodies": [
+      3,
+      0,
+      2,
+      0,
+      2,
+      0
+    ],
+    "upstream_queries": [
+      1,
+      0,
+      1,
+      1,
+      1,
+      0
+    ],
+    "native_status": [
+      0,
+      0,
+      1,
+      1,
+      0,
+      0
+    ],
+    "earlier_shared_service": {
+      "source": "eb4d3d31f5ca3a5c6864bfab49634eadcaa43909",
+      "verification_sha256": "978be9220c223e1a403193c7162ae324cdfea0a0a3b84fe39ba0d814f177f2e7",
+      "not_requalified_for_later_source": true
+    }
+  },
+  "default_profile_saved_observation": {
+    "package_source": "930b384ad03a26fe141d10be4e261bd82a60be76",
+    "not_a_fresh_bc38_execution": true,
+    "cargo_status": {
+      "check": 0,
+      "build": 101,
+      "run": 101,
+      "test": 101
+    },
+    "current_source_guards_independently_inspected": true
+  },
+  "ci": {
+    "passed": 18,
+    "running": 3,
+    "failed": 0,
+    "jobs": [
+      {
+        "run": 45096398955,
+        "id": 137437037836,
+        "name": "Checked rustc semantic inspection",
+        "status": "completed",
+        "conclusion": "success"
+      },
+      {
+        "run": 45096398955,
+        "id": 137437038028,
+        "name": "Runner source provenance",
+        "status": "completed",
+        "conclusion": "success"
+      },
+      {
+        "run": 45096398955,
+        "id": 137437038039,
+        "name": "Retained Cargo planning helpers (windows-latest)",
+        "status": "completed",
+        "conclusion": "success"
+      },
+      {
+        "run": 45096398955,
+        "id": 137437038065,
+        "name": "Pinned Lust reference and declared integration",
+        "status": "completed",
+        "conclusion": "success"
+      },
+      {
+        "run": 45096398955,
+        "id": 137437038075,
+        "name": "Selective metadata research and core dependency cut",
+        "status": "completed",
+        "conclusion": "success"
+      },
+      {
+        "run": 45096398955,
+        "id": 137437038090,
+        "name": "Planning helpers minimum Rust",
+        "status": "completed",
+        "conclusion": "success"
+      },
+      {
+        "run": 45096398955,
+        "id": 137437038107,
+        "name": "Native metadata join and original Rust consumers",
+        "status": "completed",
+        "conclusion": "success"
+      },
+      {
+        "run": 45096398955,
+        "id": 137437038138,
+        "name": "Retained Cargo planning helpers (ubuntu-24.04)",
+        "status": "completed",
+        "conclusion": "success"
+      },
+      {
+        "run": 45096398955,
+        "id": 137437038195,
+        "name": "Exclusive native entry and shared-service research",
+        "status": "in_progress",
+        "conclusion": null
+      },
+      {
+        "run": 45096398955,
+        "id": 137437038274,
+        "name": "Retained Cargo planning helpers (macos-26)",
+        "status": "completed",
+        "conclusion": "success"
+      },
+      {
+        "run": 45096398995,
+        "id": 137437037938,
+        "name": "Runner source provenance",
+        "status": "completed",
+        "conclusion": "success"
+      },
+      {
+        "run": 45096398995,
+        "id": 137437038146,
+        "name": "probe",
+        "status": "completed",
+        "conclusion": "success"
+      },
+      {
+        "run": 45096398985,
+        "id": 137437038016,
+        "name": "Frozen evidence replay (no current compiler qualification)",
+        "status": "completed",
+        "conclusion": "success"
+      },
+      {
+        "run": 45096398931,
+        "id": 137437037929,
+        "name": "linux-x86_64",
+        "status": "in_progress",
+        "conclusion": null
+      },
+      {
+        "run": 45096398931,
+        "id": 137437038220,
+        "name": "macos-arm64",
+        "status": "in_progress",
+        "conclusion": null
+      },
+      {
+        "run": 45096398931,
+        "id": 137437038254,
+        "name": "Runner source provenance",
+        "status": "completed",
+        "conclusion": "success"
+      },
+      {
+        "run": 45096398938,
+        "id": 137437037676,
+        "name": "evidence",
+        "status": "completed",
+        "conclusion": "success"
+      },
+      {
+        "run": 45096398938,
+        "id": 137437038080,
+        "name": "Runner source provenance",
+        "status": "completed",
+        "conclusion": "success"
+      },
+      {
+        "run": 45096399021,
+        "id": 137437037833,
+        "name": "Frozen evidence replay (no current compiler qualification)",
+        "status": "completed",
+        "conclusion": "success"
+      },
+      {
+        "run": 45096399036,
+        "id": 137437038097,
+        "name": "Runner source provenance",
+        "status": "completed",
+        "conclusion": "success"
+      },
+      {
+        "run": 45096399036,
+        "id": 137437038279,
+        "name": "Reporting tests and committed timing replay (not compiler qualification)",
+        "status": "completed",
+        "conclusion": "success"
+      }
+    ]
+  },
+  "limits": [
+    "No new execution of the projection qualifier in this review",
+    "Full research rustc_driver remains outside product",
+    "Provider metadata was built by stock Rust in the qualifier",
+    "Standalone abort/debug-disabled consumer path is not ordinary Cargo",
+    "No measured complete-work speed or full Rust replacement qualification"
+  ]
+}

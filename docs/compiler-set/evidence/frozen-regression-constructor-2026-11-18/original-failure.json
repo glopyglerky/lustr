@@ -1,0 +1,29 @@
+{
+  "schema": "frozen-baseline-setup-failure-excerpt-v1",
+  "repository": "glopyglerky/lustr",
+  "run_id": 44313200448,
+  "job_id": 134832404321,
+  "published_head": "3c378a11d60149a3ec99fa49ea1b336e9406fca8",
+  "retrieval": "GitHub decoded workflow job log, encoded as UTF-8",
+  "full_retrieved_log": {
+    "sha256": "e4ccd5ec58508fcfea4c42ee13790f1a55e98937faede713505a50777029672f",
+    "bytes": 113474,
+    "archived": false
+  },
+  "excerpt": {
+    "file": "original-failure.log",
+    "sha256": "6c84925f69878fef283aa194c5242c1cde98cc80a7aa3cc1fd9b952505b622ba",
+    "bytes": 2259,
+    "first_line_one_based": 795,
+    "last_line_one_based": 825
+  },
+  "observed_failure": "Current constructor applied to frozen baseline; installed old entry rejects --lustr-prime-selection-tools before stale-output regression execution.",
+  "executed_merge": "d3b14dc637b6343bbb329dfcf6d5e1b420c06009",
+  "checkout_excerpt": {
+    "file": "original-checkout.log",
+    "sha256": "e2b1a8aedcaecc1047cde20bec49f579129c80cc9536e4df3504b0ed72a67e0c",
+    "bytes": 327,
+    "first_line_one_based": 123,
+    "last_line_one_based": 126
+  }
+}

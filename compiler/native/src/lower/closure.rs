@@ -166,6 +166,7 @@ pub fn lower_closure<'p>(p: &'p Program, fid: LocalDefId, mut ck: Checked<'p>) -
     lw.pop_scope(span);
     lw.terminate(Terminator::Return, span);
     lw.map_annotations();
+    lw.bind_debug_spans();
     lw.rewrite_upvars();
     lw.mark_opaque_locals();
     lw.body
@@ -311,7 +312,7 @@ impl<'p> Lower<'p> {
                 let mut pl = Place::local(*l);
                 if rewrite_place(&up, &mut pl, true) {
                     let ty = self.body.locals[*l as usize].ty;
-                    self.body.locals.push(LocalDecl { ty, mutable: true, name: None });
+                    self.body.locals.push(LocalDecl { ty, mutable: true, name: None, binding_span: None });
                     let t = self.body.locals.len() as Local - 1;
                     b.stmts.push(crate::ir::Stmt { kind: StmtKind::Assign(Place::local(t), Rvalue::Use(Operand::Copy(pl))), span });
                     *l = t;
@@ -417,6 +418,6 @@ fn rewrite_rvalue(up: &Upvars, rv: &mut Rvalue) -> bool {
         Rvalue::Subslice { base, lo, hi, .. } => {
             rewrite_place(up, base, false) & rewrite_operand(up, lo) & hi.as_mut().is_none_or(|h| rewrite_operand(up, h))
         }
-        Rvalue::StaticLoad(_) | Rvalue::StaticRef(_) | Rvalue::FnValue(..) | Rvalue::ItemShim(..) => true,
+        Rvalue::StaticLoad(_) | Rvalue::StaticRef(_) | Rvalue::FnValue(..) | Rvalue::NativeFnValue(..) | Rvalue::ItemShim(..) => true,
     }
 }

@@ -1,0 +1,37 @@
+{
+  "command": [
+    "<PINNED_SDK>/bin/cargo",
+    "test",
+    "--manifest-path",
+    "crates/lustr-bench/Cargo.toml",
+    "--locked",
+    "--offline",
+    "--bin",
+    "lustr-bench-gate",
+    "--test",
+    "routed"
+  ],
+  "cwd": "<CHECKOUT>",
+  "explicit_environment": {
+    "CARGO_HOME": "<CARGO_CACHE>",
+    "RUSTC": "<PINNED_SDK>/bin/rustc",
+    "CARGO_TARGET_DIR": "<BENCH_TARGET>",
+    "CARGO_BUILD_BUILD_DIR": "<BENCH_BUILD>",
+    "CARGO_BUILD_JOBS": "2",
+    "CARGO_INCREMENTAL": "0"
+  },
+  "expected_exit": 0,
+  "exit_code": 0,
+  "duration_seconds": 12.971312284469604,
+  "expected_result_observed": true,
+  "stdout": {
+    "path": "cargo-gate-controls.stdout",
+    "bytes": 755,
+    "sha256": "d9bb536390234b40552bf05d0466fd5532a18bdd13f352162f053b2fb01f0068"
+  },
+  "stderr": {
+    "path": "cargo-gate-controls.stderr",
+    "bytes": 1257,
+    "sha256": "6f56eef242d4ec54d1d5ae05f3ff18a3755d6b0e325ce22ce66e1938bdccd9a6"
+  }
+}

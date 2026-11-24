@@ -1,0 +1,9 @@
+{
+  "exit_code": 1,
+  "elapsed_seconds": 19.345741045999603,
+  "stdout_sha256": "e9354743df6910dcf2694634585d4945013babcbd0dc07b200164451c19ad20d",
+  "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "stdout": "FAIL unicode_props_hash: sanitized build: sanitizer: ==5771==LeakSanitizer has encountered a fatal error.\n==5771==HINT: LeakSanitizer does not work under ptrace (strace, gdb, etc)\ndifftest: 0 passed, 1 failed\n",
+  "stderr": "",
+  "qualification": "one local targeted run only; original CI failure remains"
+}

@@ -1,0 +1,89 @@
+{
+  "files": {
+    "README.md": {
+      "bytes": 3630,
+      "sha256": "e6c95d327b6ea766c5b4f7dbf524f28fc1da01a128eb9228bb5dbd7e3476ad12"
+    },
+    "access-correction.patch": {
+      "bytes": 4286,
+      "sha256": "967c56ff1b44ea1a8441c80ec953c3b57d977b78a09b647f59e1754da2c2754b"
+    },
+    "encrypted/private-evidence.tar.gz.cms": {
+      "bytes": 95749,
+      "sha256": "78da14ee249b0a290fb3abe2dc3533b7480992665908daafbad7686286553c4a"
+    },
+    "encrypted/receipt.json": {
+      "bytes": 1257,
+      "sha256": "a236bb22985f80865fcac3c8522fd5431b2a4c336c53d31d0bc14b686872f1b8"
+    },
+    "encrypted/status.json": {
+      "bytes": 545,
+      "sha256": "4fd54bb025172112932cca4552955ae12933233b4007c8d04fdfaf6e43244024"
+    },
+    "helper-build.json": {
+      "bytes": 2096,
+      "sha256": "aee33e94d7c27771ec3be1098c8934dee20b3b4e53bba789b9921034253b8e72"
+    },
+    "identity.json": {
+      "bytes": 1967,
+      "sha256": "a6c13ad69a3b2362cd591fc8f9264a3fceadd5fb66dfee0ab24ac690e01d2b2e"
+    },
+    "independent-review.json": {
+      "bytes": 1022,
+      "sha256": "f1ffd5bcb3c73da66c015c17112c384140bdd243fa3f01f7d104dbe8c507e33f"
+    },
+    "results.json": {
+      "bytes": 526589,
+      "sha256": "45cfa6dc1b6541ae77d5c5d100c0ba69657b19b0a04e5ee702af8824d1d6d692"
+    },
+    "source/LICENSE": {
+      "bytes": 1068,
+      "sha256": "8095f9a9f97d074131f6a2ce09b952d12c18b36f09f4e5df0517c4e64e82c851"
+    },
+    "source/compiler/native/src/protocol.rs": {
+      "bytes": 83015,
+      "sha256": "4da4c32fb16b62f3819a3d774ef63b76e201e2414c3b4540b4a6ccb27133fe1c"
+    },
+    "source/src/full.rs": {
+      "bytes": 13680,
+      "sha256": "e7015c5462da232fd817091c2749e4e776287832f1279ebaab87314f0644412e"
+    },
+    "source/src/host_runtime.rs": {
+      "bytes": 8759,
+      "sha256": "8ebc63c1ac92252816cd2dd092c5b0fad528c1d3a0f479b3889a6b7204f0c223"
+    },
+    "source/src/owned_child.rs": {
+      "bytes": 10965,
+      "sha256": "5c890f584d281e984405fce5a9810b8f5d2461e2dfedea173613c5813c4f5d20"
+    },
+    "source/src/selection_cache.rs": {
+      "bytes": 26908,
+      "sha256": "dfead01bd5ef3c98f3da35250c15c37ea9ef19cdfc28de082fb8971d9591bbfd"
+    },
+    "source/tools/profile-native-preflight.rs": {
+      "bytes": 6190,
+      "sha256": "37cad7d0a4cf1c6318aaf60d7c24e9ab8a1f78bb00e2636cdc9d09da9d03681b"
+    },
+    "source/upstream/bluefe-core.pin": {
+      "bytes": 682,
+      "sha256": "73bd5e14a0d96979dccb1f89f145f6c1d9d947c8f4a192f0db64f6954f0218b6"
+    },
+    "streams.tar.gz": {
+      "bytes": 8427,
+      "sha256": "fa40a71df92ea328f232cd3921445701eacbb312fc356384e42a831edde387d2"
+    },
+    "validated-source/docs/compiler-set/native-selection-cache.md": {
+      "bytes": 11426,
+      "sha256": "021121166092192ab0236a8677655ad8cb541e6d25153cf73e98b48f6e09ff25"
+    },
+    "validated-source/tools/test-native-selection-cache.py": {
+      "bytes": 17916,
+      "sha256": "fb02a616063e657189e618abb38b2141fefb4f2fb9d7e22bdc154d0ecd3a32b0"
+    },
+    "verify-evidence.py": {
+      "bytes": 2570,
+      "sha256": "7f7061eb4e37a8e841279cac29df450256706060d0613f92bfc53e3a457938d3"
+    }
+  },
+  "schema": "lustr-public-review-manifest-v1"
+}

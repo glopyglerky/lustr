@@ -1,0 +1,44 @@
+{
+  "src/full.rs": {
+    "sha256": "e002ef19ed459dffc721f2fdef6312b46841e89c58103e6583a6dad5d8fd57c5",
+    "mtime_ns": 1795000165119938707
+  },
+  "src/selection_cache.rs": {
+    "sha256": "b02a9e883a1f5817e1df2af0719980a28129f10a1628dd267802aca36f80dbde",
+    "mtime_ns": 1795000395139589147
+  },
+  "src/host_runtime.rs": {
+    "sha256": "8ebc63c1ac92252816cd2dd092c5b0fad528c1d3a0f479b3889a6b7204f0c223",
+    "mtime_ns": 1795000336686639990
+  },
+  "src/owned_child.rs": {
+    "sha256": "5c890f584d281e984405fce5a9810b8f5d2461e2dfedea173613c5813c4f5d20",
+    "mtime_ns": 1794999811486741149
+  },
+  "compiler/native/src/protocol.rs": {
+    "sha256": "4da4c32fb16b62f3819a3d774ef63b76e201e2414c3b4540b4a6ccb27133fe1c",
+    "mtime_ns": 1794999810871256019
+  },
+  "tools/profile-native-preflight.rs": {
+    "sha256": "2d4442a7a2267b6e3e064acbb6fe00c3e3aafde325e2516f265425958cc3e1a6",
+    "mtime_ns": 1795000278789507679
+  },
+  "Cargo.toml": {
+    "sha256": "cc187d3f8396349cf4cb3a155d45d897a21bc8d927758df9f08b4a5be41e90ec",
+    "mtime_ns": 1795000164407927666
+  },
+  "Cargo.lock": {
+    "sha256": "05496afc02d0612368e7b10322998df841230e3877714608b77e2dc84d2f3164",
+    "mtime_ns": 1795000256369995312
+  },
+  "profiler": {
+    "sha256": "5f6e75807e6b8a1686d4058a2f1719112056cc977547720b4f9570b654bd0e39",
+    "mtime_ns": 1795000438736291068
+  },
+  "base_revision": "28a2842635ee994db492b43f8c956eddce57a803",
+  "build_env": {
+    "LUST_BUILD_HASH": "dc82dab611c87e7e",
+    "rust_toolchain": "nightly-2026-11-09",
+    "profile": "release"
+  }
+}

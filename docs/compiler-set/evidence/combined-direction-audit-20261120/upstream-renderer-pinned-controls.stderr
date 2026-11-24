@@ -1,0 +1,10 @@
+test_client_stats_cannot_enable_daemon_process_diagnostics (__main__.UpstreamDiagnosticTests.test_client_stats_cannot_enable_daemon_process_diagnostics) ... ok
+test_exact_upstream_retained_routes_are_accepted (__main__.UpstreamDiagnosticTests.test_exact_upstream_retained_routes_are_accepted) ... ok
+test_qualification_enables_stats_where_upstream_reads_them (__main__.UpstreamDiagnosticTests.test_qualification_enables_stats_where_upstream_reads_them) ... ok
+test_retained_routes_reject_reasons_the_upstream_path_does_not_emit (__main__.UpstreamDiagnosticTests.test_retained_routes_reject_reasons_the_upstream_path_does_not_emit) ... ok
+test_upstream_retained_routes_still_require_zero_repeated_work (__main__.UpstreamDiagnosticTests.test_upstream_retained_routes_still_require_zero_repeated_work) ... ok
+
+----------------------------------------------------------------------
+Ran 5 tests in 3.772s
+
+OK

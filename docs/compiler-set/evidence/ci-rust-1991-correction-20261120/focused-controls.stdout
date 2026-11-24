@@ -1,0 +1,61 @@
+960b1fa47efed2324388565f387fd9e7a00ca547
+799f97870b3514a144021850ed9d3a172fce0001
+rustc 1.99.1 (58cf8f9c3 2026-10-13)
+binary: rustc
+commit-hash: 58cf8f9c35b355199727627d07ae34a4e2846d67
+commit-date: 2026-10-13
+host: x86_64-unknown-linux-gnu
+release: 1.99.1
+LLVM version: 23.1.1
+cargo 1.99.1 (5f94df478 2026-08-27)
+c6fe0d9794fbe1081e4ee5b4a26050bb19b880a8c70cb623430415386b1345e2  .github/workflows/native-probe-tests.yml
+171da99f41dcbf6c51cbf9401ea885404d441b0873b18f23a51c5d726b56fbbc  crates/lustr-bench/Cargo.toml
+0a91bce153dfd86eace542bdf0dccabf2c7fc1035e1c332481d9a45f55a00970  crates/lustr-bench/Cargo.lock
+e4f8c32b267c45814e60753c75decc214c34b3e2cac24bc538a423333447dcb1  crates/lustr-bench/src/bin/lustr-bench-gate.rs
+e40c826b097d227616f4e439baf1b4879b2e582e73458d4946aa128d3231f476  crates/lustr-bench/src/main.rs
+c310a9f892ac6088560f90101703cfa984cf8c4525b792df84b5daf69a079bfc  crates/lustr-bench/tests/routed.rs
+   Compiling proc-macro2 v1.0.107
+   Compiling unicode-ident v1.0.27
+   Compiling quote v1.0.47
+   Compiling typenum v1.20.1
+   Compiling serde_core v1.0.229
+   Compiling hybrid-array v0.4.15
+   Compiling libc v0.2.191
+   Compiling zmij v1.0.23
+   Compiling cfg_aliases v0.2.2
+   Compiling nix v0.31.3
+   Compiling crypto-common v0.2.2
+   Compiling block-buffer v0.12.1
+   Compiling syn v3.0.10
+   Compiling cfg-if v1.0.5
+   Compiling const-oid v0.10.2
+   Compiling serde_json v1.0.154
+   Compiling serde v1.0.229
+   Compiling digest v0.11.3
+   Compiling serde_derive v1.0.229
+   Compiling itoa v1.0.19
+   Compiling bitflags v2.10.0
+   Compiling cpufeatures v0.3.1
+   Compiling memchr v2.8.3
+   Compiling sha2 v0.11.1
+   Compiling lustr-bench v0.1.0 (<CHECKOUT>/crates/lustr-bench)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 12.42s
+     Running unittests src/bin/lustr-bench-gate.rs (<OUTPUT>/ci-rust-1991-focused-target/debug/deps/lustr_bench_gate-fd8296ef96986e12)
+
+running 4 tests
+test tests::names_cannot_move_between_differently_sized_harnesses ... ok
+test tests::success_label_cannot_hide_missing_filtered_failed_or_duplicate_tests ... ok
+test tests::ignored_names_and_every_harness_remain_visible ... ok
+test tests::durations_are_ignored_but_counts_and_test_names_are_preserved ... ok
+
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/routed.rs (<OUTPUT>/ci-rust-1991-focused-target/debug/deps/routed-1d0ec0f356bd4ace)
+
+running 3 tests
+test retired_mixed_campaign_cannot_create_output_or_query_a_tool ... ok
+test retired_state_policy_cannot_be_acquired_through_the_general_runner ... ok
+test retired_routed_engines_never_invoke_the_supplied_compiler ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+

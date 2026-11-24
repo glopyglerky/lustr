@@ -1,0 +1,43 @@
+{
+  "prior_commit": "7f64bf2b1287dcfd0177a75f074ff055e9ccddd5",
+  "prior_guard_sha256": "2e8c319d100f4ef31d6fd637b7fffbee236e97b9f85df424f7aa3b5012bd9236",
+  "current_guard_sha256": "980364e8b7e5de8d5919b80f0ebfbb64ae9ed6220d080732c521eb7bd20d1f94",
+  "scope": "in-memory mutations of real manifests; no compiler work",
+  "controls": [
+    {
+      "case": "package-default-target",
+      "prior_guard_admitted": true,
+      "current_guard_rejected": true,
+      "failures": [
+        "Cargo.toml: unreviewed Cargo feature gates",
+        "Cargo.toml: unreviewed manifest target or build-generation override"
+      ]
+    },
+    {
+      "case": "package-forced-target",
+      "prior_guard_admitted": true,
+      "current_guard_rejected": true,
+      "failures": [
+        "Cargo.toml: unreviewed Cargo feature gates",
+        "Cargo.toml: unreviewed manifest target or build-generation override"
+      ]
+    },
+    {
+      "case": "profile-cfg-injection",
+      "prior_guard_admitted": true,
+      "current_guard_rejected": true,
+      "failures": [
+        "Cargo.toml: unreviewed Cargo feature gates",
+        "Cargo.toml: unreviewed compiler flags or backend in profile.dev.rustflags"
+      ]
+    },
+    {
+      "case": "build-script-profile-cfg",
+      "prior_guard_admitted": true,
+      "current_guard_rejected": true,
+      "failures": [
+        "Cargo.toml: unreviewed compiler flags or backend in profile.dev.build-override.rustflags"
+      ]
+    }
+  ]
+}

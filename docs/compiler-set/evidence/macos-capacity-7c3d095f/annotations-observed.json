@@ -1,0 +1,93 @@
+{
+  "schema": "lustr-hosted-darwin-cancellation-observation-v1",
+  "observed_at": "2026-11-19 15:34:47 UTC",
+  "published_head": "7c3d095fa8971a4c38aa0edf62e8fcfd7a51589a",
+  "runner_merge": "66963315e9736ce9f151ce8ccac248d35a01d048",
+  "tree": "2a6a51f099bdcdb74871fdc2e65a4df87aa0c867",
+  "method": "Public current GitHub job pages, opened and expanded separately; no prior-run cancellation reason was reused.",
+  "jobs": [
+    {
+      "id": 135661771391,
+      "run_id": 44553094710,
+      "workflow_name": "CI",
+      "head_branch": "lustr/exclusive-coverage-public-20261119",
+      "run_url": "https://api.github.com/repos/glopyglerky/lustr/actions/runs/44553094710",
+      "run_attempt": 1,
+      "node_id": "CR_kwDOVnPP6c8AAAAflhJafw",
+      "head_sha": "7c3d095fa8971a4c38aa0edf62e8fcfd7a51589a",
+      "url": "https://api.github.com/repos/glopyglerky/lustr/actions/jobs/135661771391",
+      "html_url": "https://github.com/glopyglerky/lustr/actions/runs/44553094710/job/135661771391",
+      "status": "completed",
+      "conclusion": "cancelled",
+      "created_at": "2026-11-19T15:17:23Z",
+      "started_at": "2026-11-19T15:17:23Z",
+      "completed_at": "2026-11-19T15:32:24Z",
+      "name": "macos-arm64",
+      "steps": [],
+      "check_run_url": "https://api.github.com/repos/glopyglerky/lustr/check-runs/135661771391",
+      "labels": [
+        "macos-26"
+      ],
+      "runner_id": 0,
+      "runner_name": "",
+      "runner_group_id": 0,
+      "runner_group_name": "",
+      "annotations": [
+        {
+          "level": "error",
+          "text": "The job was not acquired by Runner of type hosted even after multiple attempts"
+        },
+        {
+          "level": "notice",
+          "text": "Due to capacity constraints, jobs targeting macOS arm64 runners may experience longer queue times.",
+          "count": 3
+        }
+      ],
+      "internal_server_error_notice_observed": false
+    },
+    {
+      "id": 135661771685,
+      "run_id": 44553094694,
+      "workflow_name": "Compiler set",
+      "head_branch": "lustr/exclusive-coverage-public-20261119",
+      "run_url": "https://api.github.com/repos/glopyglerky/lustr/actions/runs/44553094694",
+      "run_attempt": 1,
+      "node_id": "CR_kwDOVnPP6c8AAAAflhJbpQ",
+      "head_sha": "7c3d095fa8971a4c38aa0edf62e8fcfd7a51589a",
+      "url": "https://api.github.com/repos/glopyglerky/lustr/actions/jobs/135661771685",
+      "html_url": "https://github.com/glopyglerky/lustr/actions/runs/44553094694/job/135661771685",
+      "status": "completed",
+      "conclusion": "cancelled",
+      "created_at": "2026-11-19T15:17:23Z",
+      "started_at": "2026-11-19T15:17:23Z",
+      "completed_at": "2026-11-19T15:32:24Z",
+      "name": "Retained Cargo planning helpers (macos-26)",
+      "steps": [],
+      "check_run_url": "https://api.github.com/repos/glopyglerky/lustr/check-runs/135661771685",
+      "labels": [
+        "macos-26"
+      ],
+      "runner_id": 0,
+      "runner_name": "",
+      "runner_group_id": 0,
+      "runner_group_name": "",
+      "annotations": [
+        {
+          "level": "error",
+          "text": "The job was not acquired by Runner of type hosted even after multiple attempts"
+        },
+        {
+          "level": "notice",
+          "text": "Due to capacity constraints, jobs targeting macOS arm64 runners may experience longer queue times.",
+          "count": 3
+        }
+      ],
+      "internal_server_error_notice_observed": false
+    }
+  ],
+  "classification": "Hosted runner acquisition/capacity failure before execution",
+  "darwin_execution": false,
+  "tinycc_signing_result": null,
+  "odd_path_result": null,
+  "cancellation_actor": "Not exposed by the inspected metadata. Trigger identity is not evidence of a cancellation actor."
+}

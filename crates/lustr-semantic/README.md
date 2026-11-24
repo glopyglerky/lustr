@@ -1,5 +1,17 @@
 # lustr semantic inspection
 
+This crate is an explicitly invoked development oracle. It is excluded from
+the product package and is not the complementary compiler. The former
+`lustr-mixed` executable and `full-core` route have been removed. The
+[historical mixed study](../../docs/compiler-set/mixed-compiler.md) preserves
+its original source and evidence.
+
+Current implementation follows the
+[exclusive coverage contract](../../docs/compiler-set/exclusive-coverage-contract.md).
+Lust owns its actual supported set, including supported work that the current
+bridge cannot represent. The inspection tool's full Rust analysis cannot
+replace that ownership.
+
 `lustr-semantic` is an executable development tool for inspecting the rustc
 semantics that a native Lust backend will need to share. It runs the pinned Rust
 compiler in process, reads checked compiler data, continues ordinary metadata
@@ -89,11 +101,11 @@ Cargo's JSON message stream remains parseable. Compiler failures retain their
 failure exit status and diagnostics. It does not retry a failed compiler,
 linker, test or program.
 
-`rustc_driver` accepts UTF-8 arguments. On Unix, an invocation with a non-UTF-8
-argument is delegated with `exec` to the supplied compiler, preserving its
-argument bytes, stdout, stderr, signals and exit status. That path produces no
-inspection report and makes no in-process compiler ABI claim; the pin and
-entrypoint checks apply to inspection, not to this exact passthrough.
+`rustc_driver` accepts UTF-8 arguments. An invocation with a non-UTF-8
+argument or compiler path fails with status 2 before any compiler query or
+execution. It produces no report and cannot delegate to the supplied executable.
+The independent original-Rust inspection oracle remains outside Lustr product
+compilation; its retained artifact checks do not establish Lustr coverage.
 
 Inspection errors or report publication errors fail the explicit probe
 invocation. Compiler timing output includes inspection overhead; this tool is
@@ -196,13 +208,23 @@ and distinct host/target runtime compatibility have not been qualified here.
 
 ## Next implementation boundary
 
-A native backend can now compare its intended handling against actual pinned
-rustc symbols, argument passing, layouts and cleanup structure. The next step
-is a narrowly supported lowering path behind the same compiler interface,
-with explicit rejection of unsupported MIR operations and a normal rustc
-fallback selected before artifact generation. It must preserve metadata,
-runtime contracts, drops and unwind behavior, and pass both-direction artifact
-tests before the coordinator can route ordinary Rust work to it.
+Use the inspected symbols, layouts and cleanup structure as independent
+expected results for native integration. They do not authorize whole-consumer
+Rust analysis before native compilation or a normal-rustc fallback.
+
+The next established dependency is the
+[genuine consumer-metadata completion service](../../docs/compiler-set/shared-consumer-metadata.md).
+The encoder needs real native declaration, privacy, lint, definition-completion
+and emitted-instance facts. Select upstream implementation only for obligations
+Lust does not supply. Preserve prepared native state and applicable checks.
+A missing bridge representation remains incomplete Lust integration; it does
+not become a successful complementary result.
+
+Any imported source needs pinned provenance, licenses, required dependencies,
+actual callers and an explicit semantic owner. Full-driver dependencies used
+by this inspection oracle are disclosed research dependencies and remain
+inadmissible in the product. Unconditional analysis success, fabricated
+metadata and a complete competing consumer frontend cannot close the gap.
 
 The relevant pinned compiler sources are the
 [driver entrypoint and callbacks](https://github.com/rust-lang/rust/blob/2d20b42b883dcfc014f3c2c56081eeb6091c2179/compiler/rustc_driver_impl/src/lib.rs),

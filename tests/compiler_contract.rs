@@ -1,11 +1,187 @@
-use std::ffi::OsStr;
+//! Current public compiler controls. Historical full-compiler fallback and
+//! diagnostic-retry expectations remain only in their original Git history.
 use std::path::{Path, PathBuf};
 use std::process::{Command, Output};
+
+#[path = "../compiler/native/src/protocol.rs"]
+#[allow(dead_code)]
+mod transport_protocol;
 
 struct Fixture {
     root: PathBuf,
     package: PathBuf,
 }
+
+#[test]
+#[ignore = "requires LUSTR_TEST_PACKAGE, LUSTR_TEST_OUTPUT and independent LUSTR_TEST_ORACLE"]
+fn rustc_reads_line_based_argument_files_before_handling_requests() {
+    let f = Fixture::new("rustc-argument-files");
+    f.source("dir with spaces/main.rs", "fn main() { println!(\"{}\", 42); }\n");
+    let request = |name: &str, output: &str| {
+        f.source(name, &format!("--edition=2024\r\ndir with spaces/main.rs\r\n-o\r\n{output}\r\n"));
+        format!("@{name}")
+    };
+    let native = request("native args", "dir with spaces/native");
+    let original = request("original args", "dir with spaces/original");
+    f.succeeds("native-build", f.command("rustc").arg(native));
+    let oracle = std::env::var_os("LUSTR_TEST_ORACLE").expect("independent LUSTR_TEST_ORACLE");
+    let original_command = || {
+        let mut command = Command::new(&oracle);
+        command.current_dir(&f.root).env_remove("LD_LIBRARY_PATH");
+        command
+    };
+    f.succeeds("original-build", original_command().arg(original));
+    for binary in ["native", "original"] {
+        let out = f.succeeds(binary, &mut Command::new(f.root.join("dir with spaces").join(binary)));
+        assert_eq!(out.stdout, b"42\n");
+    }
+
+    f.source("query", "-vV\n");
+    let query = f.succeeds("query", f.command("rustc").arg("@query"));
+    assert_eq!(query.stdout, f.succeeds("direct-query", f.command("rustc").arg("-vV")).stdout);
+    std::fs::write(f.root.join("bad encoding"), [0xff]).unwrap();
+    let failures = ["@not present", "@bad encoding"];
+    for (label, mut command) in [("native-bad-argfiles", f.command("rustc")), ("original-bad-argfiles", original_command())] {
+        let failure = f.invoke(label, command.args(failures));
+        assert_eq!(failure.status.code(), Some(1));
+        let message = String::from_utf8_lossy(&failure.stderr);
+        assert!(message.contains("not present"));
+        assert!(message.contains("UTF-8 error in bad encoding"));
+    }
+}
+
+#[cfg(all(target_os = "linux", target_arch = "x86_64", target_env = "gnu"))]
+#[test]
+#[ignore = "requires LUSTR_TEST_PACKAGE, LUSTR_TEST_OUTPUT and independent LUSTR_TEST_ORACLE"]
+fn rustc_preserves_an_explicit_host_target_and_uncolored_diagnostics() {
+    let f = Fixture::new("rustc-host-options");
+    let source = f.source("main.rs", "fn main() { println!(\"{}\", cfg!(target_arch = \"x86_64\") && cfg!(target_os = \"linux\")); }\n");
+    let oracle = std::env::var_os("LUSTR_TEST_ORACLE").expect("independent LUSTR_TEST_ORACLE");
+    let original = || {
+        let mut command = Command::new(&oracle);
+        command.current_dir(&f.root).env_remove("LD_LIBRARY_PATH");
+        command
+    };
+    let options = ["--edition=2024", "--target", "x86_64-unknown-linux-gnu", "--color", "never"];
+    for (name, mut command) in [("native", f.command("rustc")), ("original", original())] {
+        let output = f.root.join(name);
+        f.succeeds(&format!("{name}-build"), command.args(options).arg(&source).arg("-o").arg(&output));
+        assert_eq!(f.succeeds(name, &mut Command::new(output)).stdout, b"true\n");
+    }
+    f.source("main.rs", "fn main() { let _value: u32 = \"invalid\"; }\n");
+    for (name, mut command) in [("native", f.command("rustc")), ("original", original())] {
+        let output = f.root.join(format!("{name}-invalid"));
+        let response = f.invoke(&format!("{name}-invalid"), command.args(options).arg(&source).arg("-o").arg(&output));
+        assert_eq!(response.status.code(), Some(1));
+        assert!(!response.stderr.contains(&27), "unexpected escape sequence");
+        assert!(!output.exists());
+    }
+}
+
+#[test]
+#[ignore = "requires LUSTR_TEST_PACKAGE, LUSTR_TEST_OUTPUT and independent LUSTR_TEST_ORACLE"]
+fn rustc_compiles_anonymous_stdin_with_its_original_source_behavior() {
+    use std::process::Stdio;
+
+    let f = Fixture::new("rustc-stdin");
+    let text = f.source("present.txt", "actual input\n");
+    f.source("side.rs", "pub fn number() -> u32 { 42 }\n");
+    let source = f.source("stdin.txt", r#"
+mod side;
+fn main() {
+    println!("{}:{}:{}", file!(), module_path!(), side::number());
+    print!("{}", include_str!(env!("LUSTR_STDIN_TEST_INCLUDE")));
+}
+"#);
+    let oracle = std::env::var_os("LUSTR_TEST_ORACLE").expect("independent LUSTR_TEST_ORACLE");
+    let original = || {
+        let mut command = Command::new(&oracle);
+        command.current_dir(&f.root).env_remove("LD_LIBRARY_PATH");
+        command
+    };
+    let input = |command: &mut Command, output: &Path| {
+        command.args(["--edition=2024", "-"]).arg("-o").arg(output)
+            .env("LUSTR_STDIN_TEST_INCLUDE", &text).stdin(Stdio::from(std::fs::File::open(&source).unwrap()));
+    };
+    for (name, mut command) in [("native", f.command("rustc")), ("original", original())] {
+        let output = f.root.join(name);
+        input(&mut command, &output);
+        f.succeeds(&format!("{name}-build"), &mut command);
+        assert_eq!(f.succeeds(name, &mut Command::new(output)).stdout, b"<anon>:rust_out:42\nactual input\n");
+    }
+    f.source("stdin.txt", "fn main() { println!(\"{}:{}\", file!(), module_path!()); }\n");
+    for (name, mut command) in [("native", f.command("rustc")), ("original", original())] {
+        let cwd = f.root.join(format!("{name}-default-output"));
+        std::fs::create_dir(&cwd).unwrap();
+        command.current_dir(&cwd).args(["--edition=2024", "-"])
+            .stdin(Stdio::from(std::fs::File::open(&source).unwrap()));
+        f.succeeds(&format!("{name}-default-build"), &mut command);
+        assert_eq!(f.succeeds(&format!("{name}-default-run"), &mut Command::new(cwd.join("rust_out"))).stdout,
+            b"<anon>:rust_out\n");
+    }
+    f.source("stdin.txt", "fn main() { println!(\"{}\", include_str!(\"present.txt\")); }\n");
+    for (name, mut command) in [("native", f.command("rustc")), ("original", original())] {
+        let output = f.root.join(format!("{name}-invalid"));
+        input(&mut command, &output);
+        let response = f.invoke(&format!("{name}-invalid"), &mut command);
+        assert_eq!(response.status.code(), Some(1));
+        assert!(String::from_utf8_lossy(&response.stderr).contains("non-file source `<anon>`"));
+        assert!(!output.exists());
+    }
+    std::fs::write(&source, [0xff]).unwrap();
+    let mut command = f.command("rustc");
+    input(&mut command, &f.root.join("invalid-utf8"));
+    let response = f.invoke("invalid-utf8", &mut command);
+    assert_eq!(response.status.code(), Some(1));
+    assert!(String::from_utf8_lossy(&response.stderr).contains("did not contain valid UTF-8"));
+    assert!(!f.root.join("invalid-utf8").exists());
+    assert!(!f.root.join("<anon>").exists());
+}
+
+#[test]
+#[ignore = "requires LUSTR_TEST_PACKAGE, LUSTR_TEST_OUTPUT and independent LUSTR_TEST_ORACLE"]
+fn rustc_preserves_doctest_stdin_paths_and_diagnostic_lines() {
+    use std::process::Stdio;
+
+    let f = Fixture::new("rustdoc-stdin-origin");
+    let path = f.source("docs/source.rs", "// The generated input arrives on stdin.\n");
+    f.source("docs/value.txt", "absolute document directory\n");
+    let input = f.source("stdin.txt", r#"fn main() {
+    println!("{}:{}", file!(), line!());
+    print!("{}", include_str!("value.txt"));
+}
+"#);
+    let oracle = std::env::var_os("LUSTR_TEST_ORACLE").expect("independent LUSTR_TEST_ORACLE");
+    let commands = || [("native", f.command("rustc")), ("original", Command::new(&oracle))];
+    let request = |command: &mut Command, output: &Path, offset: &str| {
+        command.current_dir(&f.root).env_remove("LD_LIBRARY_PATH")
+            .env("UNSTABLE_RUSTDOC_TEST_PATH", &path)
+            .env("UNSTABLE_RUSTDOC_TEST_LINE", offset)
+            .args(["--edition", "2024", "--crate-type", "bin", "-"]).arg("-o").arg(output)
+            .stdin(Stdio::from(std::fs::File::open(&input).unwrap()));
+    };
+    for (name, mut command) in commands() {
+        let output = f.root.join(name);
+        request(&mut command, &output, "24");
+        f.succeeds(&format!("{name}-build"), &mut command);
+        let expected = format!("{}:2\nabsolute document directory\n", path.display());
+        assert_eq!(f.succeeds(name, &mut Command::new(output)).stdout, expected.as_bytes());
+    }
+    f.source("stdin.txt", "fn main() {\n    let _: i32 = \"wrong\";\n}\n");
+    for (offset, line) in [("24", 26), ("-1", 1)] {
+        for (compiler, mut command) in commands() {
+            let name = format!("{compiler}-invalid-offset{offset}");
+            let output = f.root.join(&name);
+            request(&mut command, &output, offset);
+            let response = f.invoke(&name, &mut command);
+            assert_eq!(response.status.code(), Some(1));
+            let diagnostic = String::from_utf8_lossy(&response.stderr);
+            assert!(diagnostic.contains(&format!("{}:{line}:", path.display())), "{diagnostic}");
+            assert!(!output.exists());
+        }
+    }
+}
+
 impl Fixture {
     fn new(scope: &str) -> Self {
         let f = Self {
@@ -64,459 +240,2197 @@ impl Fixture {
         let trace = std::fs::read_to_string(self.root.join("trace.jsonl")).unwrap();
         serde_json::from_str::<serde_json::Value>(trace.lines().last().unwrap()).unwrap()["entry"].as_str().unwrap().to_owned()
     }
-    fn native_expansion_rejects(&self, label: &str, source: &Path, artifact: &Path) {
-        let result = self.invoke(
-            &format!("expanded-native-{label}"),
-            self.command("lust").arg("build").arg(source).arg("-o").arg(artifact).env("LUST_LIBRARY", self.package.join("lib/lustr")),
-        );
-        assert_eq!(result.status.code(), Some(1), "expanded native accepted {label}");
-        assert!(!artifact.exists(), "expanded native published invalid {label}");
-    }
+
 }
 
-#[test]
-#[ignore = "requires the complete frozen native/full runtime; set LUSTR_TEST_PACKAGE and LUSTR_TEST_OUTPUT"]
-fn official_sdk_clippy_and_rustfmt_execute_from_the_package() {
-    let f = Fixture::new("official-sdk-tools");
-    for tool in ["rustc-full", "cargo", "clippy-driver", "cargo-clippy", "rustfmt", "cargo-fmt"] {
-        let result = f.succeeds(&format!("{tool}-version"), f.command(tool).arg("--version"));
-        assert!(!result.stdout.is_empty(), "{tool} returned no version");
-    }
-    f.source("Cargo.toml", "[package]\nname=\"sdk-tools\"\nversion=\"0.1.0\"\nedition=\"2024\"\n");
-    let source = f.source("src/lib.rs", "pub fn comparison(a:bool,b:bool)->bool{(a&&b)||(!a&&b)}\n");
-    let result = f.invoke("rustfmt-reject", f.command("rustfmt").arg("--check").arg(&source));
-    assert_eq!(result.status.code(), Some(1));
-    f.succeeds("rustfmt-format", f.command("rustfmt").arg(&source));
-    f.succeeds("cargo-fmt-check", f.command("lustr").args(["fmt", "--", "--check"]));
-    let direct = f.invoke(
-        "clippy-driver-reject",
-        f.command("clippy-driver")
-            .args(["--edition=2024", "--crate-type=lib", "--emit=metadata", "-Dclippy::overly_complex_bool_expr"])
-            .arg(&source)
-            .arg("-o")
-            .arg(f.root.join("rejected.rmeta")),
-    );
-    assert_eq!(direct.status.code(), Some(1));
-    assert!(String::from_utf8_lossy(&direct.stderr).contains("overly_complex_bool_expr"));
-    let result = f.invoke("clippy-reject", f.command("lustr").args(["clippy", "--offline", "--", "-Dclippy::overly_complex_bool_expr"]));
-    assert_eq!(result.status.code(), Some(101));
-    assert!(String::from_utf8_lossy(&result.stderr).contains("overly_complex_bool_expr"));
-    f.source("src/lib.rs", "pub fn answer() -> u32 { 42 }\n");
-    f.succeeds("clippy-valid", f.command("lustr").args(["clippy", "--offline", "--", "-Dwarnings"]));
+fn native_package_wire_identity(package: &Path) -> String {
+    use std::os::unix::fs::MetadataExt;
+    // The test executable is not installed beside the compiler. Its own
+    // protocol::build_id() therefore cannot identify the packaged daemon.
+    let core = std::fs::metadata(package.join("bin/lust-core")).expect("packaged native compiler identity");
+    format!("{}.{:x}.{:x}.{:x}.{:x}.{:x}", env!("LUST_BUILD_HASH"),
+            core.dev(), core.ino(), core.size(), core.mtime(), core.mtime_nsec())
 }
 
-#[test]
-#[ignore = "requires the complete frozen native/full runtime; set LUSTR_TEST_PACKAGE and LUSTR_TEST_OUTPUT"]
-fn native_library_identity_controls_retained_source_state() {
-    use std::os::unix::fs::symlink;
-    let f = Fixture::new("library-identity");
-    let runtime = f.root.join("runtime with spaces");
-    std::fs::create_dir_all(runtime.join("bin")).unwrap();
-    std::fs::create_dir_all(runtime.join("lib/lustr/std/src")).unwrap();
-    std::fs::create_dir_all(runtime.join("lib/lustr-expanded/bin")).unwrap();
-    std::fs::create_dir_all(runtime.join("lib/lustr-expanded/lib/lust")).unwrap();
-    std::fs::copy(f.package.join("bin/lustr"), runtime.join("bin/lustr")).unwrap();
-    symlink(f.package.join("bin/lust"), runtime.join("bin/lust")).unwrap();
-    std::fs::copy(f.package.join("bin/lust-core"), runtime.join("bin/lust-core")).unwrap();
-    // Both the actual upstream inode identity and the component executable
-    // path must survive installation; a symlink or independent copy cannot
-    // supply this combination.
-    std::fs::hard_link(runtime.join("bin/lust-core"), runtime.join("lib/lustr-expanded/bin/lust-core")).unwrap();
-    symlink(f.package.join("lib/lust"), runtime.join("lib/lust")).unwrap();
-    symlink(f.package.join("lib/liblustr_native_core.so"), runtime.join("lib/liblustr_native_core.so")).unwrap();
-    std::fs::copy(f.package.join("lib/lustr-native.id"), runtime.join("lib/lustr-native.id")).unwrap();
-    for item in std::fs::read_dir(f.package.join("lib/lustr/std/src")).unwrap() {
-        let item = item.unwrap();
-        std::fs::copy(item.path(), runtime.join("lib/lustr/std/src").join(item.file_name())).unwrap();
-    }
-    symlink("../lust/library/deps", runtime.join("lib/lustr/deps")).unwrap();
-    symlink("../../../lustr", runtime.join("lib/lustr-expanded/lib/lust/library")).unwrap();
-    symlink("../../../lust/tcc", runtime.join("lib/lustr-expanded/lib/lust/tcc")).unwrap();
-    let library = runtime.join("lib/lustr");
-    let manifest = std::fs::read_to_string(f.package.join("lib/lustr/sources.sha256")).unwrap();
-    std::fs::write(library.join("sources.sha256"), &manifest).unwrap();
-    let reseal = || {
-        let paths: Vec<_> = manifest.lines().map(|line| line.split_once("  ").unwrap().1).collect();
-        let output = Command::new("sha256sum").current_dir(&library).args(paths).output().unwrap();
-        assert!(output.status.success());
-        std::fs::write(library.join("sources.sha256"), output.stdout).unwrap();
-    };
-    let source = f.source("main.rs", "fn main(){println!(\"{}\",std::env::consts::DLL_PREFIX);}\n");
-    let output = f.root.join("application");
-    let build = || {
-        let mut command = f.command(runtime.join("bin/lustr").to_str().unwrap());
-        command.arg("build").arg(&source).arg("-o").arg(&output);
-        command
-    };
-    f.succeeds("sealed-first", &mut build());
-    assert_eq!(f.entry(), "source-library-daemon");
-    assert_eq!(f.succeeds("sealed-first-run", &mut Command::new(&output)).stdout, b"lib\n");
-    let env_path = library.join("std/src/env.rs");
-    let original = std::fs::read_to_string(&env_path).unwrap();
-    std::fs::write(&env_path, original.replace("= \"lib\";", "= \"changed-for-test\";")).unwrap();
-    f.succeeds("changed-unsealed", &mut build());
-    assert_eq!(f.entry(), "source-library-extension");
-    assert_eq!(f.succeeds("changed-unsealed-run", &mut Command::new(&output)).stdout, b"changed-for-test\n");
-    reseal();
-    f.succeeds("changed-resealed", &mut build());
-    assert_eq!(f.entry(), "source-library-daemon");
-    assert_eq!(f.succeeds("changed-resealed-run", &mut Command::new(&output)).stdout, b"changed-for-test\n");
-    std::fs::write(&env_path, original).unwrap();
-    reseal();
-    f.succeeds("restored", &mut build());
-    assert_eq!(f.entry(), "source-library-daemon");
-    assert_eq!(f.succeeds("restored-run", &mut Command::new(&output)).stdout, b"lib\n");
-    std::fs::write(library.join("std/src/new-untracked.rs"), "// not in the sealed inventory\n").unwrap();
-    f.succeeds("extra-input", &mut build());
-    assert_eq!(f.entry(), "source-library-extension");
-    assert_eq!(f.succeeds("extra-input-run", &mut Command::new(&output)).stdout, b"lib\n");
-    // Requests must retain the client's macro environment, even though the
-    // component daemon has its own socket environment.
-    f.source("main.rs", "fn main(){println!(\"{}:{}\",std::env::consts::DLL_PREFIX,env!(\"LUST_DAEMON_SOCKET\"));}\n");
-    std::fs::remove_file(library.join("std/src/new-untracked.rs")).unwrap();
-    f.succeeds("client-environment", &mut build());
-    assert_eq!(f.entry(), "source-library-daemon");
-    assert_eq!(
-        f.succeeds("client-environment-run", &mut Command::new(&output)).stdout,
-        format!("lib:{}\n", f.root.join("daemon.sock").display()).as_bytes()
-    );
-    let component = runtime.join("lib/lustr-expanded/bin/lust-core");
-    std::fs::remove_file(&component).unwrap();
-    std::fs::copy(runtime.join("bin/lust-core"), &component).unwrap();
-    f.succeeds("copied-core", &mut build());
-    assert_eq!(f.entry(), "source-library-extension");
-    std::fs::remove_file(&component).unwrap();
-    std::fs::hard_link(runtime.join("bin/lust-core"), &component).unwrap();
-    f.succeeds("restored-core-link", &mut build());
-    assert_eq!(f.entry(), "source-library-daemon");
-    let support = runtime.join("lib/lustr-expanded/lib/lust");
-    for (name, expected, wrong) in [("library", "../../../lustr", "../../../lust/library"), ("tcc", "../../../lust/tcc", "../../../lustr")]
-    {
-        std::fs::remove_file(support.join(name)).unwrap();
-        symlink(wrong, support.join(name)).unwrap();
-        f.succeeds(&format!("wrong-{name}-link"), &mut build());
-        assert_eq!(f.entry(), "source-library-extension");
-        std::fs::remove_file(support.join(name)).unwrap();
-        symlink(expected, support.join(name)).unwrap();
-        f.succeeds(&format!("restored-{name}-link"), &mut build());
-        assert_eq!(f.entry(), "source-library-daemon");
-    }
+fn read_public_transport_field(reader: &mut impl std::io::BufRead) -> Result<Vec<u8>, String> {
+    use std::io::{BufRead, Read};
+    let mut size = String::new();
+    reader.take(32).read_line(&mut size).map_err(|error| error.to_string())?;
+    if !size.ends_with('\n') { return Err("truncated request field size".into()); }
+    let length: usize = size.trim().parse().map_err(|_| "invalid request field size")?;
+    if length > 1 << 20 { return Err("fixture request field exceeds bound".into()); }
+    let mut bytes = vec![0; length];
+    reader.read_exact(&mut bytes).map_err(|error| error.to_string())?;
+    Ok(bytes)
 }
 
-#[test]
-#[ignore = "requires the complete frozen native/full runtime; set LUSTR_TEST_PACKAGE and LUSTR_TEST_OUTPUT"]
-fn native_os_string_reserve_preserves_unwind_and_buffer() {
-    let f = Fixture::new("native-os-string-capacity");
-    let source = f.source("main.rs", include_str!("fixtures/native-os-string-capacity.rs"));
-    let expanded = f.root.join("expanded");
-    let oracle = f.root.join("oracle");
-    let first = f.invoke(
-        "pristine-first-rejection",
-        f.command("lust").arg("build").arg(&source).arg("-o").arg(&expanded).env("LUST_NO_DAEMON", "1"),
-    );
-    assert_eq!(first.status.code(), Some(1));
-    f.succeeds("expanded-build", f.command("lustr").arg("build").arg(&source).arg("-o").arg(&expanded).env("LUST_NO_DAEMON", "1"));
-    assert_eq!(f.engine(), "lustr-native");
-    f.succeeds("oracle-build", f.command("rustc-full").arg("--edition=2024").arg(&source).arg("-o").arg(&oracle));
-    let result = f.succeeds("expanded-run", &mut Command::new(&expanded));
-    let reference = f.succeeds("oracle-run", &mut Command::new(&oracle));
-    assert_eq!(result.stdout, reference.stdout);
-    assert_eq!(result.stderr, reference.stderr);
+fn read_public_transport_count(reader: &mut impl std::io::BufRead, name: &str, limit: usize) -> Result<usize, String> {
+    let bytes = read_public_transport_field(reader)?;
+    let count = std::str::from_utf8(&bytes).ok().and_then(|value| value.parse::<usize>().ok())
+        .ok_or_else(|| format!("invalid {name} count"))?;
+    if count > limit { return Err(format!("{name} count exceeds bound")); }
+    Ok(count)
 }
 
-#[test]
-#[ignore = "requires the complete frozen native/full runtime; set LUSTR_TEST_PACKAGE and LUSTR_TEST_OUTPUT"]
-fn native_path_reserve_preserves_unwind_and_buffer() {
-    let f = Fixture::new("native-path-capacity");
-    let source = f.source("main.rs", include_str!("fixtures/native-path-capacity.rs"));
-    let expanded = f.root.join("expanded");
-    let oracle = f.root.join("oracle");
-    let first = f.invoke(
-        "pristine-first-rejection",
-        f.command("lust").arg("build").arg(&source).arg("-o").arg(&expanded).env("LUST_NO_DAEMON", "1"),
-    );
-    assert_eq!(first.status.code(), Some(1));
-    assert!(!expanded.exists());
-    f.succeeds("oracle-build", f.command("rustc-full").arg("--edition=2024").arg(&source).arg("-o").arg(&oracle));
-    let reference = f.succeeds("oracle-run", &mut Command::new(&oracle));
-    for mode in ["cold", "daemon", "repeat"] {
-        let mut command = f.command("lustr");
-        command.arg("build").arg(&source).arg("-o").arg(&expanded);
-        if mode == "cold" {
-            command.env("LUST_NO_DAEMON", "1");
+fn read_public_transport_request(
+    reader: &mut impl std::io::BufRead,
+    identity: &str,
+    source: &Path,
+    output: &Path,
+    target_explicit: bool,
+    expected_library: Option<(&transport_protocol::LibraryKey, transport_protocol::library_contract::LibraryOptions)>,
+) -> Result<(), String> {
+    use std::io::{BufRead, Read};
+    use std::os::unix::ffi::OsStrExt;
+    let mut header = String::new();
+    reader.take(256).read_line(&mut header).map_err(|error| error.to_string())?;
+    let words: Vec<_> = header.split_whitespace().collect();
+    if !header.ends_with('\n') || words.len() != 16 || words[0] != "build" || words[15] != identity {
+        return Err("public request does not name the expected compiler build".into());
+    }
+    let features: usize = words[11].parse().map_err(|_| "invalid feature count")?;
+    let environment: usize = if words[12] == "-" { 0 } else { words[12].parse().map_err(|_| "invalid environment count")? };
+    if features > 4096 || environment > 65536 { return Err("request field count exceeds bound".into()); }
+    // Ten common fields precede the library discriminator. A library frame
+    // carries six values/paths, two counted vectors, optional dependency
+    // records, then the request-only options, features and client context.
+    // neither trailing fields nor a substituted compiler identity are ignored.
+    let mut fixed = Vec::with_capacity(10);
+    for _ in 0..10 { fixed.push(read_public_transport_field(reader)?); }
+    if fixed[0].as_slice() != source.as_os_str().as_bytes()
+        || fixed[1].as_slice() != output.as_os_str().as_bytes() {
+        return Err("public request names a different source or output".into());
+    }
+    if fixed[7].as_slice() != if target_explicit { b"1" } else { b"0" } {
+        return Err("public request has a different explicit-target selection".into());
+    }
+    let present = read_public_transport_field(reader)?;
+    match (present.as_slice(), expected_library) {
+        (b"0", None) => {}
+        (mode @ (b"1" | b"2" | b"3" | b"4" | b"5"), Some((library, options))) => {
+            if (mode == b"2") != library.external.is_some() || matches!(mode, b"3" | b"4" | b"5") != library.is_executable()
+                || (mode == b"4") != library.custom_test || (mode == b"5") != library.standalone {
+                return Err("public library dependency presence changed".into());
+            }
+            if !fixed[2].is_empty() || fixed[5].as_slice() != library.target_kind().as_bytes() || fixed[6].as_slice() != library.crate_name.as_bytes()
+                || fixed[8].as_slice() != source.as_os_str().as_bytes()
+                || fixed[9].as_slice() != transport_protocol::library_contract::TARGET.as_bytes()
+                || words[8] != "1" {
+                return Err("public library request changed its crate, target or profile".into());
+            }
+            for (name, expected) in [
+                ("crate name", library.crate_name.as_bytes()),
+                ("metadata", library.metadata.as_bytes()),
+                ("extra filename", library.extra_filename.as_bytes()),
+                ("SDK receipt", library.sdk_receipt.as_bytes()),
+                ("source path", library.source_path.as_os_str().as_bytes()),
+                ("working directory", library.working_directory.as_os_str().as_bytes()),
+            ] {
+                if read_public_transport_field(reader)?.as_slice() != expected {
+                    return Err(format!("public library request changed {name}"));
+                }
+            }
+            let cfg_count = read_public_transport_count(reader, "cfg", 4096)?;
+            if cfg_count != library.cfg.len() { return Err("public library cfg inventory changed".into()); }
+            for expected in &library.cfg {
+                if read_public_transport_field(reader)?.as_slice() != expected.as_bytes() {
+                    return Err("public library cfg value changed".into());
+                }
+            }
+            let cfg_count = read_public_transport_count(reader, "check-cfg", 4096)?;
+            if cfg_count != library.check_cfg.len() { return Err("public library check-cfg inventory changed".into()); }
+            for expected in &library.check_cfg {
+                if read_public_transport_field(reader)?.as_slice() != expected.as_bytes() {
+                    return Err("public library check-cfg value changed".into());
+                }
+            }
+            let search_count = read_public_transport_count(reader, "search path", 4096)?;
+            if search_count != library.search_paths.len() { return Err("public library search-path inventory changed".into()); }
+            for expected in &library.search_paths {
+                if read_public_transport_field(reader)?.as_slice() != expected.as_os_str().as_bytes() {
+                    return Err("public library search path changed".into());
+                }
+            }
+            if let Some(dependency) = &library.external {
+                if read_public_transport_field(reader)?.as_slice() != dependency.alias.as_bytes()
+                    || read_public_transport_field(reader)?.as_slice() != dependency.artifact.as_os_str().as_bytes() {
+                    return Err("public library dependency alias or artifact changed".into());
+                }
+            }
+            if let Some(dependencies) = &library.executable_dependencies {
+                if read_public_transport_count(reader, "executable dependency", 4096)? != dependencies.len() {
+                    return Err("executable dependency inventory changed".into());
+                }
+                for input in dependencies {
+                    let archive = input.archive.as_deref().unwrap_or_else(|| Path::new(""));
+                    if read_public_transport_field(reader)?.as_slice() != input.metadata.alias.as_bytes()
+                        || read_public_transport_field(reader)?.as_slice() != input.metadata.artifact.as_os_str().as_bytes()
+                        || read_public_transport_field(reader)?.as_slice() != archive.as_os_str().as_bytes() {
+                        return Err("executable dependency pair changed".into());
+                    }
+                }
+            }
+            let embedding = match read_public_transport_field(reader)?.as_slice() {
+                b"-" => None, b"1" => Some(true), b"0" => Some(false),
+                _ => return Err("invalid public library embedding option".into()),
+            };
+            let force_warn = match read_public_transport_field(reader)?.as_slice() {
+                b"0" => false, b"1" => true,
+                _ => return Err("invalid public library forced-lint option".into()),
+            };
+            if embedding != options.embed_metadata || force_warn != options.force_warn_unused_crate_dependencies {
+                return Err("public library request changed its metadata or lint options".into());
+            }
+            if read_public_transport_field(reader)?.as_slice() != options.debug.encode() {
+                return Err("public library request changed its debug output options".into());
+            }
+            if read_public_transport_field(reader)?.as_slice() != library.optimization.value().as_bytes() {
+                return Err("public library request changed its optimization level".into());
+            }
+            if read_public_transport_field(reader)?.as_slice() != if library.single_codegen_unit { b"1" } else { b"0" } {
+                return Err("public library request changed its codegen unit choice".into());
+            }
         }
-        f.succeeds(&format!("expanded-{mode}"), &mut command);
-        assert_eq!(f.engine(), "lustr-native");
-        let actual = f.succeeds(&format!("expanded-{mode}-run"), &mut Command::new(&expanded));
-        assert_eq!(f.entry(), if mode == "cold" { "source-library-extension" } else { "source-library-daemon" });
-        assert_eq!(actual.stdout, reference.stdout);
-        assert_eq!(actual.stderr, reference.stderr);
+        (b"0" | b"1" | b"2" | b"3" | b"4" | b"5", _) => return Err("public request changed its artifact context presence".into()),
+        _ => return Err("invalid public library discriminator".into()),
     }
-    for (label, invalid) in [
-        ("wrong-amount", "fn main(){let mut p=std::path::PathBuf::new();p.reserve(\"invalid\");}\n"),
-        ("immutable", "fn main(){let p=std::path::PathBuf::new();p.reserve_exact(4);}\n"),
-        (
-            "borrow-live",
-            "fn main(){let mut p=std::path::PathBuf::from(\"x\");let r=p.as_path();p.reserve(4);println!(\"{}\",r.display());}\n",
-        ),
-    ] {
-        f.source("main.rs", invalid);
-        std::fs::remove_file(&expanded).unwrap();
-        f.native_expansion_rejects(label, &source, &expanded);
-        let actual = f.invoke(label, f.command("lustr").arg("build").arg(&source).arg("-o").arg(&expanded));
-        assert_eq!(actual.status.code(), Some(1));
-        assert!(!expanded.exists());
-        let reference =
-            f.invoke(&format!("oracle-{label}"), f.command("rustc-full").arg("--edition=2024").arg(&source).arg("-o").arg(&oracle));
-        assert_eq!(reference.status.code(), Some(1));
-        std::fs::write(&expanded, b"not an accepted artifact").unwrap();
+    for _ in 0..features { read_public_transport_field(reader)?; }
+    read_public_transport_field(reader)?; // displayed source
+    for _ in 0..environment {
+        read_public_transport_field(reader)?; // environment name
+        read_public_transport_field(reader)?; // environment value
     }
+    Ok(())
 }
 
 #[test]
-#[ignore = "requires the complete frozen native/full runtime; set LUSTR_TEST_PACKAGE and LUSTR_TEST_OUTPUT"]
-fn native_borrowed_path_conversions_match_rust() {
-    let f = Fixture::new("native-path-from");
-    let source = f.source("main.rs", include_str!("fixtures/native-path-from.rs"));
-    let expanded = f.root.join("expanded");
-    let oracle = f.root.join("oracle");
-    let first = f.invoke(
-        "pristine-first-rejection",
-        f.command("lust").arg("build").arg(&source).arg("-o").arg(&expanded).env("LUST_NO_DAEMON", "1"),
-    );
-    assert_eq!(first.status.code(), Some(1));
-    f.succeeds("oracle-build", f.command("rustc-full").arg("--edition=2024").arg(&source).arg("-o").arg(&oracle));
-    let reference = f.succeeds("oracle-run", &mut Command::new(&oracle));
-    for mode in ["cold", "daemon"] {
-        let mut command = f.command("lustr");
-        command.arg("build").arg(&source).arg("-o").arg(&expanded);
-        if mode == "cold" {
-            command.env("LUST_NO_DAEMON", "1");
-        }
-        f.succeeds(&format!("expanded-{mode}"), &mut command);
-        assert_eq!(f.engine(), "lustr-native");
-        let result = f.succeeds(&format!("expanded-{mode}-run"), &mut Command::new(&expanded));
-        assert_eq!(result.stdout, reference.stdout);
-        assert_eq!(result.stderr, reference.stderr);
-    }
-    for (label, invalid) in [
-        ("not-path", "fn main(){let _=std::path::PathBuf::from(&42u32);}\n"),
-        (
-            "no-suppression",
-            "fn main(){let p=std::path::PathBuf::from(&std::ffi::OsString::from(\"x\"));let r=&p;drop(p);println!(\"{}\",r.display());}\n",
-        ),
-    ] {
-        f.source("main.rs", invalid);
-        std::fs::remove_file(&expanded).unwrap();
-        f.native_expansion_rejects(label, &source, &expanded);
-        let result = f.invoke(label, f.command("lustr").arg("build").arg(&source).arg("-o").arg(&expanded));
-        assert_eq!(result.status.code(), Some(1));
-        assert!(!expanded.exists());
-        let reference =
-            f.invoke(&format!("oracle-{label}"), f.command("rustc-full").arg("--edition=2024").arg(&source).arg("-o").arg(&oracle));
-        assert_eq!(reference.status.code(), Some(1));
-        std::fs::write(&expanded, b"not an accepted artifact").unwrap();
-    }
-}
-
-#[test]
-#[ignore = "requires the complete frozen native/full runtime; set LUSTR_TEST_PACKAGE and LUSTR_TEST_OUTPUT"]
-fn native_library_expansion_keeps_program_checks_and_runtime() {
-    use std::os::unix::ffi::OsStringExt;
-    let f = Fixture::new("native-library-expansion");
-    let source = f.source("main.rs", include_str!("fixtures/native-env-consts.rs"));
-    let expanded = f.root.join("expanded");
-    let oracle = f.root.join("oracle");
-    let pristine = f.invoke(
-        "pristine-first-rejection",
-        f.command("lust").arg("build").arg(&source).arg("-o").arg(&expanded).env("LUST_NO_DAEMON", "1"),
-    );
-    assert_eq!(pristine.status.code(), Some(1));
-    assert!(!expanded.exists());
-    f.succeeds("oracle-build", f.command("rustc-full").arg("--edition=2024").arg(&source).arg("-o").arg(&oracle));
-    let run = |program: &Path| {
-        let mut command = Command::new(program);
-        command
-            .current_dir(&f.root)
-            .env_remove("LUSTR_ABSENT_VARIABLE")
-            .env("LUSTR_NON_UNICODE", std::ffi::OsString::from_vec(vec![b'a', 0xff, b'z']));
-        command
+#[cfg(all(target_arch = "x86_64", target_os = "linux", target_env = "gnu"))]
+fn public_debug_options_round_trip_without_enabling_linked_debug() {
+    use transport_protocol::library_contract::{DebugInfo, DebugOptions, SplitDebug, Strip};
+    let args: Vec<String> = [
+        "check", "/native-transport/source.rs", "--lib", "--target", "x86_64-unknown-linux-gnu",
+        "-o", "/native-transport/libpeer-wire.rmeta",
+        "--lustr-library-name", "peer", "--lustr-library-cwd", "/native-transport",
+        "--lustr-library-metadata", "wire", "--lustr-library-extra-filename", "-wire",
+        "--lustr-library-debug-options", "422",
+    ].into_iter().map(str::to_owned).collect();
+    let Some(transport_protocol::Invocation::Compile { mut req, .. }) =
+        transport_protocol::parse_args(&args)
+    else {
+        panic!("metadata-only request with full debug options");
     };
-    let reference = f.succeeds("oracle-run", &mut run(&oracle));
-    for mode in ["cold", "daemon", "repeat"] {
-        let mut command = f.command("lustr");
-        command.arg("build").arg(&source).arg("-o").arg(&expanded);
-        if mode == "cold" {
-            command.env("LUST_NO_DAEMON", "1");
-        }
-        f.succeeds(&format!("expanded-{mode}"), &mut command);
-        assert_eq!(f.engine(), "lustr-native");
-        let result = f.succeeds(&format!("expanded-{mode}-run"), &mut run(&expanded));
-        assert_eq!(result.stdout, reference.stdout);
-        assert_eq!(result.stderr, reference.stderr);
-    }
-    // Keep the original single-file and Cargo fallback fixtures as native
-    // expansion regressions now that the missing constant is implemented.
-    f.source("main.rs", "fn main(){println!(\"full:{}\",std::env::consts::EXE_EXTENSION);}\n");
-    f.succeeds("original-single-file", f.command("lustr").arg("build").arg(&source).arg("-o").arg(&expanded));
-    assert_eq!(f.engine(), "lustr-native");
-    assert_eq!(f.succeeds("original-single-file-run", &mut Command::new(&expanded)).stdout, b"full:\n");
-    f.succeeds(
-        "explicit-source-override",
-        f.command("lustr").arg("build").arg(&source).arg("-o").arg(&expanded).env("LUST_LIBRARY", f.package.join("lib/lust/library")),
-    );
-    assert_eq!(f.engine(), "full-rust-core");
-    // The private composition path is not a proof of canonical type-name
-    // coverage. This valid combination still needs the compatibility core.
-    f.source("main.rs", "fn main(){let _=std::env::consts::EXE_SUFFIX;println!(\"{}\",std::any::type_name::<std::env::VarError>());}\n");
-    f.succeeds("canonical-type-name", f.command("lustr").arg("build").arg(&source).arg("-o").arg(&expanded));
-    assert_eq!(f.engine(), "full-rust-core");
-    assert_eq!(f.succeeds("canonical-type-name-run", &mut Command::new(&expanded)).stdout, b"std::env::VarError\n");
-    let manifest =
-        f.source("project/Cargo.toml", "[package]\nname=\"native_expansion\"\nversion=\"0.1.0\"\nedition=\"2024\"\n[workspace]\n");
-    let main = f.source("project/src/main.rs", "fn main(){println!(\"{}:{}\",env!(\"BUILD_VALUE\"),std::env::consts::EXE_EXTENSION);}\n");
-    f.source("project/build.rs", "fn main(){println!(\"cargo:rustc-env=BUILD_VALUE=observed\");}\n");
-    f.succeeds(
-        "original-cargo",
-        f.command("lustr").arg("build").arg(&main).arg("--manifest-path").arg(&manifest).args(["--offline", "-o"]).arg(&expanded),
-    );
-    assert_eq!(f.engine(), "lustr-native");
-    assert_eq!(f.succeeds("original-cargo-run", &mut Command::new(&expanded)).stdout, b"observed:\n");
-    for (label, invalid) in [
-        ("wrong-type", "fn main(){let _:u32=std::env::consts::EXE_SUFFIX;}\n"),
-        ("missing-name", "fn main(){let _=std::env::consts::EXE_PREFIX;}\n"),
-        ("borrow", "fn main(){let s=String::from(std::env::consts::EXE_SUFFIX);let r=&s;drop(s);println!(\"{}\",r);}\n"),
-    ] {
-        f.source("main.rs", invalid);
-        std::fs::remove_file(&expanded).unwrap();
-        f.native_expansion_rejects(label, &source, &expanded);
-        let result = f.invoke(label, f.command("lustr").arg("build").arg(&source).arg("-o").arg(&expanded));
-        assert_eq!(result.status.code(), Some(1), "{label} accepted invalid Rust");
-        assert!(!expanded.exists());
-        let reference =
-            f.invoke(&format!("oracle-{label}"), f.command("rustc-full").arg("--edition=2024").arg(&source).arg("-o").arg(&oracle));
-        assert_eq!(reference.status.code(), Some(1));
-        // The next rejection needs an existing artifact for the same removal.
-        std::fs::write(&expanded, b"not an accepted artifact").unwrap();
+    let expected = DebugOptions { info: DebugInfo::Full, split: SplitDebug::Unpacked, strip: Strip::Symbols };
+    let frame = transport_protocol::encode(&req);
+    let observed = transport_protocol::read_request(&mut std::io::Cursor::new(frame)).unwrap();
+    assert_eq!(observed.library_options.debug, expected);
+    assert_eq!(observed.session, req.session);
+    assert!(!observed.debug);
+
+    req.cmd = transport_protocol::Cmd::Build;
+    req.out.set_file_name("libpeer-wire.rlib");
+    let frame = transport_protocol::encode(&req);
+    assert!(transport_protocol::read_request(&mut std::io::Cursor::new(frame)).is_err());
+}
+
+#[test]
+fn transport_peer_consumes_and_validates_the_actual_encoded_request() {
+    use std::io::Cursor;
+    let args: Vec<String> = ["build", "/native-transport/source.rs", "-o", "/native-transport/output"]
+        .into_iter().map(str::to_owned).collect();
+    let Some(transport_protocol::Invocation::Compile { mut req, .. }) = transport_protocol::parse_args(&args) else { panic!("build request"); };
+    req.session.features = vec!["one".into(), "two".into()];
+    req.client.env = Some(vec![("KEY".into(), "value λ".into()), ("EMPTY".into(), String::new())]);
+    let identity = transport_protocol::build_id();
+    for target_explicit in [false, true] {
+        req.session.krate.target_explicit = target_explicit;
+        let encoded = transport_protocol::encode(&req);
+        let mut reader = Cursor::new(&encoded);
+        read_public_transport_request(&mut reader, identity, &req.file, &req.out, target_explicit, None).unwrap();
+        assert_eq!(reader.position() as usize, encoded.len(), "peer must consume every environment and source field");
+        assert!(read_public_transport_request(&mut Cursor::new(&encoded), identity, &req.file, &req.out, !target_explicit, None).is_err());
+        assert!(read_public_transport_request(&mut Cursor::new(&encoded), "another-build", &req.file, &req.out, target_explicit, None).is_err());
+        assert!(read_public_transport_request(&mut Cursor::new(&encoded), identity, Path::new("/wrong-source.rs"), &req.out, target_explicit, None).is_err());
+        assert!(read_public_transport_request(&mut Cursor::new(&encoded), identity, &req.file, Path::new("/wrong-output"), target_explicit, None).is_err());
+        assert!(read_public_transport_request(&mut Cursor::new(&encoded[..encoded.len() - 1]), identity, &req.file, &req.out, target_explicit, None).is_err());
     }
 }
 
 #[test]
-#[ignore = "requires the complete frozen native/full runtime; set LUSTR_TEST_PACKAGE and LUSTR_TEST_OUTPUT"]
-fn native_and_full_compiler_contract() {
-    let f = Fixture::new("complete-contract");
-    let source = f.source("main.rs", "fn main(){println!(\"first\");}\n");
-    let executable = f.root.join("application");
-    f.succeeds(
-        "native-cold",
-        f.command("lustr")
-            .args([OsStr::new("build"), source.as_os_str(), OsStr::new("-o"), executable.as_os_str()])
-            .env("LUST_NO_DAEMON", "1"),
-    );
-    assert_eq!(f.engine(), "lust");
-    let trace = std::fs::read_to_string(f.root.join("trace.jsonl")).unwrap();
-    assert_eq!(serde_json::from_str::<serde_json::Value>(trace.lines().last().unwrap()).unwrap()["entry"], "native-library");
-    f.succeeds("native-daemon-first", f.command("lustr").arg("build").arg(&source).arg("-o").arg(&executable));
-    f.source("main.rs", "fn main(){println!(\"edited\");}\n");
-    f.succeeds("native-daemon-edit", f.command("lustr").arg("build").arg(&source).arg("-o").arg(&executable));
-    assert_eq!(f.engine(), "lust");
-    assert_eq!(f.succeeds("native-run", &mut Command::new(&executable)).stdout, b"edited\n");
-    f.succeeds("raw-native", f.command("rustc").arg("--edition=2024").arg(&source).arg("-o").arg(&executable));
-    assert_eq!(f.engine(), "lust");
-    f.source("main.rs", "fn main(){println!(\"full:{}\",std::env::join_paths([\"\"]).unwrap().to_str().unwrap());}\n");
-    f.succeeds("full-language", f.command("lustr").arg("build").arg(&source).arg("-o").arg(&executable));
-    assert_eq!(f.engine(), "full-rust-core");
-    assert_eq!(f.succeeds("full-run", &mut Command::new(&executable)).stdout, b"full:\n");
-    let invalid = f.source("E0502.rs", "fn main(){let _:u32=\"wrong type\";}\n");
-    let bad = f.invoke(
-        "rejection",
-        f.command("rustc").arg("--edition=2024").arg("--error-format=json").arg(&invalid).arg("-o").arg(f.root.join("invalid")),
-    );
-    assert_eq!(bad.status.code(), Some(1));
-    assert!(!f.root.join("invalid").exists());
-    let codes: Vec<String> = String::from_utf8(bad.stderr)
-        .unwrap()
-        .lines()
-        .filter_map(|line| serde_json::from_str::<serde_json::Value>(line).ok())
-        .filter(|v| v["level"] == "error")
-        .filter_map(|v| v["code"]["code"].as_str().map(str::to_owned))
-        .collect();
-    assert!(codes.iter().any(|c| c == "E0308"));
-    assert!(!codes.iter().any(|c| c == "E0502"));
-    let library = f.source("library.rs", "pub fn answer()->u32{42}\n");
-    f.succeeds(
-        "real-metadata",
-        f.command("rustc")
-            .args(["--edition=2024", "--crate-type=rlib", "--emit=metadata"])
-            .arg(&library)
-            .arg("-o")
-            .arg(f.root.join("library.rmeta")),
-    );
-    assert_eq!(f.engine(), "full-rust-core");
-    assert!(std::fs::metadata(f.root.join("library.rmeta")).unwrap().len() > 0);
-    let wasm = f.source("wasm.rs", "#![no_std]\n#[panic_handler]fn panic(_: &core::panic::PanicInfo)->!{loop{}}\n#[unsafe(no_mangle)]pub extern \"C\" fn answer()->u32{42}\n");
-    f.succeeds(
-        "wasm",
-        f.command("rustc")
-            .args(["--edition=2024", "--crate-type=cdylib", "--target=wasm32-unknown-unknown", "-Cpanic=abort"])
-            .arg(&wasm)
-            .arg("-o")
-            .arg(f.root.join("module.wasm")),
-    );
-    assert_eq!(&std::fs::read(f.root.join("module.wasm")).unwrap()[..8], b"\0asm\x01\0\0\0");
+fn transport_peer_validates_library_values_and_counted_vectors() {
+    use std::io::{BufRead, Cursor};
+    let args: Vec<String> = ["build", "/native-transport/source.rs", "-o", "/native-transport/libtransport_peer-transport.rlib"]
+        .into_iter().map(str::to_owned).collect();
+    let Some(transport_protocol::Invocation::Compile { mut req, .. }) = transport_protocol::parse_args(&args) else { panic!("build request"); };
+    let library = transport_protocol::LibraryKey {
+        crate_name: "transport_peer".into(),
+        metadata: "wire_identity".into(),
+        extra_filename: "-transport".into(),
+        sdk_receipt: transport_protocol::library_contract::SDK_RECEIPT.into(),
+        source_path: req.file.clone(),
+        working_directory: PathBuf::from("/native-transport"),
+        cfg: vec!["build_mode=\"safe\"".into()],
+        check_cfg: vec!["cfg(docsrs,test)".into(), "cfg(feature, values())".into()],
+        search_paths: vec![PathBuf::from("/native-transport/deps-one"), PathBuf::from("/native-transport/deps-two")],
+        external: None,
+        executable_dependencies: None,
+        standalone: false,
+        optimization: transport_protocol::OptLevel::None,
+        single_codegen_unit: false,
+        custom_test: false,
+    };
+    req.session.krate.target_kind = "lib".into();
+    req.session.krate.target_name = library.crate_name.clone();
+    req.session.krate.target_explicit = true;
+    req.session.target_triple = transport_protocol::library_contract::TARGET.into();
+    req.session.profile = transport_protocol::ProfileFlags::DEV;
+    req.session.library = Some(library.clone());
+    req.library_options = transport_protocol::library_contract::LibraryOptions {
+        embed_metadata: Some(false), force_warn_unused_crate_dependencies: true,
+        ..Default::default()
+    };
+    req.session.features = vec!["one".into(), "two".into()];
+    req.client.env = Some(vec![("KEY".into(), "value λ".into()), ("EMPTY".into(), String::new())]);
+    let encoded = transport_protocol::encode(&req);
+    let identity = transport_protocol::build_id();
+    let mut reader = Cursor::new(&encoded);
+    read_public_transport_request(&mut reader, identity, &req.file, &req.out, true, Some((&library, req.library_options))).unwrap();
+    assert_eq!(reader.position() as usize, encoded.len(), "library peer must consume every vector and environment field");
+    assert!(read_public_transport_request(&mut Cursor::new(&encoded), identity, &req.file, &req.out, true, None).is_err());
+    assert!(read_public_transport_request(&mut Cursor::new(&encoded), identity, &req.file, &req.out, false, Some((&library, req.library_options))).is_err());
 
-    let manifest =
-        f.source("project/Cargo.toml", "[package]\nname=\"compiler_contract\"\nversion=\"0.1.0\"\nedition=\"2024\"\n[workspace]\n");
-    let main = f.source("project/src/main.rs", "fn main(){println!(\"{}\",env!(\"BUILD_VALUE\"));}\n");
-    f.source("project/build.rs", "fn main(){use std::io::Write;let p=std::path::Path::new(&std::env::var(\"CARGO_MANIFEST_DIR\").unwrap()).join(\"runs.log\");std::fs::OpenOptions::new().create(true).append(true).open(p).unwrap().write_all(b\"run\\n\").unwrap();println!(\"cargo:rerun-if-changed=build.rs\");println!(\"cargo:rustc-env=BUILD_VALUE=observed\");}\n");
-    f.succeeds(
-        "cargo-native",
-        f.command("lustr").arg("build").arg(&main).arg("--manifest-path").arg(&manifest).arg("--offline").arg("-o").arg(&executable),
-    );
-    assert_eq!(f.engine(), "lust");
-    f.source(
-        "project/src/main.rs",
-        "fn main(){println!(\"{}:{}\",env!(\"BUILD_VALUE\"),std::env::join_paths([\"\"]).unwrap().to_str().unwrap());}\n",
-    );
-    f.succeeds(
-        "cargo-full-fallback",
-        f.command("lustr").arg("build").arg(&main).arg("--manifest-path").arg(&manifest).arg("--offline").arg("-o").arg(&executable),
-    );
-    assert_eq!(f.engine(), "full-rust-core");
-    assert_eq!(std::fs::read_to_string(f.root.join("project/runs.log")).unwrap(), "run\n");
-    assert_eq!(f.succeeds("cargo-full-run", &mut Command::new(&executable)).stdout, b"observed:\n");
-    f.succeeds("cargo-full-check", f.command("lustr").arg("check").arg(&main).arg("--manifest-path").arg(&manifest).arg("--offline"));
-    // A proc macro, doctest, unwind and Drop exercise the complete Cargo path.
-    f.source(
-        "project/macros/Cargo.toml",
-        "[package]\nname=\"contract_macro\"\nversion=\"0.1.0\"\nedition=\"2024\"\n[lib]\nproc-macro=true\n",
-    );
-    f.source("project/macros/src/lib.rs", "extern crate proc_macro;#[proc_macro]pub fn number(_:proc_macro::TokenStream)->proc_macro::TokenStream{\"42u32\".parse().unwrap()}\n");
-    f.source("project/Cargo.toml", "[package]\nname=\"compiler_contract\"\nversion=\"0.1.0\"\nedition=\"2024\"\n[workspace]\nmembers=[\"macros\"]\n[dependencies]\ncontract_macro={path=\"macros\"}\n");
-    f.source("project/src/lib.rs", "/// ```\n/// assert_eq!(compiler_contract::answer(),42);\n/// ```\npub fn answer()->u32{contract_macro::number!()}\n#[cfg(test)]mod tests{#[test]fn recovery(){use std::sync::atomic::{AtomicUsize,Ordering};static DROPS:AtomicUsize=AtomicUsize::new(0);struct Guard;impl Drop for Guard{fn drop(&mut self){DROPS.fetch_add(1,Ordering::SeqCst);}}assert!(std::panic::catch_unwind(||{let _g=Guard;panic!(\"expected\")}).is_err());assert_eq!(DROPS.load(Ordering::SeqCst),1);assert_eq!(super::answer(),42);}}\n");
-    f.succeeds("cargo-proc-macro-tests-and-doctest", f.command("cargo").args(["test", "--offline", "--manifest-path"]).arg(&manifest));
-    let version = f.succeeds("version", f.command("rustc").arg("-vV"));
-    assert!(String::from_utf8(version.stdout).unwrap().contains("5b7b37aefcb5b2fba3c2392bc9065b9e4602d494"));
-    assert!(Path::new(&f.root).join("cargo-proc-macro-tests-and-doctest.stdout").is_file());
+    // Keep mutations bound to actual length-prefixed fields from the real
+    // encoder. This changes one field, without dropping the remaining frame.
+    let mut fields = Vec::new();
+    let mut cursor = Cursor::new(&encoded);
+    cursor.read_line(&mut String::new()).unwrap();
+    while (cursor.position() as usize) < encoded.len() {
+        let start = cursor.position() as usize;
+        read_public_transport_field(&mut cursor).unwrap();
+        fields.push((start, cursor.position() as usize));
+    }
+    assert_eq!(fields.len(), 37, "library schema/options plus two features and two environment pairs");
+    let replace_field = |index: usize, bytes: &[u8]| {
+        let (start, end) = fields[index];
+        let mut changed = encoded[..start].to_vec();
+        changed.extend_from_slice(format!("{}\n", bytes.len()).as_bytes());
+        changed.extend_from_slice(bytes);
+        changed.extend_from_slice(&encoded[end..]);
+        changed
+    };
+    let wrong_fields: &[(usize, &[u8])] = &[
+        (10, b"2"), (10, b"0"), // invalid discriminator and lost library context
+        (11, b"wrong_crate"), (12, b"wrong_metadata"), (13, b"-wrong_suffix"),
+        (14, b"wrong_sdk"), (15, b"/wrong/source.rs"), (16, b"/wrong/cwd"),
+        (17, b"invalid"), (17, b"4097"), (17, b"0"), // malformed, oversized or incomplete cfg inventory
+        (18, b"build_mode=\"wrong\""),
+        (19, b"4097"), (19, b"1"), (21, b"cfg(wrong)"),
+        (22, b"4097"), (22, b"1"), // oversized or incomplete search inventory
+        (24, b"/wrong/dependency"),
+        (25, b"invalid"), (25, b"-"), (25, b"1"), // malformed, absent or different embedding choice
+        (26, b"2"), (26, b"0"), // malformed or different forced-lint choice
+        (27, b"102"), (27, b"00"), (27, b"999"), // changed, truncated or unknown debug output choices
+        (28, b"3"), (28, b"9"), (28, b"00"), // different, unknown or malformed optimization level
+        (29, b"1"), (29, b"2"), // different or invalid codegen unit selection
+    ];
+    for &(index, bytes) in wrong_fields {
+        let changed = replace_field(index, bytes);
+        assert!(read_public_transport_request(&mut Cursor::new(&changed), identity, &req.file, &req.out, true, Some((&library, req.library_options))).is_err(),
+                "changed library field {index} was accepted");
+    }
+    for index in [18, 21, 24, 25, 26, 27, 28, 29, 36] {
+        let truncated = &encoded[..fields[index].1 - 1];
+        assert!(read_public_transport_request(&mut Cursor::new(truncated), identity, &req.file, &req.out, true, Some((&library, req.library_options))).is_err(),
+                "truncated vector, request option or final environment field {index} was accepted");
+    }
+    for (embed_metadata, force_warn_unused_crate_dependencies) in [(None, false), (Some(true), true), (Some(false), true)] {
+        req.library_options = transport_protocol::library_contract::LibraryOptions {
+            embed_metadata, force_warn_unused_crate_dependencies,
+            ..Default::default()
+        };
+        let frame = transport_protocol::encode(&req);
+        let mut reader = Cursor::new(&frame);
+        read_public_transport_request(&mut reader, identity, &req.file, &req.out, true, Some((&library, req.library_options))).unwrap();
+        assert_eq!(reader.position() as usize, frame.len(), "every actual metadata/lint choice must consume its complete frame");
+    }
+    let mut dependency_library = library.clone();
+    dependency_library.external = Some(transport_protocol::ExternMetadata {
+        alias: "wire_dep".into(), artifact: PathBuf::from("/native-transport/deps-one/libwire_dep.rmeta"),
+    });
+    req.session.library = Some(dependency_library.clone());
+    let frame = transport_protocol::encode(&req);
+    let mut reader = Cursor::new(&frame);
+    read_public_transport_request(&mut reader, identity, &req.file, &req.out, true, Some((&dependency_library, req.library_options))).unwrap();
+    assert_eq!(reader.position() as usize, frame.len());
+    dependency_library.external.as_mut().unwrap().artifact.set_file_name("another.rmeta");
+    assert!(read_public_transport_request(&mut Cursor::new(&frame), identity, &req.file, &req.out, true, Some((&dependency_library, req.library_options))).is_err());
+
+    let mut executable = library;
+    executable.executable_dependencies = Some(vec![transport_protocol::ExecutableExtern {
+        metadata: transport_protocol::ExternMetadata {
+            alias: "wire_dep".into(),
+            artifact: PathBuf::from("/native-transport/deps-one/libwire_dep.rmeta"),
+        },
+        archive: Some(PathBuf::from("/native-transport/deps-one/libwire_dep.rlib")),
+    }]);
+    req.session.krate.target_kind = "bin".into();
+    req.session.library = Some(executable.clone());
+    req.library_options.embed_metadata = None;
+    let frame = transport_protocol::encode(&req);
+    let mut reader = Cursor::new(&frame);
+    read_public_transport_request(&mut reader, identity, &req.file, &req.out, true, Some((&executable, req.library_options))).unwrap();
+    assert_eq!(reader.position() as usize, frame.len());
+    executable.executable_dependencies.as_mut().unwrap()[0].archive.as_mut().unwrap().set_file_name("another.rlib");
+    assert!(read_public_transport_request(&mut Cursor::new(&frame), identity, &req.file, &req.out, true, Some((&executable, req.library_options))).is_err());
+}
+
+#[test]
+#[ignore = "requires LUSTR_TEST_PACKAGE and LUSTR_TEST_OUTPUT on a Unix socket host"]
+fn public_entries_keep_ambiguous_daemon_failures_terminal() {
+    use std::io::{BufReader, Write};
+    use std::os::unix::net::UnixListener;
+    use std::time::{Duration, Instant};
+    let f = Fixture::new("native-transport");
+    let source = f.source("valid.rs", "fn main() { println!(\"valid native program\"); }\n");
+    let artifact = f.root.join("previous-program");
+    let prior = b"previous successful artifact must remain unchanged";
+    let socket = f.root.join("daemon.sock");
+    let identity = native_package_wire_identity(&f.package);
+    let replies = [
+        ("lost-reply", Vec::new()),
+        ("old-protocol", b"0 0 0\n".to_vec()),
+        ("wrong-build", b"0 0 0 another-build\n".to_vec()),
+        ("truncated-body", format!("0 7 0 {identity}\n").into_bytes()),
+        ("status-wraps-to-success", format!("256 0 0 {identity}\n").into_bytes()),
+        ("second-status-wraps-to-success", format!("512 0 0 {identity}\n").into_bytes()),
+        ("status-wraps-to-other-failure", format!("257 0 0 {identity}\n").into_bytes()),
+        ("reported-failure", format!("3 0 7 {identity}\nfailure").into_bytes()),
+    ];
+    for tool in ["lust", "lustr"] {
+        for (label, reply) in &replies {
+            std::fs::write(&artifact, prior).unwrap();
+            let listener = UnixListener::bind(&socket).expect("required real daemon socket");
+            listener.set_nonblocking(true).unwrap();
+            let reply = reply.clone();
+            let identity = identity.clone();
+            let expected_source = source.clone();
+            let expected_output = artifact.clone();
+            let server = std::thread::spawn(move || {
+                let deadline = Instant::now() + Duration::from_secs(10);
+                let mut stream = loop {
+                    match listener.accept() {
+                        Ok((stream, _)) => break stream,
+                        Err(error) if error.kind() == std::io::ErrorKind::WouldBlock && Instant::now() < deadline => {
+                            std::thread::sleep(Duration::from_millis(1));
+                        }
+                        Err(error) => panic!("public entry did not deliver a request: {error}"),
+                    }
+                };
+                stream.set_read_timeout(Some(Duration::from_secs(5))).unwrap();
+                read_public_transport_request(&mut BufReader::new(&stream), &identity, &expected_source, &expected_output, false, None)
+                    .expect("peer received the complete request for this installed compiler, source and output");
+                stream.write_all(&reply).unwrap();
+            });
+            let result = f.invoke(
+                &format!("{tool}-{label}"),
+                f.command(tool).arg("build").arg(&source).arg("-o").arg(&artifact)
+                    .env_remove("LUST_NO_DAEMON").env_remove("LUST_LIBRARY").env_remove("LUST_SOURCES_READY"),
+            );
+            server.join().unwrap();
+            assert_eq!(result.status.code(), Some(3), "{tool}-{label}: {}", String::from_utf8_lossy(&result.stderr));
+            if *label == "reported-failure" {
+                assert_eq!(result.stderr, b"failure", "{tool} must preserve a valid same-build compiler failure");
+            }
+            assert_eq!(std::fs::read(&artifact).unwrap(), prior, "{tool}-{label} replayed a failed compiler request");
+            assert!(result.stdout.is_empty(), "{tool}-{label} produced success output");
+            assert!(socket.exists(), "{tool}-{label} removed an ambiguously responding daemon");
+            std::fs::remove_file(&socket).unwrap();
+        }
+    }
 }
 
 #[test]
 #[ignore = "requires LUSTR_TEST_PACKAGE and LUSTR_TEST_OUTPUT"]
-fn cargo_native_first_build_preserves_build_script_environment() {
-    let f = Fixture::new("cargo-native-first");
-    let manifest = f.source("project/Cargo.toml", "[package]\nname=\"native_project\"\nversion=\"0.1.0\"\nedition=\"2024\"\n[workspace]\n");
-    let main = f.source("project/src/main.rs", "fn main(){println!(\"{}\",env!(\"BUILD_VALUE\"));}\n");
+fn native_file_tests_preserve_single_execution() {
+    let f = Fixture::new("native-file-tests");
+    let source = f.source("tests.rs", "fn main(){}\n#[test]\nfn works(){assert_eq!(21*2,42);}\n");
+    let summary = |out: &Output| {
+        let values: Vec<serde_json::Value> = out
+            .stdout
+            .split(|byte| *byte == b'\n')
+            .filter_map(|line| serde_json::from_slice(line).ok())
+            .filter(|value: &serde_json::Value| value["kind"] == "summary")
+            .collect();
+        assert_eq!(values.len(), 1, "one native test summary is required");
+        assert_eq!(values[0]["build"], "ok");
+        values.into_iter().next().unwrap()
+    };
+    let passed = f.succeeds("passed", f.command("lustr").arg("test").arg(&source).arg("--json"));
+    assert_eq!(summary(&passed)["passed"], 1);
+    assert_eq!(f.engine(), "lust-native-command");
     f.source(
-        "project/build.rs",
-        "fn main(){println!(\"cargo:rerun-if-changed=build.rs\");println!(\"cargo:rustc-env=BUILD_VALUE=observed\");}\n",
+        "tests.rs",
+        "fn main(){}\n#[test]\nfn fails(){use std::io::Write;let mut file=std::fs::OpenOptions::new().create(true).append(true).open(\"attempts\").unwrap();file.write_all(b\"x\").unwrap();panic!(\"expected failure\");}\n",
     );
-    let executable = f.root.join("application");
-    f.succeeds(
-        "native-project-build",
-        f.command("lustr").arg("build").arg(&main).arg("--manifest-path").arg(&manifest).arg("--offline").arg("-o").arg(&executable),
+    let failed = f.invoke("failed", f.command("lustr").arg("test").arg(&source).arg("--json"));
+    // The upstream native test runner follows Cargo's failed-test status.
+    assert_eq!(failed.status.code(), Some(101));
+    let result = summary(&failed);
+    assert_eq!(result["passed"], 0);
+    assert_eq!(result["failed"], 1);
+    assert_eq!(result["timed_out"], 0);
+    assert_eq!(std::fs::read(f.root.join("attempts")).unwrap(), b"x", "failed native test must execute exactly once");
+    assert_eq!(f.engine(), "lust-native-command");
+}
+
+#[cfg(all(target_os = "linux", target_arch = "x86_64", target_env = "gnu"))]
+#[test]
+#[ignore = "requires LUSTR_TEST_PACKAGE, LUSTR_TEST_OUTPUT, Clang and ELF tools"]
+fn ordinary_cargo_links_rust_debug_information() {
+    let f = Fixture::new("rust-debug");
+    f.source("Cargo.toml", "[package]\nname = \"debug-leaf\"\nversion = \"0.1.0\"\nedition = \"2024\"\n");
+    f.source("src/main.rs", "fn total(input: u32) -> u32 {\n    let sum = input + 5;\n    sum + 1\n}\nfn main() { println!(\"{}\", total(7)); }\n");
+    f.succeeds("check", f.command("cargo").args(["check", "--offline"]).env_remove("CARGO_PROFILE_DEV_DEBUG"));
+    f.succeeds("build", f.command("cargo").args(["build", "--offline"]).env_remove("CARGO_PROFILE_DEV_DEBUG"));
+    let ran = f.succeeds("run", f.command("cargo").args(["run", "--offline", "--quiet"]).env_remove("CARGO_PROFILE_DEV_DEBUG"));
+    assert_eq!(ran.stdout, b"13\n");
+    let executable = f.root.join("target/debug/debug-leaf");
+    let dwarf = f.succeeds("dwarf", Command::new("readelf").arg("--debug-dump=info").arg(&executable));
+    let dwarf = String::from_utf8_lossy(&dwarf.stdout);
+    for required in ["(Rust)", "): input", "): sum", "): u32", "DW_TAG_lexical_block"] {
+        assert!(dwarf.contains(required), "missing Rust DWARF evidence {required}: {dwarf}");
+    }
+    let good = std::fs::read(&executable).unwrap();
+    f.source("src/main.rs", "fn main() { let _: u32 = \"bad\"; }\n");
+    let invalid = f.invoke("invalid", f.command("cargo").args(["build", "--offline"]).env_remove("CARGO_PROFILE_DEV_DEBUG"));
+    assert_eq!(invalid.status.code(), Some(101));
+    assert_eq!(std::fs::read(executable).unwrap(), good, "a rejected edit replaced the last good executable");
+}
+
+#[cfg(all(target_os = "linux", target_arch = "x86_64", target_env = "gnu"))]
+#[test]
+#[ignore = "requires LUSTR_TEST_PACKAGE, LUSTR_TEST_OUTPUT, LUSTR_TEST_ORACLE, Clang and ELF tools"]
+fn default_cargo_links_debug_from_a_native_no_std_provider() {
+    assert_linked_provider_workspace("debug-workspace", "#![no_std]\nfn shift(input: u32) -> u32 { input.wrapping_mul(1_073_741_824) ^ 15 }\n#[inline(never)]\npub fn evaluate(input: u32) -> u32 { shift(input) ^ 10 }\n");
+}
+
+#[cfg(all(target_os = "linux", target_arch = "x86_64", target_env = "gnu"))]
+#[test]
+#[ignore = "requires LUSTR_TEST_PACKAGE, LUSTR_TEST_OUTPUT, LUSTR_TEST_ORACLE, Clang and ELF tools"]
+fn default_cargo_links_debug_from_a_native_standard_provider() {
+    assert_linked_provider_workspace("debug-std-workspace", "fn shift(input: u32) -> u32 { let changed = input ^ 3; changed }\npub fn evaluate(input: u32) -> u32 { let result = shift(input) ^ 10; result }\n");
+}
+
+#[cfg(all(target_os = "linux", target_arch = "x86_64", target_env = "gnu"))]
+#[test]
+#[ignore = "requires LUSTR_TEST_PACKAGE, LUSTR_TEST_OUTPUT and independent LUSTR_TEST_ORACLE"]
+fn cargo_tests_a_no_std_library_with_the_core_prelude() {
+    let f = Fixture::new("no-std-library-tests");
+    f.source("Cargo.toml", "[package]\nname = \"no-std-tests\"\nversion = \"0.1.0\"\nedition = \"2024\"\n");
+    let source = r#"#![no_std]
+
+pub fn transform(value: u32) -> u32 { value ^ 3 }
+
+#[cfg(test)]
+extern crate std;
+
+#[cfg(test)]
+mod tests {
+    use super::transform;
+
+    #[test]
+    fn exercises_core_prelude() {
+        let value: Option<u32> = Some(transform(17));
+        assert_eq!(value, Some(18));
+        std::println!("core prelude result");
+    }
+}
+"#;
+    f.source("src/lib.rs", source);
+    let build = ["test", "--offline", "--workspace", "--no-run"];
+    let native = || f.command("cargo");
+    let oracle = std::env::var_os("LUSTR_TEST_ORACLE").expect("independent LUSTR_TEST_ORACLE");
+    let original = || {
+        let mut command = f.command("cargo");
+        command.env("RUSTC", &oracle).env("CARGO_TARGET_DIR", f.root.join("original-target"));
+        command
+    };
+    f.succeeds("native-compile", native().args(build));
+    f.succeeds("original-compile", original().args(build));
+    let run = ["test", "--offline", "--workspace", "--lib", "--", "--nocapture"];
+    for (label, mut command) in [("native-runtime", native()), ("original-runtime", original())] {
+        let out = f.succeeds(label, command.args(run));
+        let output = String::from_utf8_lossy(&out.stdout);
+        assert!(output.contains("core prelude result"));
+        assert!(output.contains("1 passed; 0 failed"));
+    }
+    let cases = [
+        ("disabled-std", source.replace("#[cfg(test)]\nextern crate std;", "#[cfg(any())]\npub extern crate std;"), "std"),
+        ("unqualified-macro", source.replace("std::println!", "println!"), "println"),
+        ("unqualified-type", source.replace("let value: Option<u32>", "let value: Vec<u32>"), "Vec"),
+    ];
+    for (name, invalid, missing) in cases {
+        f.source("src/lib.rs", &invalid);
+        for (compiler, mut command) in [("native", native()), ("original", original())] {
+            let out = f.invoke(&format!("{compiler}-{name}"), command.args(build));
+            assert_eq!(out.status.code(), Some(101));
+            assert!(String::from_utf8_lossy(&out.stderr).contains(missing));
+        }
+    }
+    f.source("src/lib.rs", source);
+    f.succeeds("native-repair", native().args(build));
+}
+
+#[cfg(all(target_os = "linux", target_arch = "x86_64", target_env = "gnu"))]
+#[test]
+#[ignore = "requires LUSTR_TEST_PACKAGE, LUSTR_TEST_OUTPUT and independent LUSTR_TEST_ORACLE"]
+fn ordinary_cargo_checks_and_links_associated_lifetimes_across_native_crates() {
+    assert_associated_lifetime_workspace("associated-lifetime-workspace", "", "*input", b"17\n");
+}
+
+#[cfg(all(target_os = "linux", target_arch = "x86_64", target_env = "gnu"))]
+#[test]
+#[ignore = "requires LUSTR_TEST_PACKAGE, LUSTR_TEST_OUTPUT and independent LUSTR_TEST_ORACLE"]
+fn ordinary_cargo_links_code_from_the_same_crate_as_an_associated_type() {
+    let code = "\nfn mask(value: u32) -> u32 { value ^ 3 }\npub fn transform(value: u32) -> u32 { mask(value) ^ 8 }\n";
+    assert_associated_lifetime_workspace("associated-lifetime-code-workspace", code, "api::transform(*input)", b"26\n");
+}
+
+#[cfg(all(target_os = "linux", target_arch = "x86_64", target_env = "gnu"))]
+#[test]
+#[ignore = "requires LUSTR_TEST_PACKAGE, LUSTR_TEST_OUTPUT and independent LUSTR_TEST_ORACLE"]
+fn ordinary_cargo_preserves_unsized_referents_of_associated_types() {
+    let f = Fixture::new("unsized-association");
+    f.source("Cargo.toml", "[package]\nname = \"unsized-app\"\nversion = \"0.1.0\"\nedition = \"2024\"\n\n[dependencies]\nschema = { path = \"schema\" }\n");
+    f.source("schema/Cargo.toml", "[package]\nname = \"schema\"\nversion = \"0.1.0\"\nedition = \"2024\"\n");
+    let provider = |pointee| format!("#![no_std]\npub struct Token;\npub trait Access {{\n    type Borrowed<'a> where Self: 'a;\n}}\nimpl Access for Token {{\n    type Borrowed<'r> = &'r {pointee};\n}}\n");
+    let app = |argument| format!("use schema::{{Access, Token}};\nfn measure(input: <Token as Access>::Borrowed<'_>) -> usize {{ input.len() }}\nfn main() {{ println!(\"{{}}\", measure({argument})); }}\n");
+    let run = ["run", "--offline", "--quiet"];
+    let oracle = std::env::var_os("LUSTR_TEST_ORACLE").expect("independent LUSTR_TEST_ORACLE");
+    let original = || {
+        let mut command = f.command("cargo");
+        command.env("RUSTC", &oracle).env("CARGO_TARGET_DIR", f.root.join("original-target"));
+        command
+    };
+
+    f.source("schema/src/lib.rs", &provider("[u8]"));
+    f.source("src/main.rs", &app("&[1u8, 2, 3]"));
+    assert_eq!(f.succeeds("slice", f.command("cargo").args(run)).stdout, b"3\n");
+    assert_eq!(f.succeeds("original-slice", original().args(run)).stdout, b"3\n");
+    let binary = f.root.join("target/debug/unsized-app");
+    let valid = std::fs::read(&binary).unwrap();
+
+    f.source("schema/src/lib.rs", &provider("[u16]"));
+    let failure = f.invoke("changed-slice-element", f.command("cargo").args(run));
+    assert_eq!(failure.status.code(), Some(101));
+    assert!(failure.stdout.is_empty());
+    assert!(String::from_utf8_lossy(&failure.stderr).contains("L0110"));
+    assert_eq!(std::fs::read(&binary).unwrap(), valid);
+    let failure = f.invoke("original-changed-slice-element", original().args(run));
+    assert_eq!(failure.status.code(), Some(101));
+    assert!(String::from_utf8_lossy(&failure.stderr).contains("E0308"));
+
+    f.source("schema/src/lib.rs", &provider("str"));
+    f.source("src/main.rs", &app("\"hello\""));
+    assert_eq!(f.succeeds("string", f.command("cargo").args(run)).stdout, b"5\n");
+    assert_eq!(f.succeeds("original-string", original().args(run)).stdout, b"5\n");
+}
+
+#[cfg(all(target_os = "linux", target_arch = "x86_64", target_env = "gnu"))]
+fn assert_associated_lifetime_workspace(scope: &str, code: &str, body: &str, expected: &[u8]) {
+    let f = Fixture::new(scope);
+    f.source("Cargo.toml", "[workspace]\nmembers = [\"provider\", \"application\"]\nresolver = \"3\"\n");
+    f.source("provider/Cargo.toml", "[package]\nname = \"typed-schema\"\nversion = \"0.1.0\"\nedition = \"2024\"\n");
+    let provider = ["#![no_std]\npub struct Token;\npub trait Access {\n    type Borrowed<'a> where Self: 'a;\n}\nimpl Access for Token {\n    type Borrowed<'r> = &'r u32;\n}\n", code].concat();
+    f.source("provider/src/lib.rs", &provider);
+    f.source("application/Cargo.toml", "[package]\nname = \"projection-app\"\nversion = \"0.1.0\"\nedition = \"2024\"\n\n[dependencies]\napi = { package = \"typed-schema\", path = \"../provider\" }\n");
+    let source = f.source("application/src/main.rs", &format!(
+        "use api::{{Access, Token}};\nfn value(input: <Token as Access>::Borrowed<'_>) -> u32 {{ {body} }}\nfn main() {{ println!(\"{{}}\", value(&17)); }}\n"
+    ));
+    let request = ["check", "--offline", "-p", "projection-app", "--message-format=json"];
+    let check = |label| f.succeeds(label, f.command("cargo").args(request));
+    let first = check("check");
+    let metadata = first.stdout.split(|&byte| byte == b'\n').find_map(|line| {
+        let record = serde_json::from_slice::<serde_json::Value>(line).ok()?;
+        if record["reason"] != "compiler-artifact" || record["target"]["name"] != "typed_schema" {
+            return None;
+        }
+        record["filenames"].as_array()?.iter().filter_map(|path| path.as_str())
+            .find(|path| path.ends_with(".rmeta")).map(PathBuf::from)
+    }).expect("native provider metadata artifact");
+    let oracle = std::env::var_os("LUSTR_TEST_ORACLE").expect("independent LUSTR_TEST_ORACLE");
+    let original = |label| f.invoke(label, Command::new(&oracle).env_remove("LD_LIBRARY_PATH").current_dir(&f.root)
+        .args(["--edition=2024", "--crate-name", "projection_reader", "--emit=metadata"])
+        .arg(&source).arg("--extern").arg(format!("api={}", metadata.display()))
+        .arg("-o").arg(f.root.join("independent-reader.rmeta")));
+    assert!(original("original-reader").status.success());
+    let changed_provider = provider.replace("&'r u32", "&'r u64");
+    f.source("provider/src/lib.rs", &changed_provider);
+    let changed = f.invoke("changed-assignment", f.command("cargo").args(request));
+    assert_eq!(changed.status.code(), Some(101));
+    assert!(changed.stdout.split(|&byte| byte == b'\n')
+        .filter_map(|line| serde_json::from_slice::<serde_json::Value>(line).ok())
+        .any(|record| record["reason"] == "compiler-message" && record["message"]["code"]["code"] == "L0110"));
+    let changed = original("original-reader-changed");
+    assert_eq!(changed.status.code(), Some(1));
+    assert!(String::from_utf8_lossy(&changed.stderr).contains("E0308"));
+    f.source("provider/src/lib.rs", &provider);
+    check("repair");
+    assert!(original("original-reader-repair").status.success());
+
+    let build = f.succeeds("build", f.command("cargo").args([
+        "build", "--offline", "-p", "projection-app", "--message-format=json",
+    ]));
+    let artifacts = build.stdout.split(|&byte| byte == b'\n').find_map(|line| {
+        let record = serde_json::from_slice::<serde_json::Value>(line).ok()?;
+        if record["reason"] != "compiler-artifact" || record["target"]["name"] != "typed_schema" {
+            return None;
+        }
+        Some(record["filenames"].as_array()?.iter().filter_map(|path| path.as_str())
+            .map(PathBuf::from).collect::<Vec<_>>())
+    }).expect("native provider link artifacts");
+    let independent = f.root.join("independent-linked-reader");
+    let mut link = Command::new(&oracle);
+    link.env_remove("LD_LIBRARY_PATH").current_dir(&f.root)
+        .args(["--edition=2024", "--crate-name", "projection_reader"])
+        .arg(&source).arg("-o").arg(&independent);
+    for extension in ["rlib", "rmeta"] {
+        let artifact = artifacts.iter().find(|path| path.extension().is_some_and(|ext| ext == extension))
+            .expect("matching native provider artifact");
+        link.arg("--extern").arg(format!("api={}", artifact.display()));
+    }
+    f.succeeds("original-reader-link", &mut link);
+    let ran = f.succeeds("original-reader-run", &mut Command::new(independent));
+    assert_eq!(ran.stdout, expected);
+
+    let run = ["run", "--offline", "--quiet", "-p", "projection-app"];
+    assert_eq!(f.succeeds("run", f.command("cargo").args(run)).stdout, ran.stdout);
+    let binary = f.root.join("target/debug/projection-app");
+    let valid = std::fs::read(&binary).unwrap();
+    f.source("provider/src/lib.rs", &changed_provider);
+    let rejected = f.invoke("changed-assignment-link", f.command("cargo").args(run));
+    assert_eq!(rejected.status.code(), Some(101));
+    assert!(String::from_utf8_lossy(&rejected.stderr).contains("L0110"));
+    assert!(rejected.stdout.is_empty());
+    assert_eq!(std::fs::read(&binary).unwrap(), valid);
+    f.source("provider/src/lib.rs", &provider);
+    assert_eq!(f.succeeds("repaired-link", f.command("cargo").args(run)).stdout, ran.stdout);
+}
+
+
+#[cfg(all(target_os = "linux", target_arch = "x86_64", target_env = "gnu"))]
+fn assert_linked_provider_workspace(scope: &str, library_source: &str) {
+    let f = Fixture::new(scope);
+    f.source("Cargo.toml", "[workspace]\nmembers = [\"provider\", \"application\"]\nresolver = \"3\"\n");
+    f.source("provider/Cargo.toml", "[package]\nname = \"debug-provider\"\nversion = \"0.1.0\"\nedition = \"2024\"\n");
+    f.source("provider/src/lib.rs", library_source);
+    f.source("application/Cargo.toml", "[package]\nname = \"debug-application\"\nversion = \"0.1.0\"\nedition = \"2024\"\n\n[dependencies]\ndebug-provider = { path = \"../provider\" }\n");
+    let source = f.source("application/src/main.rs", "fn main() { let answer = debug_provider::evaluate(12); println!(\"{answer}\"); }\n");
+    f.succeeds("check", f.command("cargo").args(["check", "--offline", "-p", "debug-application"]).env_remove("CARGO_PROFILE_DEV_DEBUG"));
+    let build = f.succeeds("build", f.command("cargo").args(["build", "--offline", "-p", "debug-application", "--message-format=json"]).env_remove("CARGO_PROFILE_DEV_DEBUG"));
+    let mut artifacts = std::collections::BTreeMap::new();
+    for line in build.stdout.split(|&byte| byte == b'\n') {
+        let Ok(record) = serde_json::from_slice::<serde_json::Value>(line) else { continue };
+        if record["reason"] == "compiler-artifact" && record["target"]["name"] == "debug_provider" {
+            for path in record["filenames"].as_array().unwrap().iter().filter_map(|value| value.as_str()) {
+                let path = PathBuf::from(path);
+                if let Some(extension) = path.extension().and_then(|ext| ext.to_str()) {
+                    artifacts.insert(extension.to_owned(), path);
+                }
+            }
+        }
+    }
+    let native = f.root.join("target/debug/debug-application");
+    let run = ["run", "--offline", "--quiet", "-p", "debug-application"];
+    let ran = f.succeeds("run", f.command("cargo").args(run).env_remove("CARGO_PROFILE_DEV_DEBUG"));
+    assert_eq!(ran.stdout, b"5\n");
+    let dwarf = f.succeeds("dwarf", Command::new("readelf").arg("--debug-dump=info").arg(&native));
+    let dwarf = String::from_utf8_lossy(&dwarf.stdout);
+    for required in ["provider/src/lib.rs", "): evaluate", "): shift", "): input"] {
+        assert!(dwarf.contains(required), "missing Rust library DWARF evidence {required}");
+    }
+    let oracle = std::env::var_os("LUSTR_TEST_ORACLE").expect("independent LUSTR_TEST_ORACLE");
+    let independently_linked = f.root.join("independent-rust-consumer");
+    let mut command = Command::new(oracle);
+    command.env_remove("LD_LIBRARY_PATH").current_dir(&f.root).args(["--edition=2024", "--crate-name", "consumer"])
+        .arg(source).arg("-o").arg(&independently_linked);
+    for kind in ["rlib", "rmeta"] {
+        command.arg("--extern").arg(format!("debug_provider={}", artifacts[kind].display()));
+    }
+    f.succeeds("independent-link", &mut command);
+    assert_eq!(f.succeeds("independent-run", &mut Command::new(independently_linked)).stdout, ran.stdout);
+
+    let edited = "#![no_std]\nfn shift(input: u32) -> u32 { input ^ 3 }\npub fn evaluate(input: u32) -> u32 { shift(input) ^ 11 }\n";
+    f.source("provider/src/lib.rs", edited);
+    let changed = f.succeeds("dependency-body", f.command("cargo").args(run).env_remove("CARGO_PROFILE_DEV_DEBUG"));
+    assert_eq!(changed.stdout, b"4\n");
+    let valid = std::fs::read(&native).unwrap();
+    f.source("provider/src/lib.rs", "#![no_std]\npub fn evaluate(input: u32, mask: u32) -> u32 { input ^ mask }\n");
+    let rejected = f.invoke("dependency-signature", f.command("cargo").args(run).env_remove("CARGO_PROFILE_DEV_DEBUG"));
+    assert_eq!(rejected.status.code(), Some(101));
+    assert!(rejected.stdout.is_empty(), "an invalid executable ran");
+    assert!(String::from_utf8_lossy(&rejected.stderr).contains("L0105"));
+    assert_eq!(std::fs::read(&native).unwrap(), valid, "an incompatible dependency replaced the last valid executable");
+    f.source("provider/src/lib.rs", edited);
+    let repaired = f.succeeds("dependency-repair", f.command("cargo").args(run).env_remove("CARGO_PROFILE_DEV_DEBUG"));
+    assert_eq!(repaired.stdout, changed.stdout);
+}
+
+#[cfg(all(target_os = "linux", target_arch = "x86_64", target_env = "gnu"))]
+#[test]
+#[ignore = "requires LUSTR_TEST_PACKAGE, LUSTR_TEST_OUTPUT, Clang and ELF tools"]
+fn default_cargo_debug_records_native_enum_variants() {
+    let f = Fixture::new("debug-enum");
+    f.source("Cargo.toml", "[package]\nname = \"debug-enum\"\nversion = \"0.1.0\"\nedition = \"2024\"\n");
+    f.source("src/main.rs", r#"
+#[repr(i8)]
+enum Event {
+    Idle = -7,
+    Value { code: u32, delta: i16 } = 3,
+    Tuple(i64) = 11,
+}
+enum Link<'a> {
+    End,
+    Next(&'a Link<'a>),
+}
+fn observe(event: &Event, link: &Link<'_>) -> i64 {
+    let selected = match *event {
+        Event::Idle => -7,
+        Event::Value { code, delta } => i64::from(code) + i64::from(delta),
+        Event::Tuple(value) => value,
+    };
+    selected + match link { Link::End => 0, Link::Next(_) => 1 }
+}
+fn main() {
+    let end = Link::End;
+    let next = Link::Next(&end);
+    println!("{}", observe(&Event::Idle, &end));
+    println!("{}", observe(&Event::Value { code: 43, delta: -2 }, &next));
+    println!("{}", observe(&Event::Tuple(11), &end));
+}
+"#);
+    let ran = f.succeeds("run", f.command("cargo").args(["run", "--offline", "--quiet"]).env_remove("CARGO_PROFILE_DEV_DEBUG"));
+    assert_eq!(ran.stdout, b"-7\n42\n11\n");
+    let executable = f.root.join("target/debug/debug-enum");
+    let dwarf = f.succeeds("dwarf", Command::new("readelf").arg("--debug-dump=info").arg(executable));
+    let dwarf = String::from_utf8_lossy(&dwarf.stdout);
+    for required in ["DW_TAG_variant_part", "): Idle", "): Value", "): Tuple", "): code", "): delta", "): Next"] {
+        assert!(dwarf.contains(required), "missing Rust DWARF evidence {required}");
+    }
+}
+
+#[cfg(all(target_os = "linux", target_arch = "x86_64", target_env = "gnu"))]
+#[test]
+#[ignore = "requires LUSTR_TEST_PACKAGE, LUSTR_TEST_OUTPUT and Clang"]
+fn ordinary_cargo_links_a_transitive_native_library() {
+    let f = Fixture::new("transitive-native-link");
+    f.source("Cargo.toml", "[workspace]\nmembers = [\"provider\", \"middle\", \"application\"]\nresolver = \"3\"\n");
+    f.source("provider/Cargo.toml", "[package]\nname = \"value-provider\"\nversion = \"0.1.0\"\nedition = \"2024\"\n");
+    f.source("provider/src/lib.rs", "#![no_std]\npub fn encode(value: u32) -> u32 {\n    let offset = value ^ 3;\n    offset ^ 10\n}\n");
+    f.source("middle/Cargo.toml", "[package]\nname = \"value-mapping\"\nversion = \"0.1.0\"\nedition = \"2024\"\n\n[dependencies]\nupstream_value = { package = \"value-provider\", path = \"../provider\" }\n");
+    f.source("middle/src/lib.rs", "#![no_std]\npub fn map(value: u32) -> u32 { upstream_value::encode(value) ^ 6 }\n");
+    f.source("application/Cargo.toml", "[package]\nname = \"value-display\"\nversion = \"0.1.0\"\nedition = \"2024\"\n\n[dependencies]\nvalue-mapping = { path = \"../middle\" }\n");
+    let application = "fn main() { let mapped = value_mapping::map(12); println!(\"{mapped}\"); }\n";
+    f.source("application/src/main.rs", application);
+
+    f.succeeds("check", f.command("cargo").args(["check", "--offline", "--workspace"]));
+    let run = ["run", "--offline", "--quiet", "-p", "value-display"];
+    let cold = f.succeeds("run", f.command("cargo").args(run));
+    assert_eq!(cold.stdout, b"3\n");
+    let binary = f.root.join("target/debug/value-display");
+    let initial = std::fs::read(&binary).unwrap();
+
+    f.source("application/src/main.rs", "fn main() { let mapped = value_provider::encode(12); println!(\"{mapped}\"); }\n");
+    let rejected = f.invoke("hidden-extern", f.command("cargo").args(run));
+    assert_eq!(rejected.status.code(), Some(101));
+    assert!(String::from_utf8_lossy(&rejected.stderr).contains("value_provider"));
+    assert!(rejected.stdout.is_empty());
+    assert_eq!(std::fs::read(&binary).unwrap(), initial);
+
+    f.source("application/src/main.rs", application);
+    f.source("provider/src/lib.rs", "#![no_std]\npub fn encode(value: u32) -> u32 {\n    let offset = value ^ 3;\n    offset ^ 11\n}\n");
+    let edited = f.succeeds("transitive-edit", f.command("cargo").args(run));
+    assert_eq!(edited.stdout, b"2\n");
+
+    // BitOr binds less tightly than BitXor, so removing the parentheses
+    // changes the result and would make the application print 11.
+    f.source("provider/src/lib.rs", "#![no_std]\npub fn encode(value: u32) -> u32 { (value | 3) ^ 10 }\n");
+    let grouped = f.succeeds("transitive-grouped-operand", f.command("cargo").args(run));
+    assert_eq!(grouped.stdout, b"3\n");
+    let optimized = f.succeeds("transitive-optimized", f.command("cargo").args(run).arg("--release"));
+    assert_eq!(optimized.stdout, grouped.stdout);
+}
+
+#[cfg(all(target_os = "linux", target_arch = "x86_64", target_env = "gnu"))]
+#[test]
+#[ignore = "requires LUSTR_TEST_PACKAGE, LUSTR_TEST_OUTPUT and Clang"]
+fn ordinary_cargo_uses_the_outer_lock_for_path_dependencies() {
+    let f = Fixture::new("cargo-outer-lock");
+    f.source("Cargo.toml", r#"
+[package]
+name = "outer-lock"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+locked-provider = { path = "provider" }
+"#);
+    f.source("provider/Cargo.toml", r#"
+[package]
+name = "locked-provider"
+version = "0.1.0"
+edition = "2024"
+"#);
+    f.source("provider/src/lib.rs", "#![no_std]\npub fn value(input: u32) -> u32 { input ^ 15 }\n");
+    f.source("src/main.rs", "fn main() { let value = locked_provider::value(12); println!(\"{value}\"); }\n");
+    f.succeeds("lockfile", f.command("cargo").args(["generate-lockfile", "--offline"]));
+    let lock = f.root.join("Cargo.lock");
+    let initial = std::fs::read(&lock).unwrap();
+    assert!(!f.root.join("provider/Cargo.lock").exists());
+
+    f.succeeds("frozen-check", f.command("cargo").args(["check", "--frozen"]));
+    let built = f.succeeds("frozen-run", f.command("cargo").args(["run", "--frozen", "--quiet"]));
+    assert_eq!(built.stdout, b"3\n");
+    assert_eq!(std::fs::read(lock).unwrap(), initial);
+    assert!(!f.root.join("provider/Cargo.lock").exists());
+}
+
+#[cfg(all(target_os = "linux", target_arch = "x86_64", target_env = "gnu"))]
+#[test]
+#[ignore = "requires LUSTR_TEST_PACKAGE, LUSTR_TEST_OUTPUT and Clang"]
+fn ordinary_cargo_uses_generated_build_script_inputs() {
+    let f = Fixture::new("cargo-generated-input");
+    f.source("Cargo.toml", "[package]\nname = \"generated-value\"\nedition = \"2024\"\nversion = \"0.1.0\"\n");
+    f.source("build.rs", r#"
+fn main() {
+    let output = std::env::var("OUT_DIR").unwrap();
+    let source = std::fs::read_to_string("value.txt").unwrap();
+    let destination = format!("{output}/generated.rs");
+    std::fs::write(destination, source).unwrap();
+    println!("cargo::rerun-if-changed=value.txt");
+    println!("cargo::rustc-env=BUILD_LABEL=generated");
+}
+"#);
+    f.source("src/main.rs", r#"
+mod generated {
+    include!(concat!(env!("OUT_DIR"), "/generated.rs"));
+}
+
+fn main() {
+    let label = env!("BUILD_LABEL");
+    let value = generated::value();
+    println!("{label}:{value}");
+}
+"#);
+    let initial = "pub fn value() -> u32 { 5 }\n";
+    f.source("value.txt", initial);
+    f.succeeds("lockfile", f.command("cargo").args(["generate-lockfile", "--offline"]));
+    f.succeeds("check", f.command("cargo").args(["check", "--frozen"]));
+    let run = ["run", "--frozen", "--quiet"];
+    let cold = f.succeeds("run", f.command("cargo").args(run));
+    assert_eq!(cold.stdout, b"generated:5\n");
+    let unchanged = f.succeeds("unchanged", f.command("cargo").args(run));
+    assert_eq!(unchanged.stdout, cold.stdout);
+
+    f.source("value.txt", "pub fn value() -> u32 { 7 }\n");
+    let edited = f.succeeds("edit", f.command("cargo").args(run));
+    assert_eq!(edited.stdout, b"generated:7\n");
+    let output = f.root.join("target/debug/generated-value");
+    let linked = std::fs::read(&output).unwrap();
+    f.source("value.txt", "pub fn value() -> u32 { \"invalid\" }\n");
+    let invalid = f.invoke("invalid", f.command("cargo").args(run));
+    assert_eq!(invalid.status.code(), Some(101));
+    assert!(invalid.stdout.is_empty());
+    assert!(String::from_utf8_lossy(&invalid.stderr).contains("generated.rs"));
+    assert_eq!(std::fs::read(output).unwrap(), linked);
+
+    f.source("value.txt", initial);
+    let repaired = f.succeeds("repair", f.command("cargo").args(run));
+    assert_eq!(repaired.stdout, cold.stdout);
+    let dep_info = std::fs::read_to_string(f.root.join("target/debug/generated-value.d")).unwrap();
+    assert!(dep_info.contains("value.txt") && dep_info.contains("generated.rs"));
+}
+
+#[cfg(all(target_os = "linux", target_arch = "x86_64", target_env = "gnu"))]
+#[test]
+#[ignore = "requires LUSTR_TEST_PACKAGE, LUSTR_TEST_OUTPUT, LUSTR_TEST_ORACLE and Clang"]
+fn ordinary_cargo_preserves_build_script_cfg_across_edits() {
+    let f = Fixture::new("cargo-build-cfg");
+    f.source("Cargo.toml", "[package]\nname=\"build-cfg\"\nedition=\"2024\"\nversion=\"0.1.0\"\n");
+    f.source("build.rs", r#"
+fn main() {
+    println!("cargo::rerun-if-changed=configuration.txt");
+    println!("cargo::rustc-check-cfg=cfg(build_enabled)");
+    println!("cargo::rustc-check-cfg=cfg(declared_but_unset)");
+    println!("cargo::rustc-check-cfg=cfg(build_mode, values(\"fast\", \"safe\", \"invalid\"))");
+    let flags = std::fs::read_to_string("configuration.txt").unwrap();
+    print!("{flags}");
+}
+"#);
+    f.source("src/main.rs", r#"
+#[cfg(all(build_enabled, build_mode = "fast", build_mode = "safe"))]
+fn selected() -> u32 { 41 }
+#[cfg(not(all(build_enabled, build_mode = "fast", build_mode = "safe")))]
+fn selected() -> u32 { 42 }
+#[cfg(build_mode = "invalid")]
+fn invalid() -> u32 { "invalid body must be rejected" }
+#[cfg(declared_but_unset)]
+fn not_enabled_by_declaration() -> u32 { "must remain disabled" }
+fn main() {
+    let mode = cfg!(build_mode = "fast");
+    let unset = cfg!(declared_but_unset);
+    let value = selected();
+    println!("{value}:{mode}:{unset}");
+}
+"#);
+    let oracle = std::env::var_os("LUSTR_TEST_ORACLE").expect("independent LUSTR_TEST_ORACLE");
+    let target = |original: bool| f.root.join(if original { "original-target" } else { "target" });
+    let command = |original: bool| {
+        let mut command = f.command("cargo");
+        command.env("CARGO_TARGET_DIR", target(original));
+        if original { command.env("RUSTC", &oracle); }
+        command
+    };
+    f.succeeds("lockfile", command(false).args(["generate-lockfile", "--offline"]));
+    let initial = "cargo::rustc-cfg=build_enabled\ncargo::rustc-cfg=build_mode=\"fast\"\ncargo::rustc-cfg=build_mode=\"safe\"\n";
+    for (state, flags, expected) in [
+        ("cold", initial, Some(b"41:true:false\n".as_slice())),
+        ("edited", "cargo::rustc-cfg=build_mode=\"safe\"\n", Some(b"42:false:false\n".as_slice())),
+        ("invalid", "cargo::rustc-cfg=build_mode=\"invalid\"\n", None),
+        ("repaired", initial, Some(b"41:true:false\n".as_slice())),
+    ] {
+        f.source("configuration.txt", flags);
+        for (compiler, original) in [("native", false), ("original", true)] {
+            let name = format!("{compiler}-{state}");
+            let mut command = command(original);
+            command.args(["run", "--quiet", "--frozen"]);
+            if let Some(expected) = expected {
+                assert_eq!(f.succeeds(&name, &mut command).stdout, expected);
+            } else {
+                let executable = target(original).join("debug/build-cfg");
+                let before = std::fs::read(&executable).unwrap();
+                let result = f.invoke(&name, &mut command);
+                assert_eq!(result.status.code(), Some(101));
+                assert!(result.stdout.is_empty());
+                assert!(String::from_utf8_lossy(&result.stderr).contains("invalid body must be rejected"));
+                assert_eq!(std::fs::read(executable).unwrap(), before);
+            }
+        }
+    }
+}
+
+#[cfg(all(target_os = "linux", target_arch = "x86_64", target_env = "gnu"))]
+#[test]
+#[ignore = "requires LUSTR_TEST_PACKAGE, LUSTR_TEST_OUTPUT, LUSTR_TEST_ORACLE and Clang"]
+fn ordinary_cargo_uses_the_same_cfg_flags_for_discovery_and_compilation() {
+    let f = Fixture::new("cargo-cfg-discovery");
+    let oracle = std::env::var_os("LUSTR_TEST_ORACLE").expect("independent LUSTR_TEST_ORACLE");
+    let flags = ["--cfg", "from_cargo_flags", "--cfg=chosen_mode=\"fast\"",
+        "--check-cfg", "cfg(from_cargo_flags)", "--check-cfg=cfg(chosen_mode, values(\"fast\"))"];
+    for (name, mut compiler) in [("native", f.command("rustc")), ("original", Command::new(&oracle))] {
+        let facts = f.succeeds(&format!("{name}-query"), compiler.current_dir(&f.root)
+            .env_remove("LD_LIBRARY_PATH").args(["--print", "cfg"]).args(flags)).stdout;
+        let facts = std::str::from_utf8(&facts).unwrap();
+        assert!(facts.lines().any(|line| line == "from_cargo_flags"));
+        assert!(facts.lines().any(|line| line == "chosen_mode=\"fast\""));
+    }
+    for (name, mut compiler) in [("native", f.command("rustc")), ("original", Command::new(&oracle))] {
+        let output = f.invoke(&format!("{name}-invalid-query"), compiler.current_dir(&f.root)
+            .env_remove("LD_LIBRARY_PATH").args(["--print", "sysroot", "--print", "cfg", "--cfg", "chosen_mode=bare"]));
+        assert!(!output.status.success());
+        assert!(output.stdout.is_empty());
+    }
+    f.source("Cargo.toml", "[package]\nname=\"cfg-discovery\"\nversion=\"0.1.0\"\nedition=\"2024\"\n");
+    f.source("src/main.rs", r#"
+#[cfg(all(from_cargo_flags, chosen_mode = "fast"))]
+fn main() { println!("effective cfg"); }
+#[cfg(not(all(from_cargo_flags, chosen_mode = "fast")))]
+fn main() { let _: i32 = "active cfg flags were lost"; }
+"#);
+    f.succeeds("lockfile", f.command("cargo").args(["generate-lockfile", "--offline"]));
+    for (name, original) in [("native", false), ("original", true)] {
+        let mut cargo = f.command("cargo");
+        cargo.args(["run", "--quiet", "--frozen"])
+            .env("CARGO_ENCODED_RUSTFLAGS", flags.join("\u{1f}"));
+        if original {
+            cargo.env("RUSTC", &oracle).env("CARGO_TARGET_DIR", f.root.join("original-target"));
+        }
+        assert_eq!(f.succeeds(&format!("{name}-run"), &mut cargo).stdout, b"effective cfg\n");
+    }
+}
+
+#[cfg(all(target_os = "linux", target_arch = "x86_64", target_env = "gnu"))]
+#[test]
+#[ignore = "requires LUSTR_TEST_PACKAGE, LUSTR_TEST_OUTPUT and independent LUSTR_TEST_ORACLE"]
+fn cargo_discovery_accepts_freestanding_link_settings() {
+    let f = Fixture::new("cargo-freestanding-discovery");
+    let oracle = std::env::var_os("LUSTR_TEST_ORACLE").expect("independent LUSTR_TEST_ORACLE");
+    let query = ["-", "--crate-name", "discovery", "--print=file-names", "--print=crate-name", "--print=cfg"];
+    let link = ["-C", "link-arg=-nostdlib", "-Clink-arg=-static", "--codegen=relocation-model=static"];
+    for (name, original) in [("native", false), ("original", true)] {
+        let command = || {
+            let mut compiler = if original { Command::new(&oracle) } else { f.command("rustc") };
+            compiler.current_dir(&f.root).env_remove("LD_LIBRARY_PATH").args(query);
+            compiler
+        };
+        let plain = f.succeeds(&format!("{name}-query"), &mut command());
+        let configured = f.succeeds(&format!("{name}-with-link-settings"), command().args(link));
+        assert_eq!(configured.stdout, plain.stdout);
+        let invalid = f.invoke(&format!("{name}-invalid-relocation"), command().arg("-Crelocation-model=invalid"));
+        assert!(!invalid.status.success());
+        assert!(invalid.stdout.is_empty());
+    }
+}
+
+#[cfg(all(target_os = "linux", target_arch = "x86_64", target_env = "gnu"))]
+#[test]
+#[ignore = "requires LUSTR_TEST_PACKAGE, LUSTR_TEST_OUTPUT, LUSTR_TEST_ORACLE, Clang and binutils"]
+fn cargo_freestanding_executable_combines_native_objects_and_rust() {
+    let f = Fixture::new("cargo-freestanding-mixed");
+    f.source("Cargo.toml", "[package]\nname=\"freestanding\"\nversion=\"0.1.0\"\nedition=\"2024\"\n\n[profile.dev]\npanic=\"abort\"\n");
+    let source = r#"#![no_std]
+#![no_main]
+
+use core::{arch::asm, panic::PanicInfo};
+
+fn apply_mask(n: u64) -> u64 { n ^ 19 }
+fn select_bits(n: u64) -> u64 { n & 63 }
+
+#[unsafe(no_mangle)]
+pub extern "C" fn _start() -> ! {
+    let transform = core::hint::black_box(apply_mask as fn(u64) -> u64);
+    let status = select_bits(transform(57));
+    unsafe {
+        asm!("syscall", in("rax") 60_u64, in("rdi") status, options(noreturn));
+    }
+}
+
+
+#[panic_handler]
+fn panic(_: &PanicInfo<'_>) -> ! {
+    loop { core::hint::spin_loop(); }
+}
+"#;
+    let original_source = f.source("src/main.rs", source);
+    let rust = std::env::var_os("LUSTR_TEST_ORACLE").expect("independent LUSTR_TEST_ORACLE");
+    let flags = ["-Clink-arg=-nostdlib", "-Clink-arg=-static", "-Crelocation-model=static"];
+    let cargo = |target: &str, original| {
+        let mut command = f.command("cargo");
+        command.env("CARGO_ENCODED_RUSTFLAGS", flags.join("\u{1f}"))
+            .env("CARGO_PROFILE_DEV_DEBUG", "0")
+            .env("CARGO_TARGET_DIR", f.root.join(target));
+        if original {
+            command.env("RUSTC", &rust);
+        }
+        command
+    };
+    f.succeeds("lockfile", cargo("mixed", false).args(["generate-lockfile", "--offline"]));
+    f.succeeds("check", cargo("mixed", false).args(["check", "--frozen"]));
+    for (name, original) in [("mixed", false), ("original", true)] {
+        f.succeeds(&format!("{name}-build"), cargo(name, original).args(["build", "--frozen"]));
+        let binary = f.root.join(name).join("debug/freestanding");
+        let out = f.invoke(&format!("{name}-run"), &mut Command::new(&binary));
+        assert_eq!(out.status.code(), Some(42));
+        let elf = f.succeeds(&format!("{name}-elf"), Command::new("readelf").args(["-l", "-d"]).arg(&binary));
+        let elf = String::from_utf8(elf.stdout).unwrap();
+        assert!(!elf.contains("INTERP") && !elf.contains("(NEEDED)"), "{elf}");
+        let symbols = f.succeeds(&format!("{name}-symbols"), Command::new("nm").arg(&binary));
+        let symbols = String::from_utf8(symbols.stdout).unwrap();
+        let native = symbols.lines().filter(|line| line.split_whitespace().last()
+            .and_then(|name| name.strip_prefix("f_")).is_some_and(|suffix| {
+                suffix.len() == 16 && suffix.bytes().all(|byte| byte.is_ascii_hexdigit())
+            })).count();
+        assert_eq!(native, if original { 0 } else { 2 }, "{symbols}");
+    }
+    assert_eq!(std::fs::read_to_string(&original_source).unwrap(), source);
+    for (edit, invalid, diagnostic) in [
+        ("native-error", source.replace("n ^ 19", "n ^ false"), "src/main.rs:6:"),
+        ("rust-error", source.replace("let status =", "let status: u32 ="), "E0308"),
+    ] {
+        f.source("src/main.rs", &invalid);
+        let response = f.invoke(edit, cargo(edit, false).args(["build", "--frozen"]));
+        assert_eq!(response.status.code(), Some(101));
+        let stderr = String::from_utf8(response.stderr).unwrap();
+        assert!(stderr.contains(diagnostic), "{stderr}");
+        assert!(!f.root.join(edit).join("debug/freestanding").exists());
+    }
+
+    let trace_path = f.root.join("trace.jsonl");
+    let binary = f.root.join("mixed/debug/freestanding");
+    let build_edit = |name: &str, edited: &str, expected: i32, reused: bool| {
+        f.source("src/main.rs", edited);
+        let prior = std::fs::read(&trace_path).unwrap();
+        let build = f.succeeds(name, cargo("mixed", false).args(["build", "--frozen"]));
+        assert_eq!(f.invoke(&format!("{name}-run"), &mut Command::new(&binary)).status.code(), Some(expected));
+        let after = std::fs::read(&trace_path).unwrap();
+        let added = String::from_utf8_lossy(after.strip_prefix(prior.as_slice()).unwrap());
+        assert_eq!(added.contains("\"entry\":\"retained-rust-link\""), reused, "{name}: {added}");
+        build
+    };
+    let edited = source.replace("n ^ 19", "n ^ 18");
+    build_edit("native-body-edit", &edited, 43, true);
+    let previous = std::fs::read(&binary).unwrap();
+    f.source("src/main.rs", &edited.replace("n ^ 18", "n ^ false"));
+    let invalid = f.invoke("retained-invalid", cargo("mixed", false).args(["build", "--frozen"]));
+    assert_eq!(invalid.status.code(), Some(101));
+    assert_eq!(std::fs::read(&binary).unwrap(), previous);
+
+    let signature = edited.replace("fn apply_mask(n: u64) -> u64 { n ^ 18 }",
+        "fn apply_mask(n: u64, mask: u64) -> u64 { n ^ mask }")
+        .replace("fn(u64) -> u64", "fn(u64, u64) -> u64")
+        .replace("transform(57)", "transform(57, 18)");
+    build_edit("signature-edit", &signature, 43, false);
+    build_edit("next-native-body-edit", &signature.replace("n & 63", "n & 31"), 11, true);
+
+    // A damaged Rust snapshot must take a fresh compilation. The next
+    // compatible edit can reuse the replacement created by that build.
+    let unit_dirs = f.root.join("mixed/debug/build/freestanding");
+    let rlink = std::fs::read_dir(unit_dirs).unwrap().find_map(|unit| {
+        std::fs::read_dir(unit.unwrap().path()).ok()?.find_map(|entry| {
+            let link = entry.unwrap().path().join("rust.rlink");
+            link.is_file().then_some(link)
+        })
+    }).expect("retained Rust link input");
+    std::fs::write(&rlink, b"corrupt snapshot").unwrap();
+    build_edit("corrupt-link-input", &signature.replace("n & 63", "n & 15"), 11, false);
+    build_edit("repaired-link-input", &signature.replace("n & 63", "n & 47"), 43, true);
+
+    // An include of the root source can observe the changed bytes even
+    // though it does not introduce a second real SourceMap file.
+    let offset = source.find("n ^ 19").unwrap() + "n ^ 1".len();
+    let source_dependency = source.replace("let status =",
+        &format!("const SOURCE_STATUS: u64 = (include_bytes!(\"main.rs\")[{offset}] as u64) << 1;\n    let status ="))
+        .replace("select_bits(transform(57));", "select_bits(transform(57)) ^ SOURCE_STATUS;");
+    build_edit("source-byte-dependency", &source_dependency, 88, false);
+    build_edit("source-byte-dependency-edit", &source_dependency.replace("n ^ 19", "n ^ 18"), 91, false);
+
+    let warnings = source.replace("let status =", "let unused = 1;\n    let status =");
+    for (name, body, value) in [
+        ("warnings", warnings.clone(), 42),
+        ("warnings-native-edit", warnings.replace("n ^ 19", "n ^ 18"), 43),
+    ] {
+        let output = build_edit(name, &body, value, false);
+        assert!(String::from_utf8_lossy(&output.stderr).contains("unused variable"));
+    }
+}
+
+#[cfg(all(target_os = "linux", target_arch = "x86_64", target_env = "gnu"))]
+#[test]
+#[ignore = "requires LUSTR_TEST_PACKAGE, LUSTR_TEST_OUTPUT, LUSTR_TEST_ORACLE and binutils"]
+fn cargo_static_library_combines_native_objects_with_rust_async_code() {
+    let f = Fixture::new("cargo-mixed-static-library");
+    f.source("Cargo.toml", "[package]\nname=\"entrypoints\"\nedition=\"2024\"\nversion=\"0.1.0\"\n\n[lib]\ncrate-type=[\"staticlib\"]\n");
+    let source = r#"
+use std::{future::Future, pin::pin, task::{Context, Poll, Waker}};
+
+fn apply_mask(input: u64) -> u64 { input ^ 19 }
+
+async fn compute(input: u64) -> u64 {
+    let apply = std::hint::black_box(apply_mask as fn(u64) -> u64);
+    let value = std::future::ready(input).await;
+    apply(value)
+}
+
+#[unsafe(no_mangle)]
+pub extern "C" fn evaluate(input: u64) -> u64 {
+    let mut task = pin!(compute(input));
+    let mut context = Context::from_waker(Waker::noop());
+    match task.as_mut().poll(&mut context) {
+        Poll::Ready(value) => value,
+        Poll::Pending => unreachable!(),
+    }
+}
+"#;
+    let source_path = f.source("src/lib.rs", source);
+    let consumer = f.source("consumer.rs", r#"
+#[link(name = "entrypoints", kind = "static")]
+unsafe extern "C" {
+    safe fn evaluate(input: u64) -> u64;
+}
+fn main() { assert_eq!(evaluate(57), 42); }
+"#);
+    let rust = std::env::var_os("LUSTR_TEST_ORACLE").expect("independent LUSTR_TEST_ORACLE");
+    let cargo = |name: &str, original: bool, debug: &str| {
+        let mut command = f.command("cargo");
+        command.env("CARGO_TARGET_DIR", f.root.join(name)).env("CARGO_PROFILE_DEV_DEBUG", debug);
+        if original {
+            command.env("RUSTC", &rust);
+        }
+        command
+    };
+    f.succeeds("lockfile", cargo("mixed", false, "0").args(["generate-lockfile", "--offline"]));
+    f.succeeds("default-check", cargo("default", false, "2").args(["check", "--frozen"]));
+    let extended = format!("{source}\nmod extra {{\x0bpub fn original_whitespace() {{}} }}\n/*{}*/\n",
+        ".".repeat(2 * 1024 * 1024));
+    for (name, original, debug, expected, contents) in [
+        ("mixed", false, "0", 1, source),
+        ("original", true, "0", 0, source),
+        ("default", false, "2", 1, source),
+        ("mixed-extended", false, "0", 1, extended.as_str()),
+        ("original-extended", true, "0", 0, extended.as_str()),
+    ] {
+        f.source("src/lib.rs", contents);
+        f.succeeds(&format!("{name}-build"), cargo(name, original, debug).args(["build", "--frozen"]));
+        let dir = f.root.join(name).join("debug");
+        let lib = dir.join("libentrypoints.a");
+        let symbols = f.succeeds(&format!("{name}-symbols"), Command::new("nm").arg("--defined-only").arg(&lib));
+        let symbols = String::from_utf8(symbols.stdout).unwrap();
+        let native = symbols.lines().filter(|line| line.split_whitespace().last()
+            .and_then(|name| name.strip_prefix("f_")).is_some_and(|suffix| {
+                suffix.len() == 16 && suffix.bytes().all(|byte| byte.is_ascii_hexdigit())
+            })).count();
+        assert_eq!(native, expected);
+        let exe = f.root.join(format!("{name}-consumer"));
+        f.succeeds(&format!("{name}-consumer"), Command::new(&rust)
+            .current_dir(&f.root).env_remove("LD_LIBRARY_PATH").arg("--edition=2024")
+            .arg(&consumer).arg("-L").arg(format!("native={}", dir.display())).arg("-o").arg(&exe));
+        f.succeeds(&format!("{name}-run"), &mut Command::new(exe));
+        assert_eq!(std::fs::read_to_string(&source_path).unwrap(), contents);
+    }
+    for (name, invalid, diagnostic) in [
+        ("native-error", source.replace("input ^ 19", "input ^ false"), "src/lib.rs:4:"),
+        ("rust-error", source.replace("-> u64 {\n    let apply", "-> u32 {\n    let apply"), "E0308"),
+    ] {
+        f.source("src/lib.rs", &invalid);
+        let result = f.invoke(name, cargo(name, false, "0").args(["build", "--frozen"]));
+        assert_eq!(result.status.code(), Some(101));
+        let stderr = String::from_utf8(result.stderr).unwrap();
+        assert!(stderr.contains(diagnostic), "{stderr}");
+        assert!(!f.root.join(name).join("debug/libentrypoints.a").exists());
+    }
+}
+
+#[cfg(all(target_os = "linux", target_arch = "x86_64", target_env = "gnu"))]
+#[test]
+#[ignore = "requires LUSTR_TEST_PACKAGE, LUSTR_TEST_OUTPUT, LUSTR_TEST_ORACLE and Clang"]
+fn rustc_consumes_a_rust_archive_with_embedded_metadata() {
+    let f = Fixture::new("embedded-extern");
+    let manifest = f.source("Cargo.toml", "[package]\nname=\"application\"\nedition=\"2024\"\nversion=\"0.1.0\"\n");
+    f.source("provider.rs", "#![no_std]\npub fn doubled(n: u64) -> u64 { n.wrapping_mul(2) }\n");
+    f.source("src/main.rs", r#"
+fn main() {
+    let answer = provider_alias::doubled(21);
+    println!("{answer}");
+}
+"#);
+    let oracle = std::env::var_os("LUSTR_TEST_ORACLE").expect("independent LUSTR_TEST_ORACLE");
+    let oracle_command = || {
+        let mut command = Command::new(&oracle);
+        command.current_dir(&f.root).env_remove("LD_LIBRARY_PATH");
+        command
+    };
+    let archive = f.root.join("libprovider.rlib");
+    let provider = |embedding: &str| {
+        let mut command = oracle_command();
+        command.args(["--crate-name", "provider", "--crate-type=rlib", "--edition=2024", "-Cembed-bitcode=no"])
+            .arg(format!("-Zembed-metadata={embedding}")).args(["--emit=link", "provider.rs", "-o"]).arg(&archive);
+        command
+    };
+    f.succeeds("original-provider", &mut provider("yes"));
+    assert!(!f.root.join("libprovider.rmeta").exists());
+
+    let compiler = |original: bool, out: &Path| {
+        let mut command = if original { oracle_command() } else { f.command("rustc") };
+        command.env("CARGO_MANIFEST_PATH", &manifest).env("CARGO_CRATE_NAME", "application").env("CARGO_BIN_NAME", "application");
+        command.args(["--crate-name", "application", "--crate-type=bin", "--edition=2024",
+            "-Cmetadata=embedded", "-Cembed-bitcode=no", "--emit=dep-info,metadata", "--out-dir"]).arg(out)
+            .arg("--extern").arg(format!("provider_alias={}", archive.display())).arg("src/main.rs");
+        command
+    };
+    let target = |original| f.root.join(if original { "original-target" } else { "target" });
+    let cargo = |original| {
+        let mut command = f.command("cargo");
+        command.env("CARGO_TARGET_DIR", target(original));
+        if original { command.env("RUSTC", &oracle); }
+        command.args(["rustc", "--quiet", "--frozen", "--", "--extern"])
+            .arg(format!("provider_alias={}", archive.display()));
+        command
+    };
+    f.succeeds("lockfile", f.command("cargo").args(["generate-lockfile", "--offline"]));
+    for (name, original) in [("native", false), ("original", true)] {
+        let out = f.root.join(name);
+        std::fs::create_dir(&out).unwrap();
+        f.succeeds(&format!("{name}-check"), &mut compiler(original, &out));
+        assert!(out.join("libapplication.rmeta").is_file());
+        f.succeeds(&format!("{name}-link"), &mut cargo(original));
+        let ran = f.succeeds(&format!("{name}-run"), &mut Command::new(target(original).join("debug/application")));
+        assert_eq!(ran.stdout, b"42\n");
+        assert!(!f.root.join("libprovider.rmeta").exists());
+    }
+
+    let plain = f.source("src/plain-tool.rs", r#"
+fn main() {
+    let answer = provider_alias::doubled(21);
+    println!("{}:{answer}", module_path!());
+}
+"#);
+    for (label, mut command) in [("native", f.command("rustc")), ("original", oracle_command())] {
+        let directory = f.root.join(format!("{label} direct"));
+        std::fs::create_dir(&directory).unwrap();
+        let out = directory.join("tool with spaces");
+        command.env("CARGO_MANIFEST_PATH", &manifest)
+            .args(["--edition=2024", "--color=never", "src/plain-tool.rs", "--extern"])
+            .arg(format!("provider_alias={}", archive.display())).arg("-o").arg(&out);
+        f.succeeds(&format!("{label}-direct"), &mut command);
+        assert_eq!(std::fs::read_dir(&directory).unwrap().count(), 1);
+        assert_eq!(f.succeeds(&format!("{label}-direct-run"), &mut Command::new(out)).stdout, b"plain_tool:42\n");
+    }
+    let plain_bytes = std::fs::read(&plain).unwrap();
+    let collision = f.invoke("native-direct-output-alias", f.command("rustc")
+        .args(["--edition=2024", "src/plain-tool.rs", "--extern"])
+        .arg(format!("provider_alias={}", archive.display())).args(["-o", "src/../src/plain-tool.rs"]));
+    assert!(!collision.status.success());
+    assert_eq!(std::fs::read(&plain).unwrap(), plain_bytes);
+
+    let stdin = f.source("stdin.txt", r#"
+fn main() {
+    let answer = provider_alias::doubled(21);
+    println!("{}:{}:{answer}", file!(), module_path!());
+}
+"#);
+    let document = f.source("src/doc-source.rs", "// Rustdoc supplies the generated bytes over stdin.\n");
+    for (label, original) in [("native", false), ("original", true)] {
+        for (source, path) in [("anonymous", None), ("document", Some(&document))] {
+            let out = f.root.join(format!("{label}-{source}-stdin"));
+            let mut command = if original { oracle_command() } else { f.command("rustc") };
+            command.args(["--edition=2024", "--color=never", "-"])
+                .arg("--extern").arg(format!("provider_alias={}", archive.display())).arg("-o").arg(&out)
+                .stdin(std::process::Stdio::from(std::fs::File::open(&stdin).unwrap()));
+            if let Some(path) = path {
+                command.env("UNSTABLE_RUSTDOC_TEST_PATH", path).env("UNSTABLE_RUSTDOC_TEST_LINE", "24");
+            }
+            f.succeeds(&format!("{label}-{source}-stdin-link"), &mut command);
+            let display = path.map_or_else(|| "<anon>".into(), |path| path.to_string_lossy());
+            let expected = format!("{display}:rust_out:42\n");
+            assert_eq!(f.succeeds(&format!("{label}-{source}-stdin-run"), &mut Command::new(out)).stdout, expected.as_bytes());
+        }
+    }
+    assert!(!f.root.join("<anon>").exists());
+
+    let doctest = f.source("doc-example.rs", r#"
+#![doc(test(no_crate_inject))]
+/// An example linked with the independently compiled provider.
+///
+/// ```standalone_crate
+/// assert_eq!(provider_alias::doubled(21), 42);
+/// ```
+///
+/// ```no_run,standalone_crate
+/// let _ = provider_alias::doubled(21);
+/// panic!("a no_run example must not execute");
+/// ```
+pub fn example() {}
+"#);
+    let rustdoc = PathBuf::from(&oracle).with_file_name("rustdoc");
+    let trace = f.root.join("rustdoc-builder-trace.jsonl");
+    let result = f.succeeds("pinned-rustdoc-native-builder", Command::new(rustdoc).current_dir(&f.root)
+        .env_remove("LD_LIBRARY_PATH").env_remove("RUSTC_BOOTSTRAP").env("LUSTR_TRACE_PATH", &trace)
+        .args(["--test", "--edition=2024", "-Zunstable-options", "--test-builder"])
+        .arg(f.package.join("bin/rustc")).arg("--extern")
+        .arg(format!("provider_alias={}", archive.display())).arg(&doctest));
+    assert!(String::from_utf8_lossy(&result.stdout).contains("2 passed"));
+    let trace = std::fs::read_to_string(trace).unwrap();
+    assert_eq!(trace.lines().filter(|line| *line == r#"{"engine":"lust","entry":"stdin"}"#).count(), 2);
+    assert!(trace.lines().all(|line| !line.contains("integration-unimplemented")));
+
+    let executable = target(false).join("debug/application");
+    let before = std::fs::read(&executable).unwrap();
+    std::fs::rename(&archive, f.root.join("original-provider.rlib")).unwrap();
+    f.succeeds("original-provider-stub", &mut provider("no"));
+    assert!(!f.root.join("libprovider.rmeta").exists());
+    // Force a fresh compiler request through Cargo for the negative archives.
+    let app = f.root.join("src/main.rs");
+    let text = std::fs::read_to_string(&app).unwrap();
+    std::fs::write(&app, format!("{text}\n// Stub archive check\n")).unwrap();
+    for (label, original) in [("native", false), ("original", true)] {
+        let output = f.invoke(&format!("{label}-missing-embedded-metadata"),
+            &mut cargo(original));
+        assert!(!output.status.success());
+    }
+    assert_eq!(std::fs::read(&executable).unwrap(), before);
+    std::fs::rename(&archive, f.root.join("stub-provider.rlib")).unwrap();
+    std::fs::write(&archive, b"invalid Rust archive").unwrap();
+    let output = f.invoke("native-corrupt-archive", &mut cargo(false));
+    assert!(!output.status.success());
+    assert_eq!(std::fs::read(&executable).unwrap(), before);
+}
+
+#[cfg(all(target_os = "linux", target_arch = "x86_64", target_env = "gnu"))]
+#[test]
+#[ignore = "requires LUSTR_TEST_PACKAGE, LUSTR_TEST_OUTPUT, LUSTR_TEST_ORACLE and Clang"]
+fn rustc_resolves_transitive_rust_archives_without_metadata_sidecars() {
+    let f = Fixture::new("transitive-embedded-extern");
+    let dependencies = f.root.join("deps");
+    std::fs::create_dir(&dependencies).unwrap();
+    f.source("leaf.rs", "#![no_std]\npub fn doubled(x: u64) -> u64 { x.wrapping_mul(2) }\n");
+    f.source("provider.rs", "#![no_std]\npub fn run(x: u64) -> u64 { leaf::doubled(x) }\n");
+    f.source("main.rs", "fn main() { let value = provider::run(21); println!(\"{value}\"); }\n");
+    let oracle = std::env::var_os("LUSTR_TEST_ORACLE").expect("independent LUSTR_TEST_ORACLE");
+    let original = || {
+        let mut command = Command::new(&oracle);
+        command.current_dir(&f.root).env_remove("LD_LIBRARY_PATH");
+        command
+    };
+    let library = |name: &str| {
+        let mut command = original();
+        command.args(["--crate-name", name, "--crate-type=rlib", "--edition=2024",
+            "-Cembed-bitcode=no", "-Zembed-metadata=yes", "--emit=link", "-o"])
+            .arg(dependencies.join(format!("lib{name}.rlib"))).arg(format!("{name}.rs"));
+        command
+    };
+    let leaf = format!("leaf={}", dependencies.join("libleaf.rlib").display());
+    let provider = format!("provider={}", dependencies.join("libprovider.rlib").display());
+    f.succeeds("original-leaf", &mut library("leaf"));
+    f.succeeds("original-provider", library("provider").args(["--extern", &leaf]));
+    assert!(!dependencies.join("libprovider.rmeta").exists());
+    assert!(!dependencies.join("libleaf.rmeta").exists());
+
+    let executable = |upstream: bool, output: &Path| {
+        let mut command = if upstream { original() } else { f.command("rustc") };
+        command.args(["--edition=2024", "main.rs", "--extern", &provider, "-L"])
+            .arg(format!("dependency={}", dependencies.display())).arg("-o").arg(output);
+        command
+    };
+    for (label, upstream) in [("native", false), ("original", true)] {
+        let output = f.root.join(label);
+        f.succeeds(&format!("{label}-link"), &mut executable(upstream, &output));
+        assert_eq!(f.succeeds(&format!("{label}-app"), &mut Command::new(output)).stdout, b"42\n");
+    }
+
+    f.source("leaf.rs", "#![no_std]\npub fn doubled(x: u64) -> u64 { x.wrapping_mul(3) }\n");
+    f.succeeds("original-changed-leaf", &mut library("leaf"));
+    for (label, upstream) in [("native", false), ("original", true)] {
+        let output = f.root.join(label);
+        let before = std::fs::read(&output).unwrap();
+        let response = f.invoke(&format!("{label}-stale-leaf"), &mut executable(upstream, &output));
+        assert!(!response.status.success());
+        assert_eq!(std::fs::read(&output).unwrap(), before);
+    }
+}
+
+#[cfg(all(target_os = "linux", target_arch = "x86_64", target_env = "gnu"))]
+#[test]
+#[ignore = "requires LUSTR_TEST_PACKAGE, LUSTR_TEST_OUTPUT, LUSTR_TEST_ORACLE and Clang"]
+fn cargo_preserves_original_function_documentation_in_rust_metadata() {
+    let f = Fixture::new("documented-library");
+    f.source("Cargo.toml", "[package]\nname=\"documented\"\nversion=\"0.1.0\"\nedition=\"2024\"\n");
+    f.source("src/lib.rs", r#"
+#![no_std]
+/// Line documentation from original Rust contains π and 雪.
+/** Block documentation from original Rust contains 🦀. */
+pub fn flip(value: u64) -> u64 { value ^ 1 }
+"#);
+    f.source("src/main.rs", "fn main() { let value = documented::flip(42); println!(\"{value}\"); }\n");
+    f.succeeds("lockfile", f.command("cargo").args(["generate-lockfile", "--offline"]));
+    let build = f.succeeds("native-build", f.command("cargo").args([
+        "build", "--frozen", "--message-format=json",
+    ]));
+    let metadata_path = build.stdout.split(|&byte| byte == b'\n').find_map(|line| {
+        let record = serde_json::from_slice::<serde_json::Value>(line).ok()?;
+        if record["reason"] != "compiler-artifact" || record["target"]["name"] != "documented" {
+            return None;
+        }
+        record["filenames"].as_array()?.iter().filter_map(|path| path.as_str())
+            .find(|path| path.ends_with(".rmeta")).map(PathBuf::from)
+    }).expect("actual documented library metadata");
+    let app = f.succeeds("native-app", f.command("cargo").args(["run", "--frozen", "--quiet"]));
+    assert_eq!(app.stdout, b"43\n");
+
+    let exported = f.source("reexport.rs", "pub use documented::flip;\n");
+    let oracle = std::env::var_os("LUSTR_TEST_ORACLE").expect("independent LUSTR_TEST_ORACLE");
+    let docs = f.root.join("rendered");
+    f.succeeds("original-rustdoc-render", Command::new(PathBuf::from(oracle).with_file_name("rustdoc"))
+        .current_dir(&f.root).env_remove("LD_LIBRARY_PATH")
+        .args(["--edition=2024", "--crate-name", "reexporter", "--extern"])
+        .arg(format!("documented={}", metadata_path.display())).arg("--out-dir").arg(&docs).arg(exported));
+    let html = std::fs::read_to_string(docs.join("reexporter/fn.flip.html")).unwrap();
+    assert!(html.contains("Line documentation from original Rust contains π and 雪."));
+    assert!(html.contains("Block documentation from original Rust contains 🦀."));
+}
+
+#[cfg(all(target_os = "linux", target_arch = "x86_64", target_env = "gnu"))]
+#[test]
+#[ignore = "requires LUSTR_TEST_PACKAGE, LUSTR_TEST_OUTPUT, LUSTR_TEST_ORACLE and Clang"]
+fn cargo_documentation_tests_use_native_link_and_check_requests() {
+    let f = Fixture::new("cargo-standalone-doctests");
+    f.source("Cargo.toml", "[package]\nname=\"doc_consumer\"\nversion=\"0.1.0\"\nedition=\"2024\"\n");
+    f.source("src/lib.rs", r#"
+#![no_std]
+
+/// Test the linked library.
+///
+/// ```standalone_crate
+/// assert_eq!(doc_consumer::flip(42), 43);
+/// ```
+///
+/// ```no_run,standalone_crate
+/// let value = doc_consumer::flip(42);
+/// panic!("no_run executed: {value}");
+/// ```
+pub fn flip(value: u64) -> u64 { value ^ 1 }
+"#);
+    let oracle = PathBuf::from(std::env::var_os("LUSTR_TEST_ORACLE").expect("independent LUSTR_TEST_ORACLE"));
+    let mut flags = std::ffi::OsString::from("-Zunstable-options\x1f--test-builder\x1f");
+    flags.push(f.package.join("bin/rustc"));
+    f.succeeds("lockfile", f.command("cargo").args(["generate-lockfile", "--offline"]));
+    let installed = f.package.join("bin/rustdoc").is_file();
+    let test_doc = || {
+        let mut command = f.command("cargo");
+        command.env_remove("RUSTDOCFLAGS").env_remove("CARGO_ENCODED_RUSTDOCFLAGS")
+            .args(["test", "--doc", "--frozen"]);
+        if !installed {
+            command.env("RUSTDOC", oracle.with_file_name("rustdoc"))
+                .env("CARGO_ENCODED_RUSTDOCFLAGS", &flags);
+        }
+        command
+    };
+    let run = f.succeeds("cargo-test-doc", &mut test_doc());
+    let output = String::from_utf8(run.stdout).unwrap();
+    assert!(output.contains("2 passed; 0 failed"), "{output}");
+    let trace = std::fs::read_to_string(f.root.join("trace.jsonl")).unwrap();
+    assert_eq!(trace.lines().filter(|line| {
+        serde_json::from_str::<serde_json::Value>(line).is_ok_and(|record|
+            record["engine"] == "lust" && record["entry"] == "stdin")
+    }).count(), 2, "{trace}");
+
+    let build = f.succeeds("cargo-artifacts", f.command("cargo").args([
+        "build", "--frozen", "--message-format=json",
+    ]));
+    let metadata = build.stdout.split(|&byte| byte == b'\n').find_map(|line| {
+        let record = serde_json::from_slice::<serde_json::Value>(line).ok()?;
+        if record["reason"] != "compiler-artifact" || record["target"]["name"] != "doc_consumer" {
+            return None;
+        }
+        record["filenames"].as_array()?.iter().filter_map(|path| path.as_str())
+            .find(|path| path.ends_with(".rmeta")).map(PathBuf::from)
+    }).expect("Cargo documentation library metadata");
+    let archive = f.root.join("unused").join(metadata.file_name().unwrap()).with_extension("rlib");
+    std::fs::create_dir(archive.parent().unwrap()).unwrap();
+    std::fs::write(&archive, b"metadata-only requests do not read this archive").unwrap();
+    let artifact = f.source("probe.rs", "fn main() { assert_eq!(doc_consumer::flip(42), 43); }\n");
+    let request = |upstream: bool, metadata_only: bool, output: &Path| {
+        let mut command = if upstream {
+            let mut command = Command::new(&oracle);
+            command.current_dir(&f.root).env_remove("LD_LIBRARY_PATH");
+            command
+        } else {
+            f.command("rustc")
+        };
+        command.arg("--edition=2024");
+        if metadata_only {
+            command.arg("--emit=metadata");
+        }
+        command.arg("--extern").arg(format!("doc_consumer={}", metadata.display())).arg("--extern")
+            .arg(format!("doc_consumer={}", archive.display())).arg(&artifact).arg("-o").arg(output);
+        command
+    };
+    for (name, upstream) in [("native", false), ("original", true)] {
+        let output = f.root.join(format!("{name}-checked"));
+        f.succeeds(&format!("{name}-unused-archive"), &mut request(upstream, true, &output));
+        assert_eq!(std::fs::metadata(output).unwrap().len(), 0);
+    }
+    std::fs::remove_file(&archive).unwrap();
+    for (name, upstream) in [("native", false), ("original", true)] {
+        let output = f.root.join(format!("{name}-missing"));
+        let observed = f.invoke(&format!("{name}-missing-archive"), &mut request(upstream, true, &output));
+        assert!(!observed.status.success());
+        assert!(!output.exists());
+    }
+
+    // Use the same compiler session and paths when moving from a metadata-only
+    // request to a linked executable, and then back to checking.
+    std::fs::copy(metadata.with_extension("rlib"), &archive).unwrap();
+    let metadata_only = f.root.join("checked");
+    f.succeeds("native-check-before-link", &mut request(false, true, &metadata_only));
+    let binary = f.root.join("linked");
+    f.succeeds("native-link-after-check", &mut request(false, false, &binary));
+    f.succeeds("native-run-after-check", &mut Command::new(binary));
+    std::fs::write(&archive, b"metadata-only requests do not read this archive").unwrap();
+    f.succeeds("native-check-after-link", &mut request(false, true, &metadata_only));
+
+    if installed {
+        let source = r#"
+#![no_std]
+/// ```compile_fail,standalone_crate
+/// let _: u8 = doc_consumer::flip(42);
+/// ```
+pub fn flip(value: u64) -> u64 { value ^ 1 }
+"#;
+        f.source("src/lib.rs", source);
+        let invalid = f.succeeds("installed-rustdoc-invalid-example", &mut test_doc());
+        assert!(String::from_utf8_lossy(&invalid.stdout).contains("1 passed; 0 failed"));
+
+        // This is valid Rust outside the initial native subset. Its tag must
+        // fail the documentation test, even if Lust would reject the body.
+        f.source("src/lib.rs", &source.replace("let _: u8 = doc_consumer::flip(42);",
+            "let value = unsafe { std::ptr::read(&42_u64) }; assert_eq!(doc_consumer::flip(value), 43);"));
+        let valid = f.invoke("installed-rustdoc-valid-marked-invalid", &mut test_doc());
+        assert_eq!(valid.status.code(), Some(101));
+        assert!(String::from_utf8_lossy(&valid.stdout).contains("Test compiled successfully"));
+    }
+}
+
+#[cfg(all(target_os = "linux", target_arch = "x86_64", target_env = "gnu"))]
+#[test]
+#[ignore = "requires LUSTR_TEST_PACKAGE, LUSTR_TEST_OUTPUT and independent LUSTR_TEST_ORACLE"]
+fn cargo_builds_a_host_proc_macro_with_the_pinned_compiler() {
+    let f = Fixture::new("cargo-host-proc-macro");
+    f.source("Cargo.toml", "[workspace]\nresolver=\"3\"\nmembers=[\"provider\"]\n");
+    f.source("provider/Cargo.toml", "[package]\nname=\"host_macro\"\nversion=\"0.1.0\"\nedition=\"2024\"\n[lib]\nproc-macro=true\n");
+    f.source("provider/src/lib.rs", r#"
+use proc_macro::TokenStream;
+#[proc_macro]
+pub fn add_one(mut input: TokenStream) -> TokenStream {
+    input.extend("+ 1".parse::<TokenStream>().unwrap());
+    input
+}
+"#);
+    f.succeeds("lockfile", f.command("cargo").args(["generate-lockfile", "--offline"]));
+    let build = f.succeeds("cargo-host-macro", f.command("cargo").args([
+        "build", "--frozen", "-p", "host_macro", "--message-format=json",
+    ]));
+    let dylib = build.stdout.split(|&byte| byte == b'\n').find_map(|line| {
+        let record = serde_json::from_slice::<serde_json::Value>(line).ok()?;
+        if record["reason"] != "compiler-artifact" || record["target"]["name"] != "host_macro" {
+            return None;
+        }
+        record["filenames"].as_array()?.iter().filter_map(|path| path.as_str())
+            .find(|path| path.ends_with(".so")).map(PathBuf::from)
+    }).expect("actual Cargo proc-macro artifact");
+    let trace = std::fs::read_to_string(f.root.join("trace.jsonl")).unwrap();
+    assert!(trace.lines().any(|line| serde_json::from_str::<serde_json::Value>(line).is_ok_and(|record|
+        record["engine"] == "pinned-rust" && record["entry"] == "host-proc-macro")), "{trace}");
+
+    let consumer = f.source("consumer.rs", "fn main() { println!(\"{}\", host_macro::add_one!(41)); }\n");
+    let oracle = std::env::var_os("LUSTR_TEST_ORACLE").expect("independent LUSTR_TEST_ORACLE");
+    let executable = f.root.join("original-consumer");
+    f.succeeds("original-macro-consumer", Command::new(oracle).current_dir(&f.root)
+        .env_remove("LD_LIBRARY_PATH").args(["--edition=2024", "--extern"])
+        .arg(format!("host_macro={}", dylib.display())).arg(&consumer).arg("-o").arg(&executable));
+    assert_eq!(f.succeeds("original-consumer-run", &mut Command::new(executable)).stdout, b"42\n");
+
+    let compiler = f.package.join("libexec/lustr-host-proc-macro/bin/lustr-rustc-host-proc-macro");
+    let regular = f.source("regular.rs", "fn main() {}\n");
+    let output = f.root.join("non-macro");
+    let refused = f.invoke("host-role-refuses-binary", Command::new(compiler).env_remove("LD_LIBRARY_PATH")
+        .args(["--edition=2024", "--crate-type=bin"]).arg(regular).arg("-o").arg(&output));
+    assert_eq!(refused.status.code(), Some(1));
+    assert!(!output.exists());
+}
+
+#[cfg(all(target_os = "linux", target_arch = "x86_64", target_env = "gnu"))]
+#[test]
+#[ignore = "requires a package built with --proc-macro-source"]
+fn cargo_native_consumer_tracks_a_host_proc_macro() {
+    let f = Fixture::new("cargo-native-proc-macro");
+    if !f.package.join("libexec/lustr-macro-expansion/bin/lustr-expand-proc-macro").is_file() {
+        return;
+    }
+    f.source("Cargo.toml", r#"
+[package]
+name = "macro_consumer"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+host_macro = { path = "provider" }
+"#);
+    f.source("provider/Cargo.toml", r#"
+[package]
+name = "host_macro"
+version = "0.1.0"
+edition = "2024"
+
+[lib]
+proc-macro = true
+"#);
+    f.source("provider/src/lib.rs", r##"
+#![feature(proc_macro_diagnostic, proc_macro_tracked_env, proc_macro_tracked_path)]
+
+use proc_macro::{Diagnostic, Ident, Level, Span, TokenStream, TokenTree, tracked};
+use std::sync::atomic::{AtomicU32, Ordering};
+
+static NEXT: AtomicU32 = AtomicU32::new(1);
+
+#[proc_macro]
+pub fn step(_: TokenStream) -> TokenStream {
+    NEXT.fetch_add(1, Ordering::Relaxed).to_string().parse().unwrap()
+}
+
+#[proc_macro]
+pub fn call_site(_: TokenStream) -> TokenStream {
+    "answer + 1".parse().unwrap()
+}
+
+#[proc_macro]
+pub fn mixed_site(_: TokenStream) -> TokenStream {
+    std::iter::once(TokenTree::Ident(Ident::new("answer", Span::mixed_site()))).collect()
+}
+
+#[proc_macro]
+pub fn explicit_error(_: TokenStream) -> TokenStream {
+    Diagnostic::new(Level::Error, "explicit compiler macro diagnostic").emit();
+    "42".parse().unwrap()
+}
+
+#[proc_macro]
+pub fn increment(mut input: TokenStream) -> TokenStream {
+    input.extend("+ 1".parse::<TokenStream>().unwrap());
+    input
+}
+
+#[proc_macro]
+pub fn structured(_: TokenStream) -> TokenStream {
+    r#"((168u32 >> 2), { [0, 42][1] }, "macro output")"#.parse().unwrap()
+}
+
+#[proc_macro]
+pub fn value(input: TokenStream) -> TokenStream {
+    let Some(TokenTree::Group(group)) = input.into_iter().next() else { panic!("expected a group") };
+    assert_eq!(group.span_open().source_text().as_deref(), Some("("));
+    assert_eq!(group.span_close().source_text().as_deref(), Some(")"));
+    let token = group.stream().into_iter().next().unwrap();
+    assert_eq!(token.span().source_text().as_deref(), Some("0x2a"));
+    assert!(token.span().file().ends_with("src/main.rs"));
+    assert!(std::env::var_os("RUST_ANALYZER_USE_POSTCARD").is_none());
+    assert!(std::env::var_os("RUST_ANALYZER_INTERNALS_DO_NOT_USE").is_none());
+    let offset = tracked::env_var("LUSTR_TEST_MACRO_OFFSET").unwrap().parse::<u32>().unwrap();
+    tracked::path("asset.txt");
+    let asset = std::fs::read_to_string("asset.txt").unwrap().trim().parse::<u32>().unwrap();
+    (42 + offset + asset).to_string().parse().unwrap()
+}
+"##);
+    f.source("src/main.rs", r#"
+fn independent() -> u32 {
+    let answer = 16u32;
+    assert_eq!(host_macro::call_site!(), 17);
+    assert_eq!(host_macro::step!(), 1);
+    assert_eq!(host_macro::step!(), 2);
+    let (shifted, indexed, text) = host_macro::structured!();
+    assert_eq!(shifted, 42);
+    assert_eq!(indexed, 42);
+    assert_eq!(text, "macro output");
+    host_macro::increment!(16)
+}
+fn expanded() -> u32 { host_macro::value!((0x2a)) }
+fn main() { println!("{} {}", independent(), expanded()); }
+"#);
+    f.source("asset.txt", "1\n");
+    f.succeeds("lockfile", f.command("cargo").args(["generate-lockfile", "--offline"]));
+    let cargo = |operation: &str, offset: &str| {
+        let mut command = f.command("cargo");
+        command.env("LUSTR_TEST_MACRO_OFFSET", offset)
+            .env_remove("RUST_ANALYZER_USE_POSTCARD")
+            .env_remove("RUST_ANALYZER_INTERNALS_DO_NOT_USE")
+            .args([operation, "--frozen", "--jobs", "2"]);
+        command
+    };
+    f.succeeds("check", &mut cargo("check", "0"));
+    assert_eq!(f.succeeds("initial", &mut cargo("run", "0")).stdout, b"17 43\n");
+    f.source("asset.txt", "2\n");
+    assert_eq!(f.succeeds("asset-change", &mut cargo("run", "0")).stdout, b"17 44\n");
+    assert_eq!(f.succeeds("environment-change", &mut cargo("run", "3")).stdout, b"17 47\n");
+    let binary = f.root.join("target/debug/macro_consumer");
+    let original = std::fs::read(&binary).unwrap();
+    f.source("asset.txt", "invalid\n");
+    let refused = f.invoke("invalid", &mut cargo("build", "3"));
+    assert_eq!(refused.status.code(), Some(101));
+    assert!(String::from_utf8_lossy(&refused.stderr).contains("cannot expand procedural macro"));
+    assert_eq!(std::fs::read(&binary).unwrap(), original);
+    f.source("asset.txt", "4\n");
+    assert_eq!(f.succeeds("repair", &mut cargo("run", "3")).stdout, b"17 49\n");
+    let trace = std::fs::read_to_string(f.root.join("trace.jsonl")).unwrap();
+    assert!(trace.contains("\"entry\":\"host-proc-macro\""), "{trace}");
+    assert!(trace.contains("\"engine\":\"lust\""), "{trace}");
+
+    let reports = f.root.join("unused-macro-reports");
+    std::fs::create_dir(&reports).unwrap();
+    f.source("src/main.rs", "fn main() {}\n");
+    f.succeeds("unused-host-macro", cargo("check", "3").env("LUSTR_LIBRARY_REPORT_DIR", &reports));
+    let report = std::fs::read_dir(&reports).unwrap().next().unwrap().unwrap().path().join("report.json");
+    let report: serde_json::Value = serde_json::from_slice(&std::fs::read(report).unwrap()).unwrap();
+    assert_eq!(report["unused_extern_names"], serde_json::json!(["host_macro"]));
+
+    let repaired = std::fs::read(&binary).unwrap();
+    f.source("src/main.rs", "fn main() { let _ = host_macro::explicit_error!(); }\n");
+    let diagnosed = f.invoke("emitted-macro-error", &mut cargo("build", "3"));
+    assert_eq!(diagnosed.status.code(), Some(101));
+    assert!(String::from_utf8_lossy(&diagnosed.stderr).contains("explicit compiler macro diagnostic"));
+    assert_eq!(std::fs::read(&binary).unwrap(), repaired);
+    f.source("src/main.rs", "fn main() { let answer = 42; let _ = host_macro::mixed_site!(); }\n");
+    let refused = f.invoke("non-call-site-macro-output", &mut cargo("build", "3"));
+    assert_eq!(refused.status.code(), Some(101));
+    assert!(String::from_utf8_lossy(&refused.stderr).contains("unrepresented returned span"));
+    assert_eq!(std::fs::read(&binary).unwrap(), repaired);
+}
+
+#[cfg(all(target_os = "linux", target_arch = "x86_64", target_env = "gnu"))]
+#[test]
+#[ignore = "requires LUSTR_TEST_PACKAGE, LUSTR_TEST_OUTPUT and Clang"]
+fn ordinary_cargo_resolves_a_renamed_dependency_feature() {
+    let f = Fixture::new("cargo-dependency-feature");
+    f.source("Cargo.toml", "[workspace]\nmembers = [\"provider\", \"app\"]\nresolver = \"3\"\n");
+    f.source("provider/Cargo.toml", r#"
+[package]
+name = "profile-codec"
+version = "0.1.0"
+edition = "2024"
+
+[features]
+shifted = []
+"#);
+    f.source("provider/src/lib.rs", r#"
+#![no_std]
+#[cfg(feature = "shifted")]
+pub fn transform(value: u32) -> u32 { value ^ 15 }
+#[cfg(not(feature = "shifted"))]
+pub fn transform(value: u32) -> u32 { value ^ 9 }
+"#);
+    f.source("app/Cargo.toml", r#"
+[package]
+name = "profile-reader"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+codec = { package = "profile-codec", path = "../provider" }
+
+[features]
+shifted = ["codec/shifted"]
+"#);
+    f.source("app/src/main.rs", "fn main() { let value = codec::transform(12); println!(\"{value}\"); }\n");
+    let run = ["run", "--offline", "--quiet", "-p", "profile-reader"];
+    let base = f.succeeds("default", f.command("cargo").args(run));
+    assert_eq!(base.stdout, b"5\n");
+    let shifted = f.succeeds("shifted", f.command("cargo").args(run).args(["--features", "shifted"]));
+    assert_eq!(shifted.stdout, b"3\n");
+    let reverted = f.succeeds("reverted", f.command("cargo").args(run));
+    assert_eq!(reverted.stdout, base.stdout);
+}
+
+#[cfg(all(target_os = "linux", target_arch = "x86_64", target_env = "gnu"))]
+#[test]
+#[ignore = "requires LUSTR_TEST_PACKAGE, LUSTR_TEST_OUTPUT and Clang"]
+fn ordinary_cargo_preserves_resolved_features() {
+    let f = Fixture::new("resolved-cargo-features");
+    f.source("Cargo.toml", r#"
+[package]
+name = "resolved-cargo-features"
+version = "0.1.0"
+edition = "2024"
+
+[features]
+default = ["shifted"]
+shifted = []
+"#);
+    let source = r#"
+#[cfg(feature = "shifted")]
+fn result() -> u32 { 9 }
+#[cfg(not(feature = "shifted"))]
+fn result() -> u32 { 7 }
+fn main() { println!("{}", result()); }
+"#;
+    f.source("src/main.rs", source);
+    let run = ["run", "--offline", "--quiet"];
+    let defaults = f.succeeds("default", f.command("cargo").args(run));
+    assert_eq!(defaults.stdout, b"9\n");
+    let disabled = f.succeeds("no-default", f.command("cargo").args(run).arg("--no-default-features"));
+    assert_eq!(disabled.stdout, b"7\n");
+    let selected = f.succeeds("explicit", f.command("cargo").args(run).args(["--no-default-features", "--features", "shifted"]));
+    assert_eq!(selected.stdout, b"9\n");
+
+    f.source("src/main.rs", &source.replace("{ 9 }", "{ \"invalid\" }"));
+    let rejected = f.invoke("invalid-feature", f.command("cargo").args(run));
+    assert_eq!(rejected.status.code(), Some(101));
+    assert!(rejected.stdout.is_empty());
+    assert!(String::from_utf8_lossy(&rejected.stderr).contains("u32"));
+    let unaffected = f.succeeds("disabled-feature", f.command("cargo").args(run).arg("--no-default-features"));
+    assert_eq!(unaffected.stdout, b"7\n");
+
+    f.source("src/main.rs", source);
+    let repaired = f.succeeds("feature-repair", f.command("cargo").args(run));
+    assert_eq!(repaired.stdout, b"9\n");
+}
+
+#[cfg(all(target_os = "linux", target_arch = "x86_64", target_env = "gnu"))]
+#[test]
+#[ignore = "requires LUSTR_TEST_PACKAGE, LUSTR_TEST_OUTPUT and Clang"]
+fn ordinary_cargo_checks_release_profile_cfg() {
+    let f = Fixture::new("cargo-release-check");
+    f.source("Cargo.toml", "[package]\nname = \"release-check\"\nedition = \"2024\"\nversion = \"0.1.0\"\n");
+    let source = r#"
+#[cfg(debug_assertions)]
+fn value() -> u32 { "debug-only invalid type" }
+#[cfg(not(debug_assertions))]
+fn value() -> u32 { 7 }
+fn main() { println!("{}", value()); }
+"#;
+    f.source("src/main.rs", source);
+    let release = ["check", "--offline", "--release"];
+    f.succeeds("release-check", f.command("cargo").args(release));
+    assert!(!f.root.join("target/release/release-check").exists());
+
+    for (label, args) in [
+        ("dev", &["check", "--offline"][..]),
+        ("forced-debug", &["check", "--offline", "--release", "--config", "profile.release.debug-assertions=true"][..]),
+    ] {
+        let rejected = f.invoke(label, f.command("cargo").args(args));
+        assert_eq!(rejected.status.code(), Some(101));
+        assert!(String::from_utf8_lossy(&rejected.stderr).contains("mismatched types"));
+    }
+    f.source("src/main.rs", &source.replace("{ 7 }", "{ \"release-only invalid type\" }"));
+    let rejected = f.invoke("invalid-release", f.command("cargo").args(release));
+    assert_eq!(rejected.status.code(), Some(101));
+    assert!(String::from_utf8_lossy(&rejected.stderr).contains("mismatched types"));
+    f.source("src/main.rs", source);
+    f.succeeds("release-repair", f.command("cargo").args(release));
+
+    let run = ["run", "--offline", "--release", "--quiet"];
+    let optimized = f.succeeds("optimized-run", f.command("cargo").args(run));
+    assert_eq!(optimized.stdout, b"7\n");
+    let no_op = f.succeeds("optimized-noop", f.command("cargo").args(run));
+    assert_eq!(no_op.stdout, optimized.stdout);
+    let binary = f.root.join("target/release/release-check");
+    let prior = std::fs::read(&binary).unwrap();
+    f.source("src/main.rs", &source.replace("{ 7 }", "{ \"release-only invalid type\" }"));
+    let invalid = f.invoke("invalid-optimized", f.command("cargo").args(run));
+    assert_eq!(invalid.status.code(), Some(101));
+    assert!(invalid.stdout.is_empty());
+    assert_eq!(std::fs::read(binary).unwrap(), prior);
+    f.source("src/main.rs", source);
+    let smaller = f.succeeds(
+        "size-optimized-run",
+        f.command("cargo").args(run).args(["--config", "profile.release.opt-level=\"s\""]),
     );
-    assert_eq!(f.engine(), "lust");
-    assert_eq!(f.succeeds("native-project-run", &mut Command::new(executable)).stdout, b"observed\n");
+    assert_eq!(smaller.stdout, optimized.stdout);
+}
+
+#[cfg(all(target_os = "linux", target_arch = "x86_64", target_env = "gnu"))]
+#[test]
+#[ignore = "requires LUSTR_TEST_PACKAGE, LUSTR_TEST_OUTPUT and Clang"]
+fn default_debug_cargo_preserves_unwind_behavior() {
+    let f = Fixture::new("debug-panic");
+    f.source("Cargo.toml", "[package]\nname = \"debug-panic\"\nversion = \"0.1.0\"\nedition = \"2024\"\n");
+    f.source("src/main.rs", r#"
+struct Mark(&'static str);
+impl Drop for Mark {
+    fn drop(&mut self) { println!("drop:{}", self.0); }
+}
+fn leaf() {
+    let _frame = Mark("leaf");
+    panic!("original payload");
+}
+fn main() {
+    std::panic::set_hook(Box::new(|_| {}));
+    let _outer = Mark("outer");
+    let recovered = std::panic::catch_unwind(|| {
+        let _middle = Mark("middle");
+        leaf();
+    });
+    let payload = recovered.unwrap_err();
+    let resumed = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| std::panic::resume_unwind(payload)));
+    assert_eq!(resumed.unwrap_err().downcast_ref::<&'static str>(), Some(&"original payload"));
+    let joined = std::thread::spawn(|| panic!("thread payload")).join();
+    assert_eq!(joined.unwrap_err().downcast_ref::<&'static str>(), Some(&"thread payload"));
+    println!("caught, resumed, joined");
+}
+"#);
+    let ran = f.succeeds("runtime", f.command("cargo").args(["run", "--offline", "--quiet"]));
+    assert_eq!(ran.stdout, b"drop:leaf\ndrop:middle\ncaught, resumed, joined\ndrop:outer\n");
+    let optimized = f.succeeds("runtime-release", f.command("cargo").args(["run", "--offline", "--release", "--quiet"]));
+    assert_eq!(optimized.stdout, ran.stdout);
+    f.source("src/main.rs", "fn main() { panic!(\"uncaught native default debug\"); }\n");
+    let failed = f.invoke("uncaught", f.command("cargo").args(["run", "--offline", "--quiet"]));
+    assert_eq!(failed.status.code(), Some(101));
+    let stderr = String::from_utf8_lossy(&failed.stderr);
+    assert!(stderr.contains("panicked at") && stderr.contains("uncaught native default debug"), "{stderr}");
+}
+
+#[cfg(all(target_os = "linux", target_arch = "x86_64", target_env = "gnu"))]
+#[test]
+#[ignore = "requires LUSTR_TEST_PACKAGE, LUSTR_TEST_OUTPUT and Clang"]
+fn ordinary_cargo_executes_native_tests_with_libtest() {
+    let f = Fixture::new("rust-test");
+    f.source("Cargo.toml", "[package]\nname = \"test-leaf\"\nversion = \"0.1.0\"\nedition = \"2024\"\n");
+    f.source("src/main.rs", r#"
+fn main() { panic!("ordinary entry was called"); }
+
+#[cfg(test)]
+mod tests {
+    #[test]
+    fn arithmetic() {
+        println!("native print is captured");
+        assert_eq!(21_u32 * 2, 42);
+    }
+    #[test]
+    #[should_panic(expected = "native panic text")]
+    fn expected() { panic!("native panic text"); }
+    #[test]
+    #[ignore = "negative control"]
+    #[should_panic(expected = "wrong text")]
+    fn wrong() { panic!("native panic text"); }
+}
+"#);
+    let no_run = f.succeeds("compile", f.command("cargo").args(["test", "--offline", "--no-run"]));
+    assert!(no_run.stdout.is_empty());
+    let listed = f.succeeds("list", f.command("cargo").args(["test", "--offline", "--", "--list"]));
+    for name in ["tests::arithmetic: test", "tests::expected: test", "tests::wrong: test"] {
+        assert!(String::from_utf8_lossy(&listed.stdout).contains(name));
+    }
+    let ran = f.succeeds("run", f.command("cargo").args(["test", "--offline", "--", "--test-threads=2"]));
+    let stdout = String::from_utf8_lossy(&ran.stdout);
+    assert!(stdout.contains("2 passed; 0 failed; 1 ignored"));
+    assert!(stdout.contains("ignored, negative control"));
+    assert!(!stdout.contains("native print is captured"));
+    assert!(!String::from_utf8_lossy(&ran.stderr).contains("native panic text"));
+    let shown = f.succeeds("show-output", f.command("cargo").args(["test", "--offline", "--", "--show-output", "tests::arithmetic"]));
+    assert!(String::from_utf8_lossy(&shown.stdout).contains("native print is captured"));
+
+    let wrong = f.invoke("wrong", f.command("cargo").args(["test", "--offline", "--", "--ignored", "tests::wrong"]));
+    assert_eq!(wrong.status.code(), Some(101));
+    let stdout = String::from_utf8_lossy(&wrong.stdout);
+    assert!(stdout.contains("panic did not contain expected string"));
+    assert!(stdout.contains("thread 'tests::wrong'"));
+    assert!(!stdout.contains("ordinary entry was called"));
+}
+
+#[cfg(all(target_os = "linux", target_arch = "x86_64", target_env = "gnu"))]
+#[test]
+#[ignore = "requires LUSTR_TEST_PACKAGE, LUSTR_TEST_OUTPUT and Clang"]
+fn default_cargo_test_reports_native_termination() {
+    let f = Fixture::new("test-result");
+    f.source("Cargo.toml", "[package]\nname = \"test-result\"\nversion = \"0.1.0\"\nedition = \"2024\"\n");
+    f.source("src/main.rs", r#"
+#[test]
+fn result_passes() -> Result<(), &'static str> { Ok(()) }
+
+#[test]
+fn exit_code_passes() -> std::process::ExitCode { std::process::ExitCode::SUCCESS }
+
+#[test]
+#[ignore]
+fn result_fails() -> Result<(), &'static str> { Err("native returned error") }
+
+#[test]
+#[ignore]
+fn exit_code() -> std::process::ExitCode { std::process::ExitCode::from(17) }
+"#);
+    let pass = f.succeeds("pass", f.command("cargo").args(["test", "--offline"]));
+    let stdout = String::from_utf8_lossy(&pass.stdout);
+    assert!(stdout.contains("result_passes ... ok"), "{stdout}");
+    assert!(stdout.contains("exit_code_passes ... ok"), "{stdout}");
+    let failure = f.invoke("failed-result", f.command("cargo").args(["test", "--offline", "--", "--ignored", "result_fails"]));
+    assert_eq!(failure.status.code(), Some(101));
+    let stdout = String::from_utf8_lossy(&failure.stdout);
+    assert!(stdout.contains("Error: \"native returned error\""), "{stdout}");
+    assert!(stdout.contains("result_fails ... FAILED"), "{stdout}");
+    let exit = f.invoke("failed-exit-code", f.command("cargo").args(["test", "--offline", "--", "--ignored", "exit_code"]));
+    assert_eq!(exit.status.code(), Some(101));
+    let stdout = String::from_utf8_lossy(&exit.stdout);
+    assert!(stdout.contains("exit_code ... FAILED"), "{stdout}");
+}
+
+#[test]
+#[cfg(all(target_os = "linux", target_arch = "x86_64", target_env = "gnu"))]
+#[ignore = "requires LUSTR_TEST_PACKAGE, LUSTR_TEST_OUTPUT and Clang"]
+fn cargo_selects_library_unit_test_source() {
+    let f = Fixture::new("library-unit-test");
+    f.source("Cargo.toml", "[package]\nname = \"library-unit-test\"\nversion = \"0.1.0\"\nedition = \"2024\"\n\n[lib]\nname = \"selected_library\"\npath = \"lib/entry.rs\"\n");
+    f.source("lib/entry.rs", r#"
+fn calculate(input: u32) -> u32 { input + 9 }
+
+#[cfg(test)]
+mod tests {
+    #[test]
+    fn calls_library_code() { assert_eq!(super::calculate(4), 13); }
+}
+"#);
+    let compiled = f.succeeds("compile", f.command("cargo").args(["test", "--offline", "--lib", "--no-run"]));
+    assert!(compiled.stdout.is_empty());
+    let ran = f.succeeds("run", f.command("cargo").args(["test", "--offline", "--lib"]));
+    let stdout = String::from_utf8_lossy(&ran.stdout);
+    assert!(stdout.contains("tests::calls_library_code ... ok"), "{stdout}");
+    assert!(stdout.contains("1 passed; 0 failed"), "{stdout}");
+}
+
+#[test]
+#[cfg(all(target_os = "linux", target_arch = "x86_64", target_env = "gnu"))]
+#[ignore = "requires LUSTR_TEST_PACKAGE, LUSTR_TEST_OUTPUT and Clang"]
+fn cargo_runs_a_selected_integration_test_target() {
+    let f = Fixture::new("integration-test-target");
+    f.source("Cargo.toml", "[package]\nname = \"integration-test-target\"\nversion = \"0.1.0\"\nedition = \"2024\"\n");
+    f.source("src/main.rs", "fn main() { println!(\"original application\"); }\n");
+    f.source("tests/behavior.rs", r#"
+#[test]
+fn checks_application() {
+    let application = env!("CARGO_BIN_EXE_integration-test-target");
+    assert!(!application.is_empty());
+    assert_eq!(4_u32 * 9, 36);
+}
+"#);
+    let compiled = f.succeeds("compile", f.command("cargo").args(["test", "--offline", "--test", "behavior", "--no-run"]));
+    assert!(compiled.stdout.is_empty());
+    let tested = f.succeeds("run", f.command("cargo").args(["test", "--offline", "--test", "behavior"]));
+    let stdout = String::from_utf8_lossy(&tested.stdout);
+    assert!(stdout.contains("checks_application ... ok"), "{stdout}");
+    assert!(stdout.contains("1 passed; 0 failed"), "{stdout}");
+    let binary = f.root.join("target/debug/integration-test-target");
+    assert_eq!(f.succeeds("application", &mut Command::new(binary)).stdout, b"original application\n");
+}
+
+#[test]
+#[cfg(all(target_os = "linux", target_arch = "x86_64", target_env = "gnu"))]
+#[ignore = "requires LUSTR_TEST_PACKAGE, LUSTR_TEST_OUTPUT and Clang"]
+fn cargo_runs_the_crates_custom_test_main() {
+    let f = Fixture::new("custom-test-harness");
+    f.source("Cargo.toml", "[package]\nname = \"custom-harness\"\nversion = \"0.1.0\"\nedition = \"2024\"\n\n[[test]]\nname = \"behavior\"\nharness = false\n");
+    f.source("src/main.rs", "fn main() { println!(\"ordinary application\"); }\n");
+    f.source("tests/behavior.rs", r#"
+#[cfg(test)]
+fn main() {
+    assert!(!env!("CARGO_BIN_EXE_custom-harness").is_empty());
+    assert!(!env!("CARGO_TARGET_TMPDIR").is_empty());
+    println!("custom harness uses cfg(test)");
+}
+
+#[cfg(not(test))]
+fn main() { panic!("test entry compiled with the normal cfg"); }
+"#);
+    let args = ["test", "--offline", "--test", "behavior"];
+    let compiled = f.succeeds("compile", f.command("cargo").args(args).arg("--no-run"));
+    assert!(compiled.stdout.is_empty());
+    let ran = f.succeeds("run", f.command("cargo").args(args));
+    assert_eq!(ran.stdout, b"custom harness uses cfg(test)\n");
+    let binary = f.root.join("target/debug/custom-harness");
+    assert_eq!(f.succeeds("application", &mut Command::new(binary)).stdout, b"ordinary application\n");
+}
+
+#[test]
+#[cfg(all(target_os = "linux", target_arch = "x86_64", target_env = "gnu"))]
+#[ignore = "requires LUSTR_TEST_PACKAGE, LUSTR_TEST_OUTPUT and Clang"]
+fn cargo_test_links_a_native_dev_dependency() {
+    let f = Fixture::new("integration-dev-dep");
+    f.source("Cargo.toml", "[workspace]\nmembers = [\"provider\", \"application\"]\nresolver = \"3\"\n");
+    f.source("provider/Cargo.toml", "[package]\nname = \"test-provider\"\nversion = \"0.1.0\"\nedition = \"2024\"\n");
+    f.source("provider/src/lib.rs", "#![no_std]\npub fn evaluate(input: u32) -> u32 { input ^ 9 }\n");
+    f.source("application/Cargo.toml", "[package]\nname = \"with-dev-dep\"\nversion = \"0.1.0\"\nedition = \"2024\"\n\n[dev-dependencies]\ntest-provider = { path = \"../provider\" }\n");
+    f.source("application/src/main.rs", "fn main() { println!(\"ordinary executable\"); }\n");
+    f.source("application/tests/behavior.rs", r#"
+#[test]
+fn crosses_a_native_crate_boundary() {
+    assert_eq!(test_provider::evaluate(12), 5);
+    assert!(!env!("CARGO_BIN_EXE_with-dev-dep").is_empty());
+    assert!(!env!("CARGO_TARGET_TMPDIR").is_empty());
+}
+"#);
+    let args = ["test", "--offline", "-p", "with-dev-dep", "--test", "behavior"];
+    let compiled = f.succeeds("compile", f.command("cargo").args(args).arg("--no-run"));
+    assert!(compiled.stdout.is_empty());
+    let tested = f.succeeds("run", f.command("cargo").args(args));
+    let stdout = String::from_utf8_lossy(&tested.stdout);
+    assert!(stdout.contains("crosses_a_native_crate_boundary ... ok"), "{stdout}");
+    assert!(stdout.contains("1 passed; 0 failed"), "{stdout}");
+    let binary = f.root.join("target/debug/with-dev-dep");
+    assert_eq!(f.succeeds("application", &mut Command::new(binary)).stdout, b"ordinary executable\n");
 }
 
 #[test]
@@ -550,28 +2464,6 @@ fn native_output_failure_does_not_become_success() {
 }
 
 #[test]
-#[ignore = "requires LUSTR_TEST_PACKAGE and LUSTR_TEST_OUTPUT on Linux"]
-fn native_rejection_preserves_full_core_resource_context() {
-    let f = Fixture::new("resource-context");
-    let source = f.source("resource.rs", "fn main(){let _=std::env::join_paths([\"\"]);let limits=include_str!(\"/proc/self/limits\");println!(\"{}\",limits.lines().find(|s|s.starts_with(\"Max stack size\")).unwrap());}\n");
-    let baseline = f.root.join("baseline");
-    let candidate = f.root.join("candidate");
-    f.succeeds("baseline-build", f.command("rustc-full").arg("--edition=2024").arg(&source).arg("-o").arg(&baseline));
-    f.succeeds("candidate-build", f.command("lustr").arg("build").arg(&source).arg("-o").arg(&candidate).env("LUST_NO_DAEMON", "1"));
-    assert_eq!(f.engine(), "full-rust-core");
-    let trace = std::fs::read_to_string(f.root.join("trace.jsonl")).unwrap();
-    assert!(
-        trace
-            .lines()
-            .filter_map(|line| serde_json::from_str::<serde_json::Value>(line).ok())
-            .any(|value| value["engine"] == "lust-rejected" && value["entry"] == "native-library")
-    );
-    let baseline = f.succeeds("baseline-run", &mut Command::new(baseline));
-    let candidate = f.succeeds("candidate-run", &mut Command::new(candidate));
-    assert_eq!(candidate.stdout, baseline.stdout);
-}
-
-#[test]
 #[ignore = "requires LUSTR_TEST_PACKAGE and LUSTR_TEST_OUTPUT"]
 fn large_valid_native_argument_lists_use_the_original_process() {
     let f = Fixture::new("large-native-arguments");
@@ -588,209 +2480,1366 @@ fn large_valid_native_argument_lists_use_the_original_process() {
 }
 
 #[test]
-#[ignore = "requires LUSTR_TEST_PACKAGE and LUSTR_TEST_OUTPUT"]
-fn cargo_selection_preserves_explicit_package_target_and_source() {
-    let f = Fixture::new("cargo-selection");
-    let manifest = f.source(
-        "project/Cargo.toml",
-        "[workspace]\nmembers=[\"one\",\"two\"]\nresolver=\"3\"\n[workspace.package]\nversion=\"0.2.0\"\nedition=\"2024\"\n",
-    );
-    f.source("project/one/Cargo.toml", "[package]\nname=\"one\"\nversion.workspace=true\nedition.workspace=true\n[[bin]]\nname=\"first\"\npath=\"shared.rs\"\n[[bin]]\nname=\"second\"\npath=\"shared.rs\"\n[[bin]]\nname=\"other\"\npath=\"other.rs\"\n");
-    let source =
-        f.source("project/one/shared.rs", "fn main(){println!(\"{}\",std::env::join_paths([\"\"]).unwrap().to_str().unwrap());}\n");
-    f.source("project/one/other.rs", "fn main(){}\n");
-    f.source("project/two/Cargo.toml", "[package]\nname=\"two\"\nversion.workspace=true\nedition.workspace=true\n");
-    let other_source = f.source("project/two/src/main.rs", "fn main(){}\n");
-    let output = f.root.join("application");
-    let unique_bad = f.invoke(
-        "unique-missing-bin",
-        f.command("lustr")
-            .arg("build")
-            .arg(&other_source)
-            .arg("--manifest-path")
-            .arg(&manifest)
-            .args([
-                "--package",
-                "two",
-                "--bin",
-                "nonexistent",
-                "--offline",
-                "--target",
-                "wasm32-unknown-unknown",
-                "-C",
-                "panic=abort",
-                "-o",
-            ])
-            .arg(&output),
-    );
-    assert!(!unique_bad.status.success(), "nonexistent bin was replaced by the only existing target");
-    assert!(!output.exists());
-    for (label, selectors) in [
-        ("missing-bin", vec!["--package", "one", "--bin", "nonexistent"]),
-        ("other-source", vec!["--package", "one", "--bin", "other"]),
-        ("other-package", vec!["--package", "two", "--bin", "first"]),
-        ("missing-package", vec!["--package", "nonexistent", "--bin", "first"]),
+#[ignore = "requires LUSTR_TEST_PACKAGE, LUSTR_TEST_OUTPUT and independent LUSTR_TEST_ORACLE"]
+fn native_library_selection_survives_process_startup() {
+    let f = Fixture::new("native-library-selection");
+    for (directory, package, library, kind) in [
+        ("hyphen", "hyphen-lib", None, None),
+        ("renamed", "app", Some("app_library"), None),
+        ("rlib", "library_kind_rlib", None, Some("rlib")),
+        ("staticlib", "library_kind_staticlib", None, Some("staticlib")),
+        ("cdylib", "library_kind_cdylib", None, Some("cdylib")),
+        ("dylib", "library_kind_dylib", None, Some("dylib")),
     ] {
-        // Rejection must not replace an existing caller artifact.
-        std::fs::write(&output, b"unchanged").unwrap();
-        let result = f.invoke(
-            label,
-            f.command("lustr")
-                .arg("build")
-                .arg(&source)
-                .arg("--manifest-path")
-                .arg(&manifest)
-                .args(["--offline", "-o"])
-                .arg(&output)
-                .args(selectors)
-                .env("LUST_NO_DAEMON", "1"),
+        let mut library_config = if library.is_some() || kind.is_some() { "\n[lib]\n".to_owned() } else { String::new() };
+        if let Some(name) = library {
+            library_config.push_str(&format!("name={name:?}\n"));
+        }
+        if let Some(kind) = kind {
+            library_config.push_str(&format!("crate-type=[{kind:?}]\n"));
+        }
+        let valid = "pub fn answer()->u32{42}\n".to_owned();
+        let invalid = "pub fn answer()->u32{\"wrong library\"}\n".to_owned();
+        let manifest = f.source(
+            &format!("{directory}/Cargo.toml"),
+            &format!("[package]\nname={package:?}\nversion=\"0.1.0\"\nedition=\"2024\"\n[workspace]\n{library_config}"),
         );
-        assert!(!result.status.success(), "{label} silently selected a different target");
-        assert_eq!(std::fs::read(&output).unwrap(), b"unchanged", "{label} replaced output");
-    }
-    for (label, selectors) in [
-        ("second-bin", vec!["--package", "one", "--bin", "second"]),
-        ("version-spec", vec!["--package=one@0.2.0", "--bin=first"]),
-        ("inferred-member", vec!["--bin", "second"]),
-    ] {
+        let source = f.source(&format!("{directory}/src/lib.rs"), &valid);
+        if library.is_some() {
+            // A mistaken fallback to the package-named binary must fail this
+            // positive library check, even though both targets exist.
+            f.source(&format!("{directory}/src/main.rs"), "fn main(){let _:u32=\"wrong bin\";}\n");
+        }
         f.succeeds(
-            label,
-            f.command("lustr")
-                .arg("build")
+            &format!("{directory}-cargo-library"),
+            f.command("cargo")
+                .args(["check", "--offline", "--lib", "--manifest-path"])
+                .arg(&manifest)
+                .env("RUSTC", std::env::var_os("LUSTR_TEST_ORACLE").expect("independent LUSTR_TEST_ORACLE")),
+        );
+        for tool in ["lust", "lustr"] {
+            f.succeeds(
+                &format!("{directory}-{tool}-library"),
+                f.command(tool)
+                    .arg("check")
+                    .arg(&source)
+                    .arg("--manifest-path")
+                    .arg(&manifest)
+                    .args(["--lib", "--offline"])
+                    .env("LUST_NO_DAEMON", "1")
+                    .env("LUST_NO_CACHE", "1"),
+            );
+            if tool == "lustr" {
+                assert_eq!(f.engine(), "lust", "valid library must use native checking");
+                assert_eq!(f.entry(), "upstream-process", "the process must reparse the original library selection");
+            }
+        }
+        // The same selection must reject an invalid library even when a
+        // package-named binary is valid; accepted-to-rejected edits stay real.
+        f.source(&format!("{directory}/src/lib.rs"), &invalid);
+        if library.is_some() {
+            f.source(&format!("{directory}/src/main.rs"), "fn main(){}\n");
+        }
+        for tool in ["lust", "lustr"] {
+            let rejected = f.invoke(
+                &format!("{directory}-{tool}-rejected-library"),
+                f.command(tool)
+                    .arg("check")
+                    .arg(&source)
+                    .arg("--manifest-path")
+                    .arg(&manifest)
+                    .args(["--lib", "--offline"])
+                    .env("LUST_NO_DAEMON", "1")
+                    .env("LUST_NO_CACHE", "1"),
+            );
+            assert!(!rejected.status.success(), "{tool} accepted the invalid {directory} library");
+            assert!(!rejected.stderr.is_empty(), "{tool} lost the library diagnostic");
+        }
+        f.source(&format!("{directory}/src/lib.rs"), &valid);
+        if library.is_some() {
+            f.source(&format!("{directory}/src/main.rs"), "fn main(){let _:u32=\"wrong bin\";}\n");
+        }
+        for tool in ["lust", "lustr"] {
+            f.succeeds(
+                &format!("{directory}-{tool}-recovered-library"),
+                f.command(tool)
+                    .arg("check")
+                    .arg(&source)
+                    .arg("--manifest-path")
+                    .arg(&manifest)
+                    .args(["--lib", "--offline"])
+                    .env("LUST_NO_DAEMON", "1")
+                    .env("LUST_NO_CACHE", "1"),
+            );
+            if tool == "lustr" {
+                assert_eq!(f.engine(), "lust", "recovered library must return to native checking");
+                assert_eq!(f.entry(), "upstream-process");
+            }
+        }
+    }
+    let manifest = f.source("bin-only/Cargo.toml", "[package]\nname=\"binary_only\"\nversion=\"0.1.0\"\nedition=\"2024\"\n[workspace]\n");
+    let source = f.source("bin-only/src/main.rs", "fn main(){}\n");
+    let oracle = f.invoke(
+        "bin-only-cargo-library",
+        f.command("cargo")
+            .args(["check", "--offline", "--lib", "--manifest-path"])
+            .arg(&manifest)
+            .env("RUSTC", std::env::var_os("LUSTR_TEST_ORACLE").expect("independent LUSTR_TEST_ORACLE")),
+    );
+    assert!(!oracle.status.success(), "Cargo unexpectedly found a library in the bin-only fixture");
+    for tool in ["lust", "lustr"] {
+        let rejected = f.invoke(
+            &format!("bin-only-{tool}-library"),
+            f.command(tool)
+                .arg("check")
                 .arg(&source)
                 .arg("--manifest-path")
                 .arg(&manifest)
-                .args(["--offline", "-o"])
-                .arg(&output)
-                .args(selectors)
-                .env("LUST_NO_DAEMON", "1"),
+                .args(["--lib", "--offline"])
+                .env("LUST_NO_DAEMON", "1")
+                .env("LUST_NO_CACHE", "1"),
         );
-        assert_eq!(f.engine(), "full-rust-core");
-        assert_eq!(f.succeeds(&format!("{label}-run"), &mut Command::new(&output)).stdout, b"\n");
+        assert_eq!(rejected.status.code(), Some(2), "{tool} substituted a binary for the absent library");
+        assert!(!rejected.stderr.is_empty(), "{tool} lost the target-selection diagnostic");
     }
-    // Both workspace members now offer 'second'. The native resolver must
-    // receive the validated member, rather than picking the first member.
-    f.source("project/one/shared.rs", "fn main(){println!(\"one\");}\n");
-    f.source(
-        "project/two/Cargo.toml",
-        "[package]\nname=\"two\"\nversion.workspace=true\nedition.workspace=true\n[[bin]]\nname=\"second\"\npath=\"src/main.rs\"\n",
-    );
-    f.source("project/two/src/main.rs", "fn main(){println!(\"two\");}\n");
-    f.succeeds(
-        "native-selected-member",
-        f.command("lustr")
-            .arg("build")
-            .arg(&other_source)
-            .arg("--manifest-path")
-            .arg(&manifest)
-            .args(["--offline", "--package", "two", "--bin", "second", "-o"])
-            .arg(&output)
-            .env("LUST_NO_DAEMON", "1"),
-    );
-    assert_eq!(f.engine(), "lust");
-    assert_eq!(f.succeeds("native-selected-member-run", &mut Command::new(&output)).stdout, b"two\n");
-    std::fs::write(&output, b"unchanged").unwrap();
-    let bad = f.invoke(
-        "native-missing-package",
-        f.command("lustr")
-            .arg("build")
-            .arg(&other_source)
-            .arg("--manifest-path")
-            .arg(&manifest)
-            .args(["--offline", "--package", "nonexistent", "--bin", "second", "-o"])
-            .arg(&output)
-            .env("LUST_NO_DAEMON", "1"),
-    );
-    assert!(!bad.status.success());
-    assert_eq!(std::fs::read(&output).unwrap(), b"unchanged");
 }
 
+#[cfg(all(target_os = "linux", target_arch = "x86_64", target_env = "gnu"))]
 #[test]
-#[ignore = "requires LUSTR_TEST_PACKAGE and LUSTR_TEST_OUTPUT on Linux"]
-fn cancellation_terminates_owned_cargo_and_build_script_descendants() {
-    use std::os::unix::process::{CommandExt, ExitStatusExt};
-    use std::process::Stdio;
-    use std::time::{Duration, Instant};
-    unsafe extern "C" {
-        fn kill(pid: i32, signal: i32) -> i32;
+#[ignore = "requires LUSTR_TEST_PACKAGE, LUSTR_TEST_OUTPUT, LUSTR_TEST_ORACLE and binutils"]
+fn ordinary_cargo_compiles_a_native_function_with_rust_async_code() {
+    let f = Fixture::new("cargo-async-composition");
+    f.source("Cargo.toml", "[package]\nname=\"async_program\"\nversion=\"0.1.0\"\nedition=\"2024\"\n");
+    let source = r#"
+use std::{future::Future, pin::pin, task::{Context, Poll, Waker}};
+
+fn apply_mask(input: u64) -> u64 { input ^ 19 }
+
+async fn compute(input: u64) -> u64 {
+    let apply = std::hint::black_box(apply_mask as fn(u64) -> u64);
+    apply(std::future::ready(input).await)
+}
+
+fn main() {
+    let mut task = pin!(compute(57));
+    let mut context = Context::from_waker(Waker::noop());
+    let Poll::Ready(value) = task.as_mut().poll(&mut context) else { unreachable!() };
+    println!("{value}");
+}
+
+#[cfg(test)]
+mod tests {
+    #[test]
+    fn native_value_in_the_rust_test_harness() {
+        assert_eq!(super::apply_mask(57), 42);
     }
-    struct Cleanup(Vec<i32>);
-    impl Drop for Cleanup {
-        fn drop(&mut self) {
-            for group in &self.0 {
-                unsafe {
-                    kill(-*group, 9);
-                }
-            }
+}
+"#;
+    let path = f.source("src/main.rs", source);
+    let rust = std::env::var_os("LUSTR_TEST_ORACLE").expect("independent LUSTR_TEST_ORACLE");
+    let cargo = |name: &str, original: bool, mixed: bool| {
+        let mut command = f.command("cargo");
+        command.env("CARGO_TARGET_DIR", f.root.join(name));
+        if mixed {
+            command.env("CARGO_PROFILE_DEV_DEBUG", "0");
         }
-    }
-    fn alive(pid: i32) -> bool {
-        std::fs::read_to_string(format!("/proc/{pid}/stat"))
-            .ok()
-            .and_then(|s| s.rsplit_once(')').map(|(_, rest)| !rest.trim_start().starts_with('Z')))
-            .unwrap_or(false)
-    }
-    let f = Fixture::new("cancellation");
-    let manifest = f.source("project/Cargo.toml", "[package]\nname=\"cancellation\"\nversion=\"0.1.0\"\nedition=\"2024\"\n[workspace]\n");
-    let source = f.source("project/src/main.rs", "fn main(){}\n");
-    f.source(
-        "project/build.rs",
-        r#"fn main(){
-        let root=std::path::PathBuf::from(std::env::var("CARGO_MANIFEST_DIR").unwrap());
-        if std::env::args().any(|s|s=="owned-leaf") {
-            std::fs::write(root.join("leaf.pid"),std::process::id().to_string()).unwrap();
-            loop {std::thread::sleep(std::time::Duration::from_secs(1));}
+        if original {
+            command.env("RUSTC", &rust);
         }
-        std::fs::write(root.join("script.pid"),std::process::id().to_string()).unwrap();
-        std::process::Command::new(std::env::current_exe().unwrap()).arg("owned-leaf").spawn().unwrap().wait().unwrap();
-    }"#,
-    );
-    for (label, signal, group) in [("pid-term", 15, false), ("group-term", 15, true), ("pid-int", 2, false), ("group-int", 2, true)] {
-        let marker = f.root.join("project/leaf.pid");
-        let _ = std::fs::remove_file(&marker);
-        let output = f.root.join("application");
-        std::fs::write(&output, b"original").unwrap();
-        let mut command = f.command("lustr");
         command
-            .arg("build")
-            .arg(&source)
-            .arg("--manifest-path")
-            .arg(&manifest)
-            .args(["--target", "wasm32-unknown-unknown", "-C", "panic=abort", "--offline", "-o"])
-            .arg(&output)
-            .process_group(0)
-            .stdout(Stdio::from(std::fs::File::create(f.root.join(format!("{label}.stdout"))).unwrap()))
-            .stderr(Stdio::from(std::fs::File::create(f.root.join(format!("{label}.stderr"))).unwrap()));
-        let mut wrapper = command.spawn().unwrap();
-        let mut cleanup = Cleanup(vec![wrapper.id() as i32]);
-        let deadline = Instant::now() + Duration::from_secs(10);
-        while !marker.exists() && Instant::now() < deadline {
-            assert!(wrapper.try_wait().unwrap().is_none(), "wrapper exited before {label}");
-            std::thread::sleep(Duration::from_millis(10));
+    };
+    f.succeeds("lockfile", cargo("default", false, false).args(["generate-lockfile", "--offline"]));
+    f.succeeds("default-check", cargo("default", false, false).args(["check", "--frozen"]));
+    for (name, original, debug_zero) in [
+        ("default", false, false), ("mixed", false, true), ("release", false, false),
+        ("optimized-debug", false, false), ("original", true, true),
+    ] {
+        let mut command = cargo(name, original, debug_zero);
+        command.args(["run", "--frozen"]);
+        if name == "optimized-debug" {
+            command.env("CARGO_PROFILE_RELEASE_DEBUG", "2");
         }
-        assert!(marker.exists(), "build script did not reach cancellable work");
-        let leaf: i32 = std::fs::read_to_string(&marker).unwrap().parse().unwrap();
-        let script: i32 = std::fs::read_to_string(f.root.join("project/script.pid")).unwrap().parse().unwrap();
-        let status = std::fs::read_to_string(format!("/proc/{script}/status")).unwrap();
-        let cargo: i32 = status.lines().find_map(|l| l.strip_prefix("PPid:")).unwrap().trim().parse().unwrap();
-        cleanup.0.push(cargo);
-        unsafe {
-            assert_eq!(kill(if group { -(wrapper.id() as i32) } else { wrapper.id() as i32 }, signal), 0);
-        }
-        let deadline = Instant::now() + Duration::from_secs(3);
-        let status = loop {
-            if let Some(status) = wrapper.try_wait().unwrap() {
-                break status;
-            }
-            assert!(Instant::now() < deadline, "{label} did not terminate the wrapper");
-            std::thread::sleep(Duration::from_millis(10));
+        let profile = if matches!(name, "release" | "optimized-debug") {
+            command.arg("--release");
+            "release"
+        } else {
+            "debug"
         };
-        assert_eq!(status.signal(), Some(signal), "{label} signal was not preserved");
-        let deadline = Instant::now() + Duration::from_secs(2);
-        while (alive(leaf) || alive(script) || alive(cargo)) && Instant::now() < deadline {
-            std::thread::sleep(Duration::from_millis(10));
+        let result = f.succeeds(&format!("{name}-run"), &mut command);
+        assert_eq!(result.stdout, b"42\n");
+        let exe = f.root.join(name).join(profile).join("async_program");
+        let symbols = f.succeeds(&format!("{name}-symbols"), Command::new("nm").arg(&exe));
+        let symbols = String::from_utf8(symbols.stdout).unwrap();
+        let native: Vec<_> = symbols.lines().filter(|line| line.split_whitespace().last()
+            .and_then(|name| name.strip_prefix("f_")).is_some_and(|suffix| {
+                suffix.len() == 16 && suffix.bytes().all(|byte| byte.is_ascii_hexdigit())
+            })).collect();
+        assert_eq!(native.len(), usize::from(!original), "{name}");
+        if matches!(name, "default" | "optimized-debug") {
+            let debug = f.succeeds(&format!("{name}-native-debug-records"),
+                Command::new("readelf").args(["--debug-dump=info", "--wide"]).arg(&exe));
+            let info = String::from_utf8_lossy(&debug.stdout);
+            let native_unit = info.split("Compilation Unit @").find(|unit|
+                unit.lines().any(|line| line.contains("DW_AT_producer") && line.contains("Lustr")))
+                .expect("Lust produced a Rust debug compilation unit");
+            let address = u64::from_str_radix(native[0].split_whitespace().next().unwrap(), 16).unwrap();
+            assert!(native_unit.lines().any(|line| line.contains("DW_AT_language") && line.contains("(Rust)"))
+                && native_unit.contains("apply_mask")
+                && native_unit.contains("src/main.rs"), "{native_unit}");
+            assert!(native_unit.lines().filter(|line| line.contains("DW_AT_low_pc")).any(|line| {
+                line.split_whitespace().last().and_then(|hex| hex.strip_prefix("0x"))
+                    .and_then(|hex| u64::from_str_radix(hex, 16).ok()) == Some(address)
+            }), "{native_unit}");
         }
-        assert!(!alive(leaf) && !alive(script) && !alive(cargo), "{label} left compiler/build-script work alive");
-        assert_eq!(std::fs::read(&output).unwrap(), b"original");
+    }
+    let artifact = f.succeeds("test-build", cargo("tests", false, false)
+        .args(["test", "--no-run", "--frozen", "--message-format=json"]));
+    let test = artifact.stdout.split(|&byte| byte == b'\n').find_map(|line| {
+        let record: serde_json::Value = serde_json::from_slice(line).ok()?;
+        if record["reason"] != "compiler-artifact" || record["profile"]["test"] != true {
+            return None;
+        }
+        record["executable"].as_str().map(PathBuf::from)
+    }).expect("Cargo reported the real test executable");
+    let symbols = f.succeeds("test-symbols", Command::new("nm").arg(&test));
+    assert!(String::from_utf8_lossy(&symbols.stdout).lines().any(|line| {
+        line.split_whitespace().last().and_then(|name| name.strip_prefix("f_"))
+            .is_some_and(|name| name.len() == 16 && name.bytes().all(|byte| byte.is_ascii_hexdigit()))
+    }));
+    let result = f.succeeds("test-run", cargo("tests", false, false).args(["test", "--frozen",
+        "--", "--exact", "tests::native_value_in_the_rust_test_harness"]));
+    assert!(String::from_utf8_lossy(&result.stdout).contains("tests::native_value_in_the_rust_test_harness ... ok"));
+    assert_eq!(std::fs::read_to_string(&path).unwrap(), source);
+    let trace = std::fs::read_to_string(f.root.join("trace.jsonl")).unwrap();
+    assert!(trace.contains("\"entry\":\"rust-complement\""), "{trace}");
+
+    for (name, edit, diagnostic) in [
+        ("bad-native", source.replace("input ^ 19", "input ^ false"), "L0113"),
+        ("bad-rust", source.replace("async fn compute(input: u64) -> u64", "async fn compute(input: u64) -> u32"), "E0308"),
+    ] {
+        f.source("src/main.rs", &edit);
+        let result = f.invoke(name, cargo(name, false, true).args(["build", "--frozen"]));
+        assert_eq!(result.status.code(), Some(101));
+        assert!(String::from_utf8_lossy(&result.stderr).contains(diagnostic),
+            "{}", String::from_utf8_lossy(&result.stderr));
+        assert!(!f.root.join(name).join("debug/async_program").exists());
+    }
+    let traces = std::fs::read_to_string(f.root.join("trace.jsonl")).unwrap();
+    f.source("src/main.rs", "fn main() { let value: u64 = false; println!(\"{value}\"); }\n");
+    let result = f.invoke("ordinary-invalid", cargo("ordinary-invalid", false, true).args(["check", "--frozen"]));
+    assert_eq!(result.status.code(), Some(101));
+    let later = std::fs::read_to_string(f.root.join("trace.jsonl")).unwrap();
+    assert!(!later[traces.len()..].contains("\"entry\":\"rust-complement\""), "{later}");
+
+    for (name, encoded) in [
+        ("crlf", source.replace('\n', "\r\n")),
+        ("bom", format!("\u{feff}{source}")),
+    ] {
+        let path = f.source("src/main.rs", &encoded);
+        let result = f.succeeds(name, cargo(name, false, false).args(["run", "--frozen"]));
+        assert_eq!(result.stdout, b"42\n");
+        let exe = f.root.join(name).join("debug/async_program");
+        let debug = f.succeeds(&format!("{name}-debug"),
+            Command::new("readelf").args(["--debug-dump=info", "--wide"]).arg(exe));
+        let info = String::from_utf8_lossy(&debug.stdout);
+        let native_unit = info.split("Compilation Unit @").find(|unit|
+            unit.lines().any(|line| line.contains("DW_AT_producer") && line.contains("Lustr")))
+            .expect("Lust owns the function in normalized Rust source");
+        assert!(native_unit.contains("apply_mask") && native_unit.contains("src/main.rs"), "{native_unit}");
+        assert_eq!(std::fs::read_to_string(path).unwrap(), encoded);
+    }
+
+    let root_test = source.split_once("#[cfg(test)]").unwrap().0.to_owned() + r#"
+#[test]
+fn native_value_in_the_rust_test_harness() {
+    assert_eq!(apply_mask(57), 42);
+}
+"#;
+    f.source("src/main.rs", &root_test);
+    let ran = f.succeeds("root-test", cargo("root-test", false, false)
+        .args(["test", "--frozen", "--", "--exact", "native_value_in_the_rust_test_harness"]));
+    assert!(String::from_utf8_lossy(&ran.stdout).contains("native_value_in_the_rust_test_harness ... ok"));
+    let artifacts = f.succeeds("root-test-artifact", cargo("root-test", false, false)
+        .args(["test", "--no-run", "--frozen", "--message-format=json"]));
+    let artifact = artifacts.stdout.split(|&byte| byte == b'\n').find_map(|line| {
+        let record: serde_json::Value = serde_json::from_slice(line).ok()?;
+        (record["reason"] == "compiler-artifact" && record["profile"]["test"] == true)
+            .then(|| record["executable"].as_str().map(PathBuf::from)).flatten()
+    }).expect("Cargo reported the root test executable");
+    let debug = f.succeeds("root-test-debug", Command::new("readelf")
+        .args(["--debug-dump=info", "--wide"]).arg(artifact));
+    assert!(String::from_utf8_lossy(&debug.stdout).lines().any(|line| line.contains("DW_AT_producer") && line.contains("Lustr")));
+
+    let trace_path = f.root.join("trace.jsonl");
+    let before = std::fs::read_to_string(&trace_path).unwrap();
+    assert!(before.contains("\"entry\":\"retained-rust-link-captured\""),
+        "ordinary release did not capture Rust link inputs: {before}");
+    let edited = source.replace("input ^ 19", "input ^ 18");
+    for (name, optimized) in [("default", false), ("optimized-debug", true)] {
+        let run = || {
+            let mut command = cargo(name, false, false);
+            command.args(["run", "--frozen"]);
+            if optimized {
+                command.env("CARGO_PROFILE_RELEASE_DEBUG", "2").arg("--release");
+            }
+            command
+        };
+        f.source("src/main.rs", source);
+        assert_eq!(f.succeeds(&format!("{name}-before-debug-edit"), &mut run()).stdout, b"42\n");
+        let start = std::fs::metadata(&trace_path).unwrap().len() as usize;
+        f.source("src/main.rs", &edited);
+        assert_eq!(f.succeeds(&format!("{name}-debug-edit"), &mut run()).stdout, b"43\n");
+        let after = std::fs::read_to_string(&trace_path).unwrap();
+        assert!(after[start..].contains("\"entry\":\"retained-rust-link\""), "{name}: {}", &after[start..]);
+    }
+
+    let checksum_run = || {
+        let mut command = cargo("checksum-dep-info", false, false);
+        command.env_remove("CARGO_ENCODED_RUSTFLAGS").env("RUSTFLAGS", "-Zchecksum-hash-algorithm=blake3")
+            .args(["run", "--release", "--frozen"]);
+        command
+    };
+    {
+        let deps = || {
+            let root = f.root.join("checksum-dep-info/release/build/async_program");
+            std::fs::read_dir(root).unwrap().find_map(|unit| {
+                let dep_info = std::fs::read_to_string(unit.ok()?.path().join("out/async_program.d")).ok()?;
+                dep_info.lines().find(|line| line.starts_with("# checksum:") && line.ends_with("src/main.rs")).map(str::to_owned)
+            }).expect("Rust recorded the requested source checksum")
+        };
+        let start = std::fs::metadata(&trace_path).unwrap().len() as usize;
+        f.source("src/main.rs", source);
+        assert_eq!(f.succeeds("checksum-before-edit", &mut checksum_run()).stdout, b"42\n");
+        let original_checksum = deps();
+        f.source("src/main.rs", &edited);
+        assert_eq!(f.succeeds("checksum-edit", &mut checksum_run()).stdout, b"43\n");
+        assert_ne!(deps(), original_checksum);
+        let after = std::fs::read_to_string(&trace_path).unwrap();
+        assert!(!after[start..].contains("\"entry\":\"retained-rust-link\""), "{}", &after[start..]);
+        let executable = f.root.join("checksum-dep-info/release/async_program");
+        let symbols = f.succeeds("checksum-native-symbols", Command::new("nm").arg(executable));
+        assert!(String::from_utf8_lossy(&symbols.stdout).lines().any(|line| {
+            line.split_whitespace().last().and_then(|name| name.strip_prefix("f_"))
+                .is_some_and(|name| name.len() == 16 && name.bytes().all(|byte| byte.is_ascii_hexdigit()))
+        }));
+    }
+
+    f.source("src/main.rs", source);
+    let before = std::fs::read_to_string(&trace_path).unwrap();
+    f.source("src/main.rs", &edited);
+    let release = || {
+        let mut command = cargo("release", false, false);
+        command.args(["run", "--release", "--frozen"]);
+        command
+    };
+    assert_eq!(f.succeeds("release-body-edit", &mut release()).stdout, b"43\n");
+    let after = std::fs::read_to_string(&trace_path).unwrap();
+    assert!(after[before.len()..].contains("\"entry\":\"retained-rust-link\""), "{after}");
+
+    f.source("src/main.rs", &edited.replace("compute(57)", "compute(58)"));
+    assert_eq!(f.succeeds("release-rust-edit", &mut release()).stdout, b"40\n");
+    let changed = std::fs::read_to_string(&trace_path).unwrap();
+    assert!(!changed[after.len()..].contains("\"entry\":\"retained-rust-link\""), "{changed}");
+    assert!(changed[after.len()..].contains("\"entry\":\"retained-native-object\""), "{changed}");
+
+    let native_record = std::fs::read_dir(f.root.join("release/release/build/async_program")).unwrap()
+        .filter_map(Result::ok).map(|unit| unit.path().join(".lustr-native-object"))
+        .find(|record| record.is_file()).expect("Cargo unit retained the native LLVM object");
+    let mut corrupt = std::fs::read(&native_record).unwrap();
+    corrupt.push(0);
+    std::fs::write(&native_record, corrupt).unwrap();
+    f.source("src/main.rs", &edited.replace("compute(57)", "compute(59)"));
+    assert_eq!(f.succeeds("release-native-record-repair", &mut release()).stdout, b"41\n");
+    let repaired = std::fs::read_to_string(&trace_path).unwrap();
+    assert!(!repaired[changed.len()..].contains("\"entry\":\"retained-native-object\""), "{repaired}");
+
+    let release_artifact = f.root.join("release/release/async_program");
+    let existing = std::fs::read(&release_artifact).unwrap();
+    f.source("src/main.rs", &edited.replace("input ^ 18", "input ^ false"));
+    let rejected = f.invoke("release-invalid", &mut release());
+    assert_eq!(rejected.status.code(), Some(101));
+    assert!(rejected.stdout.is_empty());
+    assert_eq!(std::fs::read(release_artifact).unwrap(), existing);
+    f.source("src/main.rs", &root_test);
+}
+
+#[cfg(all(target_os = "linux", target_arch = "x86_64", target_env = "gnu"))]
+#[test]
+#[ignore = "requires LUSTR_TEST_PACKAGE, LUSTR_TEST_OUTPUT, LUSTR_TEST_ORACLE and binutils"]
+fn mixed_cargo_keeps_native_integer_signatures_across_rust_async_calls() {
+    let f = Fixture::new("mixed-integer-abi");
+    f.source("Cargo.toml", "[package]\nname='mixed_integer'\nversion='0.1.0'\nedition='2024'\n");
+    let source = r#"
+use std::future::Future;
+use std::pin::pin;
+use std::task::{Context, Poll, Waker};
+
+fn signed8(a: i8, b: i8) -> i8 { a ^ b }
+fn narrow8(a: u8, b: u8) -> u8 { a ^ b }
+fn signed16(a: i16, b: i16) -> i16 { a ^ b }
+fn narrow16(a: u16, b: u16) -> u16 { a ^ b }
+fn signed_word(a: isize, b: isize) -> isize { a ^ b }
+fn unsigned_word(a: usize, b: usize) -> usize { a ^ b }
+
+async fn calculate() {
+    let a = std::future::ready(core::hint::black_box(-128i8)).await;
+    println!("{} {} {} {} {} {}",
+        signed8(a, 15), narrow8(129, 63),
+        signed16(-32768, 15), narrow16(32769, 65535),
+        signed_word(42, 58), unsigned_word(29, 58));
+}
+
+fn main() {
+    let mut task = pin!(calculate());
+    let mut cx = Context::from_waker(Waker::noop());
+    assert!(matches!(task.as_mut().poll(&mut cx), Poll::Ready(())));
+}
+"#;
+    f.source("src/main.rs", source);
+    f.succeeds("lockfile", f.command("cargo").args(["generate-lockfile", "--offline"]));
+    let rust = std::env::var_os("LUSTR_TEST_ORACLE").expect("independent LUSTR_TEST_ORACLE");
+    let assert_run = |label: &str, release: bool, oracle: bool, wanted: &[u8], expected_symbols: usize| {
+        let mut cargo = f.command("cargo");
+        cargo.env("CARGO_TARGET_DIR", f.root.join(label)).env("CARGO_PROFILE_DEV_DEBUG", "0");
+        if oracle { cargo.env("RUSTC", &rust); }
+        cargo.args(["run", "--frozen"]);
+        let profile = if release {
+            cargo.env("CARGO_PROFILE_RELEASE_DEBUG", "2").arg("--release");
+            "release"
+        } else {
+            "debug"
+        };
+        assert_eq!(f.succeeds(label, &mut cargo).stdout, wanted);
+        let exe = f.root.join(label).join(profile).join("mixed_integer");
+        let symbols = f.succeeds(&format!("{label}-symbols"), Command::new("nm").arg(exe));
+        let native = String::from_utf8_lossy(&symbols.stdout).lines().filter(|line|
+            line.split_whitespace().last().and_then(|name| name.strip_prefix("f_"))
+                .is_some_and(|suffix| suffix.len() == 16 && suffix.bytes().all(|byte| byte.is_ascii_hexdigit()))
+        ).count();
+        assert_eq!(native, expected_symbols, "{label}");
+    };
+    let expected = b"-113 190 -32753 32766 16 39\n";
+    for (label, release, oracle, symbols) in [
+        ("debug-off", false, false, 6), ("optimized-debug", true, false, 6), ("original", true, true, 0),
+    ] {
+        assert_run(label, release, oracle, expected, symbols);
+    }
+    let shadowed = format!("#[allow(non_camel_case_types)]\ntype u8 = u16;\n{}", source.replace("narrow8(129", "narrow8(512"));
+    f.source("src/main.rs", &shadowed);
+    assert_run("shadowed", true, false, b"-113 575 -32753 32766 16 39\n", 5);
+    assert_run("original-shadowed", true, true, b"-113 575 -32753 32766 16 39\n", 0);
+}
+
+#[cfg(all(target_os = "linux", target_arch = "x86_64", target_env = "gnu"))]
+#[test]
+#[ignore = "requires LUSTR_TEST_PACKAGE, LUSTR_TEST_OUTPUT, LUSTR_TEST_ORACLE and binutils"]
+fn mixed_native_function_retains_original_rust_type_alias() {
+    let f = Fixture::new("mixed-native-type-alias");
+    f.source("Cargo.toml", "[package]\nname='alias_program'\nversion='0.1.0'\nedition='2024'\n");
+    let source = r#"
+use std::future::Future;
+use std::pin::pin;
+use std::task::{Context, Poll, Waker};
+
+fn mask(input: Word) -> Word { input ^ 19 }
+type Word = u64;
+
+async fn calculate() -> Word {
+    mask(std::future::ready(257).await)
+}
+
+fn main() {
+    let mut task = pin!(calculate());
+    let mut cx = Context::from_waker(Waker::noop());
+    let Poll::Ready(value) = task.as_mut().poll(&mut cx) else { unreachable!() };
+    println!("{value}");
+}
+"#;
+    f.source("src/main.rs", source);
+    f.succeeds("lockfile", f.command("cargo").args(["generate-lockfile", "--offline"]));
+    let rust = std::env::var_os("LUSTR_TEST_ORACLE").expect("independent LUSTR_TEST_ORACLE");
+    let run = || {
+        let mut command = f.command("cargo");
+        command.args(["run", "--frozen"]);
+        command
+    };
+    assert_eq!(f.succeeds("native-first", &mut run()).stdout, b"274\n");
+    let binary = f.root.join("target/debug/alias_program");
+    let has_native_body = |label: &str| {
+        let symbols = f.succeeds(label, Command::new("nm").arg(&binary));
+        assert!(String::from_utf8_lossy(&symbols.stdout).lines().any(|line| {
+            line.split_whitespace().last().and_then(|name| name.strip_prefix("f_"))
+                .is_some_and(|suffix| suffix.len() == 16 && suffix.bytes().all(|b| b.is_ascii_hexdigit()))
+        }), "{label}");
+    };
+    has_native_body("initial-symbols");
+    let oracle = || {
+        let mut command = f.command("cargo");
+        command.env("RUSTC", &rust).env("CARGO_TARGET_DIR", f.root.join("oracle")).args(["run", "--frozen"]);
+        command
+    };
+    let original = f.succeeds("original", &mut oracle());
+    assert_eq!(original.stdout, b"274\n");
+
+    let trace = f.root.join("trace.jsonl");
+    let first = std::fs::read_to_string(&trace).unwrap();
+    let edited = source.replace("input ^ 19", "input ^ 18");
+    f.source("src/main.rs", &edited);
+    assert_eq!(f.succeeds("native-edit", &mut run()).stdout, b"275\n");
+    let later = std::fs::read_to_string(&trace).unwrap();
+    assert!(later[first.len()..].contains("\"entry\":\"retained-rust-link\""), "{later}");
+
+    let narrow = edited.replace("type Word = u64", "type Word = u16");
+    f.source("src/main.rs", &narrow);
+    assert_eq!(f.succeeds("alias-edit", &mut run()).stdout, b"275\n");
+    has_native_body("changed-alias-symbols");
+    let changed = std::fs::read_to_string(&trace).unwrap();
+    assert!(!changed[later.len()..].contains("\"entry\":\"retained-rust-link\""), "{changed}");
+
+    let previous = std::fs::read(&binary).unwrap();
+    f.source("src/main.rs", &narrow.replace("type Word = u16", "type Word = u8"));
+    let invalid = f.invoke("bad-alias", &mut run());
+    assert_eq!(invalid.status.code(), Some(101));
+    assert!(invalid.stdout.is_empty());
+    assert!(String::from_utf8_lossy(&invalid.stderr).contains("literal out of range"));
+    let rejected_by_rust = f.invoke("original-bad-alias", &mut oracle());
+    assert_eq!(rejected_by_rust.status.code(), Some(101));
+    assert!(rejected_by_rust.stdout.is_empty());
+    assert!(String::from_utf8_lossy(&rejected_by_rust.stderr).contains("literal out of range"));
+    assert_eq!(std::fs::read(&binary).unwrap(), previous);
+    f.source("src/main.rs", &narrow);
+    assert_eq!(f.succeeds("repaired", &mut run()).stdout, b"275\n");
+    has_native_body("repaired-symbols");
+}
+
+#[cfg(all(target_os = "linux", target_arch = "x86_64", target_env = "gnu"))]
+#[test]
+#[ignore = "requires LUSTR_TEST_PACKAGE, LUSTR_TEST_OUTPUT, LUSTR_TEST_ORACLE and binutils"]
+fn rust_attribute_named_test_can_change_the_mixed_crate_namespace() {
+    let f = Fixture::new("mixed-test-macro-shadow");
+    f.source("Cargo.toml", r#"
+[package]
+name = "shadowed_test"
+version = "0.1.0"
+edition = "2024"
+[dependencies]
+test_attr = { path = "attr" }
+"#);
+    f.source("attr/Cargo.toml", r#"
+[package]
+name = "test_attr"
+version = "0.1.0"
+edition = "2024"
+[lib]
+proc-macro = true
+"#);
+    f.source("attr/src/lib.rs", r##"
+use proc_macro::TokenStream;
+#[proc_macro_attribute]
+pub fn test(_: TokenStream, _: TokenStream) -> TokenStream {
+    r#"
+#[allow(non_camel_case_types)]
+struct u64(::core::primitive::u64);
+
+impl ::core::ops::BitXor<::core::primitive::u64> for u64 {
+    type Output = Self;
+    fn bitxor(self, rhs: ::core::primitive::u64) -> Self {
+        Self(self.0 ^ (rhs << 1))
+    }
+}
+"#.parse().unwrap()
+}
+"##);
+    f.source("src/main.rs", r#"
+use test_attr::test;
+
+#[test]
+fn generates_a_type() {}
+
+fn apply_mask(input: u64) -> u64 { input ^ 19 }
+fn main() { println!("{}", apply_mask(u64(57)).0); }
+"#);
+    f.succeeds("lockfile", f.command("cargo").args(["generate-lockfile", "--offline"]));
+    let lustr = f.succeeds("lustr-run", f.command("cargo").args(["run", "--frozen"]));
+    let original = f.succeeds("original-run", f.command("cargo")
+        .env("CARGO_TARGET_DIR", f.root.join("original"))
+        .env("RUSTC", std::env::var_os("LUSTR_TEST_ORACLE").unwrap())
+        .args(["run", "--frozen"]));
+    assert_eq!(lustr.stdout, b"31\n");
+    assert_eq!(lustr.stdout, original.stdout);
+    let symbols = f.succeeds("symbols", Command::new("nm").arg(f.root.join("target/debug/shadowed_test")));
+    assert!(!String::from_utf8_lossy(&symbols.stdout).lines().any(|line|
+        line.split_whitespace().last().is_some_and(|name|
+            name.len() == 18 && name.strip_prefix("f_").is_some_and(|suffix| suffix.bytes().all(|byte| byte.is_ascii_hexdigit())))));
+    let trace = f.root.join("trace.jsonl");
+    let original_trace = std::fs::read_to_string(&trace).unwrap();
+    assert!(original_trace.contains("\"entry\":\"rust-complement\""));
+    let path = f.root.join("src/main.rs");
+    let original_source = std::fs::read_to_string(&path).unwrap();
+    f.source("src/main.rs", &original_source.replace("test_attr::test", "test_attr::missing"));
+    let refused = f.invoke("missing", f.command("cargo").args(["check", "--frozen"]));
+    assert_eq!(refused.status.code(), Some(101));
+    assert!(String::from_utf8_lossy(&refused.stderr).contains("unresolved import"));
+    let later = std::fs::read_to_string(trace).unwrap();
+    let native_expansion = f.package.join("libexec/lustr-macro-expansion/bin/lustr-expand-proc-macro").is_file();
+    assert_eq!(later[original_trace.len()..].contains("\"entry\":\"rust-complement\""), !native_expansion, "{later}");
+    f.source("src/main.rs", &original_source);
+}
+
+#[cfg(all(target_os = "linux", target_arch = "x86_64", target_env = "gnu"))]
+#[test]
+#[ignore = "requires LUSTR_TEST_PACKAGE, LUSTR_TEST_OUTPUT and LUSTR_TEST_ORACLE"]
+fn ordinary_cargo_runs_mixed_procedural_macros_once() {
+    let f = Fixture::new("cargo-procedural-macro-effects");
+    f.source("Cargo.toml", r#"
+[package]
+name = "macro_effects"
+version = "0.1.0"
+edition = "2024"
+[dependencies]
+trace_macros = { path = "macros" }
+"#);
+    f.source("macros/Cargo.toml", r#"
+[package]
+name = "trace_macros"
+version = "0.1.0"
+edition = "2024"
+[lib]
+proc-macro = true
+"#);
+    f.source("macros/src/lib.rs", r#"
+use proc_macro::TokenStream;
+use std::{fs::OpenOptions, io::Write};
+
+fn record(marker: &[u8]) {
+    let path = std::env::var_os("MACRO_ONCE_RECORD").unwrap();
+    OpenOptions::new().create(true).append(true).open(path).unwrap().write_all(marker).unwrap();
+}
+
+#[proc_macro]
+pub fn mark(_: TokenStream) -> TokenStream {
+    record(b"function-like\n");
+    "7u64".parse().unwrap()
+}
+
+#[proc_macro_attribute]
+pub fn test(_: TokenStream, item: TokenStream) -> TokenStream {
+    record(b"attribute\n");
+    item
+}
+"#);
+    f.source("src/main.rs", "fn main() {}\n");
+    f.succeeds("lockfile", f.command("cargo").args(["generate-lockfile", "--offline"]));
+    let rust = std::env::var_os("LUSTR_TEST_ORACLE").expect("independent LUSTR_TEST_ORACLE");
+    for (form, attribute, expected) in [
+        ("imported", "use trace_macros::test;\n#[test]", &["attribute", "function-like"][..]),
+        ("grouped", "use trace_macros::{test};\n#[test]", &["attribute", "function-like"][..]),
+        ("qualified", "#[trace_macros::test]", &["attribute", "function-like"][..]),
+        ("disabled", "#[cfg(any())]\n#[trace_macros::test]", &["function-like"][..]),
+    ] {
+        f.source("src/main.rs", &format!(
+            "{attribute}\nfn annotated() {{}}\nfn main() {{ println!(\"{{}}\", trace_macros::mark!()); }}\n"
+        ));
+        for (engine, oracle) in [("lustr", false), ("rust", true)] {
+            let label = format!("{form}-{engine}");
+            let record = f.root.join(format!("{label}.effects"));
+            let mut cargo = f.command("cargo");
+            cargo.env("CARGO_TARGET_DIR", f.root.join(&label)).env("MACRO_ONCE_RECORD", &record);
+            if oracle {
+                cargo.env("RUSTC", &rust);
+            }
+            assert_eq!(f.succeeds(&label, cargo.args(["run", "--frozen"])).stdout, b"7\n");
+            let effects = std::fs::read_to_string(record).unwrap();
+            let mut effects = effects.lines().collect::<Vec<_>>();
+            effects.sort_unstable();
+            assert_eq!(effects, expected, "{label}");
+        }
+    }
+}
+
+#[cfg(all(target_os = "linux", target_arch = "x86_64", target_env = "gnu"))]
+#[test]
+#[ignore = "requires LUSTR_TEST_PACKAGE, LUSTR_TEST_OUTPUT, LUSTR_TEST_ORACLE and binutils"]
+fn ordinary_cargo_uses_the_rust_context_for_unrepresented_dependencies() {
+    let f = Fixture::new("cargo-rust-dependency-context");
+    f.source("Cargo.toml", "[workspace]\nmembers=[\"producer\",\"app\"]\nresolver=\"3\"\n");
+    f.source("producer/Cargo.toml", "[package]\nname=\"producer\"\nversion=\"0.1.0\"\nedition=\"2024\"\n");
+    f.source("app/Cargo.toml", "[package]\nname=\"app\"\nversion=\"0.1.0\"\nedition=\"2024\"\n\n[dependencies]\nproducer={path=\"../producer\"}\n");
+    f.source("producer/src/lib.rs", r#"
+pub struct Counter(pub u64);
+pub trait Value { fn value(&self) -> u64; }
+impl Value for Counter { fn value(&self) -> u64 { self.0 } }
+pub async fn preserve(input: Counter) -> u64 { input.value() }
+"#);
+    let program = r#"
+use producer::{Counter, Value};
+
+fn mask(input: u64) -> u64 { input ^ 19 }
+
+fn main() { println!("{}", mask(Counter(57).value())); }
+"#;
+    let source = f.source("app/src/main.rs", program);
+    let rust = std::env::var_os("LUSTR_TEST_ORACLE").expect("independent LUSTR_TEST_ORACLE");
+    for (name, original) in [("mixed", false), ("original", true)] {
+        let cargo = || {
+            let mut command = f.command("cargo");
+            command.env("CARGO_TARGET_DIR", f.root.join(name)).env("CARGO_PROFILE_DEV_DEBUG", "0");
+            if original { command.env("RUSTC", &rust); }
+            command
+        };
+        if !original {
+            f.succeeds("lockfile", cargo().args(["generate-lockfile", "--offline"]));
+        }
+        f.succeeds(&format!("{name}-check"), cargo().args(["check", "--workspace", "--frozen"]));
+        let run = f.succeeds(&format!("{name}-run"), cargo().args(["run", "-p", "app", "--frozen"]));
+        assert_eq!(run.stdout, b"42\n");
+        let exe = f.root.join(name).join("debug/app");
+        let symbols = f.succeeds(&format!("{name}-symbols"), Command::new("nm").arg(exe));
+        let symbols = String::from_utf8(symbols.stdout).unwrap();
+        let native = symbols.lines().filter(|line| line.split_whitespace().last()
+            .and_then(|name| name.strip_prefix("f_")).is_some_and(|suffix| {
+                suffix.len() == 16 && suffix.bytes().all(|byte| byte.is_ascii_hexdigit())
+            })).count();
+        assert_eq!(native, usize::from(!original));
+    }
+    assert_eq!(std::fs::read_to_string(&source).unwrap(), program);
+    let trace = std::fs::read_to_string(f.root.join("trace.jsonl")).unwrap();
+    assert!(trace.matches("\"entry\":\"rust-complement\"").count() >= 4, "{trace}");
+
+    let invalid = f.source("libbroken.rmeta", "invalid Rust metadata\n");
+    let simple = f.source("invalid-import.rs", "extern crate broken; fn main() {}\n");
+    let response = f.invoke("malformed-metadata", f.command("rustc").args([
+        "--crate-name", "invalid_import", "--edition=2024", "--emit=metadata", "--extern",
+    ]).arg(format!("broken={}", invalid.display())).arg(simple).arg("-o").arg(f.root.join("failed.rmeta")));
+    assert!(!response.status.success());
+    assert!(!f.root.join("failed.rmeta").exists());
+    let after = std::fs::read_to_string(f.root.join("trace.jsonl")).unwrap();
+    assert!(!after[trace.len()..].contains("\"entry\":\"rust-complement\""));
+}
+
+#[cfg(all(target_os = "linux", target_arch = "x86_64", target_env = "gnu"))]
+#[test]
+#[ignore = "requires LUSTR_TEST_PACKAGE, LUSTR_TEST_OUTPUT and independent LUSTR_TEST_ORACLE"]
+fn installed_rust_driver_handles_ordinary_cargo_options_outside_the_native_adapter() {
+    let f = Fixture::new("cargo-ordinary-rust-options");
+    f.source("Cargo.toml", "[package]\nname=\"edition_fixture\"\nversion=\"0.1.0\"\nedition=\"2021\"\n");
+    let source = f.source("src/main.rs", r#"
+fn main() {
+    let answer = [1, 2, 3].into_iter().map(|n| n * 7).sum::<u32>();
+    println!("{answer}");
+}
+"#);
+    let original = std::env::var_os("LUSTR_TEST_ORACLE").expect("independent LUSTR_TEST_ORACLE");
+    f.succeeds("lockfile", f.command("cargo").args(["generate-lockfile", "--offline"]));
+    for (name, oracle) in [("lustr", false), ("original", true)] {
+        let cargo = || {
+            let mut command = f.command("cargo");
+            command.env("CARGO_TARGET_DIR", f.root.join(name));
+            if oracle { command.env("RUSTC", &original); }
+            command
+        };
+        f.succeeds(&format!("{name}-check"), cargo().args(["check", "--frozen"]));
+        let response = f.succeeds(&format!("{name}-run"), cargo().args(["run", "--frozen"]));
+        assert_eq!(response.stdout, b"42\n");
+    }
+    let trace = std::fs::read_to_string(f.root.join("trace.jsonl")).unwrap();
+    assert!(trace.contains("\"entry\":\"rust-request\""), "{trace}");
+
+    let object = f.root.join("result.o");
+    f.succeeds("object", f.command("rustc").args(["--edition=2021", "--emit=obj"])
+        .arg(&source).arg("-o").arg(&object));
+    assert_eq!(&std::fs::read(object).unwrap()[..4], b"\x7fELF");
+    f.source("src/main.rs", "fn main() { let _: u64 = false; }\n");
+    let response = f.invoke("invalid", f.command("cargo").args(["check", "--frozen"])
+        .env("CARGO_TARGET_DIR", f.root.join("invalid")));
+    assert_eq!(response.status.code(), Some(101));
+    assert!(String::from_utf8_lossy(&response.stderr).contains("E0308"));
+    assert!(!f.root.join("invalid/debug/edition_fixture").exists());
+}
+
+#[cfg(all(target_os = "linux", target_arch = "x86_64", target_env = "gnu"))]
+#[test]
+#[ignore = "requires LUSTR_TEST_PACKAGE, LUSTR_TEST_OUTPUT and independent LUSTR_TEST_ORACLE"]
+fn ordinary_cargo_resolves_transitive_rust_metadata() {
+    let f = Fixture::new("cargo-rust-transitive-context");
+    f.source("Cargo.toml", "[workspace]\nmembers=[\"app\",\"bridge\",\"provider\"]\nresolver=\"3\"\n");
+    for (name, versioned) in [
+        ("app", "[dependencies]\nbridge={path=\"../bridge\"}\n"),
+        ("bridge", "[dependencies]\nprovider={path=\"../provider\"}\n"),
+        ("provider", ""),
+    ] {
+        f.source(&format!("{name}/Cargo.toml"), &format!(
+            "[package]\nname=\"{name}\"\nversion=\"0.1.0\"\nedition=\"2024\"\n{versioned}"));
+    }
+    f.source("provider/src/lib.rs", r#"
+pub struct Counter(pub u64);
+pub trait Value { fn value(self) -> u64; }
+impl Value for Counter { fn value(self) -> u64 { self.0 } }
+pub async fn value(counter: Counter) -> u64 { counter.value() }
+"#);
+    f.source("bridge/src/lib.rs", r#"
+pub use provider::Value;
+pub fn convert(value: u64) -> provider::Counter { provider::Counter(value) }
+"#);
+    f.source("app/src/main.rs", r#"
+use bridge::Value;
+fn mask(value: u64) -> u64 { value ^ 19 }
+fn main() { println!("{}", mask(bridge::convert(57).value())); }
+"#);
+    let oracle = std::env::var_os("LUSTR_TEST_ORACLE").expect("independent LUSTR_TEST_ORACLE");
+    f.succeeds("lockfile", f.command("cargo").args(["generate-lockfile", "--offline"]));
+    let cargo = |name: &str, original: bool| {
+        let mut command = f.command("cargo");
+        command.env("CARGO_TARGET_DIR", f.root.join(name)).env("CARGO_PROFILE_DEV_DEBUG", "0");
+        if original { command.env("RUSTC", &oracle); }
+        command
+    };
+    for (name, original) in [("lustr", false), ("original", true)] {
+        f.succeeds(&format!("{name}-check"), cargo(name, original).args(["check", "--workspace", "--frozen"]));
+        let result = f.succeeds(&format!("{name}-run"), cargo(name, original).args(["run", "-p", "app", "--frozen"]));
+        assert_eq!(result.stdout, b"42\n");
+    }
+    f.source("bridge/src/lib.rs", "pub fn convert(value: u64) -> provider::Counter { provider::Counter(value == 0) }\n");
+    for (name, original) in [("lustr-invalid", false), ("original-invalid", true)] {
+        let result = f.invoke(name, cargo(name, original).args(["check", "--workspace", "--frozen"]));
+        assert_eq!(result.status.code(), Some(101));
+        assert!(String::from_utf8_lossy(&result.stderr).contains("E0308"));
+        assert!(!f.root.join(name).join("debug/app").exists());
+    }
+}
+
+#[cfg(all(target_os = "linux", target_arch = "x86_64", target_env = "gnu"))]
+#[test]
+#[ignore = "requires LUSTR_TEST_PACKAGE, LUSTR_TEST_OUTPUT and independent LUSTR_TEST_ORACLE"]
+fn installed_rust_reports_the_requested_non_host_target() {
+    let f = Fixture::new("cargo-cross-target-discovery");
+    let original = std::env::var_os("LUSTR_TEST_ORACLE").expect("independent LUSTR_TEST_ORACLE");
+    for target in [vec!["--target", "wasm32-unknown-unknown"], vec!["--target=wasm32-unknown-unknown"]] {
+        let query = [
+            "-", "--crate-name", "probe", "--crate-type=cdylib",
+            "--print=file-names", "--print=cfg", "--print=split-debuginfo",
+        ];
+        let expected = f.succeeds("original-wasm-discovery",
+            Command::new(&original).current_dir(&f.root).env_remove("LD_LIBRARY_PATH").args(query).args(&target));
+        let answer = f.succeeds("lustr-wasm-discovery", f.command("rustc").args(query).args(&target));
+        assert_eq!(answer.stdout, expected.stdout);
+        assert!(String::from_utf8_lossy(&answer.stdout).contains("target_arch=\"wasm32\""));
+    }
+    let original = f.succeeds("original-target-list",
+        Command::new(&original).current_dir(&f.root).env_remove("LD_LIBRARY_PATH").arg("--print=target-list"));
+    let answer = f.succeeds("lustr-target-list", f.command("rustc").args(["--print", "target-list"]));
+    assert_eq!(answer.stdout, original.stdout);
+}
+
+#[cfg(all(target_os = "linux", target_arch = "x86_64", target_env = "gnu"))]
+#[test]
+#[ignore = "requires LUSTR_TEST_PACKAGE, LUSTR_TEST_OUTPUT, LUSTR_TEST_ORACLE and binutils"]
+fn ordinary_cargo_checks_unsafe_in_the_pinned_rust_compiler() {
+    let f = Fixture::new("cargo-unsafe-composition");
+    f.source("Cargo.toml", "[package]\nname=\"unsafe_composition\"\nversion=\"0.1.0\"\nedition=\"2024\"\n");
+    let source = r#"
+fn mask(value: u64) -> u64 { value ^ 19 }
+unsafe fn load(pointer: *const u64) -> u64 { unsafe { *pointer } }
+fn main() {
+    let value = unsafe { load(&57) };
+    println!("{}", mask(value));
+}
+"#;
+    let path = f.source("src/main.rs", source);
+    let original = std::env::var_os("LUSTR_TEST_ORACLE").expect("independent LUSTR_TEST_ORACLE");
+    f.succeeds("lockfile", f.command("cargo").args(["generate-lockfile", "--offline"]));
+    let cargo = |lane: &str, oracle: bool| {
+        let mut command = f.command("cargo");
+        command.env("CARGO_PROFILE_DEV_DEBUG", "0").env("CARGO_TARGET_DIR", f.root.join(lane));
+        if oracle { command.env("RUSTC", &original); }
+        command
+    };
+    for (lane, oracle) in [("lustr", false), ("original", true)] {
+        f.succeeds(&format!("{lane}-check"), cargo(lane, oracle).args(["check", "--frozen"]));
+        let run = f.succeeds(&format!("{lane}-run"), cargo(lane, oracle).args(["run", "--frozen"]));
+        assert_eq!(run.stdout, b"42\n");
+    }
+    assert_eq!(std::fs::read_to_string(path).unwrap(), source);
+    let binary = f.root.join("lustr/debug/unsafe_composition");
+    let symbols = f.succeeds("native-symbols", Command::new("nm").arg(binary));
+    assert!(String::from_utf8_lossy(&symbols.stdout).lines().any(|line|
+        line.split_whitespace().last().and_then(|name| name.strip_prefix("f_"))
+            .is_some_and(|id| id.len() == 16 && id.bytes().all(|byte| byte.is_ascii_hexdigit()))));
+
+    f.source("src/main.rs", &source.replace("unsafe { load(&57) }", "load(&57)"));
+    for (lane, oracle) in [("lustr-invalid", false), ("original-invalid", true)] {
+        let response = f.invoke(lane, cargo(lane, oracle).args(["build", "--frozen"]));
+        assert_eq!(response.status.code(), Some(101));
+        assert!(String::from_utf8_lossy(&response.stderr).contains("E0133"));
+        assert!(!f.root.join(lane).join("debug/unsafe_composition").exists());
+    }
+}
+
+#[cfg(all(target_os = "linux", target_arch = "x86_64", target_env = "gnu"))]
+#[test]
+#[ignore = "requires LUSTR_TEST_PACKAGE, LUSTR_TEST_OUTPUT and independent LUSTR_TEST_ORACLE"]
+fn cargo_runs_proc_macro_unit_tests_with_the_matching_rust_runtime() {
+    let f = Fixture::new("cargo-proc-macro-test-runtime");
+    f.source("Cargo.toml", "[package]\nname=\"macro_unit_test\"\nversion=\"0.1.0\"\nedition=\"2024\"\n\n[lib]\nproc-macro=true\n");
+    f.source("src/lib.rs", r#"
+extern crate proc_macro;
+use proc_macro::TokenStream;
+
+#[proc_macro]
+pub fn preserve(input: TokenStream) -> TokenStream { input }
+
+#[test]
+fn observed_test_body() { assert_eq!(6 * 7, 42); }
+"#);
+    let original = std::env::var_os("LUSTR_TEST_ORACLE").expect("independent LUSTR_TEST_ORACLE");
+    f.succeeds("lockfile", f.command("cargo").args(["generate-lockfile", "--offline"]));
+    for (lane, oracle) in [("lustr", false), ("original", true)] {
+        let mut cargo = f.command("cargo");
+        cargo.args(["test", "--frozen", "--lib"]).env("CARGO_TARGET_DIR", f.root.join(lane));
+        if oracle { cargo.env("RUSTC", &original); }
+        let result = f.succeeds(lane, &mut cargo);
+        assert!(String::from_utf8_lossy(&result.stdout).contains("test observed_test_body ... ok"));
+    }
+}
+
+#[cfg(all(target_os = "linux", target_arch = "x86_64", target_env = "gnu"))]
+#[test]
+#[ignore = "requires LUSTR_TEST_PACKAGE, LUSTR_TEST_OUTPUT and independent LUSTR_TEST_ORACLE"]
+fn cargo_native_library_keeps_crlf_source_and_rust_metadata() {
+    let f = Fixture::new("cargo-native-crlf-library");
+    f.source("Cargo.toml", "[package]\nname=\"native_crlf\"\nversion=\"0.1.0\"\nedition=\"2024\"\n");
+    let source = "#![no_std]\n\n/// Identity.\n/** More\n * information. */\npub fn identity(value: u64) -> u64 {\n    value\n}\n";
+    let source_path = f.source("src/lib.rs", source);
+    let consumer = f.source("consumer.rs", "fn main() { assert_eq!(native_crlf::identity(42), 42); }\n");
+    let original = std::env::var_os("LUSTR_TEST_ORACLE").expect("independent LUSTR_TEST_ORACLE");
+    f.succeeds("lockfile", f.command("cargo").args(["generate-lockfile", "--offline"]));
+    for (label, text) in [
+        ("lf", source.to_owned()),
+        ("crlf", source.replace('\n', "\r\n")),
+        ("bom", format!("\u{feff}{source}")),
+        ("bom-crlf", format!("\u{feff}{}", source.replace('\n', "\r\n"))),
+    ] {
+        f.source("src/lib.rs", &text);
+        for (operation, extension) in [("check", ".rmeta"), ("build", ".rlib")] {
+            let stage = format!("{label}-{operation}");
+            let output = f.succeeds(&stage, f.command("cargo").args([operation, "--frozen", "--message-format=json"]));
+            assert_eq!(f.engine(), "lust");
+            let artifact = output.stdout.split(|&byte| byte == b'\n').find_map(|line| {
+                let record: serde_json::Value = serde_json::from_slice(line).ok()?;
+                if record["reason"] != "compiler-artifact" || record["target"]["name"] != "native_crlf" {
+                    return None;
+                }
+                record["filenames"].as_array()?.iter().filter_map(|filename| filename.as_str())
+                    .find(|path| path.ends_with(extension)).map(PathBuf::from)
+            }).expect("Cargo reported the native library artifact");
+            let program = f.root.join(format!("{stage}-consumer"));
+            let mut command = Command::new(&original);
+            command.current_dir(&f.root).env_remove("LD_LIBRARY_PATH")
+                .arg("--edition=2024").arg(&consumer)
+                .arg("--extern").arg(format!("native_crlf={}", artifact.display())).arg("-o").arg(&program);
+            if operation == "check" {
+                command.arg("--emit=metadata");
+            } else if artifact.with_extension("rmeta").is_file() {
+                command.arg("--extern").arg(format!("native_crlf={}", artifact.with_extension("rmeta").display()));
+            }
+            f.succeeds(&format!("{stage}-original-reader"), &mut command);
+            if operation == "build" {
+                f.succeeds(&format!("{stage}-original-run"), &mut Command::new(program));
+            }
+        }
+        assert_eq!(std::fs::read_to_string(&source_path).unwrap(), text);
+    }
+}
+
+#[cfg(all(target_os = "linux", target_arch = "x86_64", target_env = "gnu"))]
+#[test]
+#[ignore = "requires LUSTR_TEST_PACKAGE, LUSTR_TEST_OUTPUT and independent LUSTR_TEST_ORACLE"]
+fn cargo_native_library_exports_narrow_rust_integers() {
+    let f = Fixture::new("cargo-native-narrow-library");
+    f.source("Cargo.toml", "[package]\nname=\"native_narrow\"\nversion=\"0.1.0\"\nedition=\"2024\"\n");
+    f.source("src/lib.rs", r#"#![no_std]
+
+fn flip(value: u8) -> u8 { value ^ 7 }
+pub fn identity(value: u8) -> u8 { flip(value) ^ 7 }
+pub fn signed_byte(value: i8) -> i8 { value ^ -7 }
+pub fn signed_word(value: i16) -> i16 { value ^ -7 }
+pub fn unsigned_word(value: u16) -> u16 { value ^ 7 }
+pub fn wide(value: u64) -> u64 {
+    let _small = flip(255);
+    value ^ 7
+}
+pub fn stack(a: u8, b: u8, c: u8, d: u8, e: u8, f: u8, g: u8, h: u8) -> u8 {
+    a ^ b ^ c ^ d ^ e ^ f ^ g ^ h
+}
+"#);
+    let reader = f.source("consumer.rs", r#"use native_narrow::*;
+use std::hint::black_box;
+
+fn main() {
+    for bits in 0..=u16::MAX {
+        let bits = black_box(bits);
+        assert_eq!(identity(bits as u8), bits as u8);
+        assert_eq!(signed_byte(bits as i8), (bits as i8) ^ -7);
+        assert_eq!(signed_word(bits as i16), (bits as i16) ^ -7);
+        assert_eq!(unsigned_word(bits), bits ^ 7);
+        assert_eq!(wide(u64::from(bits)), u64::from(bits) ^ 7);
+        let byte = bits as u8;
+        assert_eq!(stack(2, 3, 4, 5, 6, 7, byte, 255), 2 ^ 3 ^ 4 ^ 5 ^ 6 ^ 7 ^ byte ^ 255);
+    }
+}
+"#);
+    let original = std::env::var_os("LUSTR_TEST_ORACLE").expect("independent LUSTR_TEST_ORACLE");
+    f.succeeds("lockfile", f.command("cargo").args(["generate-lockfile", "--offline"]));
+    for lane in ["dev", "dev-abort", "release"] {
+        let mut command = f.command("cargo");
+        command.args(["build", "--frozen", "--message-format=json"])
+            .env("CARGO_TARGET_DIR", f.root.join(lane));
+        match lane {
+            "release" => { command.arg("--release"); }
+            "dev-abort" => { command.env("CARGO_PROFILE_DEV_DEBUG", "0").env("CARGO_PROFILE_DEV_PANIC", "abort"); }
+            _ => {}
+        }
+        let output = f.succeeds(lane, &mut command);
+        assert_eq!(f.engine(), "lust");
+        let archive = output.stdout.split(|&byte| byte == b'\n').find_map(|line| {
+            let record: serde_json::Value = serde_json::from_slice(line).ok()?;
+            if record["reason"] != "compiler-artifact" || record["target"]["name"] != "native_narrow" {
+                return None;
+            }
+            record["filenames"].as_array()?.iter().filter_map(|filename| filename.as_str())
+                .find(|path| path.ends_with(".rlib")).map(PathBuf::from)
+        }).expect("Cargo reported the native archive");
+        let program = f.root.join(format!("{lane}-reader"));
+        let mut command = Command::new(&original);
+        command.current_dir(&f.root).env_remove("LD_LIBRARY_PATH")
+            .args(["--edition=2024", "-O", "--extern"])
+            .arg(format!("native_narrow={}", archive.display())).arg(&reader).arg("-o").arg(&program);
+        if archive.with_extension("rmeta").is_file() {
+            command.arg("--extern").arg(format!("native_narrow={}", archive.with_extension("rmeta").display()));
+        }
+        if lane == "dev-abort" {
+            command.arg("-Cpanic=abort");
+        }
+        f.succeeds(&format!("{lane}-original-reader"), &mut command);
+        f.succeeds(&format!("{lane}-original-run"), &mut Command::new(program));
+    }
+}
+
+#[cfg(all(target_os = "linux", target_arch = "x86_64", target_env = "gnu"))]
+#[test]
+#[ignore = "requires LUSTR_TEST_PACKAGE, LUSTR_TEST_OUTPUT and independent LUSTR_TEST_ORACLE"]
+fn cargo_library_accepts_an_explicit_rust_archive() {
+    let f = Fixture::new("cargo-explicit-rust-archive");
+    let original = std::env::var_os("LUSTR_TEST_ORACLE").expect("independent LUSTR_TEST_ORACLE");
+    let provider = f.source("provider.rs", "#![no_std]\npub fn twice(value: u64) -> u64 { value.wrapping_mul(2) }\n");
+    let archive = f.root.join("libprovider.rlib");
+    f.succeeds("lustr-provider", f.command("rustc").args([
+        "--crate-name", "provider", "--crate-type=rlib", "--edition=2024",
+        "-Zembed-metadata=yes", "-Cembed-bitcode=no", "--emit=link",
+    ]).arg(&provider).arg("-o").arg(&archive));
+    let published = std::fs::read(&archive).unwrap();
+    assert!(!f.root.join("libprovider.rmeta").exists());
+
+    f.source("Cargo.toml", "[package]\nname=\"archive_consumer\"\nversion=\"0.1.0\"\nedition=\"2024\"\n");
+    f.source("src/lib.rs", "#![no_std]\npub fn run(value: u64) -> u64 { external::twice(value) }\n");
+    let main = f.source("main.rs", "fn main() { println!(\"{}\", archive_consumer::run(21)); }\n");
+    f.succeeds("lockfile", f.command("cargo").args(["generate-lockfile", "--offline"]));
+    let dependency = format!("external={}", archive.display());
+    for (lane, oracle) in [("lustr", false), ("original", true)] {
+        let output = f.root.join(lane);
+        let mut cargo = f.command("cargo");
+        cargo.args(["rustc", "--lib", "--frozen", "--message-format=json", "--", "--extern", &dependency, "-Zembed-metadata=yes"])
+            .env("CARGO_TARGET_DIR", &output);
+        if oracle { cargo.env("RUSTC", &original); }
+        let compiled = f.succeeds(&format!("{lane}-consumer"), &mut cargo);
+        let library = compiled.stdout.split(|&byte| byte == b'\n').find_map(|line| {
+            let record: serde_json::Value = serde_json::from_slice(line).ok()?;
+            if record["reason"] != "compiler-artifact" || record["target"]["name"] != "archive_consumer" {
+                return None;
+            }
+            record["filenames"].as_array()?.iter().filter_map(|filename| filename.as_str())
+                .find(|path| path.ends_with(".rlib")).map(PathBuf::from)
+        }).expect("Cargo reported the archive consumer's actual library");
+        assert!(library.is_file());
+        let application = output.join("application");
+        f.succeeds(&format!("{lane}-app-link"), Command::new(&original)
+            .current_dir(&f.root).env_remove("LD_LIBRARY_PATH")
+            .arg("--edition=2024").arg(&main).arg("--extern")
+            .arg(format!("archive_consumer={}", library.display()))
+            .arg("-L").arg(format!("dependency={}", f.root.display()))
+            .arg("-o").arg(&application));
+        assert_eq!(f.succeeds(&format!("{lane}-app"), &mut Command::new(application)).stdout, b"42\n");
+        assert_eq!(std::fs::read(&archive).unwrap(), published);
+    }
+    let trace = std::fs::read_to_string(f.root.join("trace.jsonl")).unwrap();
+    assert!(trace.contains("\"entry\":\"rust-request\""), "{trace}");
+}
+
+#[cfg(all(target_os = "linux", target_arch = "x86_64", target_env = "gnu"))]
+#[test]
+#[ignore = "requires LUSTR_TEST_PACKAGE, LUSTR_TEST_OUTPUT and independent LUSTR_TEST_ORACLE"]
+fn cargo_std_library_retains_a_native_no_std_dependency() {
+    let f = Fixture::new("cargo-std-library-dependency");
+    f.source("Cargo.toml", "[workspace]\nmembers=[\"app\",\"relay\",\"provider\"]\nresolver=\"3\"\n");
+    for (name, dependencies) in [
+        ("app", "[dependencies]\nrelay={path=\"../relay\"}\n"),
+        ("relay", "[dependencies]\nprovider={path=\"../provider\"}\n"),
+        ("provider", ""),
+    ] {
+        f.source(&format!("{name}/Cargo.toml"), &format!(
+            "[package]\nname=\"{name}\"\nversion=\"0.1.0\"\nedition=\"2024\"\n{dependencies}"));
+    }
+    let provider = "#![no_std]\npub fn mask(value: u64) -> u64 { value ^ 19 }\n";
+    f.source("provider/src/lib.rs", provider);
+    f.source("relay/src/lib.rs", "pub fn evaluate(value: u64) -> u64 { provider::mask(value) }\n");
+    f.source("app/src/main.rs", "fn main() { println!(\"{}\", relay::evaluate(57)); }\n");
+    f.succeeds("lockfile", f.command("cargo").args(["generate-lockfile", "--offline"]));
+    let original = std::env::var_os("LUSTR_TEST_ORACLE").expect("independent LUSTR_TEST_ORACLE");
+    let mut previous = None;
+    for (step, source, expected) in [
+        ("initial", provider.to_owned(), b"42\n".as_slice()),
+        ("provider-body-edit", provider.replace("19", "18"), b"43\n".as_slice()),
+    ] {
+        f.source("provider/src/lib.rs", &source);
+        let check = f.succeeds(&format!("{step}-check"), f.command("cargo").args([
+            "check", "--workspace", "--frozen", "--message-format=json",
+        ]));
+        let metadata = check.stdout.split(|&byte| byte == b'\n').find_map(|line| {
+            let record: serde_json::Value = serde_json::from_slice(line).ok()?;
+            if record["reason"] != "compiler-artifact" || record["target"]["name"] != "relay" {
+                return None;
+            }
+            record["filenames"].as_array()?.iter().filter_map(|filename| filename.as_str())
+                .find(|path| path.ends_with(".rmeta")).map(PathBuf::from)
+        }).expect("Cargo reported relay's metadata");
+        let facts = f.succeeds(&format!("{step}-original-reader"), Command::new(&original)
+            .env_remove("LD_LIBRARY_PATH").arg("-Zls=root").arg(&metadata));
+        let text = String::from_utf8(facts.stdout).unwrap();
+        assert!(text.lines().any(|line| line.starts_with("20 provider-")), "{text}");
+        let bytes = std::fs::read(metadata).unwrap();
+        let hash = <[u8; 16]>::try_from(&bytes[24..40]).unwrap();
+        if let Some(prior) = previous { assert_ne!(hash, prior); }
+        previous = Some(hash);
+        let run = f.succeeds(&format!("{step}-run"), f.command("cargo").args(["run", "-p", "app", "--frozen"]));
+        assert_eq!(run.stdout, expected);
+        let oracle = f.succeeds(&format!("{step}-original-run"), f.command("cargo")
+            .args(["run", "-p", "app", "--frozen"]).env("RUSTC", &original)
+            .env("CARGO_TARGET_DIR", f.root.join("original-target")));
+        assert_eq!(oracle.stdout, expected);
+    }
+    let trace = std::fs::read_to_string(f.root.join("trace.jsonl")).unwrap();
+    assert!(!trace.contains("\"entry\":\"rust-complement\""), "{trace}");
+}
+
+#[cfg(all(target_os = "linux", target_arch = "x86_64", target_env = "gnu"))]
+#[test]
+#[ignore = "requires LUSTR_TEST_PACKAGE, LUSTR_TEST_OUTPUT, LUSTR_TEST_ORACLE and binutils"]
+fn cargo_generic_library_uses_rust_metadata_and_lust_scalar_code() {
+    let f = Fixture::new("cargo-generic-library");
+    f.source("Cargo.toml", "[workspace]\nmembers=[\"app\",\"provider\"]\nresolver=\"3\"\n");
+    f.source("app/Cargo.toml", "[package]\nname=\"app\"\nversion=\"0.1.0\"\nedition=\"2024\"\n\n[dependencies]\nprovider={path=\"../provider\"}\n");
+    f.source("provider/Cargo.toml", "[package]\nname=\"provider\"\nversion=\"0.1.0\"\nedition=\"2024\"\n");
+    let provider = r#"
+#![no_std]
+pub struct Pair<T> { pub left: T, pub right: T }
+pub fn pair<T>(left: T, right: T) -> Pair<T> { Pair { left, right } }
+pub fn mask(value: u64) -> u64 { value ^ 19 }
+"#;
+    f.source("provider/src/lib.rs", provider);
+    f.source("app/src/main.rs", "fn main() { let pair = provider::pair(57_u64, 2); println!(\"{}\", provider::mask(pair.left)); }\n");
+    let oracle = std::env::var_os("LUSTR_TEST_ORACLE").expect("independent LUSTR_TEST_ORACLE");
+    f.succeeds("lockfile", f.command("cargo").args(["generate-lockfile", "--offline"]));
+    let cargo = |lane: &str, original: bool| {
+        let mut command = f.command("cargo");
+        command.env("CARGO_TARGET_DIR", f.root.join(lane)).env("CARGO_PROFILE_DEV_DEBUG", "0");
+        if original { command.env("RUSTC", &oracle); }
+        command
+    };
+    for (lane, original) in [("lustr", false), ("original", true)] {
+        f.succeeds(&format!("{lane}-check"), cargo(lane, original).args(["check", "--workspace", "--frozen"]));
+        let run = f.succeeds(&format!("{lane}-run"), cargo(lane, original).args(["run", "-p", "app", "--frozen"]));
+        assert_eq!(run.stdout, b"42\n");
+        let symbols = f.succeeds(&format!("{lane}-symbols"),
+            Command::new("nm").arg(f.root.join(lane).join("debug/app")));
+        let native = String::from_utf8_lossy(&symbols.stdout).lines().filter(|line|
+            line.split_whitespace().last().and_then(|name| name.strip_prefix("f_"))
+                .is_some_and(|id| id.len() == 16 && id.bytes().all(|byte| byte.is_ascii_hexdigit()))).count();
+        assert_eq!(native, usize::from(!original));
+    }
+    f.source("provider/src/lib.rs", &provider.replace("Pair { left, right }", "Pair { left: 0, right }"));
+    for (lane, original) in [("lustr-invalid", false), ("original-invalid", true)] {
+        let rejected = f.invoke(lane, cargo(lane, original).args(["build", "--workspace", "--frozen"]));
+        assert_eq!(rejected.status.code(), Some(101));
+        assert!(String::from_utf8_lossy(&rejected.stderr).contains("E0308"));
+        assert!(!f.root.join(lane).join("debug/app").exists());
+    }
+    f.source("app/src/main.rs", "fn main() { let pair = provider::pair(57_u32, 2); println!(\"{}\", provider::mask(pair.left)); }\n");
+    for (name, alias) in [
+        ("alias", "#[allow(non_camel_case_types)] type u64 = u32;"),
+        ("import", "type Word = u32; use crate::{Word as u64};"),
+        ("macro", "macro_rules! word { () => { #[allow(non_camel_case_types)] type u64 = u32; }; } word!();"),
+    ] {
+        f.source("provider/src/lib.rs", &format!("{provider}\n{alias}\n"));
+        for (lane, original) in [(format!("lustr-{name}"), false), (format!("original-{name}"), true)] {
+            let run = f.succeeds(&lane, cargo(&lane, original).args(["run", "-p", "app", "--frozen"]));
+            assert_eq!(run.stdout, b"42\n");
+            let symbols = f.succeeds(&format!("{lane}-symbols"),
+                Command::new("nm").arg(f.root.join(&lane).join("debug/app")));
+            assert!(!String::from_utf8_lossy(&symbols.stdout).lines().any(|line|
+                line.split_whitespace().last().and_then(|name| name.strip_prefix("f_"))
+                    .is_some_and(|id| id.len() == 16 && id.bytes().all(|byte| byte.is_ascii_hexdigit()))));
+        }
+    }
+}
+
+#[cfg(all(target_os = "linux", target_arch = "x86_64", target_env = "gnu"))]
+#[test]
+#[ignore = "requires LUSTR_TEST_PACKAGE, LUSTR_TEST_OUTPUT and independent LUSTR_TEST_ORACLE"]
+fn cargo_libraries_with_unrepresented_native_metadata_keep_default_profiles() {
+    let f = Fixture::new("cargo-library-metadata-shapes");
+    f.source("Cargo.toml", "[workspace]\nmembers=[\"app\",\"nominal\",\"borrowed\",\"constant\",\"implementation\"]\nresolver=\"3\"\n");
+    for (name, source) in [
+        ("nominal", "#![no_std]\npub struct Number(pub u64);\n"),
+        ("borrowed", "#![no_std]\npub fn read(value: &u64) -> u64 { *value }\n"),
+        ("constant", "#![no_std]\npub const VALUES: [u64; 2] = [19, 23];\n"),
+        ("implementation", "#![no_std]\npub trait Count { fn count(self) -> u64; }\nimpl Count for u64 { fn count(self) -> u64 { self + 1 } }\n"),
+    ] {
+        f.source(&format!("{name}/Cargo.toml"), &format!(
+            "[package]\nname=\"{name}\"\nversion=\"0.1.0\"\nedition=\"2024\"\n"));
+        f.source(&format!("{name}/src/lib.rs"), source);
+    }
+    f.source("app/Cargo.toml", "[package]\nname=\"app\"\nversion=\"0.1.0\"\nedition=\"2024\"\n\n[dependencies]\nnominal={path=\"../nominal\"}\nborrowed={path=\"../borrowed\"}\nconstant={path=\"../constant\"}\nimplementation={path=\"../implementation\"}\n");
+    f.source("app/src/main.rs", r#"
+use implementation::Count;
+fn main() {
+    let total = nominal::Number(borrowed::read(&constant::VALUES[0]) + constant::VALUES[1]);
+    println!("{}", (total.0 - 1).count());
+}
+"#);
+    f.succeeds("lockfile", f.command("cargo").args(["generate-lockfile", "--offline"]));
+    let oracle = std::env::var_os("LUSTR_TEST_ORACLE").expect("independent LUSTR_TEST_ORACLE");
+    let cargo = |lane: &str, original: bool| {
+        let mut command = f.command("cargo");
+        command.env("CARGO_TARGET_DIR", f.root.join(lane));
+        if original { command.env("RUSTC", &oracle); }
+        command
+    };
+    for (lane, original) in [("lustr", false), ("original", true)] {
+        f.succeeds(&format!("{lane}-check"), cargo(lane, original).args(["check", "--workspace", "--frozen"]));
+        let run = f.succeeds(&format!("{lane}-run"), cargo(lane, original).args(["run", "-p", "app", "--frozen"]));
+        assert_eq!(run.stdout, b"42\n");
+    }
+    f.source("borrowed/src/lib.rs", "#![no_std]\npub fn read(value: &u64) -> u64 { true }\n");
+    let trace_path = f.root.join("trace.jsonl");
+    let trace = std::fs::read(&trace_path).unwrap();
+    let rejected = f.invoke("native-body-error", cargo("lustr", false).args(["check", "--workspace", "--frozen"]));
+    assert_eq!(rejected.status.code(), Some(101));
+    assert!(String::from_utf8_lossy(&rejected.stderr).contains("expected `u64`, found `bool`"));
+    let updated = std::fs::read(trace_path).unwrap();
+    assert!(updated.starts_with(&trace));
+    assert_eq!(&updated[trace.len()..], b"{\"engine\":\"lust-failed\",\"entry\":\"daemon\"}\n");
+}
+
+#[cfg(all(target_os = "linux", target_arch = "x86_64", target_env = "gnu"))]
+#[test]
+#[ignore = "requires LUSTR_TEST_PACKAGE, LUSTR_TEST_OUTPUT and independent LUSTR_TEST_ORACLE"]
+fn cargo_preserves_unions_crate_policies_and_target_features() {
+    let f = Fixture::new("cargo-original-rust-capabilities");
+    f.source("Cargo.toml", "[package]\nname=\"capabilities\"\nversion=\"0.1.0\"\nedition=\"2024\"\n");
+    f.source(".cargo/config.toml", "[build]\nrustflags = [\"-C\", \"target-feature=+aes\"]\n");
+    f.source("src/main.rs", "fn main() { assert!(cfg!(target_feature = \"aes\")); println!(\"{}\", capabilities::size()); }\n");
+    let declaration = "#[repr(C)]\npub union Word { pub bytes: [u8; 8], pub integer: u64 }\n";
+    let source = format!("{declaration}pub fn size() -> usize {{ core::mem::size_of::<Word>() }}\n");
+    f.source("src/lib.rs", &source);
+    f.succeeds("lockfile", f.command("cargo").args(["generate-lockfile", "--offline"]));
+    let oracle = std::env::var_os("LUSTR_TEST_ORACLE").expect("independent LUSTR_TEST_ORACLE");
+    let cargo = |lane: &str, original: bool| {
+        let mut command = f.command("cargo");
+        command.env("CARGO_TARGET_DIR", f.root.join(lane));
+        if original { command.env("RUSTC", &oracle); }
+        command
+    };
+    for (lane, original) in [("lustr", false), ("original", true)] {
+        let run = f.succeeds(&format!("{lane}-target-features"), cargo(lane, original).args(["run", "--frozen"]));
+        assert_eq!(run.stdout, b"8\n");
+    }
+
+    std::fs::remove_file(f.root.join(".cargo/config.toml")).unwrap();
+    for (phase, policy) in [
+        ("union", "#![no_std]\n"),
+        ("initial-lint", "#![forbid(unsafe_code)]\n#![no_std]\n"),
+        ("later-lint", "#![no_std]\n#![forbid(unsafe_code)]\n"),
+    ] {
+        f.source("src/lib.rs", &format!("{policy}{source}"));
+        for (lane, original) in [("lustr", false), ("original", true)] {
+            f.succeeds(&format!("{lane}-{phase}"), cargo(lane, original).args(["check", "--lib", "--frozen"]));
+        }
+    }
+    f.source("src/lib.rs", &format!("#![no_std]\n#![forbid(unsafe_code)]\n{declaration}pub fn size() -> usize {{ unsafe {{ core::ptr::read(&8) }} }}\n"));
+    for (lane, original) in [("lustr-invalid", false), ("original-invalid", true)] {
+        let rejected = f.invoke(lane, cargo(lane, original).args(["build", "--lib", "--frozen"]));
+        assert_eq!(rejected.status.code(), Some(101));
+        assert!(String::from_utf8_lossy(&rejected.stderr).contains("usage of an `unsafe` block"));
+        assert!(!f.root.join(lane).join("debug/libcapabilities.rlib").exists());
+    }
+}
+
+#[cfg(all(target_os = "linux", target_arch = "x86_64", target_env = "gnu"))]
+#[test]
+#[ignore = "requires LUSTR_TEST_PACKAGE, LUSTR_TEST_OUTPUT and independent LUSTR_TEST_ORACLE"]
+fn cargo_compiles_foreign_functions_attributes_strings_and_callbacks() {
+    let f = Fixture::new("cargo-foreign-rust");
+    f.source("Cargo.toml", r#"
+[workspace]
+members = ["app", "abi", "export", "text", "callback"]
+resolver = "3"
+"#);
+    for (name, source) in [
+        ("abi", "#![no_std]\npub extern \"C\" fn mask(n: u64) -> u64 { n ^ 19 }\n"),
+        ("export", "#![no_std]\n#[unsafe(no_mangle)]\npub fn lustr_exported_mask(n: u64) -> u64 { n ^ 19 }\n"),
+        ("text", "#![no_std]\npub fn count() -> usize { c\"abc\".to_bytes().len() }\n"),
+        ("callback", "#![no_std]\npub fn apply(call: extern \"C\" fn(u64) -> u64, value: u64) -> u64 { call(value) }\n"),
+    ] {
+        f.source(&format!("{name}/Cargo.toml"), &format!(
+            "[package]\nname=\"{name}\"\nversion=\"0.1.0\"\nedition=\"2024\"\n"));
+        f.source(&format!("{name}/src/lib.rs"), source);
+    }
+    f.source("app/Cargo.toml", r#"
+[package]
+name = "app"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+abi = { path = "../abi" }
+export = { path = "../export" }
+text = { path = "../text" }
+callback = { path = "../callback" }
+"#);
+    f.source("app/src/main.rs", r#"
+fn main() {
+    println!("{} {} {}", callback::apply(abi::mask, 57), export::lustr_exported_mask(57), text::count());
+}
+"#);
+    f.succeeds("lockfile", f.command("cargo").args(["generate-lockfile", "--offline"]));
+    let oracle = std::env::var_os("LUSTR_TEST_ORACLE").expect("independent LUSTR_TEST_ORACLE");
+    let cargo = |lane: &str, original: bool| {
+        let mut command = f.command("cargo");
+        command.env("CARGO_TARGET_DIR", f.root.join(lane));
+        if original { command.env("RUSTC", &oracle); }
+        command
+    };
+    for (lane, original) in [("lustr", false), ("original", true)] {
+        f.succeeds(&format!("{lane}-check"), cargo(lane, original).args(["check", "--workspace", "--frozen", "--jobs", "2"]));
+        let run = f.succeeds(&format!("{lane}-run"), cargo(lane, original).args(["run", "-p", "app", "--frozen", "--jobs", "2"]));
+        assert_eq!(run.stdout, b"42 42 3\n");
+    }
+
+    f.source("abi/src/lib.rs", "#![no_std]\npub extern \"C\" fn mask(_: u64) -> u64 { true }\n");
+    for (lane, original) in [("lustr-invalid", false), ("original-invalid", true)] {
+        let rejected = f.invoke(lane, cargo(lane, original).args(["build", "--workspace", "--frozen", "--jobs", "2"]));
+        assert_eq!(rejected.status.code(), Some(101));
+        assert!(String::from_utf8_lossy(&rejected.stderr).contains("E0308"));
+        assert!(!f.root.join(lane).join("debug/app").exists());
     }
 }

@@ -1,0 +1,185 @@
+{
+  "schema": 1,
+  "source": {
+    "commit": "b728b0e48dcb084756312b8d7f89cbd0c829f0c8",
+    "tree": "74b2cf02ac6b571ad4ba50068562fa3e956c18e2",
+    "native_tree": "a4fabdaf1b9ccbd29c8303075abb8a2e8fb7515d",
+    "build_layout_override": null,
+    "cargo_new_layout_opt_out": null,
+    "changed_source_status": "",
+    "harness_commit": "5142c2e2c033c775909f16b75502994c8596daaf",
+    "harness_updates": [
+      "tools/qualify-native-cargo-layout.py",
+      "tools/qualify-native-unicode.py"
+    ]
+  },
+  "binaries": {
+    "production_commit": "b728b0e48dcb084756312b8d7f89cbd0c829f0c8",
+    "native_tree": "a4fabdaf1b9ccbd29c8303075abb8a2e8fb7515d",
+    "profile": "gate",
+    "binaries": {
+      "lust": "18b134d4a7a5ca834a0297d334139655805759c7f9be6185f06ce2e88f5ecb74",
+      "lust-core": "1fcd2eaead30d31d3a29933d91f2a4f1b882fb7e9ad2f10b4e08699966aadf32"
+    },
+    "rustc_source": "5b7b37aefcb5b2fba3c2392bc9065b9e4602d494",
+    "source_archive_sha256": "ef54e6b0842159fa461642a4b259a6d5c1ba12d3e788daaf6f6ffd845d979ad3"
+  },
+  "unit_tests": {
+    "client": 18,
+    "core": 413,
+    "failed": 0,
+    "report_sha256": "ad6111c1823d738eb5ae590ab5b9ba7e01d91c2e15c7965515a03ce834a77e4d"
+  },
+  "differential": {
+    "normal": {
+      "result": {
+        "returncode": 0,
+        "elapsed_seconds": 326.66754968899477,
+        "failures_preserved": [],
+        "native_binaries_unchanged": true,
+        "library_files_unchanged": true,
+        "working_tree_changes": "",
+        "log_tail": "difftest: 5546 passed, 0 failed\n"
+      },
+      "result_sha256": "2d4cd6b60c6f18825b2fc3d73ea8384ad77d746e1692dbe85407c689f0c0ee3b",
+      "identity_sha256": "a0afde844d818310c74807a32025a8d3662bcfae0131a2c102be619e9d22cb1b",
+      "run_log": "difftest: 5546 passed, 0 failed\n",
+      "run_log_sha256": "07d717c0702cf4e4438d6bfda1ae95db97f2bcfcb8c8fef82af215e9a2d73da1",
+      "script_sha256": "fa7844f8638e1e03456f1a48731eeea637079108247263addf804533252ef5e4",
+      "case_pool_sha256": "f90ec0c777b72751f91efb84a8169a00f5d35a1ffd591b46718d606eaeca12fc",
+      "fixture_inventory_sha256": "31348208bab154bded9c55d49f4bcedb735a321dd3f6fb9b0ceb57f509883939"
+    },
+    "unwind": {
+      "result": {
+        "returncode": 0,
+        "elapsed_seconds": 203.31730163199973,
+        "failures_preserved": [],
+        "native_binaries_unchanged": true,
+        "library_files_unchanged": true,
+        "working_tree_changes": "",
+        "log_tail": "difftest (PANIC=unwind): 2309 passed, 0 failed, 0 unsupported\n"
+      },
+      "result_sha256": "1e50f7e8e195904dbc9d1df5c36d727b3cf34d2defb91dfedcc7575a1ef4f8d4",
+      "identity_sha256": "0d6a29701dca5a7b9b2facf12515d0232ff7e41a0fa23b987a800cb445c55c14",
+      "run_log": "difftest (PANIC=unwind): 2309 passed, 0 failed, 0 unsupported\n",
+      "run_log_sha256": "0f4c4c9af6439d0204a0bfb068f923308cdc91e4f295253098ba17feb82e9538",
+      "script_sha256": "fa7844f8638e1e03456f1a48731eeea637079108247263addf804533252ef5e4",
+      "case_pool_sha256": "f90ec0c777b72751f91efb84a8169a00f5d35a1ffd591b46718d606eaeca12fc",
+      "fixture_inventory_sha256": "67a47014f7bb7217eacfe50035350c2f9914ae27a44d9a99fd54fef4610076ca"
+    },
+    "eh": {
+      "result": {
+        "returncode": 0,
+        "elapsed_seconds": 55.78568516400264,
+        "failures_preserved": [],
+        "native_binaries_unchanged": true,
+        "library_files_unchanged": true,
+        "working_tree_changes": "",
+        "log_tail": "difftest (PANIC=unwind): 65 passed, 0 failed, 0 unsupported\n"
+      },
+      "result_sha256": "c81e4ee1186274599baa408f53cee8341105807d774f7ef911844e0858a6b02c",
+      "identity_sha256": "eab87f8eb6d033a4c90b93e3144577ea29ea23b91cf7406d85de8e5d94c86efc",
+      "run_log": "difftest (PANIC=unwind): 65 passed, 0 failed, 0 unsupported\n",
+      "run_log_sha256": "e35e3f2cfd884119851b5ebd9baff4889bce399a5aea9fb980df889a106271f3",
+      "script_sha256": "fa7844f8638e1e03456f1a48731eeea637079108247263addf804533252ef5e4",
+      "case_pool_sha256": "f90ec0c777b72751f91efb84a8169a00f5d35a1ffd591b46718d606eaeca12fc",
+      "fixture_inventory_sha256": "0998928c2c04a3bf95238340b89f298a0aeccfac6b21c9216b91027512d51bd8"
+    }
+  },
+  "unicode": {
+    "schema": 1,
+    "rust_source": "5b7b37aefcb5b2fba3c2392bc9065b9e4602d494",
+    "rustc_vV": "rustc 1.102.0-nightly (5b7b37aef 2026-11-08)\nbinary: rustc\ncommit-hash: 5b7b37aefcb5b2fba3c2392bc9065b9e4602d494\ncommit-date: 2026-11-08\nhost: x86_64-unknown-linux-gnu\nrelease: 1.102.0-nightly\nLLVM version: 23.1.5\n",
+    "identities": {
+      "native_core_sha256": "1fcd2eaead30d31d3a29933d91f2a4f1b882fb7e9ad2f10b4e08699966aadf32",
+      "rustc_sha256": "ca9d833d09469a534ca1449e71ca9961608409cdb257df96cf8035338fac28de"
+    },
+    "scalar_values": 1112064,
+    "comparisons": [
+      {
+        "fixture": "compiler/native/tests/pass/unicode_const_runtime_semantics.rs",
+        "fixture_sha256": "845bac5c75ac68951acb0e8c569ad0309ed71480e309b14ae3554d7196c4f010",
+        "bytes": 31,
+        "sha256": "eb6cf2759dbd1616cc0ebb73297300d23b3c103f740dbc1ba9df4850b077ba36",
+        "byte_for_byte_equal": true
+      },
+      {
+        "fixture": "compiler/native/tools/unicode_runtime_exact.rs",
+        "fixture_sha256": "e73dce88e4ed7797f9136a0aa21e1f69ce7d8880bd6546aa3654a7bc90c0c0ba",
+        "bytes": 114666345,
+        "sha256": "d8d2c58bf07f1acd5faadb78b78c9b732e79d5e6d4a019b7ce620e6cbb0ed69b",
+        "byte_for_byte_equal": true
+      },
+      {
+        "fixture": "compiler/native/tests/pass/identifier_nfc.rs",
+        "fixture_sha256": "fc71e01f6c89126f39df8fc17b0c3ccf8e6f6754c8010fa82cace33d92bebd15",
+        "bytes": 12,
+        "sha256": "90e248c6de2c8733bd99247f06ba62fe52199fcffe9d3b83ef145a4c1a921bc5",
+        "byte_for_byte_equal": true
+      },
+      {
+        "fixture": "compiler/native/tests/pass/identifier_nfc_macros.rs",
+        "fixture_sha256": "2d96c66b7f732429150240cbfdd275bb1ec75faca6359b12f7e052957ff510e7",
+        "bytes": 93,
+        "sha256": "632f55ace0695cd5420d874853ec863960dccb6f0240205b27b20f744f9b986b",
+        "byte_for_byte_equal": true
+      },
+      {
+        "fixture": "compiler/native/tests/pass/identifier_nfc_includes.rs",
+        "fixture_sha256": "7016ef5d20f20b427aca32b0afc0b06d828f5e5b2a16289b9fbdf0326e7beaeb",
+        "bytes": 25,
+        "sha256": "37ab62b07ef18e786d41eda332cc5816b1807682c53ed98d534a92ccfa3d1262",
+        "byte_for_byte_equal": true
+      },
+      {
+        "fixture": "compiler/native/tests/pass/identifier_nfc_modules.rs",
+        "fixture_sha256": "f8f5c30189629e4700b71525e13d95e6978458dda0c20ac72f81a100c6bf1a45",
+        "bytes": 6,
+        "sha256": "b0e35de7ed8b81054f65be9a66d09f9c06b642e04df0a156871fdabbbeecddee",
+        "byte_for_byte_equal": true
+      },
+      {
+        "fixture": "compiler/native/tests/pass/lex_ident_normalized.rs",
+        "fixture_sha256": "2aeb150ca5d3f2ceb3d8be3f495524eede6e8c748ad1c10ed161a131f3a87fed",
+        "bytes": 3,
+        "sha256": "25d4f2a86deb5e2574bb3210b67bb24fcc4afb19f93a7b65a057daa874a9d18e",
+        "byte_for_byte_equal": true
+      },
+      {
+        "fixture": "compiler/native/tests/pass/identifier_nfc_assertions.rs",
+        "fixture_sha256": "ac2a3486d5ef6a3c1aaff151528f072aa548a106905f9bf4dd7093401b5f2926",
+        "bytes": 426,
+        "sha256": "23695bca0b076d94bc39eec68ec25fd4dbc6a0381f7ff68ccb2730ed6285ff94",
+        "byte_for_byte_equal": true
+      }
+    ],
+    "commands": 39,
+    "duplicate_normalized_identifiers": [
+      {
+        "implementation": "native",
+        "diagnostic": "L0106",
+        "artifact_written": false
+      },
+      {
+        "implementation": "rust",
+        "diagnostic": "E0428",
+        "artifact_written": false
+      }
+    ],
+    "normalization_dependency_lockfiles": [
+      "compiler/native/Cargo.lock",
+      "crates/lustr-native-core/Cargo.lock"
+    ],
+    "limits": [
+      "Direct cold compilation; retained behavior is covered by the separate native test.",
+      "Unicode data and exercised operations only; not a proof of all Rust semantics.",
+      "No timing or release-admission claim."
+    ]
+  },
+  "cargo_layout": {
+    "passed": true,
+    "report_sha256": "0df584869d85a36c9f2879eeccfebca181cc590122e31aa1d48bf8d865489566"
+  },
+  "recovery_verification": "Existing logs, binary digests, native tree identity, harness identity, library bytes and test-output digests were checked again; no compiler suite was rerun for this record.",
+  "scope": "b728b0e48 native source only. The argv representation correction and native protocol continuation are later changes and require their own controls."
+}

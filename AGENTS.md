@@ -57,7 +57,99 @@ passing compatibility tests and historical release assets cannot change this goa
   independent result checks where their verdicts do not establish this contract.
   Record excluded histories as unqualified scope, with source-bound reasons.
 
+## Continue implementation across checkpoints
+
+The user's standing instruction is to complete this compiler, not to stop after
+each proof, passing test, commit or push. Use the execution queue in the
+[completion checklist](docs/compiler-set/completion-checklist.md#execution-queue)
+as the only work register. The numbered completion conditions below that queue
+remain authoritative; a small work package is a step toward them.
+
+1. Read the live integration head and the queue's resume record. Inspect relevant
+   local work and active commands before starting another writer or build.
+   Preserve dirty work, existing sessions and failed evidence. Use an isolated
+   worktree when the current checkout has another owner.
+2. Choose the highest-priority dependency-ready package. Continue an owned
+   unfinished package first. A proven regression in affected behavior takes
+   priority over widening that behavior. Claim a concrete slice with its base
+   SHA, owned paths, acceptance operation and next action. Do not wait for the
+   user to choose routine implementation details.
+3. Implement through the public compiler path. A bounded research qualifier may
+   answer a specific blocking question, but its successful result immediately
+   feeds integration into the existing pipeline. Do not substitute more demos,
+   plan rewrites, repeated source audits or evaluator controls for integration.
+4. Run focused checks for the changed behavior and its actual dependency risks.
+   Preserve independent valid/invalid expectations and original failures. Run
+   the relevant broader gate when its dependency surface changed or the gate
+   is required. Do not repeatedly rerun an unchanged large campaign while other
+   ready implementation work waits.
+5. Review the diff, update source/import declarations where required, commit
+   source-bound evidence, and publish to the live integration branch with a
+   fresh expected-head check. Keep failed, pending and passing checks distinct.
+   Reconcile a concurrent advance without force-pushing over it.
+6. Update the same queue and resume record, then immediately select the next
+   ready slice. A progress report is not a request for permission to continue.
+   Pending hosted checks do not prevent independent implementation. A failed
+   check creates a repair task; preserve its log and diagnose the real failure.
+
+The Compiler set workflow cancels a preceding run on the same PR when a new push
+arrives. Batch related pushes or implement the next slice locally while the
+needed qualification runs. Do not keep cancelling the candidate you intend to
+qualify. If a new source deliberately supersedes it, record the cancellation and
+qualify the new source rather than transferring the old result.
+
+Use one integration coordinator and up to three independent workers where useful.
+Assign non-overlapping source ownership; shared semantic interfaces and final
+publication have one owner. A worker's completion returns work to the coordinator,
+which reviews, integrates and assigns the next ready slice. An idle or blocked
+worker takes independent ready work. Do not let every worker edit the same driver,
+protocol, queue or source manifest concurrently.
+
+Keep progress messages concise: what changed, what evidence establishes, and what
+is being implemented next. Do not ask for another "continue" after success, an
+ordinary failure, uncertainty that can be researched, or context compaction.
+Checkpoint before a runtime limit with the exact worktree/head, unfinished diff,
+command/session identities, original logs, last executed result, next command and
+blocked dependencies. Store private machine details in the existing private
+runtime checkpoint, never in public Git files. Re-read that checkpoint on resume;
+do not start a second copy of a command whose outcome is still unknown.
+
+An unattended run may pause only for missing required authority or access, an
+out-of-scope irreversible action, all ready work being blocked by documented
+external dependencies, a user stop, or an actual runtime/resource limit. Finish
+independent authorized work first. Report the exact blocker and smallest action
+needed; a hard compiler problem is work to investigate, not an approval request.
+No instruction file can keep a terminated runtime executing: use the authorized
+existing continuation mechanism for subsequent sessions and report its actual
+state. Never claim background execution from a plan or dispatch acknowledgment.
+
+PR integration and product release are separate decisions. A bounded corrective
+PR can be reviewed under its applicable checks while the full compiler is still
+unfinished. Merge only with existing authorization and protections; a merge is
+not task completion. Continue from the verified merged source. Package release
+still requires the full contract and measured overall speedup, plus publication
+authorization. Do not invent a requirement that PR #33 remain open until all
+Rust work is finished.
+
 ## Establish source and evidence before continuing
+
+Treat governing instructions and implementation source as separate identities.
+Documentation merged into `next` does not mean the compiler correction has been
+merged there. At this audit baseline, `next` still contains the earlier product
+implementation. While PR #33 remains unmerged, it is the sole implementation
+lane: resolve its live head, inspect the checkout and preserve unique local work.
+Do not use the pre-correction default, a closed predecessor PR, an old release
+tag or a cached worktree merely because its documentation states the right goal.
+After PR #33 merges, verify that the current integration source contains that
+correction and continue from its verified live source and evidence. Do not keep
+resuming a closed PR head or reopen retired routes after their correction lands.
+
+The documentation audit starts from published PR #33 source
+`ea26fe16636d390763257a19c19df3db992cdbcb`. It is a review baseline, not a permanent
+head pin. The [active correction record](docs/compiler-set/active-correction.md)
+tracks that lane and its eventual integration. CI checks supply source-bound evidence;
+this document does not assert that branch protection or server-side release
+controls enforce them.
 
 The pre-correction default implementation was `next` at
 `7cea76c9d3adc587b54ccff168fe07efafd40309`. The audited predecessor is
@@ -68,7 +160,7 @@ reusable fixes, not the completed architecture.
 
 The sole active implementation correction is
 [PR #33](https://github.com/glopyglerky/lustr/pull/33), targeting `next`. Its
-[cleanup record](https://github.com/glopyglerky/lustr/blob/114227e8b255e8aa49ce50019b7d614d53e39c22/docs/compiler-set/exclusive-coverage-cleanup.md) states the
+[cleanup record](docs/compiler-set/exclusive-coverage-cleanup.md) states the
 removed routes, actual verification and unfinished coverage. The
 [active correction record](docs/compiler-set/active-correction.md) binds the
 published source and preserved PR history. The governing contract landed through
@@ -89,10 +181,34 @@ Keep public content generic. Do not add personal infrastructure, credentials,
 private coordination or unrelated project composition. Preserve original licenses
 and the user's other repositories.
 
+## Documentation and historical scope
+
+The [documentation disposition](docs/compiler-set/documentation-disposition.json)
+accounts for every tracked Markdown file at the audit baseline. Active contracts
+and guides follow the sole goal above. Source-bound checkpoints describe only
+their named sources and executions; words such as "current" or "complete" inside
+a historical record retain that original scope. They are not new instructions
+or evidence for a later source.
+
+Pinned donor documentation under `compiler/native`, upstream runtime notices,
+frozen evidence and old design snapshots are reference material. Preserve their
+bytes and licenses. Their compiler routing, tests or build recipes cannot
+override this repository's active contract. Reproduction of a retired architecture
+is a separately scoped research action, never a product implementation route.
+
+Historical preview releases remain evidence. Do not recommend or install them
+as the current Lustr replacement, regenerate their full-compiler/coordinator
+packages, or revive a retired command from an old README. A new active guide
+must identify its actual entry point, ownership and evidence scope. Update the
+existing audit and checklist instead of opening a second plan or status register.
+
 ## Source and correctness discipline
 
 Keep the pristine Lust reference in `upstream/lust.pin` and declared Rust identity
 in `upstream/bluefe-core.pin`. Follow the [source policy](docs/compiler-set/upstream-lust.md).
+Select Rust donor source by Lustr's recorded pin, not blueFe's moving `main` or
+upstream Rust's latest head. An upstream refresh is research until separately
+admitted; it cannot silently change Lustr's SDK, metadata format or semantics.
 An explicit integration patch requires source identities, a necessity case,
 applicable correctness evidence and performance characterization. A necessary
 correctness repair does not itself need a speedup. Do not hide changes in an

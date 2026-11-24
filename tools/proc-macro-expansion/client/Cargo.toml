@@ -1,0 +1,15 @@
+[package]
+name = "lustr-expand-proc-macro"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+paths = { path = "../rust-source/src/tools/rust-analyzer/crates/paths" }
+proc-macro-api = { path = "../rust-source/src/tools/rust-analyzer/crates/proc-macro-api" }
+span = { path = "../rust-source/src/tools/rust-analyzer/crates/span" }
+tt = { path = "../rust-source/src/tools/rust-analyzer/crates/tt" }
+syntax-bridge = { path = "../rust-source/src/tools/rust-analyzer/crates/syntax-bridge" }
+salsa = { version = "=0.28.5", default-features = false }
+semver = "=1.0.28"
+serde = { version = "=1.0.228", features = ["derive"] }
+serde_json = "=1.0.150"

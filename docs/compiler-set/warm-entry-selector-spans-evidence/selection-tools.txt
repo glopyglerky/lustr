@@ -1,0 +1,10 @@
+lustr-selection-toolchain-v1
+source=5b7b37aefcb5b2fba3c2392bc9065b9e4602d494
+host=x86_64-unknown-linux-gnu
+da29c2a9ff7f85bda5587e9c974e05c9e2a7196377e54466f6e9d6f9e00b2530  bin/cargo
+72add85d62b0d4b4b6a22b1a3cc779f7eb445425ce6b42a2178b38462bcb5e78  bin/rustc-full
+ca9d833d09469a534ca1449e71ca9961608409cdb257df96cf8035338fac28de  bin/rustc-reference
+631825ada1565bad37c9ccab5cc9a339dbfb4b132697cc8ebd7ad336be638644  bin/rustdoc
+c1473b5e610614991e7836a5221a271b0b899ac79ec1b758479907ccfbb8a7da  lib/libLLVM-23-rust-1.102.0-nightly.so
+5b12901d3a06a2eca8eae8e0781f678a6b2213740e2754f90dc22aef3f23dc21  lib/libLLVM.so.23.1-rust-1.102.0-nightly
+ace7e2aa6ae11ca4c9b1edaf70701fc9390de38dd86bcf16bb8f22d5e658bd72  lib/librustc_driver-f21b5e769b80ce6a.so

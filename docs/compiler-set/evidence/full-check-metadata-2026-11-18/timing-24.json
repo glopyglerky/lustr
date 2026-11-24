@@ -1,0 +1,1029 @@
+{
+  "added_latency_lustr_minus_rustc": {
+    "bootstrap_95_seconds": [
+      0.004522821,
+      0.009117050000000002
+    ],
+    "direction": "lustr minus rustc seconds",
+    "median_seconds": 0.006755379,
+    "method": "paired-difference-median/splitmix64/rejection-index/percentile-v1",
+    "paired_differences_seconds": [
+      0.008894873000000001,
+      0.017780385,
+      0.023903682,
+      -0.006875912999999997,
+      0.0008578769999999999,
+      0.007938392999999998,
+      0.028483238999999997,
+      0.018543154000000003,
+      0.011016601,
+      0.004522821,
+      0.026531109000000004,
+      0.006392916000000002,
+      -0.0017186239999999985,
+      0.008158325000000001,
+      0.025123345000000002,
+      0.006993356999999999,
+      0.005340671,
+      0.0035778600000000004,
+      0.006339935999999999,
+      0.004030825999999998,
+      0.006517401000000001,
+      0.009117050000000002,
+      -0.004667785000000001,
+      -0.003158923000000001
+    ],
+    "resamples": 10000,
+    "seed": 5567949153591903556
+  },
+  "all_commands": [
+    {
+      "caller_preserved": true,
+      "command_index": 0,
+      "exit": 0,
+      "label": "before-rustc",
+      "lane": "rustc",
+      "metadata": {
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "phase": "control",
+      "temporary_empty": true,
+      "wall_ns": 64723891
+    },
+    {
+      "caller_preserved": true,
+      "command_index": 1,
+      "exit": 0,
+      "label": "before-lustr",
+      "lane": "lustr",
+      "phase": "control",
+      "route_control": {
+        "events": [
+          {
+            "engine": "lust-rejected",
+            "entry": "native-library"
+          },
+          {
+            "engine": "full-rust-core",
+            "entry": "owned-rustc-check"
+          }
+        ],
+        "trace_sha256": "ca05cd88409a2c3649460ef79fc629a639db4e04a1b67ee5723af429cc1825ca"
+      },
+      "temporary_empty": true,
+      "wall_ns": 61722017
+    },
+    {
+      "caller_preserved": true,
+      "command_index": 2,
+      "exit": 0,
+      "label": "prime-0-rustc",
+      "lane": "rustc",
+      "metadata": {
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "phase": "prime",
+      "temporary_empty": true,
+      "wall_ns": 18066337
+    },
+    {
+      "caller_preserved": true,
+      "command_index": 3,
+      "exit": 0,
+      "label": "prime-0-lustr",
+      "lane": "lustr",
+      "phase": "prime",
+      "temporary_empty": true,
+      "wall_ns": 21980879
+    },
+    {
+      "caller_preserved": true,
+      "command_index": 4,
+      "exit": 0,
+      "label": "prime-1-lustr",
+      "lane": "lustr",
+      "phase": "prime",
+      "temporary_empty": true,
+      "wall_ns": 31171214
+    },
+    {
+      "caller_preserved": true,
+      "command_index": 5,
+      "exit": 0,
+      "label": "prime-1-rustc",
+      "lane": "rustc",
+      "metadata": {
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "phase": "prime",
+      "temporary_empty": true,
+      "wall_ns": 40782932
+    },
+    {
+      "caller_preserved": true,
+      "command_index": 6,
+      "exit": 0,
+      "label": "prime-2-rustc",
+      "lane": "rustc",
+      "metadata": {
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "phase": "prime",
+      "temporary_empty": true,
+      "wall_ns": 30528225
+    },
+    {
+      "caller_preserved": true,
+      "command_index": 7,
+      "exit": 0,
+      "label": "prime-2-lustr",
+      "lane": "lustr",
+      "phase": "prime",
+      "temporary_empty": true,
+      "wall_ns": 31655766
+    },
+    {
+      "caller_preserved": true,
+      "command_index": 8,
+      "exit": 0,
+      "label": "pair-0-rustc",
+      "lane": "rustc",
+      "metadata": {
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "pair": 0,
+      "phase": "measured",
+      "temporary_empty": true,
+      "wall_ns": 21371545
+    },
+    {
+      "caller_preserved": true,
+      "command_index": 9,
+      "exit": 0,
+      "label": "pair-0-lustr",
+      "lane": "lustr",
+      "pair": 0,
+      "phase": "measured",
+      "temporary_empty": true,
+      "wall_ns": 30266418
+    },
+    {
+      "caller_preserved": true,
+      "command_index": 10,
+      "exit": 0,
+      "label": "pair-1-lustr",
+      "lane": "lustr",
+      "pair": 1,
+      "phase": "measured",
+      "temporary_empty": true,
+      "wall_ns": 36971705
+    },
+    {
+      "caller_preserved": true,
+      "command_index": 11,
+      "exit": 0,
+      "label": "pair-1-rustc",
+      "lane": "rustc",
+      "metadata": {
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "pair": 1,
+      "phase": "measured",
+      "temporary_empty": true,
+      "wall_ns": 19191320
+    },
+    {
+      "caller_preserved": true,
+      "command_index": 12,
+      "exit": 0,
+      "label": "pair-2-rustc",
+      "lane": "rustc",
+      "metadata": {
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "pair": 2,
+      "phase": "measured",
+      "temporary_empty": true,
+      "wall_ns": 15960139
+    },
+    {
+      "caller_preserved": true,
+      "command_index": 13,
+      "exit": 0,
+      "label": "pair-2-lustr",
+      "lane": "lustr",
+      "pair": 2,
+      "phase": "measured",
+      "temporary_empty": true,
+      "wall_ns": 39863821
+    },
+    {
+      "caller_preserved": true,
+      "command_index": 14,
+      "exit": 0,
+      "label": "pair-3-lustr",
+      "lane": "lustr",
+      "pair": 3,
+      "phase": "measured",
+      "temporary_empty": true,
+      "wall_ns": 21485724
+    },
+    {
+      "caller_preserved": true,
+      "command_index": 15,
+      "exit": 0,
+      "label": "pair-3-rustc",
+      "lane": "rustc",
+      "metadata": {
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "pair": 3,
+      "phase": "measured",
+      "temporary_empty": true,
+      "wall_ns": 28361637
+    },
+    {
+      "caller_preserved": true,
+      "command_index": 16,
+      "exit": 0,
+      "label": "pair-4-rustc",
+      "lane": "rustc",
+      "metadata": {
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "pair": 4,
+      "phase": "measured",
+      "temporary_empty": true,
+      "wall_ns": 16990701
+    },
+    {
+      "caller_preserved": true,
+      "command_index": 17,
+      "exit": 0,
+      "label": "pair-4-lustr",
+      "lane": "lustr",
+      "pair": 4,
+      "phase": "measured",
+      "temporary_empty": true,
+      "wall_ns": 17848578
+    },
+    {
+      "caller_preserved": true,
+      "command_index": 18,
+      "exit": 0,
+      "label": "pair-5-lustr",
+      "lane": "lustr",
+      "pair": 5,
+      "phase": "measured",
+      "temporary_empty": true,
+      "wall_ns": 20475398
+    },
+    {
+      "caller_preserved": true,
+      "command_index": 19,
+      "exit": 0,
+      "label": "pair-5-rustc",
+      "lane": "rustc",
+      "metadata": {
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "pair": 5,
+      "phase": "measured",
+      "temporary_empty": true,
+      "wall_ns": 12537005
+    },
+    {
+      "caller_preserved": true,
+      "command_index": 20,
+      "exit": 0,
+      "label": "pair-6-rustc",
+      "lane": "rustc",
+      "metadata": {
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "pair": 6,
+      "phase": "measured",
+      "temporary_empty": true,
+      "wall_ns": 15847321
+    },
+    {
+      "caller_preserved": true,
+      "command_index": 21,
+      "exit": 0,
+      "label": "pair-6-lustr",
+      "lane": "lustr",
+      "pair": 6,
+      "phase": "measured",
+      "temporary_empty": true,
+      "wall_ns": 44330560
+    },
+    {
+      "caller_preserved": true,
+      "command_index": 22,
+      "exit": 0,
+      "label": "pair-7-lustr",
+      "lane": "lustr",
+      "pair": 7,
+      "phase": "measured",
+      "temporary_empty": true,
+      "wall_ns": 32841973
+    },
+    {
+      "caller_preserved": true,
+      "command_index": 23,
+      "exit": 0,
+      "label": "pair-7-rustc",
+      "lane": "rustc",
+      "metadata": {
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "pair": 7,
+      "phase": "measured",
+      "temporary_empty": true,
+      "wall_ns": 14298819
+    },
+    {
+      "caller_preserved": true,
+      "command_index": 24,
+      "exit": 0,
+      "label": "pair-8-rustc",
+      "lane": "rustc",
+      "metadata": {
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "pair": 8,
+      "phase": "measured",
+      "temporary_empty": true,
+      "wall_ns": 12440466
+    },
+    {
+      "caller_preserved": true,
+      "command_index": 25,
+      "exit": 0,
+      "label": "pair-8-lustr",
+      "lane": "lustr",
+      "pair": 8,
+      "phase": "measured",
+      "temporary_empty": true,
+      "wall_ns": 23457067
+    },
+    {
+      "caller_preserved": true,
+      "command_index": 26,
+      "exit": 0,
+      "label": "pair-9-lustr",
+      "lane": "lustr",
+      "pair": 9,
+      "phase": "measured",
+      "temporary_empty": true,
+      "wall_ns": 17555551
+    },
+    {
+      "caller_preserved": true,
+      "command_index": 27,
+      "exit": 0,
+      "label": "pair-9-rustc",
+      "lane": "rustc",
+      "metadata": {
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "pair": 9,
+      "phase": "measured",
+      "temporary_empty": true,
+      "wall_ns": 13032730
+    },
+    {
+      "caller_preserved": true,
+      "command_index": 28,
+      "exit": 0,
+      "label": "pair-10-rustc",
+      "lane": "rustc",
+      "metadata": {
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "pair": 10,
+      "phase": "measured",
+      "temporary_empty": true,
+      "wall_ns": 15472161
+    },
+    {
+      "caller_preserved": true,
+      "command_index": 29,
+      "exit": 0,
+      "label": "pair-10-lustr",
+      "lane": "lustr",
+      "pair": 10,
+      "phase": "measured",
+      "temporary_empty": true,
+      "wall_ns": 42003270
+    },
+    {
+      "caller_preserved": true,
+      "command_index": 30,
+      "exit": 0,
+      "label": "pair-11-lustr",
+      "lane": "lustr",
+      "pair": 11,
+      "phase": "measured",
+      "temporary_empty": true,
+      "wall_ns": 21397609
+    },
+    {
+      "caller_preserved": true,
+      "command_index": 31,
+      "exit": 0,
+      "label": "pair-11-rustc",
+      "lane": "rustc",
+      "metadata": {
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "pair": 11,
+      "phase": "measured",
+      "temporary_empty": true,
+      "wall_ns": 15004693
+    },
+    {
+      "caller_preserved": true,
+      "command_index": 32,
+      "exit": 0,
+      "label": "pair-12-rustc",
+      "lane": "rustc",
+      "metadata": {
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "pair": 12,
+      "phase": "measured",
+      "temporary_empty": true,
+      "wall_ns": 23131882
+    },
+    {
+      "caller_preserved": true,
+      "command_index": 33,
+      "exit": 0,
+      "label": "pair-12-lustr",
+      "lane": "lustr",
+      "pair": 12,
+      "phase": "measured",
+      "temporary_empty": true,
+      "wall_ns": 21413258
+    },
+    {
+      "caller_preserved": true,
+      "command_index": 34,
+      "exit": 0,
+      "label": "pair-13-lustr",
+      "lane": "lustr",
+      "pair": 13,
+      "phase": "measured",
+      "temporary_empty": true,
+      "wall_ns": 23511118
+    },
+    {
+      "caller_preserved": true,
+      "command_index": 35,
+      "exit": 0,
+      "label": "pair-13-rustc",
+      "lane": "rustc",
+      "metadata": {
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "pair": 13,
+      "phase": "measured",
+      "temporary_empty": true,
+      "wall_ns": 15352793
+    },
+    {
+      "caller_preserved": true,
+      "command_index": 36,
+      "exit": 0,
+      "label": "pair-14-rustc",
+      "lane": "rustc",
+      "metadata": {
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "pair": 14,
+      "phase": "measured",
+      "temporary_empty": true,
+      "wall_ns": 16645151
+    },
+    {
+      "caller_preserved": true,
+      "command_index": 37,
+      "exit": 0,
+      "label": "pair-14-lustr",
+      "lane": "lustr",
+      "pair": 14,
+      "phase": "measured",
+      "temporary_empty": true,
+      "wall_ns": 41768496
+    },
+    {
+      "caller_preserved": true,
+      "command_index": 38,
+      "exit": 0,
+      "label": "pair-15-lustr",
+      "lane": "lustr",
+      "pair": 15,
+      "phase": "measured",
+      "temporary_empty": true,
+      "wall_ns": 22450315
+    },
+    {
+      "caller_preserved": true,
+      "command_index": 39,
+      "exit": 0,
+      "label": "pair-15-rustc",
+      "lane": "rustc",
+      "metadata": {
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "pair": 15,
+      "phase": "measured",
+      "temporary_empty": true,
+      "wall_ns": 15456958
+    },
+    {
+      "caller_preserved": true,
+      "command_index": 40,
+      "exit": 0,
+      "label": "pair-16-rustc",
+      "lane": "rustc",
+      "metadata": {
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "pair": 16,
+      "phase": "measured",
+      "temporary_empty": true,
+      "wall_ns": 14609473
+    },
+    {
+      "caller_preserved": true,
+      "command_index": 41,
+      "exit": 0,
+      "label": "pair-16-lustr",
+      "lane": "lustr",
+      "pair": 16,
+      "phase": "measured",
+      "temporary_empty": true,
+      "wall_ns": 19950144
+    },
+    {
+      "caller_preserved": true,
+      "command_index": 42,
+      "exit": 0,
+      "label": "pair-17-lustr",
+      "lane": "lustr",
+      "pair": 17,
+      "phase": "measured",
+      "temporary_empty": true,
+      "wall_ns": 17924275
+    },
+    {
+      "caller_preserved": true,
+      "command_index": 43,
+      "exit": 0,
+      "label": "pair-17-rustc",
+      "lane": "rustc",
+      "metadata": {
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "pair": 17,
+      "phase": "measured",
+      "temporary_empty": true,
+      "wall_ns": 14346415
+    },
+    {
+      "caller_preserved": true,
+      "command_index": 44,
+      "exit": 0,
+      "label": "pair-18-rustc",
+      "lane": "rustc",
+      "metadata": {
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "pair": 18,
+      "phase": "measured",
+      "temporary_empty": true,
+      "wall_ns": 13554855
+    },
+    {
+      "caller_preserved": true,
+      "command_index": 45,
+      "exit": 0,
+      "label": "pair-18-lustr",
+      "lane": "lustr",
+      "pair": 18,
+      "phase": "measured",
+      "temporary_empty": true,
+      "wall_ns": 19894791
+    },
+    {
+      "caller_preserved": true,
+      "command_index": 46,
+      "exit": 0,
+      "label": "pair-19-lustr",
+      "lane": "lustr",
+      "pair": 19,
+      "phase": "measured",
+      "temporary_empty": true,
+      "wall_ns": 18890703
+    },
+    {
+      "caller_preserved": true,
+      "command_index": 47,
+      "exit": 0,
+      "label": "pair-19-rustc",
+      "lane": "rustc",
+      "metadata": {
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "pair": 19,
+      "phase": "measured",
+      "temporary_empty": true,
+      "wall_ns": 14859877
+    },
+    {
+      "caller_preserved": true,
+      "command_index": 48,
+      "exit": 0,
+      "label": "pair-20-rustc",
+      "lane": "rustc",
+      "metadata": {
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "pair": 20,
+      "phase": "measured",
+      "temporary_empty": true,
+      "wall_ns": 13020412
+    },
+    {
+      "caller_preserved": true,
+      "command_index": 49,
+      "exit": 0,
+      "label": "pair-20-lustr",
+      "lane": "lustr",
+      "pair": 20,
+      "phase": "measured",
+      "temporary_empty": true,
+      "wall_ns": 19537813
+    },
+    {
+      "caller_preserved": true,
+      "command_index": 50,
+      "exit": 0,
+      "label": "pair-21-lustr",
+      "lane": "lustr",
+      "pair": 21,
+      "phase": "measured",
+      "temporary_empty": true,
+      "wall_ns": 27841060
+    },
+    {
+      "caller_preserved": true,
+      "command_index": 51,
+      "exit": 0,
+      "label": "pair-21-rustc",
+      "lane": "rustc",
+      "metadata": {
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "pair": 21,
+      "phase": "measured",
+      "temporary_empty": true,
+      "wall_ns": 18724010
+    },
+    {
+      "caller_preserved": true,
+      "command_index": 52,
+      "exit": 0,
+      "label": "pair-22-rustc",
+      "lane": "rustc",
+      "metadata": {
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "pair": 22,
+      "phase": "measured",
+      "temporary_empty": true,
+      "wall_ns": 26220110
+    },
+    {
+      "caller_preserved": true,
+      "command_index": 53,
+      "exit": 0,
+      "label": "pair-22-lustr",
+      "lane": "lustr",
+      "pair": 22,
+      "phase": "measured",
+      "temporary_empty": true,
+      "wall_ns": 21552325
+    },
+    {
+      "caller_preserved": true,
+      "command_index": 54,
+      "exit": 0,
+      "label": "pair-23-lustr",
+      "lane": "lustr",
+      "pair": 23,
+      "phase": "measured",
+      "temporary_empty": true,
+      "wall_ns": 23631729
+    },
+    {
+      "caller_preserved": true,
+      "command_index": 55,
+      "exit": 0,
+      "label": "pair-23-rustc",
+      "lane": "rustc",
+      "metadata": {
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "pair": 23,
+      "phase": "measured",
+      "temporary_empty": true,
+      "wall_ns": 26790652
+    },
+    {
+      "caller_preserved": true,
+      "command_index": 56,
+      "exit": 0,
+      "label": "after-lustr",
+      "lane": "lustr",
+      "phase": "control",
+      "route_control": {
+        "events": [
+          {
+            "engine": "lust-rejected",
+            "entry": "native-library"
+          },
+          {
+            "engine": "full-rust-core",
+            "entry": "owned-rustc-check"
+          }
+        ],
+        "trace_sha256": "ca05cd88409a2c3649460ef79fc629a639db4e04a1b67ee5723af429cc1825ca"
+      },
+      "temporary_empty": true,
+      "wall_ns": 32419792
+    },
+    {
+      "caller_preserved": true,
+      "command_index": 57,
+      "exit": 0,
+      "label": "after-rustc",
+      "lane": "rustc",
+      "metadata": {
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "phase": "control",
+      "temporary_empty": true,
+      "wall_ns": 26830152
+    }
+  ],
+  "binaries_sha256": {
+    "bin/lust": "6c6a5fe97fb5cb1bb0fd5d773ece973a05ff4a807b2b6ad4eea7e39ebcac12bd",
+    "bin/lust-core": "f54fa87997237160a0071cb9035cdbf5f4b9325e58eeb490d99d432dd4d5abcc",
+    "bin/lustr": "37b70ea7f0e77de79b22d47f6ff502a8ee75dabac2fe09e5099747a5a1d067a8",
+    "bin/rustc-full": "279a6189bb6e6782a6659ee8c8c9c5ff096c976227d56318bfc2ca8277d24c8c",
+    "bin/rustc-reference": "ca9d833d09469a534ca1449e71ca9961608409cdb257df96cf8035338fac28de",
+    "lib/liblustr_native_core.so": "8036febf5ce65cff52b0e79920ef541f4738bd189e94b409e7223516bbf5597f"
+  },
+  "budget": {
+    "absolute_budget_seconds": 0.0005,
+    "absolute_met": false,
+    "acceptance": "lower ratio 95% bound >= 1/1.05 OR upper paired-median added-latency 95% bound <= 0.0005",
+    "latency_direction": "lustr seconds - rustc seconds",
+    "latency_seed": 5567949153591903556,
+    "met": false,
+    "ratio_direction": "rustc seconds / lustr seconds",
+    "ratio_seed": 5567949153591903555,
+    "relative_budget": 1.05,
+    "relative_met": false,
+    "resamples": 10000
+  },
+  "caller_sentinel_sha256": "11544e3d6c05e06ab9361f6bac85526b3ff4c9b8da12284228877504806aed62",
+  "command_templates": {
+    "lustr": [
+      "<PACKAGE>/bin/lustr",
+      "check",
+      "<FIXTURE>/main.rs",
+      "-o",
+      "<FIXTURE>/caller-output",
+      "--target",
+      "x86_64-unknown-linux-gnu",
+      "-C",
+      "panic=unwind",
+      "-C",
+      "overflow-checks=on",
+      "-C",
+      "debug-assertions=on"
+    ],
+    "rustc": [
+      "<PACKAGE>/bin/rustc-reference",
+      "<FIXTURE>/main.rs",
+      "--edition=2024",
+      "--target",
+      "x86_64-unknown-linux-gnu",
+      "-C",
+      "panic=unwind",
+      "-C",
+      "overflow-checks=on",
+      "-C",
+      "debug-assertions=on",
+      "--emit=metadata",
+      "-o",
+      "<REFERENCE_OUTPUT>/check.rmeta"
+    ]
+  },
+  "date": "2026-11-18",
+  "environment": {
+    "cache_controls": {
+      "LUSTR_MIXED_CACHE_DIR": "dedicated mixed cache, reused after primes",
+      "LUSTR_NO_SELECTION_CACHE": "unset; fixture has no manifest",
+      "LUST_CACHE_DIR": "dedicated native cache, reused after primes",
+      "LUST_NO_CACHE": "unset",
+      "LUST_NO_DAEMON": "1",
+      "cache_reset_between_measured_commands": false
+    },
+    "common_values": {
+      "CARGO_NET_OFFLINE": "true",
+      "CARGO_TERM_COLOR": "never",
+      "LANG": "C",
+      "LC_ALL": "C",
+      "LUST_NO_DAEMON": "1",
+      "TZ": "UTC",
+      "__CARGO_TEMPORARY_BUILD_DIR_NEW_LAYOUT_OPT_OUT": "1"
+    },
+    "isolation": "Dedicated native/mixed caches, Cargo home/target/build directories, TMPDIR and daemon socket; unchanged actual HOME; package bin first in PATH; no inherited LD_LIBRARY_PATH",
+    "timed_diagnostics_enabled": false
+  },
+  "fixture_sha256": "2b697b58774426fc1cdcfe222b067cd39626c89a9b8cd270224012f688eea4ea",
+  "fixture_url": "https://github.com/t3dotgg/lust-lang/issues/5",
+  "host": {
+    "affinity": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8
+    ],
+    "cpu_count": 9,
+    "cpu_model": "AMD EPYC 9V45 96-Core Processor",
+    "kernel": "6.18.57",
+    "machine": "x86_64",
+    "os": "Linux"
+  },
+  "limits": [
+    "Exactly one fixed run; all samples retained; no follow-up optimization trials",
+    "Single warm unsupported native fixture, with daemon explicitly disabled; not general Cargo performance",
+    "Quiet work window but CPU affinity/frequency/scheduler uncontrolled",
+    "Lustr total includes native refusal, mixed full Rust driver, spawn and metadata cleanup; no causal component attribution",
+    "Original logs retained privately; public numbers and hashes cannot independently replay omitted original bytes",
+    "The broken original /dev/null check is not a successful performance baseline"
+  ],
+  "method": "Wall-clock subprocess time, including capture and wait. Three excluded primes per lane. All24 alternating pairs retained. Validation and direct-rustc artifact deletion happen outside timing. Lustr's own metadata cleanup is inside timing.",
+  "private_originals": {
+    "archive": {
+      "bytes": 51992,
+      "file": "metadata-check-timing-private-2026-11-18.tar.gz",
+      "files_verified": 133,
+      "manifest_sha256": "ee94e3b18470c5c7a465a9bae497e34707a0e65a0c44033050f8ae2890125c5c",
+      "sha256": "327b94ea1d8a25b9a4aef03001126b9c4b8c0894aa251e695e18908fb1f277b1"
+    },
+    "candidate_receipt_sha256": "f727a311fc604f27cab66e1918a8b9dedf2c29124c3829b09357ba5df05e00d8",
+    "plan_sha256": "e6d7d2f536ac45a2354db43488ba7fb7590805f092beea9bd16113f52db3f2ef",
+    "report_sha256": "bd004ac6ad825c3e330881b5cebd0c21a130da08f431324e8d2950b0fa5055a4",
+    "runner_sha256": "7fb1d6888edeaccb00f4e5cf3fd4515a7920b321a1c38f377591271d9ea3a8aa",
+    "statistics_source_sha256": "5f3fe49eb7898854b41fd76b7b643adcf8a72c1e434127fec67404005712e8a5"
+  },
+  "qualification": "v2 diagnostic launcher replacement; not a fresh complete-package constructor result",
+  "ratio_rustc_over_lustr": {
+    "baseline_median": 0.015464559499999999,
+    "baseline_p95": 0.026790652,
+    "bootstrap_95": [
+      0.5800150684937964,
+      0.7725926395653397
+    ],
+    "bootstrap_resamples": 10000,
+    "candidate_median": 0.022001319999999998,
+    "candidate_p95": 0.04200327,
+    "exact_sign_flip_p": null,
+    "geometric_ratio": 0.6700865341024184,
+    "log_ratios": [
+      -0.34797841671517027,
+      -0.6556947968796316,
+      -0.9153748694451944,
+      0.2776487075539489,
+      -0.04925764678962974,
+      -0.4905393969363461,
+      -1.028673817250505,
+      -0.8315304155085417,
+      -0.6342172676801341,
+      -0.2979063105054216,
+      -0.9987051278441985,
+      -0.35491616797738956,
+      0.07720157621746981,
+      -0.42617600377464626,
+      -0.92002342837828,
+      -0.3732453873192396,
+      -0.31156620742702845,
+      -0.2226558541536674,
+      -0.38371315293797004,
+      -0.24000513427787196,
+      -0.4058334361877507,
+      -0.3967052519424419,
+      0.19604297423625194,
+      0.1254627624781306
+    ],
+    "method": "paired-log-v1/splitmix64/rejection-index/percentile",
+    "pairs": 24,
+    "raw_ratios": [
+      0.7061141163120128,
+      0.5190812812122138,
+      0.400366512783609,
+      1.3200224018515734,
+      0.9519358348883591,
+      0.6122960344897816,
+      0.3574807311254359,
+      0.435382460121991,
+      0.5303504483318398,
+      0.7423708888430791,
+      0.368356106560275,
+      0.7012322264604424,
+      1.0802598091332016,
+      0.6530014012944856,
+      0.39850970453903833,
+      0.6884962638608855,
+      0.7322991252594467,
+      0.8003902528833103,
+      0.6813268357531376,
+      0.7866238223109009,
+      0.6664211598299156,
+      0.672532223988598,
+      1.2165791857723007,
+      1.1336729530031424
+    ],
+    "seed": 5567949153591903555
+  },
+  "schedule": {
+    "dropped_measured_samples": 0,
+    "excluded_boundary_controls": 4,
+    "excluded_primes_per_lane": 3,
+    "measured_commands": 48,
+    "order": "even pair: rustc,lustr; odd pair: lustr,rustc",
+    "pairs": 24,
+    "total_commands": 58
+  },
+  "schema": "lustr-full-check-timing-public-v1",
+  "scope": "One local warm single-file check with actual v2 diagnostic launcher replacement. Lustr total includes native refusal and full Rust path; no attribution to spawn alone. This is not package-constructor or broad ordinary-Cargo qualification.",
+  "source_after_sha256": {
+    "src/full.rs": "e8eb95bbdb2f413a6779ead7660906cea68adc49281357ffc22acdd7ac4ef86e",
+    "src/main.rs": "1047de9580c55b0f20f5869c21a6fe89c3ad00818c64678d7699b21bcebbabba",
+    "tests/compiler_contract.rs": "28211a790afd4daa4b97ed61c0cd55f6febb6f882c818803014b07fd2da7a9a7"
+  },
+  "source_before_commit": "43a7e07d32929309fc6e402d7bca6b5673e186a2",
+  "status": "completed",
+  "validation": {
+    "all_58_stdout_stderr_empty": true,
+    "all_58_successful": true,
+    "before_after_route_controls": "native refusal followed by full-rust-core/owned-rustc-check",
+    "caller_sentinel_preserved_every_command": true,
+    "paired_statistics_recomputed": true,
+    "private_output_stream_hashes_replayed": true,
+    "reference_metadata_file_verified_every_reference_command": true,
+    "source_and_package_inputs_unchanged": true,
+    "temporary_directory_empty_every_command": true
+  }
+}

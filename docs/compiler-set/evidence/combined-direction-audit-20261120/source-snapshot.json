@@ -1,0 +1,210 @@
+{
+  "head": "f87647d66c4c95b8d51a6baa7dc000f4c888e6e9",
+  "tree": "91d1d5a8e56cc93b490f53b41c65f21a3cbbe1c4",
+  "base": "f8fa2dee04e1c02f110ed9d725cda21c0b750e22",
+  "source_files": {
+    ".github/workflows/compiler-set.yml": {
+      "sha256": "31de7b07e2cc9ce4477a3bc77d8ff677b1deb31e1fc165967850dedad79f0e17",
+      "bytes": 28011
+    },
+    ".github/workflows/native-probe-tests.yml": {
+      "sha256": "0c13e54efbab9f7e06efae5908e17554a826a79e24ea19cdd273633ec7a192f8",
+      "bytes": 7232
+    },
+    ".github/workflows/warm-entry-performance.yml": {
+      "sha256": "f1dc5e1d88db509cdd8a3d65f1f13f251a8f9756ce7a620a31b963a26e18cb84",
+      "bytes": 1581
+    },
+    ".github/workflows/warm-native-performance.yml": {
+      "sha256": "3e9ddba3536f95ee1983fd7d9cf1506f04f95a31bb0dfb0c0df8d11f4e6a1aff",
+      "bytes": 1775
+    },
+    "crates/lustr-bench/sample-spec.json": {
+      "sha256": "ba3167dfcdfc73edd19e3bd36167117b1ba24ce3574f930c52cc432c1f127046",
+      "bytes": 6900
+    },
+    "crates/lustr-bench/src/bin/lustr-bench-gate.rs": {
+      "sha256": "88a6ad1f778cd5b7e243a542065291528147a5b176d70c79bb4f2867831f8bfd",
+      "bytes": 10030
+    },
+    "crates/lustr-bench/src/bin/lustr-mixed-bench.rs": {
+      "sha256": "736e804153cab87af98a72fbcdf830caa5827a05f1ffbcc0a37233512cdcbe4e",
+      "bytes": 7338
+    },
+    "crates/lustr-bench/src/main.rs": {
+      "sha256": "e40c826b097d227616f4e439baf1b4879b2e582e73458d4946aa128d3231f476",
+      "bytes": 49154
+    },
+    "crates/lustr-bench/tests/metadata.rs": {
+      "sha256": "9fbc853a748b0254010d8ba37d630c91de57b6035591ee93bed5845e62a85035",
+      "bytes": 4724
+    },
+    "crates/lustr-bench/tests/native_state.rs": {
+      "sha256": "2d965c27d594fc5ce0a5226a27500aa0de6f144f2234aeb5cd862ece5a75ba69",
+      "bytes": 6446
+    },
+    "crates/lustr-bench/tests/resources.rs": {
+      "sha256": "0cf45bf8d553e4c49c21bed28444f5364bace83a751366883e2151b8ff7a4357",
+      "bytes": 10309
+    },
+    "crates/lustr-bench/tests/routed.rs": {
+      "sha256": "c310a9f892ac6088560f90101703cfa984cf8c4525b792df84b5daf69a079bfc",
+      "bytes": 3114
+    },
+    "crates/lustr-bench/tests/tiny.rs": {
+      "sha256": "ca73615fea09a7189efd8bdc70439c31809ba738e5f6168abac8561bafe4f325",
+      "bytes": 14198
+    },
+    "crates/lustr-semantic/Cargo.toml": {
+      "sha256": "fa34d853463e26f13ba4319bb0aa72ee148a0f608b57a49e8178726099e287a5",
+      "bytes": 241
+    },
+    "crates/lustr-semantic/build.rs": {
+      "sha256": "bde014aef834b80f955350f945b399ed7029539317615f05a8d7c965bccb9e97",
+      "bytes": 2432
+    },
+    "crates/lustr/scripts/build-cranelift.py": {
+      "deleted": true
+    },
+    "crates/lustr/scripts/build-cranelift.sh": {
+      "deleted": true
+    },
+    "library/lustr/std/src/env.rs": {
+      "deleted": true
+    },
+    "library/lustr/std/src/os_string.rs": {
+      "deleted": true
+    },
+    "library/lustr/std/src/path_capacity.rs": {
+      "deleted": true
+    },
+    "library/lustr/std/src/path_from.rs": {
+      "deleted": true
+    },
+    "library/lustr/std/src/platform.rs": {
+      "deleted": true
+    },
+    "src/native_expansion.rs": {
+      "deleted": true
+    },
+    "tools/build-native-toolchain.rs": {
+      "sha256": "b62369a4530322e516b2bb8e211d960b975119146ed7ab2f5148224aefe98ada",
+      "bytes": 15505
+    },
+    "tools/check-exclusive-coverage.py": {
+      "sha256": "a1b4c9377670627a27925ed07809476e1899e1e9d832ccce563e117b24c3f967",
+      "bytes": 28030
+    },
+    "tools/measure-coordinator-project.py": {
+      "sha256": "e47afd18ac3dd8bfaeea0ce19d6af78a00a1ea2c0d198a4005766a77b20bc61d",
+      "bytes": 27758
+    },
+    "tools/mixed-check-qualification.rs": {
+      "deleted": true
+    },
+    "tools/mixed-compiler-qualification.rs": {
+      "deleted": true
+    },
+    "tools/mixed-library-qualification.rs": {
+      "deleted": true
+    },
+    "tools/mixed-scalar-qualification.rs": {
+      "deleted": true
+    },
+    "tools/qualify-capability-results.py": {
+      "sha256": "32a04132df7e34e7cf858230a799a186809a92579fbadba8a483f6403ac97fd0",
+      "bytes": 17975
+    },
+    "tools/qualify-retained-results.py": {
+      "sha256": "f920747ba2eec90dc009efdd237becba6b0f207cabd3c07c38932c1186603326",
+      "bytes": 34991
+    },
+    "tools/run-upstream-slice-benchmark.py": {
+      "sha256": "2b9415da667d271d6c14d57d65d5c3967d11f3d49309ffc19f7aed0253c8c52a",
+      "bytes": 38800
+    },
+    "tools/run-warm-entry-comparison.py": {
+      "sha256": "872cd8d3cdf8f19bdc40488e8b84aec94eb99fafa902ddd75780c84e9027c712",
+      "bytes": 46106
+    },
+    "tools/run-warm-entry-diagnostics.py": {
+      "sha256": "ef9af744b24524895753c2b519dfa1453ca5d8892f94fc617c9598c5603fa8f4",
+      "bytes": 24050
+    },
+    "tools/run-warm-native-comparison.py": {
+      "sha256": "df66debe5231cafcf7c828efce92ea1ab00b0e12996ad117dee0c441b9a82ae1",
+      "bytes": 80800
+    },
+    "tools/run-warm-native-startup.py": {
+      "sha256": "528b5e71cf7bf3364d712045afabc9e89d4298e855e1c576909748376b8e5256",
+      "bytes": 18562
+    },
+    "tools/test-capability-results.py": {
+      "sha256": "77795f2cc65e099dc3626deff2a8a3784e79ae819390c6031598318414e68fc5",
+      "bytes": 12443
+    },
+    "tools/test-exclusive-coverage-guard.py": {
+      "sha256": "86caf1f2472d2ab86e6c4fc9103a8033342ee61ecfa2c9a0264939117bc21dc5",
+      "bytes": 20270
+    },
+    "tools/test-native-build-policy.py": {
+      "sha256": "fa9c7f2881b6efbb68cdfa70827f75114928bd8fd6ffe991dcd26e44e0cc05fb",
+      "bytes": 13584
+    },
+    "tools/test-retained-results.py": {
+      "sha256": "a1e078b9c8cf1e6301c2d176f66f9913ec3463c342270a778446f48aedc1c894",
+      "bytes": 38268
+    },
+    "tools/test-retired-acquisition.py": {
+      "sha256": "01a95068d18c6cea935f84a937c976303f7f56ffd70b22e30983219fbe83e5cd",
+      "bytes": 3539
+    },
+    "tools/test-upstream-slice-benchmark.py": {
+      "sha256": "99003b6408ab4aae4ca186b46ab2f2ba119304e4ed5e271e5e0d2d39261bcebb",
+      "bytes": 21790
+    },
+    "tools/test-warm-applicability.py": {
+      "sha256": "8b858d72992ba0a5dd95c9761272fad1be797c90f1c635bf648c9825522f7c2a",
+      "bytes": 19080
+    },
+    "tools/test-workflow-inputs.py": {
+      "sha256": "b5a79a6a1de61fa66d0d7301ed776416c953585780459bedc1141577a7870f58",
+      "bytes": 6197
+    }
+  },
+  "status": "",
+  "tools": {
+    "python": {
+      "path": "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/bin/python3",
+      "resolved_path": "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/bin/python3.12",
+      "sha256": "fa67443527ed9647f760d807e2a38f26340757123e643c4639cf273ed15d5ea7",
+      "version_exit": 0,
+      "version_stdout": "Python 3.12.14\n",
+      "version_stderr": ""
+    },
+    "git": {
+      "path": "/usr/local/bin/git",
+      "resolved_path": "/usr/local/bin/git",
+      "sha256": "7235cbcfe5c8d62e1cd97059cd5d5887edc3336979df0ce3243cb2a3c1fc880d",
+      "version_exit": 0,
+      "version_stdout": "git version 2.56.1\n",
+      "version_stderr": ""
+    },
+    "rustc": {
+      "path": "<PINNED_SDK>/bin/rustc",
+      "resolved_path": "<PINNED_SDK>/bin/rustc",
+      "sha256": "ca9d833d09469a534ca1449e71ca9961608409cdb257df96cf8035338fac28de",
+      "version_exit": 0,
+      "version_stdout": "rustc 1.102.0-nightly (5b7b37aef 2026-11-08)\nbinary: rustc\ncommit-hash: 5b7b37aefcb5b2fba3c2392bc9065b9e4602d494\ncommit-date: 2026-11-08\nhost: x86_64-unknown-linux-gnu\nrelease: 1.102.0-nightly\nLLVM version: 23.1.5\n",
+      "version_stderr": ""
+    },
+    "cargo": {
+      "path": "<PINNED_SDK>/bin/cargo",
+      "resolved_path": "<PINNED_SDK>/bin/cargo",
+      "sha256": "da29c2a9ff7f85bda5587e9c974e05c9e2a7196377e54466f6e9d6f9e00b2530",
+      "version_exit": 0,
+      "version_stdout": "cargo 1.102.0-nightly (c07ac2c4d 2026-11-06)\nrelease: 1.102.0-nightly\ncommit-hash: c07ac2c4d12237effc4b94f4543769b421790045\ncommit-date: 2026-11-06\nhost: x86_64-unknown-linux-gnu\nlibgit2: 1.9.6 (sys:0.21.0 vendored)\nlibcurl: 8.21.0-DEV (sys:0.4.90+curl-8.21.0 vendored ssl:OpenSSL/3.6.3)\nssl: OpenSSL 3.6.3 9 Jun 2026\nos: Debian 13.0.0 (trixie) [64-bit]\n",
+      "version_stderr": ""
+    }
+  }
+}

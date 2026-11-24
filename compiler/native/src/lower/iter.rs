@@ -214,7 +214,7 @@ impl Ex<'_, '_> {
     // ---------- IR building ----------
 
     fn local(&mut self, ty: Ty) -> Local {
-        self.body.locals.push(LocalDecl { ty, mutable: true, name: None });
+        self.body.locals.push(LocalDecl { ty, mutable: true, name: None, binding_span: None });
         let l = self.body.locals.len() as Local - 1;
         // panic=unwind: a local of the expansion that owns droppable data
         // (a `vec::IntoIter`, a collected Vec) drops in the cleanup of
@@ -4714,14 +4714,14 @@ impl Ex<'_, '_> {
             this.call(CallTarget::Indirect(fl), vec![Operand::Move(Place::local(er))], Place::local(out));
             out
         };
-        // `mid > len` at alloc/src/str.rs:200:22 (`STD_FILES` 34) when `len` bytes do not
+        // `mid > len` at alloc/src/str.rs:207:18 (`STD_FILES` 34) when `len` bytes do not
         // fit in the `remain` left.
         let fits = |this: &mut Self, len: Operand, remain: Local| {
             let c = this.cmp(Gt, len, Operand::Copy(Place::local(remain)));
             let (bad, good) = this.branch(c);
             this.cur = bad;
             this.term(Terminator::Panic(vec![FmtPart::Lit("mid > len".into())]));
-            this.body.blocks[this.cur.0 as usize].term_span = crate::diag::Span::std_site(34, 200, 22);
+            this.body.blocks[this.cur.0 as usize].term_span = crate::diag::Span::std_site(34, 207, 18);
             this.cur = good;
         };
         let join = self.block();
@@ -6300,7 +6300,7 @@ impl Ex<'_, '_> {
                 self.cur = bad;
                 self.term(Terminator::Panic(vec![FmtPart::Lit("count overflowed usize".into())]));
                 // `Step::steps_between(..).expect(..)` in core's range.rs.
-                self.body.blocks[self.cur.0 as usize].term_span = crate::diag::Span::std_site(8, 1200, 59);
+                self.body.blocks[self.cur.0 as usize].term_span = crate::diag::Span::std_site(8, 1204, 59);
             }
             K::RangeInclusive => {
                 let (w, _) = self.wide_ty(a[0])?;
@@ -6326,7 +6326,7 @@ impl Ex<'_, '_> {
                 self.goto(join);
                 self.cur = bad;
                 self.term(Terminator::Panic(vec![FmtPart::Lit("count overflowed usize".into())]));
-                self.body.blocks[self.cur.0 as usize].term_span = crate::diag::Span::std_site(8, 1560, 14);
+                self.body.blocks[self.cur.0 as usize].term_span = crate::diag::Span::std_site(8, 1568, 14);
                 self.cur = zero;
                 self.assign(dest.clone(), Rvalue::Use(Self::usize_c(0)));
                 self.goto(join);
@@ -7237,9 +7237,10 @@ impl Ex<'_, '_> {
         self.assign(Place::local(r), Rvalue::Eq { a: Operand::Move(Place::local(ra)), b: Operand::Move(Place::local(rb)), ty: t, ne: false });
     }
 
-    /// `min`/`max` (key None) and `min_by_key`/`max_by_key`: Rust's
-    /// `reduce` over `cmp::max_by`/`min_by`, so `max` keeps the last of
-    /// equal items and `min` the first; the loser drops at once.
+    /// `min`/`max` (key None) and `min_by_key`/`max_by_key`: the pinned
+    /// Rust source reduces through Ord::max/min, whose defaults compare
+    /// `other < self`. Max keeps the last equal item, min the first;
+    /// the loser drops at once, key before value for keyed reductions.
     #[allow(clippy::too_many_arguments)]
     fn min_max(&mut self, max: bool, itp: Place, ty: Ty, key: Option<(Place, Ty)>, dest: Place, dest_ty: Ty) -> R {
         let item = self.item(ty)?;
@@ -7279,13 +7280,14 @@ impl Ex<'_, '_> {
                 }
                 None => None,
             };
-            // `max_by(best, x)`: x wins unless best > x; `min_by`: x
-            // wins only if best > x. The loser drops, key first.
+            // Ord::max/min and the keyed adapter both test x < best
+            // through PartialOrd, including written partial_cmp bodies.
+            // Reversing arguments to a > test would change visible calls.
             let (lhs, rhs, ct) = match (best_key, x_key, &key_ty) {
                 (Some(bk), Some(xk), Some((_, _, kt))) => (Place::local(bk), Place::local(xk), *kt),
                 _ => (Place::local(best), Place::local(x), item),
             };
-            let gt = this.greater(lhs, rhs, ct)?;
+            let gt = this.less(rhs, lhs, ct)?;
             let (best_gt, best_le) = this.branch(gt);
             let (keep_best, take_x) = if max { (best_gt, best_le) } else { (best_le, best_gt) };
             let after = this.block();
@@ -7346,62 +7348,31 @@ impl Ex<'_, '_> {
         }
     }
 
-    /// A bool operand for `a > b` over an `Ord` type lust compares
-    /// (check/collect.rs `has_total_ord`): scalars and strings, through
-    /// references, and tuples lexicographically, inline; any other type
-    /// (a derived `Ord`) through the `cmp` glue.
-    fn greater(&mut self, a: Place, b: Place, ty: Ty) -> Result<Operand, String> {
+    /// The pinned default Ord::min/max comparison, `a < b`. The checker
+    /// requires total order and a representable PartialOrd::lt. PCmp
+    /// preserves written partial_cmp calls and composite derive rules.
+    fn less(&mut self, a: Place, b: Place, ty: Ty) -> Result<Operand, String> {
         use crate::ast::BinOp::*;
         match self.body.tys.kind(ty) {
-            TyKind::Int(_) | TyKind::Bool | TyKind::Char => Ok(self.cmp(Gt, Operand::Copy(a), Operand::Copy(b))),
+            TyKind::Int(_) | TyKind::Bool | TyKind::Char => Ok(self.cmp(Lt, Operand::Copy(a), Operand::Copy(b))),
             TyKind::Unit => Ok(Operand::Const(Const::Bool(false))),
             TyKind::Ref(_, _, inner) => {
                 if inner == STR {
                     let c = self.local(BOOL);
-                    self.assign(Place::local(c), Rvalue::StrCmp(Gt, Operand::Copy(a), Operand::Copy(b)));
+                    self.assign(Place::local(c), Rvalue::StrCmp(Lt, Operand::Copy(a), Operand::Copy(b)));
                     return Ok(Operand::Copy(Place::local(c)));
                 }
-                self.greater(a.deref(), b.deref(), inner)
-            }
-            TyKind::Tuple(ts) => {
-                // First field that differs decides; all equal is not >.
-                let elems: Vec<Ty> = self.body.tys.tys_of(ts).to_vec();
-                let out = self.local(BOOL);
-                let join = self.block();
-                for (i, &e) in elems.iter().enumerate() {
-                    let (fa, fb) = (a.project(Proj::Field(i as u32)), b.project(Proj::Field(i as u32)));
-                    let g = self.greater(fa.clone(), fb.clone(), e)?;
-                    let (yes, no) = self.branch(g);
-                    self.cur = yes;
-                    self.assign(Place::local(out), Rvalue::Use(Operand::Const(Const::Bool(true))));
-                    self.goto(join);
-                    self.cur = no;
-                    let l = self.greater(fb, fa, e)?;
-                    let (less, eq) = self.branch(l);
-                    self.cur = less;
-                    self.assign(Place::local(out), Rvalue::Use(Operand::Const(Const::Bool(false))));
-                    self.goto(join);
-                    self.cur = eq;
-                }
-                self.assign(Place::local(out), Rvalue::Use(Operand::Const(Const::Bool(false))));
-                self.goto(join);
-                self.cur = join;
-                Ok(Operand::Copy(Place::local(out)))
-            }
-            _ if self.body.tys.is_string_ty(ty) => {
-                let (ra, rb) = (self.ref_to(false, a, ty), self.ref_to(false, b, ty));
-                let (sa, sb) = (self.local(REF_STR), self.local(REF_STR));
-                self.call_builtin(Builtin::StringAsStr, vec![Operand::Copy(Place::local(ra))], Place::local(sa));
-                self.call_builtin(Builtin::StringAsStr, vec![Operand::Copy(Place::local(rb))], Place::local(sb));
-                let c = self.local(BOOL);
-                self.assign(Place::local(c), Rvalue::StrCmp(Gt, Operand::Copy(Place::local(sa)), Operand::Copy(Place::local(sb))));
-                Ok(Operand::Copy(Place::local(c)))
+                self.less(a.deref(), b.deref(), inner)
             }
             _ => {
                 let (ra, rb) = (self.ref_to(false, a, ty), self.ref_to(false, b, ty));
-                let c = self.local(BOOL);
-                self.assign(Place::local(c), Rvalue::Cmp { op: Gt, a: Operand::Copy(Place::local(ra)), b: Operand::Copy(Place::local(rb)), ty });
-                Ok(Operand::Copy(Place::local(c)))
+                let order = self.local(int(IntTy::I8));
+                self.call_builtin(
+                    Builtin::PCmpCode,
+                    vec![Operand::Copy(Place::local(ra)), Operand::Copy(Place::local(rb))],
+                    Place::local(order),
+                );
+                Ok(self.cmp(Eq, Operand::Copy(Place::local(order)), Operand::Const(Const::Int(u128::MAX, IntTy::I8))))
             }
         }
     }
@@ -7465,7 +7436,17 @@ impl Ex<'_, '_> {
                 self.call_builtin(Builtin::StringNew, vec![], Place::local(s));
                 self.goto(join);
             } else {
-                self.call_builtin(Builtin::StringNew, vec![], Place::local(s));
+                if item == CHAR {
+                    // Pinned alloc::string::FromCharIterSpec first allocates
+                    // exactly the lower bound, then Extend<char> asks for a
+                    // fresh hint below. Both calls can have visible effects.
+                    let (lo, _) = self.hint(itp.clone(), ty)?;
+                    self.call_builtin(Builtin::StringWithCapacity, vec![Operand::Copy(Place::local(lo))], Place::local(s));
+                } else {
+                    // FromIterator<&char> and string-like items still start
+                    // empty; only the owned-char specialization preallocates.
+                    self.call_builtin(Builtin::StringNew, vec![], Place::local(s));
+                }
                 if item == CHAR || matches!(self.body.tys.kind(item), TyKind::Ref(_, _, c) if c == CHAR) {
                     // `Extend<char>` reserves the lower bound first.
                     let (lo, _) = self.hint(itp.clone(), ty)?;
@@ -7682,7 +7663,7 @@ impl Ex<'_, '_> {
         self.cur = none;
         self.term(Terminator::Panic(vec![FmtPart::Lit("capacity overflow".into())]));
         // rc.rs and sync.rs (`stdloc::STD_FILES` 30 and 31).
-        let (file, line) = if k == crate::check::own::Owner::Rc { (30, 3174) } else { (31, 4241) };
+        let (file, line) = if k == crate::check::own::Owner::Rc { (30, 3333) } else { (31, 4368) };
         self.body.blocks[self.cur.0 as usize].term_span = crate::diag::Span::std_site(file, line, 13);
         self.cur = some;
         let r = self.local(dest_ty);

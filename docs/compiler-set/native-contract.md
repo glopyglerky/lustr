@@ -50,12 +50,12 @@ Rust crates must consume the artifacts through the normal build contract.
 Follow [upstream preservation](upstream-lust.md) and the
 [source register](sources.md). Record every admitted import's source, license,
 necessity, target/features, dependency closure, adapter, semantic owner and
-qualification. Broad SDK/driver research dependencies must be declared and
-excluded from production admission. They are not missing from the inventory
-merely because they are linked rather than copied into the repository.
+qualification. Include linked SDK and driver dependencies in the production
+inventory and keep research-only interfaces explicitly identified.
 
-Whole Rust vendoring and importing a full driver as the complement violate the
-goal. Reimplementing all missing Rust semantics independently is not required.
+Lustr may use the pinned upstream Rust driver and libraries to supply missing
+behavior. The resulting compiler must preserve Lust's covered work and
+retention through the ordinary build path.
 Necessary correctness/integration changes to the native donor need an explicit
 patch and applicable evidence; each patch need not create a speedup.
 
@@ -88,5 +88,5 @@ possible Rust program. No current artifact is qualified as the full replacement.
 
 Current source conflicts and retained fixes are listed in the
 [design checkpoint](design.md) and [disposition record](retained-work-disposition.md).
-The [implementation cleanup](https://github.com/glopyglerky/lustr/blob/114227e8b255e8aa49ce50019b7d614d53e39c22/docs/compiler-set/exclusive-coverage-cleanup.md) records removed
+The [implementation cleanup](exclusive-coverage-cleanup.md) records removed
 routes and verification separately from the unfinished full-compiler work.

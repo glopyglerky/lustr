@@ -6,7 +6,7 @@
 //   panic_abort overflow_checks debug_assertions feature_count env_count offline locked build
 // followed by length-prefixed fields, each as "<byte len>\n<bytes>": file, out,
 // emit_c, then the crate selector (package id, manifest path, target kind,
-// target name, crate root, target triple), then one field per feature,
+// target name, explicit-target flag, crate root, target triple), then one field per feature,
 // then the client's view (see `Client`): the shown root path (len 0 for None),
 // and when the header's env count is not "-", that many name and value fields.
 // Length prefixes carry any byte a path can hold, including tabs and newlines; emit_c
@@ -14,15 +14,26 @@
 // (see `Request::run_args`). The default socket name holds the build hash, but an
 // explicit `LUST_DAEMON_SOCKET` can name a daemon of another build, so both directions
 // carry `build_id`: a daemon that reads another build's request answers and exits
-// (`ReadError::OtherBuild`), and a client drops an answer from another build or from a
-// daemon that predates the field (`request`). A stale compiler never answers warm.
+// (`ReadError::OtherBuild`). Only that explicit refusal can restart a request.
+// A malformed, lost, old-format or wrong-build result is a terminal failure.
 // Response: "<code> <stdout len> <stderr len> <build>\n" followed by the two byte strings.
+// The Unix clients preserve an exit code in 0..=255. Larger integers are a
+// malformed response, not a status to truncate into apparent success.
+// Mixed-only replies add a fifth `mixed-v1:<outcome>` header field. Ordinary
+// replies retain their original four-field form.
 // Both binaries include this module and each uses only part of it.
 #![allow(dead_code)]
 
 use std::io::{BufRead, BufReader, Read, Write};
 use std::os::unix::net::UnixStream;
 use std::path::{Path, PathBuf};
+
+// Lustr owns the host adapter; the retained compiler/session core is shared.
+#[path = "../../../src/host_runtime.rs"]
+pub mod host_runtime;
+#[path = "../../../src/library_contract.rs"]
+pub mod library_contract;
+pub use library_contract::{DebugOptions, ExecutableExtern, ExternMetadata, LibraryKey, LibraryOptions, OptLevel};
 
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub enum Cmd {
@@ -44,6 +55,9 @@ pub struct CrateKey {
     pub manifest_path: Option<PathBuf>,
     pub target_kind: String,
     pub target_name: String,
+    /// Whether the caller named --bin or --lib. Otherwise Cargo target
+    /// identity is resolved uniquely from the requested canonical source.
+    pub target_explicit: bool,
     pub root: PathBuf,
     pub test: bool,
 }
@@ -78,6 +92,7 @@ impl ProfileFlags {
 /// `target_triple` empty means the host.
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub struct SessionKey {
+    pub library: Option<LibraryKey>,
     pub krate: CrateKey,
     pub features: Vec<String>,
     pub default_features: bool,
@@ -115,11 +130,13 @@ impl SessionKey {
         let stem = path.rsplit('/').next().unwrap_or(&path);
         let stem = stem.strip_suffix(".rs").unwrap_or(stem);
         SessionKey {
+            library: None,
             krate: CrateKey {
                 package_id: format!("file:{path}"),
                 manifest_path: None,
                 target_kind: "bin".into(),
                 target_name: stem.into(),
+                target_explicit: false,
                 root: file.to_path_buf(),
                 test,
             },
@@ -137,12 +154,13 @@ impl SessionKey {
     pub fn describe(&self) -> String {
         let b = |x: bool| if x { "1" } else { "0" };
         let manifest = self.krate.manifest_path.as_ref().map_or_else(|| "-".to_string(), |p| p.to_string_lossy().into_owned());
-        format!(
-            "pkg={} manifest={} {}:{} root={} test={} features=[{}] default_features={} all_features={} target={} panic_abort={} overflow_checks={} debug_assertions={} offline={} locked={}",
+        let mut result = format!(
+            "pkg={} manifest={} {}:{} explicit_target={} root={} test={} features=[{}] default_features={} all_features={} target={} panic_abort={} overflow_checks={} debug_assertions={} offline={} locked={}",
             self.krate.package_id,
             manifest,
             self.krate.target_kind,
             self.krate.target_name,
+            b(self.krate.target_explicit),
             self.krate.root.display(),
             b(self.krate.test),
             self.features.join(","),
@@ -154,7 +172,9 @@ impl SessionKey {
             b(self.profile.debug_assertions),
             b(self.cargo_net.offline),
             b(self.cargo_net.locked),
-        )
+        );
+        if let Some(library) = &self.library { result.push_str(&format!(" library={library:?}")); }
+        result
     }
 }
 
@@ -295,6 +315,7 @@ pub struct Request {
     /// release builds always compile cold, in the client-spawned
     /// `lust-core`, never warm.
     pub cc: bool,
+    pub library_options: LibraryOptions,
     pub client: Client,
 }
 
@@ -318,6 +339,10 @@ impl Client {
     }
 }
 
+/// A Cargo unit reached a native parser or declaration-import capability limit
+/// before semantic checking or emission.
+pub const RUST_COMPLEMENT_REQUIRED: i32 = 5;
+
 #[derive(Clone, Default)]
 pub struct Response {
     pub stdout: String,
@@ -325,6 +350,40 @@ pub struct Response {
     pub code: i32,
     /// The program already ran in memory; `code` is its exit code. Do not run `out` again.
     pub ran: bool,
+    /// Explicit result of the bounded mixed admission/emission contract.
+    /// An ordinary native request never supplies this field.
+    pub mixed: Option<MixedOutcome>,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum MixedOutcome {
+    Checked,
+    Emitted,
+    /// The bridge cannot represent this request. This is terminal and does
+    /// not classify any obligation as absent from Lust's supported set.
+    IntegrationIncomplete,
+    Failed,
+}
+
+impl MixedOutcome {
+    fn tag(self) -> &'static str {
+        match self {
+            Self::Checked => "mixed-v1:checked",
+            Self::Emitted => "mixed-v1:emitted",
+            Self::IntegrationIncomplete => "mixed-v1:integration-incomplete",
+            Self::Failed => "mixed-v1:failed",
+        }
+    }
+
+    fn parse(tag: &str) -> Option<Self> {
+        Some(match tag {
+            "mixed-v1:checked" => Self::Checked,
+            "mixed-v1:emitted" => Self::Emitted,
+            "mixed-v1:integration-incomplete" => Self::IntegrationIncomplete,
+            "mixed-v1:failed" => Self::Failed,
+            _ => return None,
+        })
+    }
 }
 
 pub enum Invocation {
@@ -552,6 +611,7 @@ fn apply_dev_config(key: &mut SessionKey, file: &Path) {
 /// still the crate root: `lust check file.rs` keeps its meaning.
 fn session_key_for(file: &Path, flags: CrateFlags, net: CargoNet) -> SessionKey {
     let mut key = SessionKey::synthetic(file, false);
+    key.krate.target_explicit = flags.bin.is_some() || flags.lib;
     let mut features = flags.features;
     sort_features(&mut features);
     key.features = features;
@@ -625,6 +685,18 @@ pub fn parse_args(args: &[String]) -> Option<Invocation> {
     let (mut release, mut profile, mut rustc) = (false, None, false);
     let mut max_errors = 20usize;
     let mut crate_flags = CrateFlags::default();
+    let (mut library_name, mut library_metadata, mut library_extra, mut library_cwd) = (None,None,None,None);
+    let (mut library_cfg, mut library_check_cfg, mut library_search) = (Vec::new(),Vec::new(),Vec::new());
+    let mut library_external = None;
+    let mut executable_artifacts = false;
+    let mut standalone = false;
+    let mut single_codegen_unit = false;
+    let mut executable_test = false;
+    let mut custom_test = false;
+    let mut executable_dependencies = Vec::new();
+    let mut library_options = LibraryOptions::default();
+    let mut library_debug_supplied = false;
+    let mut library_opt = None;
     // Every --target named, in order. One builds a session; several are
     // the release driver's list and build one session each.
     let mut targets: Vec<String> = Vec::new();
@@ -652,6 +724,27 @@ pub fn parse_args(args: &[String]) -> Option<Invocation> {
     }
     while let Some(a) = it.next() {
         match a.as_str() {
+            "--lustr-library-name" if library_name.is_none() => library_name = Some(it.next()?.clone()),
+            "--lustr-library-metadata" if library_metadata.is_none() => library_metadata = Some(it.next()?.clone()),
+            "--lustr-library-extra-filename" if library_extra.is_none() => library_extra = Some(it.next()?.clone()),
+            "--lustr-library-cwd" if library_cwd.is_none() => library_cwd = Some(PathBuf::from(it.next()?)),
+            "--lustr-library-cfg" => library_cfg.push(it.next()?.clone()),
+            "--lustr-library-check-cfg" => library_check_cfg.push(it.next()?.clone()),
+            "--lustr-library-search" => library_search.push(PathBuf::from(it.next()?)),
+            "--lustr-library-extern-metadata" if library_external.is_none() => library_external = Some(ExternMetadata::parse(it.next()?)?),
+            "--lustr-executable-artifacts" if !executable_artifacts => executable_artifacts = true,
+            "--lustr-standalone-executable" if !standalone => standalone = true,
+            "--lustr-single-codegen-unit" if !single_codegen_unit => single_codegen_unit = true,
+            "--lustr-executable-test" if !executable_test && !custom_test => executable_test = true,
+            "--lustr-custom-test" if !executable_test && !custom_test => custom_test = true,
+            "--lustr-executable-extern" => executable_dependencies.push(ExecutableExtern::parse(it.next()?, it.next()?)?),
+            "--lustr-library-embed-metadata" if library_options.embed_metadata.is_none() => library_options.embed_metadata = Some(rustc_bool(it.next()?)?),
+            "--lustr-library-force-warn-unused-crate-dependencies" if !library_options.force_warn_unused_crate_dependencies => library_options.force_warn_unused_crate_dependencies = true,
+            "--lustr-library-debug-options" if !library_debug_supplied => {
+                library_options.debug = DebugOptions::decode(it.next()?.as_bytes())?;
+                library_debug_supplied = true;
+            }
+            "--lustr-opt-level" if library_opt.is_none() => library_opt = Some(OptLevel::parse(it.next()?)?),
             "--json" => json = true,
             "--timings" => timings = true,
             "-g" => debug = true,
@@ -696,6 +789,11 @@ pub fn parse_args(args: &[String]) -> Option<Invocation> {
     if file.as_os_str().is_empty() {
         return None;
     }
+    let library_supplied = library_name.is_some() || library_metadata.is_some() || library_extra.is_some() || library_cwd.is_some()
+        || !library_cfg.is_empty() || !library_check_cfg.is_empty() || !library_search.is_empty() || library_external.is_some()
+        || executable_artifacts || standalone || single_codegen_unit || executable_test || custom_test || !executable_dependencies.is_empty()
+        || library_debug_supplied || library_opt.is_some() || library_options != LibraryOptions::default();
+    if library_supplied && (rustc || release || profile.is_some()) { return None; }
     let abs = |p: &Path| std::path::absolute(p).unwrap_or_else(|_| p.to_path_buf());
     // Release and the rustc oracle are build/check-only, with no extra lust flags.
     // Crate-selection flags are lust dev flags today: reject them there rather
@@ -756,6 +854,7 @@ pub fn parse_args(args: &[String]) -> Option<Invocation> {
                 run_args: None,
                 harness: false,
                 cc: true,
+                library_options: LibraryOptions::default(),
                 client: Client::current(&typed),
             });
         }
@@ -791,6 +890,32 @@ pub fn parse_args(args: &[String]) -> Option<Invocation> {
     if let Some(on) = debug_assertions {
         session.profile.debug_assertions = on;
     }
+    if library_supplied {
+        if !executable_artifacts && !executable_dependencies.is_empty() { return None; }
+        let key = LibraryKey {crate_name:library_name?, metadata:library_metadata?, extra_filename:library_extra?,
+            source_path:file.clone(), working_directory:library_cwd?, cfg:library_cfg, check_cfg:library_check_cfg, search_paths:library_search, external:library_external,
+            executable_dependencies:executable_artifacts.then_some(executable_dependencies),
+            standalone, optimization:library_opt.unwrap_or_default(), single_codegen_unit, custom_test,
+            sdk_receipt:library_contract::SDK_RECEIPT.into()};
+        if !key.valid() || !matches!(cmd.as_str(), "build" | "check") || session.krate.target_kind != key.target_kind()
+            || session.target_triple != library_contract::TARGET
+            || debug || emit_c.is_some() || !run_args.is_empty()
+            || !key.valid_output(&abs(&out), cmd == "check", library_options) { return None; }
+        if key.standalone {
+            if session.krate.manifest_path.is_some() || executable_test || custom_test { return None; }
+            session.krate.target_name = key.crate_name.clone();
+        } else if key.is_executable() {
+            if !key.matches_target_name(&session.krate.target_name) { return None; }
+        } else {
+            session.krate.target_name = key.crate_name.clone();
+        }
+        if executable_test && (session.profile.panic_abort || !key.is_executable()) { return None; }
+        session.krate.test = executable_test || custom_test;
+        // Cargo gives a bin name for binary unit tests. Library unit
+        // tests supply their source and crate name, with no --crate-type.
+        session.krate.target_explicit = !session.krate.test || std::env::var_os("CARGO_BIN_NAME").is_some();
+        session.library = Some(key);
+    }
     let req = Request {
         cmd: if cmd == "check" { Cmd::Check } else { Cmd::Build },
         session,
@@ -803,6 +928,7 @@ pub fn parse_args(args: &[String]) -> Option<Invocation> {
         max_errors,
         run_args: if run { Some(run_args.clone()) } else { None },
         harness: false, cc: false,
+        library_options,
         client: Client::current(&typed),
     };
     Some(Invocation::Compile { req, run, args: run_args })
@@ -909,8 +1035,47 @@ pub fn encode(r: &Request) -> Vec<u8> {
     path_field(&mut out, s.krate.manifest_path.as_deref());
     put_field(&mut out, s.krate.target_kind.as_bytes());
     put_field(&mut out, s.krate.target_name.as_bytes());
+    put_field(&mut out, if s.krate.target_explicit { b"1" } else { b"0" });
     path_field(&mut out, Some(&s.krate.root));
     put_field(&mut out, s.target_triple.as_bytes());
+    put_field(&mut out, match &s.library {
+        Some(library) if library.standalone => b"5",
+        Some(library) if library.custom_test => b"4",
+        Some(library) if library.is_executable() => b"3",
+        Some(library) if library.external.is_some() => b"2",
+        Some(_) => b"1",
+        None => b"0",
+    });
+    if let Some(library) = &s.library {
+        for value in [&library.crate_name,&library.metadata,&library.extra_filename,&library.sdk_receipt] {
+            put_field(&mut out,value.as_bytes());
+        }
+        path_field(&mut out,Some(&library.source_path));
+        path_field(&mut out,Some(&library.working_directory));
+        put_field(&mut out,library.cfg.len().to_string().as_bytes());
+        for value in &library.cfg { put_field(&mut out,value.as_bytes()); }
+        put_field(&mut out,library.check_cfg.len().to_string().as_bytes());
+        for value in &library.check_cfg { put_field(&mut out,value.as_bytes()); }
+        put_field(&mut out,library.search_paths.len().to_string().as_bytes());
+        for path in &library.search_paths { path_field(&mut out,Some(path)); }
+        if let Some(dependency) = &library.external {
+            put_field(&mut out, dependency.alias.as_bytes());
+            path_field(&mut out, Some(&dependency.artifact));
+        }
+        if let Some(dependencies) = &library.executable_dependencies {
+            put_field(&mut out, dependencies.len().to_string().as_bytes());
+            for dependency in dependencies {
+                put_field(&mut out, dependency.metadata.alias.as_bytes());
+                path_field(&mut out, Some(&dependency.metadata.artifact));
+                path_field(&mut out, dependency.archive.as_deref());
+            }
+        }
+        put_field(&mut out,match r.library_options.embed_metadata {None=>b"-",Some(true)=>b"1",Some(false)=>b"0"});
+        put_field(&mut out,if r.library_options.force_warn_unused_crate_dependencies {b"1"} else {b"0"});
+        put_field(&mut out,&r.library_options.debug.encode());
+        put_field(&mut out,library.optimization.value().as_bytes());
+        put_field(&mut out, if library.single_codegen_unit { b"1" } else { b"0" });
+    }
     for f in &s.features {
         put_field(&mut out, f.as_bytes());
     }
@@ -951,8 +1116,54 @@ fn read_fields(r: &mut impl BufRead, f: &[&str]) -> Option<Request> {
     let manifest = get_field(r)?;
     let target_kind = text(get_field(r)?)?;
     let target_name = text(get_field(r)?)?;
+    let target_explicit = match get_field(r)?.as_slice() {
+        b"0" => false,
+        b"1" => true,
+        _ => return None,
+    };
     let root = path(get_field(r)?);
     let target_triple = text(get_field(r)?)?;
+    let mut library_options = LibraryOptions::default();
+    let library = match get_field(r)?.as_slice() {
+        b"0" => None,
+        mode @ (b"1" | b"2" | b"3" | b"4" | b"5") => {
+            let crate_name=text(get_field(r)?)?; let metadata=text(get_field(r)?)?;
+            let extra_filename=text(get_field(r)?)?; let sdk_receipt=text(get_field(r)?)?;
+            let source_path=path(get_field(r)?); let working_directory=path(get_field(r)?);
+            let count:usize=text(get_field(r)?)?.parse().ok()?; if count>4096{return None;}
+            let cfg=(0..count).map(|_|text(get_field(r)?)).collect::<Option<Vec<_>>>()?;
+            let count:usize=text(get_field(r)?)?.parse().ok()?; if count>4096{return None;}
+            let check_cfg=(0..count).map(|_|text(get_field(r)?)).collect::<Option<Vec<_>>>()?;
+            let count:usize=text(get_field(r)?)?.parse().ok()?; if count>4096{return None;}
+            let search_paths=(0..count).map(|_|Some(path(get_field(r)?))).collect::<Option<Vec<_>>>()?;
+            let external = if mode == b"2" {
+                Some(ExternMetadata { alias: text(get_field(r)?)?, artifact: path(get_field(r)?) })
+            } else { None };
+            let executable_dependencies = if matches!(mode, b"3" | b"4" | b"5") {
+                let count:usize = text(get_field(r)?)?.parse().ok()?;
+                if count > 4096 { return None; }
+                Some((0..count).map(|_| Some(ExecutableExtern {
+                    metadata: ExternMetadata { alias: text(get_field(r)?)?, artifact: path(get_field(r)?) },
+                    archive: Some(get_field(r)?).filter(|bytes| !bytes.is_empty()).map(path),
+                })).collect::<Option<Vec<_>>>()?)
+            } else { None };
+            library_options.embed_metadata=match get_field(r)?.as_slice() {b"-"=>None,b"1"=>Some(true),b"0"=>Some(false),_=>return None};
+            library_options.force_warn_unused_crate_dependencies=match get_field(r)?.as_slice() {b"0"=>false,b"1"=>true,_=>return None};
+            library_options.debug=DebugOptions::decode(&get_field(r)?)?;
+            let optimization=OptLevel::parse(&text(get_field(r)?)?)?;
+            let single_codegen_unit = match get_field(r)?.as_slice() { b"1" => true, b"0" => false, _ => return None };
+            let custom_test = mode == b"4";
+            let standalone = mode == b"5";
+            if custom_test && f[5] != "1" { return None; }
+            if standalone && (f[5] == "1" || !manifest.is_empty()) { return None; }
+            let library=LibraryKey{crate_name,metadata,extra_filename,source_path,working_directory,cfg,check_cfg,search_paths,external,executable_dependencies,standalone,optimization,single_codegen_unit,custom_test,sdk_receipt};
+            if !library.valid() || !library.valid_output(&out, f[0] == "check", library_options) || library.source_path!=file
+                || target_triple!=library_contract::TARGET || target_kind!=library.target_kind()
+                || !library.matches_target_name(&target_name) || !matches!(f[0], "build" | "check") {return None;}
+            Some(library)
+        },
+        _ => return None,
+    };
     // A feature count this large is a bad request, not a loop to run.
     let n_features: usize = f[11].parse().ok()?;
     if n_features > 4096 {
@@ -982,11 +1193,13 @@ fn read_fields(r: &mut impl BufRead, f: &[&str]) -> Option<Request> {
     Some(Request {
         cmd: if f[0] == "check" { Cmd::Check } else { Cmd::Build },
         session: SessionKey {
+            library,
             krate: CrateKey {
                 package_id,
                 manifest_path: if manifest.is_empty() { None } else { Some(path(manifest)) },
                 target_kind,
                 target_name,
+                target_explicit,
                 root,
                 test: f[5] == "1",
             },
@@ -1006,12 +1219,17 @@ fn read_fields(r: &mut impl BufRead, f: &[&str]) -> Option<Request> {
         max_errors: f[4].parse().ok()?,
         run_args: None,
         harness: false, cc: false,
+        library_options,
         client: Client { env, shown: if shown.is_empty() { None } else { Some(path(shown)) } },
     })
 }
 
 pub fn write_response(w: &mut impl Write, r: &Response) -> std::io::Result<()> {
-    write!(w, "{} {} {} {}\n{}{}", r.code, r.stdout.len(), r.stderr.len(), build_id(), r.stdout, r.stderr)
+    if let Some(outcome) = r.mixed {
+        write!(w, "{} {} {} {} {}\n{}{}", r.code, r.stdout.len(), r.stderr.len(), build_id(), outcome.tag(), r.stdout, r.stderr)
+    } else {
+        write!(w, "{} {} {} {}\n{}{}", r.code, r.stdout.len(), r.stderr.len(), build_id(), r.stdout, r.stderr)
+    }
 }
 
 /// The whole answer to a request of another build: a head no client takes
@@ -1020,37 +1238,78 @@ pub fn write_other_build(w: &mut impl Write) -> std::io::Result<()> {
     write!(w, "- - - {}\n", build_id())
 }
 
-/// Sends a request to a running daemon. None if no daemon answers, or if the
-/// one that answers is another lust build: that answer is dropped and the
-/// caller compiles cold. A daemon of another build that knows the build
-/// field exits by itself; an older one is stopped by removing its socket
-/// (its stop request), so the next command starts a daemon of this build.
-pub fn request(sock: &Path, req: &Request) -> Option<Response> {
-    let mut conn = UnixStream::connect(sock).ok()?;
-    conn.write_all(&encode(req)).ok()?;
-    let mut reader = BufReader::new(conn);
+/// A missing listener or an explicit stale-build refusal is safe to start
+/// again. Every failure after writing begins is terminal: the daemon may have
+/// compiled the request even when its response never reaches this process.
+pub fn request(sock: &Path, req: &Request) -> Result<Option<Response>, String> {
+    request_at(sock, req, false)
+}
+
+/// The mixed caller may start a daemon only when no connection accepted its
+/// request, or a stale build explicitly rejected it before compilation. Once
+/// writing starts, a failed or malformed exchange is not a retryable miss.
+pub fn request_mixed(sock: &Path, req: &Request) -> Result<Option<Response>, String> {
+    request_at(sock, req, true)
+}
+
+fn request_at(sock: &Path, req: &Request, mixed: bool) -> Result<Option<Response>, String> {
+    let address = host_runtime::DaemonSocket::resolve(sock).map_err(|e| format!("daemon address: {e}"))?;
+    let mut conn = match UnixStream::connect(address.path()) {
+        Ok(conn) => conn,
+        Err(e) if matches!(e.kind(), std::io::ErrorKind::NotFound | std::io::ErrorKind::ConnectionRefused) => return Ok(None),
+        Err(e) => return Err(format!("daemon connection: {e}")),
+    };
+    exchange(&mut conn, req, mixed)
+}
+
+fn exchange(conn: &mut (impl Read + Write), req: &Request, mixed: bool) -> Result<Option<Response>, String> {
+    conn.write_all(&encode(req)).map_err(|e| format!("daemon request write: {e}"))?;
+    read_response(&mut BufReader::new(conn), mixed)
+}
+
+#[cfg(test)]
+fn read_mixed_response(reader: &mut impl BufRead) -> Result<Option<Response>, String> {
+    read_response(reader, true)
+}
+
+fn read_response(reader: &mut impl BufRead, expect_mixed: bool) -> Result<Option<Response>, String> {
     let mut head = String::new();
-    reader.read_line(&mut head).ok()?;
+    // A valid header contains only fixed labels, build identity, and three
+    // machine-sized numbers. Bound it before allocating from an untrusted peer.
+    reader.take(256).read_line(&mut head).map_err(|e| format!("daemon response header: {e}"))?;
+    if !head.ends_with('\n') {
+        return Err("daemon returned a truncated or oversized response header".into());
+    }
     let words: Vec<&str> = head.split_whitespace().collect();
-    let nums: Vec<usize> = words.iter().take(3).filter_map(|x| x.parse().ok()).collect();
-    if nums.len() == 3 && words.len() == 3 {
-        // A daemon from before the build field: stop it.
-        let _ = std::fs::remove_file(sock);
-        return None;
+    if words.len() == 4 && words[..3] == ["-", "-", "-"] && words[3] != build_id() {
+        return Ok(None);
     }
-    if nums.len() != 3 || words.len() != 4 || words[3] != build_id() {
-        return None;
+    if words.len() != if expect_mixed { 5 } else { 4 } || words[3] != build_id() {
+        return Err("daemon returned an unclassified response or a different compiler build".into());
     }
-    let mut out = vec![0; nums[1]];
-    let mut err = vec![0; nums[2]];
-    reader.read_exact(&mut out).ok()?;
-    reader.read_exact(&mut err).ok()?;
-    Some(Response {
-        code: nums[0] as i32,
-        stdout: String::from_utf8_lossy(&out).into_owned(),
-        stderr: String::from_utf8_lossy(&err).into_owned(),
-        ran: false,
-    })
+    let number = |at: usize| words[at].parse::<usize>().map_err(|_| "daemon returned an invalid response size/status".to_owned());
+    let code = i32::from(u8::try_from(number(0)?).map_err(|_| "daemon returned an invalid response status".to_owned())?);
+    let (out_len, err_len) = (number(1)?, number(2)?);
+    let mixed = if expect_mixed { Some(MixedOutcome::parse(words[4]).ok_or("mixed daemon returned an unknown admission outcome")?) } else { None };
+    if mixed.is_some_and(|outcome| !match outcome {
+        MixedOutcome::Checked | MixedOutcome::Emitted => code == 0,
+        MixedOutcome::IntegrationIncomplete => code == 4,
+        MixedOutcome::Failed => code != 0,
+    }) {
+        return Err("mixed daemon admission outcome disagrees with its status".into());
+    }
+    fn text(reader: &mut impl BufRead, length: usize) -> Result<String, String> {
+        let mut bytes = Vec::new();
+        // Grow only for bytes actually received, rather than allocating a
+        // peer-declared length before detecting a truncated response.
+        let limit = u64::try_from(length).map_err(|_| "daemon response is too large".to_owned())?;
+        reader.take(limit).read_to_end(&mut bytes).map_err(|e| format!("daemon response body: {e}"))?;
+        if bytes.len() != length { return Err("daemon returned a truncated response body".into()); }
+        String::from_utf8(bytes).map_err(|_| "daemon response is not UTF-8".to_owned())
+    }
+    let stdout = text(reader, out_len)?;
+    let stderr = text(reader, err_len)?;
+    Ok(Some(Response { code, stdout, stderr, ran: false, mixed }))
 }
 
 /// Prints a response. For `run`, runs the program after a successful build. Never returns.
@@ -1331,9 +1590,49 @@ fn cargo_target_dir(manifest: &Path) -> Option<PathBuf> {
     Some(PathBuf::from(text[at..end].replace("\\\\", "\\")))
 }
 
+/// Refuse delegated compiler contexts before either executable reads arguments,
+/// touches probe artifacts, or connects to a daemon. Ordinary semantic environment
+/// inputs remain unchanged. Research builds retain the upstream probe implementation.
+pub fn reject_internal_probe() {
+    #[cfg(feature = "exclusive-native")]
+    {
+        if std::env::var_os("LUST_PROBE_FAKE_DIR").is_some() {
+            reject_delegation("LUST_PROBE_FAKE_DIR probe compilation");
+        }
+        for name in ["RUSTC_WRAPPER", "RUSTC_WORKSPACE_WRAPPER"] {
+            if std::env::var_os(name).is_some_and(|value| !value.is_empty()) {
+                reject_delegation(name);
+            }
+        }
+    }
+}
+
+/// Exact executable identity for product construction. Both helpers answer from
+/// their own build, so a guarded client cannot stand in for an unguarded core.
+pub fn product_identity_query() -> bool {
+    #[cfg(feature = "exclusive-native")]
+    if std::env::args_os().skip(1).eq([std::ffi::OsString::from("--lustr-runtime-identity")]) {
+        println!("lustr-exclusive-native-v1\nbuild={}", env!("LUST_BUILD_HASH"));
+        return true;
+    }
+    false
+}
+
+#[cfg(feature = "exclusive-native")]
+fn reject_delegation(mode: &str) -> ! {
+    eprintln!("error: Lustr product helper does not delegate {mode} to rustc or Cargo; native integration is incomplete");
+    std::process::exit(2);
+}
+
+#[cfg(feature = "exclusive-native")]
+pub fn run_release(_file: &Path, _out: Option<&Path>, _profile: Option<&str>, _debug: bool, _net: CargoNet) -> ! {
+    reject_delegation("release/profile compilation");
+}
+
 /// `lust build --release` / `--profile <name>`. With a Cargo.toml above the file, Cargo
 /// builds it with the file's package and bin selection. Without one, rustc builds the
 /// single file with the release oracle flags from DESIGN.md. Never returns.
+#[cfg(not(feature = "exclusive-native"))]
 pub fn run_release(file: &Path, out: Option<&Path>, profile: Option<&str>, debug: bool, net: CargoNet) -> ! {
     let profile = profile.unwrap_or("release");
     let dev = profile == "dev";
@@ -1408,12 +1707,18 @@ pub fn run_release(file: &Path, out: Option<&Path>, profile: Option<&str>, debug
     exit_with(status);
 }
 
+#[cfg(feature = "exclusive-native")]
+pub fn run_rustc_check(_file: &Path) -> ! {
+    reject_delegation("rustc oracle compilation");
+}
+
 /// `lust check --rustc`: the real rustc verdict with the dev oracle flags from DESIGN.md at
 /// rustc's default lint levels. A second opinion for agents. It emits an object file (no link),
 /// not metadata: `--emit=metadata` stops before the MIR passes, so it misses deny-by-default
 /// lints (unconditional_panic, arithmetic_overflow) and post-monomorphization const errors that
 /// `rustc` and `cargo build` reject. On a 950-line file the object takes 190 ms against 160 ms
 /// for metadata and 250 ms for a linked binary. Never returns.
+#[cfg(not(feature = "exclusive-native"))]
 pub fn run_rustc_check(file: &Path) -> ! {
     let obj = std::env::temp_dir().join(format!("lust-rustc-check-{}.o", std::process::id()));
     eprintln!("lust: checking with rustc (oracle): rustc --edition 2024 --emit=obj {}", file.display());
@@ -1461,6 +1766,150 @@ pub fn daemon_idle() -> Option<std::time::Duration> {
 mod tests {
     use super::*;
 
+    #[test]
+    fn native_wire_preserves_status_and_utf8_without_reclassifying_failures() {
+        for code in [0, 1, 2, 3, 101, 128, 134, 137, 143, 255] {
+            let response = Response { code, stdout: "out λ\n".into(), stderr: "diagnostic é\n".into(), ..Default::default() };
+            let mut bytes = Vec::new();
+            write_response(&mut bytes, &response).unwrap();
+            let back = read_response(&mut std::io::Cursor::new(bytes), false).unwrap().unwrap();
+            assert_eq!(back.code, code);
+            assert_eq!(back.stdout, response.stdout);
+            assert_eq!(back.stderr, response.stderr);
+            assert!(back.mixed.is_none());
+        }
+    }
+
+    #[test]
+    fn native_wire_ambiguous_results_are_never_retryable_misses() {
+        for text in [
+            String::new(),
+            "0 0 0\n".into(),
+            "0 0 0 another-build\n".into(),
+            format!("- - - {}\n", build_id()),
+            format!("0 0 0 {}", build_id()),
+            format!("0 0 0 {} mixed-v1:checked\n", build_id()),
+            format!("0 1 0 {}\n", build_id()),
+            format!("0 0 1 {}\n", build_id()),
+            format!("-1 0 0 {}\n", build_id()),
+            format!("2147483648 0 0 {}\n", build_id()),
+            format!("0 bad 0 {}\n", build_id()),
+            format!("0 {} 0 {}\n", usize::MAX, build_id()),
+            format!("0 0 {} {}\n", usize::MAX, build_id()),
+            format!("{}\n", "0".repeat(257)),
+        ] {
+            assert!(read_response(&mut std::io::Cursor::new(text.as_bytes()), false).is_err(), "{text:?}");
+        }
+        let mut bytes = format!("0 1 0 {}\n", build_id()).into_bytes();
+        bytes.push(0xff);
+        assert!(read_response(&mut std::io::Cursor::new(bytes), false).is_err());
+        assert!(read_response(&mut std::io::Cursor::new(b"- - - another-build\n"), false).unwrap().is_none());
+    }
+
+    #[test]
+    fn wire_status_cannot_wrap_into_success_or_an_unrelated_failure() {
+        // These daemons and clients use Unix process exit codes. Rust's
+        // process::exit accepts i32, but the parent observes only its low byte.
+        // Reject the malformed result before either public entry can report
+        // success for 256/512 or change a failure from 257 into status 1.
+        for code in [256, 257, 512, i32::MAX] {
+            for outcome in ["", " mixed-v1:failed"] {
+                let reply = format!("{code} 0 0 {}{outcome}\n", build_id());
+                let result = read_response(&mut std::io::Cursor::new(reply), !outcome.is_empty());
+                assert!(result.is_err(), "unrepresentable process status {code} was accepted");
+            }
+        }
+    }
+
+    #[test]
+    fn daemon_exchange_does_not_replay_after_partial_write_or_lost_reply() {
+        struct Peer {
+            sent: Vec<u8>,
+            limit: usize,
+            response: std::io::Cursor<Vec<u8>>,
+            fail_read: bool,
+        }
+        impl Write for Peer {
+            fn write(&mut self, bytes: &[u8]) -> std::io::Result<usize> {
+                let accepted = bytes.len().min(self.limit.saturating_sub(self.sent.len()));
+                if accepted == 0 { return Err(std::io::ErrorKind::BrokenPipe.into()); }
+                self.sent.extend_from_slice(&bytes[..accepted]);
+                Ok(accepted)
+            }
+            fn flush(&mut self) -> std::io::Result<()> { Ok(()) }
+        }
+        impl Read for Peer {
+            fn read(&mut self, bytes: &mut [u8]) -> std::io::Result<usize> {
+                if self.fail_read { return Err(std::io::ErrorKind::ConnectionReset.into()); }
+                self.response.read(bytes)
+            }
+        }
+        let req = compile_req(&["check", "transport-fixture.rs"]);
+        let expected = encode(&req);
+        for mixed in [false, true] {
+            for (limit, fail_read) in [(7, false), (usize::MAX, false), (usize::MAX, true)] {
+                let mut peer = Peer { sent: Vec::new(), limit, response: std::io::Cursor::new(Vec::new()), fail_read };
+                assert!(exchange(&mut peer, &req, mixed).is_err());
+                assert_eq!(peer.sent, expected[..expected.len().min(limit)], "one request, including on an ambiguous failure");
+            }
+            let reply = if mixed { format!("0 0 0 {} mixed-v1:checked\n", build_id()) } else { format!("0 0 0 {}\n", build_id()) };
+            let mut peer = Peer { sent: Vec::new(), limit: usize::MAX, response: std::io::Cursor::new(reply.into_bytes()), fail_read: false };
+            assert_eq!(exchange(&mut peer, &req, mixed).unwrap().unwrap().code, 0);
+            assert_eq!(peer.sent, expected);
+        }
+    }
+
+    #[test]
+    fn mixed_admission_wire_keeps_ordinary_response_bytes() {
+        let response = Response { stdout: "out".into(), stderr: "err".into(), code: 1, ..Default::default() };
+        let mut bytes = Vec::new();
+        write_response(&mut bytes, &response).unwrap();
+        assert_eq!(bytes, format!("1 3 3 {}\nouterr", build_id()).as_bytes());
+        assert!(read_mixed_response(&mut std::io::Cursor::new(bytes)).is_err(), "ordinary success/error is not mixed admission");
+    }
+
+    #[test]
+    fn mixed_admission_wire_roundtrips_all_outcomes() {
+        for outcome in [MixedOutcome::Checked, MixedOutcome::Emitted, MixedOutcome::IntegrationIncomplete, MixedOutcome::Failed] {
+            let response = Response { code: match outcome { MixedOutcome::Failed => 3, MixedOutcome::IntegrationIncomplete => 4, _ => 0 },
+                stdout: "native symbol".into(), stderr: "diagnostic λ\n".into(), mixed: Some(outcome), ..Default::default() };
+            let mut bytes = Vec::new();
+            write_response(&mut bytes, &response).unwrap();
+            let back = read_mixed_response(&mut std::io::Cursor::new(bytes)).unwrap().expect("classified response");
+            assert_eq!(back.code, response.code);
+            assert_eq!(back.mixed, response.mixed);
+            assert_eq!(back.stdout, response.stdout);
+            assert_eq!(back.stderr, response.stderr);
+        }
+    }
+
+    #[test]
+    fn mixed_admission_wire_errors_are_not_retryable_misses() {
+        for text in [
+            String::new(),
+            format!("0 0 0 {} mixed-v1:checked", build_id()),
+            format!("0 0 0 {} mixed-v2:checked\n", build_id()),
+            format!("0 0 0 {} mixed-v1:unknown\n", build_id()),
+            format!("0 0 0 {} mixed-v1:failed\n", build_id()),
+            format!("0 0 0 {} mixed-v1:integration-incomplete\n", build_id()),
+            format!("1 0 0 {} mixed-v1:integration-incomplete\n", build_id()),
+            format!("3 0 0 {} mixed-v1:integration-incomplete\n", build_id()),
+            format!("0 0 0 {} mixed-v1:complementary\n", build_id()),
+            format!("3 0 0 {} mixed-v1:emitted\n", build_id()),
+            format!("0 1 0 {} mixed-v1:emitted\n", build_id()),
+            format!("0 0 1 {} mixed-v1:checked\n", build_id()),
+            "0 0 0 another-build mixed-v1:checked\n".into(),
+            format!("- - - {}\n", build_id()),
+        ] {
+            assert!(read_mixed_response(&mut std::io::Cursor::new(text.as_bytes())).is_err(), "{text:?}");
+        }
+        let mut bytes = format!("0 1 0 {} mixed-v1:emitted\n", build_id()).into_bytes();
+        bytes.push(0xff);
+        assert!(read_mixed_response(&mut std::io::Cursor::new(bytes)).is_err());
+        assert!(read_mixed_response(&mut std::io::Cursor::new(b"- - - another-build\n")).unwrap().is_none(),
+            "only an explicit pre-compilation stale-build refusal may restart startup");
+    }
+
     fn args(list: &[&str]) -> Vec<String> {
         list.iter().map(|s| s.to_string()).collect()
     }
@@ -1484,6 +1933,23 @@ mod tests {
         assert!(k.krate.manifest_path.is_none() && k.features.is_empty() && k.default_features && !k.all_features);
         assert_ne!(k, SessionKey::synthetic(Path::new("/tmp/x/main.rs"), true), "test target differs");
         assert_ne!(k, SessionKey::synthetic(Path::new("/tmp/x/other.rs"), false), "file differs");
+    }
+
+    #[test]
+    fn cargo_target_selector_fact_survives_the_wire_and_keys() {
+        let inferred = compile_req(&["check", "/tmp/selector/main.rs", "--manifest-path", "/tmp/selector/Cargo.toml"]);
+        let explicit = compile_req(&["check", "/tmp/selector/main.rs", "--manifest-path", "/tmp/selector/Cargo.toml", "--bin", "main"]);
+        assert!(!inferred.session.krate.target_explicit);
+        assert!(explicit.session.krate.target_explicit);
+        assert_ne!(inferred.session, explicit.session);
+        assert_ne!(inferred.session.describe(), explicit.session.describe());
+        for request in [inferred, explicit] {
+            let encoded = encode(&request);
+            let decoded = read_request(&mut std::io::Cursor::new(encoded)).unwrap();
+            assert_eq!(decoded.session, request.session);
+        }
+        let lib = compile_req(&["check", "/tmp/selector/lib.rs", "--lib"]);
+        assert!(lib.session.krate.target_explicit);
     }
 
     /// Two feature selections of one file are two session keys (the S6

@@ -1,81 +1,32 @@
 #![forbid(unsafe_code)]
-//! Cargo owns the dependency graph and all Rust artefacts. This module chooses an
-//! entire invocation, never pieces of source or incompatible library formats.
+//! Retained Cargo planning and configuration research.
+//! The former executable compiler coordinator is retired.
 mod doctor;
 mod toolchain;
 
 use std::ffi::{OsStr, OsString};
-use std::io;
-use std::path::PathBuf;
-use std::process::Command;
+use std::path::{Path, PathBuf};
 
-const HELP: &str = "lustr compiler set 0.1.0
-Coordinate Lust subset compilation and full Rust projects.
+pub const HELP: &str = "lustr: the independent compiler coordinator has been retired.
 
-Usage:
-  lustr [+toolchain] [--engine ENGINE] <command> [arguments...]
-  lustr --bluefe-root /absolute/sysroot <command> [arguments...]
-  lustr --bluefe-root /absolute/sysroot --frontend-jobs N rustc [Cargo arguments] [-- rustc arguments]
-  cargo lustr [--engine ENGINE] <command> [arguments...]
-  cargo lust [--engine auto|rustc|cranelift|lust] <command> [arguments...]
-  cargo-lust [+toolchain] [--engine ENGINE] <command> [arguments...]
-  cargo lust [--engine ENGINE] plan <command> [arguments...]
-  cargo lust [--engine ENGINE] --explain <command> [arguments...]
-  cargo lust doctor
-
-Engines:
-  auto       Preserve the project's selected Cargo/rustc configuration (default).
-  rustc      Invoke Cargo unchanged, preserving its selected compiler and wrappers.
-  cranelift  Experimental Cargo dev/test code generation with Cranelift. Requires
-             LUST_CRANELIFT_BACKEND set to an existing absolute backend dylib, built
-             with unwinding support for the selected nightly rustc. The stock
-             rustup preview backend is not selected: it loses panic semantics.
-             Release/custom profiles and commands other than build/run/test stay
-             on the project's original Cargo configuration.
-  lust       Forward native Lust commands and arguments to Lust for a complete
-             supported target. For example: --engine lust check src/main.rs.
-
-Coordinator options must precede the command. All arguments after it are passed
-through unchanged, including arguments after --. Plan/--explain prints JSON and
-runs no compiler, Cargo command, build script or project program.
-
---frontend-jobs is an opt-in experiment for one Cargo rustc target. It appends
--Zunstable-options and --jobs-frontend=N to that target's compiler arguments.
-Use --profile check for metadata checking. Cargo still selects project flags,
-wrappers, features and dependencies. Other commands are rejected in this mode;
-no workspace-wide Rust flag or wrapper configuration is replaced.
-
-No toolchains are installed or selected automatically. No compilation or program
-is retried after failure. The coordinator does not change panic, features, target,
-optimization, source, dependency versions, configuration files or Rust flags
-except the explicitly requested frontend job options above.
-Cranelift selection uses command-scoped Cargo --config arguments, so nested Cargo
-processes do not inherit backend profile environment variables from this tool.
-Auto currently uses Cargo/rustc because arbitrary Lust/Cargo interoperability has
-not been established. It does not claim a speed increase.
-
-LUST_CARGO selects the Cargo executable. LUSTC selects the Lust executable.
-Otherwise CARGO selects Cargo, then PATH. Lust is found beside cargo-lust, then on PATH.
-An explicit +toolchain runs `rustup run -- TOOLCHAIN cargo` without installing it.
-This discards inherited CARGO and cannot be combined with LUST_CARGO.
-LUST_CRANELIFT_BACKEND is required only when the Cranelift dev/test route is used.
-Its path must be valid UTF-8 for Cargo's command-scoped TOML configuration.
-Choosing a backend path does not certify its features, ABI, or program correctness.
-The lustr, cargo-lustr, and cargo-lust executables use the same coordinator.
---bluefe-root selects bin/cargo, bin/rustc and bin/rustdoc for this invocation.
-It preserves arguments, flags, profiles and compiler wrappers, installs nothing,
-and cannot be combined with +toolchain or --engine lust. Plans run no probes;
-doctor reports availability rather than semantic or backend qualification.
+Use the integrated Lustr entry. Complementary compiler integration remains
+incomplete; this historical Cargo planning crate does not execute a compiler.
 ";
 
 /// Shared command entry point for the direct and both Cargo extension names.
 /// Cargo adds its subcommand name to argv; remove only that leading name.
 pub fn run_cli(args: &[OsString]) -> i32 {
+    run_cli_with_root(args, None)
+}
+
+/// Compatibility entry that reports the retired coordinator without compilation.
+pub fn run_cli_with_default_root(args: &[OsString], root: &Path) -> i32 {
+    run_cli_with_root(args, Some(root))
+}
+
+fn run_cli_with_root(args: &[OsString], root: Option<&Path>) -> i32 {
     let args = if args.first().is_some_and(|arg| arg == "lust" || arg == "lustr") { &args[1..] } else { args };
-    if args == [OsString::from("doctor")] {
-        return doctor::run();
-    }
-    run(args)
+    run_with_default_root(args, root)
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -125,10 +76,15 @@ pub enum Action {
 }
 
 pub fn parse(args: &[OsString]) -> Result<Action, String> {
+    parse_with_default_root(args, None)
+}
+
+fn parse_with_default_root(args: &[OsString], default_root: Option<&Path>) -> Result<Action, String> {
     if args.is_empty() {
         return Ok(Action::Help);
     }
     let mut engine = Engine::Auto;
+    let mut explicit_engine = false;
     let mut explain = false;
     let mut toolchain = None;
     let mut bluefe_root = None;
@@ -147,8 +103,10 @@ pub fn parse(args: &[OsString]) -> Result<Action, String> {
         } else if arg == "--engine" {
             index += 1;
             engine = Engine::parse(args.get(index).ok_or("--engine requires a value")?)?;
+            explicit_engine = true;
         } else if let Some(value) = arg.to_str().and_then(|s| s.strip_prefix("--engine=")) {
             engine = Engine::parse(OsStr::new(value))?;
+            explicit_engine = true;
         } else if arg == "--frontend-jobs" || arg.to_str().is_some_and(|s| s.starts_with("--frontend-jobs=")) {
             let value = if arg == "--frontend-jobs" {
                 index += 1;
@@ -186,6 +144,9 @@ pub fn parse(args: &[OsString]) -> Result<Action, String> {
     }
     if index == args.len() {
         return Err("a command is required; run cargo lust --help".to_owned());
+    }
+    if bluefe_root.is_none() && toolchain.is_none() && !explicit_engine {
+        bluefe_root = default_root.map(Path::to_path_buf);
     }
     if engine == Engine::Lust && toolchain.is_some() {
         return Err("+toolchain selects Cargo, not the Lust compiler; omit it for --engine lust".to_owned());
@@ -465,15 +426,6 @@ impl Plan {
             backend,
         )
     }
-
-    fn command(&self) -> Command {
-        let mut command = Command::new(&self.program);
-        for key in &self.environment_remove {
-            command.env_remove(key);
-        }
-        command.args(&self.args).envs(self.environment.iter().map(|(key, value)| (key, value)));
-        command
-    }
 }
 
 // JSON strings never lose OS argument bytes. On Unix invalid UTF-8 is an
@@ -520,69 +472,20 @@ fn string_json(value: &str) -> String {
 }
 
 pub fn run(args: &[OsString]) -> i32 {
-    let request = match parse(args) {
-        Ok(Action::Help) => {
-            print!("{HELP}");
-            return 0;
-        }
-        Ok(Action::Version) => {
-            println!("lustr {}", env!("CARGO_PKG_VERSION"));
-            return 0;
-        }
-        Ok(Action::Execute(request)) => request,
-        Err(error) => {
-            eprintln!("lustr: {error}");
-            return 2;
-        }
-    };
-    if !request.explain {
-        if let Some(root) = &request.bluefe_root {
-            if let Err(error) = toolchain::validate(root) {
-                eprintln!("lustr: {error}");
-                return 2;
-            }
-        }
-        if request.args == [OsString::from("doctor")] {
-            return doctor::run_for_root(request.bluefe_root.as_deref());
-        }
-    }
-    let plan = match plan(&request, Programs::from_environment()) {
-        Ok(plan) => plan,
-        Err(error) => {
-            eprintln!("lustr: {error}");
-            return 2;
-        }
-    };
-    if request.explain {
-        println!("{}", plan.json());
+    run_with_default_root(args, None)
+}
+
+fn run_with_default_root(args: &[OsString], _default_root: Option<&Path>) -> i32 {
+    if args == [OsString::from("--help")] || args == [OsString::from("-h")] {
+        print!("{HELP}");
         return 0;
     }
-    if plan.selected_engine == Engine::Cranelift {
-        eprintln!(
-            "lustr: experimental configured Cranelift backend; use a backend built with unwinding support for this nightly. Panic and feature flags are unchanged. The selected backend still requires semantic qualification; failures are returned without retry."
-        );
+    if args == [OsString::from("--version")] || args == [OsString::from("-V")] {
+        println!("lustr planning library {} (compiler coordinator retired)", env!("CARGO_PKG_VERSION"));
+        return 0;
     }
-    execute(&plan)
-}
-
-#[cfg(unix)]
-fn execute(plan: &Plan) -> i32 {
-    use std::os::unix::process::CommandExt;
-    let error = plan.command().exec();
-    spawn_error(&plan.program, error)
-}
-
-#[cfg(not(unix))]
-fn execute(plan: &Plan) -> i32 {
-    match plan.command().status() {
-        Ok(status) => status.code().unwrap_or(1),
-        Err(error) => spawn_error(&plan.program, error),
-    }
-}
-
-fn spawn_error(program: &OsStr, error: io::Error) -> i32 {
-    eprintln!("lustr: cannot execute {program:?}: {error}");
-    if error.kind() == io::ErrorKind::NotFound { 127 } else { 126 }
+    eprintln!("lustr: the independent compiler coordinator has been retired; no alternate compiler was invoked");
+    2
 }
 
 #[cfg(test)]

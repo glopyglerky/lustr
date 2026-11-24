@@ -1,11 +1,11 @@
 pub mod support { pub mod vfstest { pub struct MapFile ( pub String ) ; # [ automatically_derived ]
-impl :: core :: clone :: Clone for MapFile { # [ inline ] fn clone ( & self ) -> MapFile { MapFile (
-:: core :: clone :: Clone :: clone ( & self . 0 ) ) } } # [ automatically_derived ] impl :: core ::
-fmt :: Debug for MapFile { # [ inline ] fn fmt ( & self , f : & mut :: core :: fmt :: Formatter ) ->
-:: core :: fmt :: Result { :: core :: fmt :: Formatter :: debug_tuple_field1_finish ( f , "MapFile"
-, && self . 0 ) } } # [ automatically_derived ] impl :: core :: marker :: StructuralPartialEq for
+impl :: core :: clone :: Clone for MapFile { # [ inline ] fn clone ( & self ) -> Self { MapFile ( ::
+core :: clone :: Clone :: clone ( & self . 0 ) ) } } # [ automatically_derived ] impl :: core :: fmt
+:: Debug for MapFile { # [ inline ] fn fmt ( & self , f : & mut :: core :: fmt :: Formatter ) -> ::
+core :: fmt :: Result { :: core :: fmt :: Formatter :: debug_struct_field1_finish ( f , "MapFile" ,
+&& self . 0 ) } } # [ automatically_derived ] impl :: core :: marker :: StructuralPartialEq for
 MapFile { } # [ automatically_derived ] impl :: core :: cmp :: PartialEq for MapFile { # [ inline ]
-fn eq ( & self , other : & MapFile ) -> bool { self . 0 == other . 0 } } impl From < & str > for
+fn eq ( & self , other : & Self ) -> bool { self . 0 == other . 0 } } impl From < & str > for
 MapFile { fn from ( s : & str ) -> Self { MapFile ( s . to_string ( ) ) } } impl From < String > for
 MapFile { fn from ( s : String ) -> Self { MapFile ( s ) } } } pub mod runner { pub type FileMap =
 std :: collections :: BTreeMap < String , super :: vfstest :: MapFile > ; } } use support :: runner

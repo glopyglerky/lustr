@@ -1,0 +1,11 @@
+{
+  "argv": [
+    "python3",
+    "tools/test-warm-applicability.py"
+  ],
+  "cwd": "/tmp/lustr-historical-control-20261119",
+  "exit": 0,
+  "elapsed_seconds": 1.2704772970027989,
+  "source_sha256": "cf72363acad200f6836aebcecd35193b6459ee59a8bcf6b0bfbda2167d7fd744",
+  "scope": "Applicability source/evidence controls only; no compiler or benchmark execution."
+}

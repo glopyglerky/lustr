@@ -4,6 +4,26 @@ Reviewed 19 November 2026. This register distinguishes reference source,
 partial imports, research dependencies and required product behavior. Follow
 the [exclusive coverage contract](exclusive-coverage-contract.md).
 
+While [PR #33](https://github.com/glopyglerky/lustr/pull/33) remains unmerged,
+resolve its live head for implementation work, recorded for this audit at
+`ea26fe16636d390763257a19c19df3db992cdbcb`. Governing documentation on `next`
+does not transfer that compiler source into the default branch. After merge,
+verify that the current integration source contains the correction and use its
+live source/evidence rather than resuming the closed PR. The older
+candidate identities below remain research inputs, not alternative current heads.
+The [documentation disposition](documentation-disposition.json) separates active
+guidance from source-bound records and untouched donor/evidence files.
+
+The branch observations in the table are dated research. A 20 November 2026 UTC refresh
+found blueFe at
+[`9267fd0d`](https://github.com/glopyglerky/blueFe/tree/9267fd0d348dc591af85efe96597c6ea774be5c0),
+declaring Rust
+[`4b5350e8`](https://github.com/rust-lang/rust/tree/4b5350e87e487aed08ab2f9f0160a4b2616438bc).
+That moving head is no longer the declared Lustr Rust source. Lustr remains
+pinned to `5b7b37aefcb5b2fba3c2392bc9065b9e4602d494`; extract and compare against
+that identity. This audit does not upgrade the pin or transfer earlier tree
+equality, artifact qualification or semantics to a later blueFe/Rust head.
+
 | Source | Exact observed identity | Role and limit |
 | --- | --- | --- |
 | Pristine Lust | `t3dotgg/lust-lang`, `240e08d91d4aed0299639f6f11fd522912b248f9`, tree `0ab1b09815802894e6078de0af59273cbdf46cb0` | Reference compiler and speed mechanisms preserved by `upstream/lust.pin`; integration patches need separate identities. |
@@ -11,17 +31,54 @@ the [exclusive coverage contract](exclusive-coverage-contract.md).
 | Declared Lustr Rust SDK | `upstream/bluefe-core.pin`, source `5b7b37aefcb5b2fba3c2392bc9065b9e4602d494` | Exact SDK/tool identities; a full SDK dependency is not selective complementary implementation. |
 | Audited Lustr candidate | PR #32 `cb0721d49be95ec3f34a113c2354bc9d2a38bbf3` | Retained native implementation, partial source/data reuse and shared/mixed experiments. Prohibited retries and broad consumer-analysis dependency remain at this snapshot. |
 | Fresh Rust research | `rust-lang/rust`, `b0b600668bb9b4a897e2299b0a44289d42276545` | Reviewed current interfaces and CI/history. Research does not update the protected donor pin or authorize mixed semantic versions. |
+| Later same-day research | Rust `c884ecfbabb04b04fa5054dafc67ec258ecde745`; Lust `240e08d91d4aed0299639f6f11fd522912b248f9` | Refreshed CI history and capability call graph in the [support/cost review](exclusive-coverage-mathematics.md). Both protected Lustr pins remain unchanged. |
+
+The [sole-goal audit](sole-goal-audit.md) records the subsequent source cleanup
+against PR #33 input `d1328bc2`. Its verification repeats the blueFe/Rust
+`compiler`, `library` and `src` tree comparison and binds the actual compiled
+product inputs. Complete source equality does not qualify Lustr's complement.
 
 The [Lust review](upstream-lust-review-2026-11-19.md) and
 [Rust review](upstream-rust-review-2026-11-19.md) contain primary links and
 bounded review scopes. Source identity is not proof of a source-built artifact,
 whole-program correctness or performance.
 
+## Host procedural macros
+
+The Linux x86_64 development package builds Cargo's procedural-macro
+provider crates with the pinned Rust driver in a separate host tool. The
+adapter checks the parsed crate kind and target before compilation. Cargo gets
+the provider's normal shared library and dependency information. The SDK
+receipt binds the driver and LLVM identities, and the package records the
+provider tool's source and licenses. Native consumers still need the
+procedural-macro expansion interface.
+
+## Source-built Rustdoc
+
+On Linux x86_64, pass `--rustdoc-source PINNED_RUST_REPOSITORY` after the
+optional build profile when running the native toolchain constructor. The
+constructor checks out the same revision as the selected SDK in its build
+directory, applies [the Rustdoc patch](../../upstream/rustdoc-test-builders.patch),
+and builds `rustdoc-tool` with the upstream lockfile. It retains the Rust
+copyright, dual MIT/Apache-2.0 licenses, lockfile, patch identity and binary
+identity in the development build. The documentation component depends on the
+matching SDK libraries at runtime.
+
+Cargo finds the resulting `bin/rustdoc` on the toolchain's `PATH`. Rustdoc
+collects the documentation examples through the pinned Rust frontend.
+Runnable and `no_run` standalone examples use Lustr. Rustdoc sends
+`compile_fail` examples to its pinned embedded driver so a native coverage gap
+cannot count as a Rust error. An explicit `--test-builder` keeps its upstream
+behavior. The optional `--compile-fail-test-builder` selects a separate
+validator. The compiler entry for normal Cargo compilation uses the native
+request path. Merged doctest coverage and end-to-end performance remain
+separate qualification work.
+
 ## Import inventory requirements
 
-The implementation's planned `upstream/complement-imports.json`, schema
-`lustr-complement-imports-v1`, must identify real production slices and retained
-research components separately. Include existing Unicode/normalization source
+The implementation's [`upstream/complement-imports.json`](../../upstream/complement-imports.json),
+schema `lustr-complement-imports-v1`, identifies real partial production imports
+and retained research components separately. Include Unicode/normalization source
 and data extraction, their third-party dependencies, licenses, source hashes,
 features and actual qualification. Do not replace this inventory with an empty
 list while those dependencies exist.
@@ -38,5 +95,6 @@ Rust frontend/compiler services even when no whole Rust source tree is checked
 into Lustr. Disclose that dependency as research; its current broad closure
 cannot be presented as an admitted minimal complement.
 
-This docs-only branch does not add or validate that implementation manifest.
-Record its exact source when the corrective implementation is published.
+The [cleanup record](exclusive-coverage-cleanup.md) describes the implementation
+that adds the inventory and structural guard, its validation and its limits.
+Neither establishes full complementary coverage or a globally minimal import set.

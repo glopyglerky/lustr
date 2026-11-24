@@ -322,6 +322,10 @@ pub fn structure(t: &ResolvedTables, files: &[&str]) -> u64 {
     sum.get().hash(&mut h);
     (t.std_modules.iter().map(|(s, m)| (s.0, m.0)).collect::<Vec<_>>(), t.std_platform.map(|(m, s)| (m.0, s.0)), t.std_splice_lo).hash(&mut h);
     t.alloc_roots.iter().map(|m| m.0).collect::<Vec<_>>().hash(&mut h);
+    if !t.core_prelude_roots.is_empty() {
+        t.core_prelude_roots.iter().map(|m| m.0).collect::<Vec<_>>().hash(&mut h);
+        t.explicit_std_roots.iter().map(|m| m.0).collect::<Vec<_>>().hash(&mut h);
+    }
     files.hash(&mut h);
     h.finish()
 }
@@ -662,6 +666,10 @@ pub fn build(t: &ResolvedTables, map: &SourceMap, parts: Vec<CratePart>) -> Mdr 
     magic.sort_unstable();
     (magic, &t.std_modules.iter().map(|(s, m)| (s.0, m.0)).collect::<Vec<_>>(), t.std_platform.map(|(m, s)| (m.0, s.0))).hash(&mut global);
     t.alloc_roots.iter().map(|m| m.0).collect::<Vec<_>>().hash(&mut global);
+    if !t.core_prelude_roots.is_empty() {
+        t.core_prelude_roots.iter().map(|m| m.0).collect::<Vec<_>>().hash(&mut global);
+        t.explicit_std_roots.iter().map(|m| m.0).collect::<Vec<_>>().hash(&mut global);
+    }
     // Without event positions: they move with any text shift in their own
     // file, and only that file (rewritten anyway) reads them; other files
     // see what it passes on (`inherited`) and the order of `mod`s (`tree`).

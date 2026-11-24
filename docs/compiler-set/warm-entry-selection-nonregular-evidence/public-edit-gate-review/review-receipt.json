@@ -1,0 +1,22 @@
+{
+  "argv": [
+    "python3",
+    "<PUBLIC_EDIT_GATE_REVIEW>/tools/test-warm-entry-comparison.py"
+  ],
+  "elapsed_ns": 8045494472,
+  "exit": 0,
+  "public_stderr_sha256": "1734de0398aef0cef0051074d9c9d005be100f8f64ab919bd97f856d2e79fa11",
+  "public_stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "scope": "Independent benchmark artifact replay and negative controls only; actual cached public edit/rejection/restore composition awaits hosted execution.",
+  "source_revision": "34c86339b653e965f43e28b04b1274a7611b4011",
+  "source_sha256": {
+    "tools/capture-benchmark-host.py": "39d5c016d16a55ada0968b1cce2e0cb01d2319204e2011e13b32b7e262c30d57",
+    "tools/report-mixed-performance.py": "5f3fe49eb7898854b41fd76b7b643adcf8a72c1e434127fec67404005712e8a5",
+    "tools/run-upstream-slice-benchmark.py": "ad7c4e2f74629ecf46c6c8e30bc2c7d62d5a22c8db37e6e346575c5edf3eb4c3",
+    "tools/run-warm-entry-comparison.py": "ab1c2d0119901651cbadd47e1932a0ab655791c79b0717b45dfd03dabbf880df",
+    "tools/test-warm-entry-comparison.py": "da194065508b1ae2135542d6c401fe3cea2ddd4db8862c00b347b813a3a61f43"
+  },
+  "source_tree": "78a86f274c9e9ec2c8bbfc43ff9a927631ed15b6",
+  "stderr_sha256": "1734de0398aef0cef0051074d9c9d005be100f8f64ab919bd97f856d2e79fa11",
+  "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+}

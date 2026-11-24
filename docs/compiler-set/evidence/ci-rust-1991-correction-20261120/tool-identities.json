@@ -1,0 +1,7 @@
+{
+  "rustc_sha256": "b53b780f77f952062f8ca8a3b70aef2390b1e45ad91939be94afdc9543026853",
+  "cargo_sha256": "a670e02cfa39ac2e53f77a2d911ca1fc9e2c479b0603ec956625be1daf24e3af",
+  "rustc_commit": "58cf8f9c35b355199727627d07ae34a4e2846d67",
+  "release": "1.99.1",
+  "host": "x86_64-unknown-linux-gnu"
+}

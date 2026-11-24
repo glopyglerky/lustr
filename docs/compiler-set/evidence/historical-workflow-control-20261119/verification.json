@@ -1,0 +1,67 @@
+{
+  "source_before": {
+    "commit": "7c3d095fa8971a4c38aa0edf62e8fcfd7a51589a",
+    "tree": "2a6a51f099bdcdb74871fdc2e65a4df87aa0c867",
+    "test_blob": "b41fd7cd3cf755e911d408f7dafe391ba058310d"
+  },
+  "source_after_sha256": "cf72363acad200f6836aebcecd35193b6459ee59a8bcf6b0bfbda2167d7fd744",
+  "unchanged_protected_inputs": {
+    "native_tree": "bf933c382fd99e52dd2586ebc46f0d0aceaa71a8",
+    "integration_patch_blob": "d3777126382c8c592e4130cdc67abf9efe6b2bb8",
+    "workflow_sha256": "d8d3c4df1cb3cba45614ff4fa3f72ee7f0b11845027ce0071f6a8e7881bae7b6"
+  },
+  "original_hosted_counts": {
+    "comparison_controls_passed": 43,
+    "startup_controls_passed": 8,
+    "assessor_controls_passed": 14,
+    "applicability_controls_passed": 15,
+    "applicability_controls_errored": 1,
+    "replay_steps_skipped_after_failure": 2
+  },
+  "local_after": {
+    "applicability_controls_passed": 19,
+    "failed": 0,
+    "adversarial_upload_job_mutations": 9
+  },
+  "independent_read_only_review": {
+    "source_sha256": "cf72363acad200f6836aebcecd35193b6459ee59a8bcf6b0bfbda2167d7fd744",
+    "blocking_findings": 0,
+    "tests_rerun": false
+  },
+  "related_mixed_performance_run": {
+    "id": 44553094603,
+    "job_id": 135661771986,
+    "conclusion": "success",
+    "checkout": "66963315e9736ce9f151ce8ccac248d35a01d048",
+    "reporting_controls_passed": 80,
+    "scope": "Reporting/evidence controls and historical timing replay; no current compiler qualification."
+  },
+  "compressed_originals": [
+    {
+      "file": "job-135661773915.log.gz",
+      "uncompressed_bytes": 17618,
+      "uncompressed_sha256": "c47886cde024965c29c87b94e069e905dc50469e1f45967d7be217b6878f2fd8"
+    },
+    {
+      "file": "before.stdout.gz",
+      "uncompressed_bytes": 0,
+      "uncompressed_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "file": "before.stderr.gz",
+      "uncompressed_bytes": 927,
+      "uncompressed_sha256": "a1e85bbc9c6fb6185c54edde7758d31d0e082d92507f73578e43872d5ce4d807"
+    },
+    {
+      "file": "after.stdout.gz",
+      "uncompressed_bytes": 0,
+      "uncompressed_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "file": "after.stderr.gz",
+      "uncompressed_bytes": 2884,
+      "uncompressed_sha256": "bbd0ab4bbdbe377573e9cf53339b02152a5f6386e8e4c4f3cfe344c810e84996"
+    }
+  ],
+  "compiler_or_benchmark_execution": false
+}

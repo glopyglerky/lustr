@@ -1,0 +1,115 @@
+{
+  "helper_sha256": "82a6e270dc70d780d25838252c8050234fb06e5e957581863de965586c7e015a",
+  "public_projection": {
+    "paths": "Stable role replacements; unmodified originals are encrypted.",
+    "public_stream_hashes": "public_stdout_sha256 and public_stderr_sha256 identify projected stream bytes.",
+    "raw_stream_hashes": "stdout_sha256 and stderr_sha256 identify original bytes.",
+    "stream_archive": {
+      "entries": 8,
+      "file": "streams.tar.gz",
+      "sha256": "8eaf7c2dcb7d9f59ef3f35d421008c308262719f67189da336316ef4fc166ff6"
+    }
+  },
+  "records": [
+    {
+      "argv": [
+        "<VERIFIED_PACKAGE>/bin/cargo",
+        "metadata",
+        "--format-version=1",
+        "--offline"
+      ],
+      "cwd": "<ORIGINAL_RECEIPT_FIFO>/project",
+      "diagnostics": "",
+      "exit": 0,
+      "label": "setup",
+      "public_stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "public_stdout_sha256": "024378023eb1e2416959ed6d25f0cf5c4df12bdb3326c1d44e24faff14b6a643",
+      "status": "exited",
+      "stderr_file": "setup.stderr",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_file": "setup.stdout",
+      "stdout_sha256": "26a306b898ffabd9293a61919934e4af29e24aaf09e4bcbd1de6648b3fc6da2d",
+      "timeout_seconds": 5
+    },
+    {
+      "argv": [
+        "<ORIGINAL_HELPER_BUILD>/target/release/profile-native-preflight",
+        "selection",
+        "<ORIGINAL_RECEIPT_FIFO>/package/bin",
+        "check",
+        "<ORIGINAL_RECEIPT_FIFO>/project/src/main.rs",
+        "--manifest-path",
+        "<ORIGINAL_RECEIPT_FIFO>/project/Cargo.toml",
+        "--offline",
+        "--locked"
+      ],
+      "cwd": "<ORIGINAL_RECEIPT_FIFO>/project",
+      "diagnostics": "{\"selection_cache\":\"miss\"}\n",
+      "exit": 0,
+      "label": "prime",
+      "public_stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "public_stdout_sha256": "0ff0cb19720c0f9a371ae0aaff5e6b45126d3c77a3342ca1045dc85c154cce1b",
+      "status": "exited",
+      "stderr_file": "prime.stderr",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_file": "prime.stdout",
+      "stdout_sha256": "a3bd9a69eed3bea55f45b3c1578b5bf84b8e6afa06708d85506692cf55324470",
+      "timeout_seconds": 5
+    },
+    {
+      "argv": [
+        "<ORIGINAL_HELPER_BUILD>/target/release/profile-native-preflight",
+        "selection",
+        "<ORIGINAL_RECEIPT_FIFO>/package/bin",
+        "check",
+        "<ORIGINAL_RECEIPT_FIFO>/project/src/main.rs",
+        "--manifest-path",
+        "<ORIGINAL_RECEIPT_FIFO>/project/Cargo.toml",
+        "--offline",
+        "--locked"
+      ],
+      "cwd": "<ORIGINAL_RECEIPT_FIFO>/project",
+      "diagnostics": "",
+      "exit": null,
+      "label": "receipt-fifo-candidate",
+      "public_stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "public_stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "status": "timeout",
+      "stderr_file": "receipt-fifo-candidate.stderr",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_file": "receipt-fifo-candidate.stdout",
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "timeout_seconds": 3
+    },
+    {
+      "argv": [
+        "<ORIGINAL_HELPER_BUILD>/target/release/profile-native-preflight",
+        "selection",
+        "<ORIGINAL_RECEIPT_FIFO>/package/bin",
+        "check",
+        "<ORIGINAL_RECEIPT_FIFO>/project/src/main.rs",
+        "--manifest-path",
+        "<ORIGINAL_RECEIPT_FIFO>/project/Cargo.toml",
+        "--offline",
+        "--locked"
+      ],
+      "cwd": "<ORIGINAL_RECEIPT_FIFO>/project",
+      "diagnostics": "{\"selection_cache\":\"ineligible\"}\n",
+      "exit": 0,
+      "label": "receipt-fifo-uncached",
+      "public_stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "public_stdout_sha256": "1ab6100341a85dc565660158a19d407ee45720db8ee6aed108ff779556ca77a0",
+      "status": "exited",
+      "stderr_file": "receipt-fifo-uncached.stderr",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_file": "receipt-fifo-uncached.stdout",
+      "stdout_sha256": "caf9d1ab48869e6e762ee5f6081dc65c5f6e25f4fdfe4772b059dfe0a7c6c35a",
+      "timeout_seconds": 3
+    }
+  ],
+  "reproduced": true,
+  "schema": "lustr-selection-fifo-probe-v1",
+  "scope": "private package projection only; new receipt FIFO investigation",
+  "selection_cache_sha256": "c6fc392e1a46980292fb4813a6fadba8a0c96d2686301ced2b1dcad38981c3f2",
+  "source_revision": "1aff7f7331d1d4293d3f5c74c740318c9686b030"
+}

@@ -1,0 +1,30 @@
+{
+  "schema": "lustr-remote-original-artifact-v1",
+  "run_id": 44546561681,
+  "job_id": 135638575172,
+  "published_head": "fb2b24802180321d3bbc534dee7083fb2a385d6b",
+  "artifact": {
+    "id": 14541962757,
+    "name": "exclusive-entry-and-shared-services",
+    "size_in_bytes": 584645008,
+    "url": "https://api.github.com/repos/glopyglerky/lustr/actions/artifacts/14541962757",
+    "archive_download_url": "https://api.github.com/repos/glopyglerky/lustr/actions/artifacts/14541962757/zip",
+    "expired": false,
+    "created_at": "2026-11-19T14:57:21Z",
+    "expires_at": "2027-02-17T14:41:52Z",
+    "updated_at": "2026-11-19T14:57:21Z",
+    "digest": "sha256:114076578e1fecc2dae1c47fc14591bed14e0c973b1e8d0bebf552829a244402",
+    "workflow_run": {
+      "id": 44546561681,
+      "repository_id": 1450430441,
+      "head_repository_id": 1450430441,
+      "head_branch": "lustr/exclusive-coverage-public-20261119",
+      "head_sha": "fb2b24802180321d3bbc534dee7083fb2a385d6b"
+    }
+  },
+  "download_limit_bytes": 536870912,
+  "locally_downloaded": false,
+  "locally_verified": false,
+  "digest_source": "GitHub artifact metadata; server-declared, not independently verified from archive bytes",
+  "original_remote_artifact_unchanged": true
+}

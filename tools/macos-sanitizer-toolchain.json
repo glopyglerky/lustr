@@ -1,0 +1,26 @@
+{
+  "schema": 1,
+  "version": "23.1.5",
+  "release": "https://github.com/llvm/llvm-project/releases/tag/llvmorg-23.1.5",
+  "release_api": "https://api.github.com/repos/llvm/llvm-project/releases/432551565",
+  "repository": "llvm/llvm-project",
+  "source_commit": "392dfff97d29b59d77e5cac6d4b6ef2585fe7117",
+  "source_ref": "refs/tags/llvmorg-23.1.5",
+  "signer_workflow": "llvm/llvm-project/.github/workflows/release-binaries.yml",
+  "certificate_identity": "https://github.com/llvm/llvm-project/.github/workflows/release-binaries.yml@refs/tags/llvmorg-23.1.5",
+  "root_directory": "LLVM-23.1.5-macOS-ARM64",
+  "archive": {
+    "name": "LLVM-23.1.5-macOS-ARM64.tar.zst",
+    "url": "https://github.com/llvm/llvm-project/releases/download/llvmorg-23.1.5/LLVM-23.1.5-macOS-ARM64.tar.zst",
+    "bytes": 870686518,
+    "sha256": "503de30ef90311e0b143623801b19af2250adac6d69faed65ad0051170202e3b",
+    "asset_id": 705801926
+  },
+  "attestation": {
+    "name": "LLVM-23.1.5-macOS-ARM64.tar.zst.jsonl",
+    "url": "https://github.com/llvm/llvm-project/releases/download/llvmorg-23.1.5/LLVM-23.1.5-macOS-ARM64.tar.zst.jsonl",
+    "bytes": 11135,
+    "sha256": "961b20e89b54952add75ab7a3a565de1db1e300b546cceb091ade31afe21d671",
+    "asset_id": 705803995
+  }
+}

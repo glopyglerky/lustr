@@ -1,0 +1,45 @@
+{
+  "root_head": "795daf25e94b18cea874b11e2daff2a132a6bf29",
+  "reference": {
+    "repository": "https://github.com/t3dotgg/lust-lang",
+    "revision": "240e08d91d4aed0299639f6f11fd522912b248f9",
+    "tree": "0ab1b09815802894e6078de0af59273cbdf46cb0",
+    "path": "compiler/native"
+  },
+  "native_tree": "bf933c382fd99e52dd2586ebc46f0d0aceaa71a8",
+  "patch_blob": "d3777126382c8c592e4130cdc67abf9efe6b2bb8",
+  "qualification_blob": "8ad6230f7f533320100f63331279848be6f455c7",
+  "preserved_sha256": {
+    "upstream/lust.pin": "a2f2937ceb269149ad52ddf3a6b60f6034bfa54867d5987eb272c2230e85d204",
+    "upstream/bluefe-core.pin": "ae93e7fb837097658ddda8881795aec4c6abe474b00f133806079a044c7dec2b",
+    "compiler/native/scripts/build-tcc.sh": "46ae40af0fcfaf23a784cf9e40c4c0de8becda2c78b73b8cb28313017cbd9aca"
+  },
+  "changed_files": {
+    "upstream/lust-integration.patch": "d65207d8f988517ec2cd950e11fd9c77e58c81ff16c0aa46b647297548791c42",
+    "upstream/lust.integration": "036ce4e382e6a6f5fb9002daa3e9088dff2e2f01a5a52d752ebb3a5d137ae3b1",
+    "upstream/lust-integration.qualification": "db30c5ee4a9a6a6aa9a102a2edab3393f5070316bb504265b5d863e7ace6414e"
+  },
+  "patch_command": [
+    "git",
+    "-c",
+    "core.quotePath=true",
+    "diff",
+    "--binary",
+    "--full-index",
+    "--no-ext-diff",
+    "--no-textconv",
+    "--no-renames",
+    "--no-color",
+    "--ignore-submodules=none",
+    "--submodule=short",
+    "--diff-algorithm=myers",
+    "--no-indent-heuristic",
+    "--unified=3",
+    "--inter-hunk-context=0",
+    "--src-prefix=a/",
+    "--dst-prefix=b/",
+    "0ab1b09815802894e6078de0af59273cbdf46cb0",
+    "bf933c382fd99e52dd2586ebc46f0d0aceaa71a8",
+    "--"
+  ]
+}

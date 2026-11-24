@@ -1,0 +1,18 @@
+test_budget_failure_keeps_full_inventory_and_original_stream (__main__.PackagingTests.test_budget_failure_keeps_full_inventory_and_original_stream) ... ok
+test_cli_retains_binary_streams_hidden_logs_and_receipts_exactly (__main__.PackagingTests.test_cli_retains_binary_streams_hidden_logs_and_receipts_exactly) ... ok
+test_current_workflow_uses_the_unchanged_complete_roots (__main__.PackagingTests.test_current_workflow_uses_the_unchanged_complete_roots) ... ok
+test_elf_core_dump_is_retained_as_failure_evidence (__main__.PackagingTests.test_elf_core_dump_is_retained_as_failure_evidence) ... ok
+test_existing_or_recursive_output_is_never_replaced (__main__.PackagingTests.test_existing_or_recursive_output_is_never_replaced) ... ok
+test_input_mutation_is_reported_as_incomplete (__main__.PackagingTests.test_input_mutation_is_reported_as_incomplete) ... ok
+test_literal_upload_parser_rejects_changed_or_escaping_shapes (__main__.PackagingTests.test_literal_upload_parser_rejects_changed_or_escaping_shapes) ... ok
+test_missing_all_roots_does_not_pass (__main__.PackagingTests.test_missing_all_roots_does_not_pass) ... ok
+test_raw_filenames_survive_inventory_and_archive (__main__.PackagingTests.test_raw_filenames_survive_inventory_and_archive) ... ok
+test_small_compiled_files_and_unknown_large_bytes_are_preserved (__main__.PackagingTests.test_small_compiled_files_and_unknown_large_bytes_are_preserved) ... ok
+test_stream_symlink_cannot_claim_complete_byte_capture (__main__.PackagingTests.test_stream_symlink_cannot_claim_complete_byte_capture) ... ok
+test_symlink_parent_in_a_declared_glob_fails_without_traversal (__main__.PackagingTests.test_symlink_parent_in_a_declared_glob_fails_without_traversal) ... ok
+test_symlinks_and_special_entries_do_not_read_external_targets (__main__.PackagingTests.test_symlinks_and_special_entries_do_not_read_external_targets) ... ok
+
+----------------------------------------------------------------------
+Ran 13 tests in 0.458s
+
+OK

@@ -1,97 +1,84 @@
-//! Explicit opt-in qualification of coordinator-routed tests with matched tools.
-use serde_json::Value;
-use std::{fs, path::PathBuf, process::Command};
+//! Retired engine selection must fail before invoking any supplied tool.
+#![forbid(unsafe_code)]
+use serde_json::json;
+use std::{
+    fs,
+    path::PathBuf,
+    process::Command,
+    time::{SystemTime, UNIX_EPOCH},
+};
+
+struct Scratch(PathBuf);
+impl Drop for Scratch {
+    fn drop(&mut self) {
+        let _ = fs::remove_dir_all(&self.0);
+    }
+}
+fn scratch() -> Scratch {
+    let root = std::env::temp_dir().join(format!(
+        "lustr retired acquisition {}-{}",
+        std::process::id(),
+        SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_nanos()
+    ));
+    fs::create_dir(&root).unwrap();
+    Scratch(root)
+}
 
 #[test]
-fn selected_root_and_actual_backend_are_observed() {
-    let Some(root) = std::env::var_os("LUSTR_BENCH_TEST_BLUEFE_ROOT").map(PathBuf::from) else {
-        eprintln!("not run: explicit BlueFe root required");
-        return;
-    };
-    let backend = PathBuf::from(std::env::var_os("LUSTR_BENCH_TEST_CRANELIFT_BACKEND").expect("explicit matching backend required"));
-    assert!(backend.is_absolute() && backend.is_file());
-    let out = PathBuf::from(std::env::var_os("LUSTR_BENCH_TEST_OUTPUT").expect("explicit output required")).with_extension("routed");
-    fs::create_dir(&out).unwrap();
-    let source = out.join("snapshot");
-    fs::create_dir(&source).unwrap();
-    fs::create_dir(source.join("src")).unwrap();
-    let original = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("fixtures/tiny");
-    for path in ["Cargo.toml", "Cargo.lock", "src/main.rs", "reject.rs"] {
-        fs::copy(original.join(path), source.join(path)).unwrap();
+fn retired_routed_engines_never_invoke_the_supplied_compiler() {
+    use std::os::unix::fs::PermissionsExt;
+    let root = scratch();
+    let tool = root.0.join("sentinel");
+    let marker = root.0.join("invoked");
+    fs::write(&tool, format!("#!/bin/sh\nprintf invoked > '{}'\nexit 0\n", marker.display())).unwrap();
+    fs::set_permissions(&tool, fs::Permissions::from_mode(0o755)).unwrap();
+    for engine in ["auto", "rustc", "cranelift"] {
+        let result = Command::new(env!("CARGO_BIN_EXE_lustr-bench-gate"))
+            .arg("tests-via")
+            .arg(&tool)
+            .arg("--bluefe-root")
+            .arg(&root.0)
+            .args(["--engine", engine, "test", "--locked", "--offline"])
+            .env("CARGO", &tool)
+            .env("RUSTC", &tool)
+            .env("RUSTDOC", &tool)
+            .output()
+            .unwrap();
+        assert_eq!(result.status.code(), Some(42));
+        assert!(result.stdout.is_empty());
+        assert!(String::from_utf8_lossy(&result.stderr).contains("acquisition is disabled"));
+        assert!(!marker.exists(), "retired {engine} route invoked a tool");
     }
-    for path in ["home", "cargo-home", "tmp"] {
-        fs::create_dir(out.join(path)).unwrap();
-    }
-    let selected_command = |engine: &str| {
-        let mut command = Command::new(env!("CARGO_BIN_EXE_lustr-bench-gate"));
-        command
-            .env_clear()
-            .current_dir(&source)
-            .env("PATH", format!("{}:/usr/bin:/bin", root.join("bin").display()))
-            .env("HOME", out.join("home"))
-            .env("TMPDIR", out.join("tmp"))
-            .env("CARGO_HOME", out.join("cargo-home"))
-            .env("CARGO", root.join("bin/cargo"))
-            .env("RUSTC", root.join("bin/rustc"))
-            .env("RUSTDOC", root.join("bin/rustdoc"))
-            .env("LUST_CRANELIFT_BACKEND", &backend)
-            .env("CARGO_TARGET_DIR", out.join("targets").join(engine))
-            .env("CARGO_BUILD_JOBS", "2")
-            .env("CARGO_NET_OFFLINE", "true")
-            .env("CARGO_TERM_COLOR", "never")
-            .args([
-                "tests-via".as_ref(),
-                root.join("bin/lustr").as_os_str(),
-                "--bluefe-root".as_ref(),
-                root.as_os_str(),
-                "--engine".as_ref(),
-                engine.as_ref(),
-                "test".as_ref(),
-                "--locked".as_ref(),
-                "--offline".as_ref(),
-                "-vv".as_ref(),
-            ]);
-        command
-    };
-    for engine in ["auto", "cranelift"] {
-        let output = selected_command(engine).output().unwrap();
-        fs::write(out.join(format!("{engine}.stdout")), &output.stdout).unwrap();
-        fs::write(out.join(format!("{engine}.stderr")), &output.stderr).unwrap();
-        assert!(output.status.success(), "{}", String::from_utf8_lossy(&output.stderr));
-        let summary: Value = serde_json::from_slice(&output.stdout).unwrap();
-        assert_eq!(summary["kind"], "tests");
-        assert!(summary["passed_test_names"].as_array().unwrap().iter().any(|name| name.as_str().unwrap().contains("runtime_and_cleanup")));
-        let stderr = String::from_utf8_lossy(&output.stderr);
-        let actual = stderr
-            .lines()
-            .find(|line| {
-                line.contains("Running")
-                    && line.contains("--crate-name bench_tiny ")
-                    && line.contains(root.join("bin/rustc").to_str().unwrap())
-                    && line.contains("--test")
-            })
-            .expect("actual root compiler command required");
-        if engine == "cranelift" {
-            assert!(actual.contains("codegen-backend") && actual.contains(backend.to_str().unwrap()));
-        } else {
-            assert!(!actual.contains("codegen-backend"));
-        }
-    }
-    for variable in ["CARGO", "RUSTC", "RUSTDOC"] {
-        let output = selected_command("auto").env(variable, out.join("wrong-tool")).output().unwrap();
-        assert_eq!(output.status.code(), Some(42));
-        assert!(output.stdout.is_empty());
-        let stderr = String::from_utf8_lossy(&output.stderr);
-        assert!(stderr.contains(&format!("routed {variable} selection must match --bluefe-root")));
-        assert!(!stderr.contains("raw stdout:"));
-        let missing = selected_command("auto").env_remove(variable).output().unwrap();
-        assert_eq!(missing.status.code(), Some(42));
-        assert!(missing.stdout.is_empty());
-        let stderr = String::from_utf8_lossy(&missing.stderr);
-        assert!(stderr.contains("explicit tool selection is required"));
-        assert!(!stderr.contains("raw stdout:"));
-    }
-    let output = selected_command("auto").arg("--no-run").output().unwrap();
-    assert_eq!(output.status.code(), Some(42));
-    assert!(String::from_utf8_lossy(&output.stderr).contains("requires an executing Cargo test command"));
+}
+
+#[test]
+fn retired_mixed_campaign_cannot_create_output_or_query_a_tool() {
+    let root = scratch();
+    let output = root.0.join("output");
+    let result = Command::new(env!("CARGO_BIN_EXE_lustr-mixed-bench"))
+        .arg(&root.0)
+        .arg(root.0.join("not-a-compiler"))
+        .arg(&root.0)
+        .arg(&output)
+        .output()
+        .unwrap();
+    assert!(!result.status.success());
+    assert!(String::from_utf8_lossy(&result.stderr).contains("acquisition is disabled"));
+    assert!(result.stdout.is_empty());
+    assert!(!output.exists());
+}
+
+#[test]
+fn retired_state_policy_cannot_be_acquired_through_the_general_runner() {
+    let root = scratch();
+    let output = root.0.join("output");
+    let spec = root.0.join("spec.json");
+    let mut value: serde_json::Value = serde_json::from_str(include_str!("../sample-spec.json")).unwrap();
+    value["native_state"] =
+        json!({"kind":"owned-lustr-mixed-v1","toolchain":root.0,"component_manifest":"missing","build_receipt":"missing"});
+    fs::write(&spec, serde_json::to_vec(&value).unwrap()).unwrap();
+    let result = Command::new(env!("CARGO_BIN_EXE_lustr-bench")).arg(&spec).arg(&output).output().unwrap();
+    assert!(!result.status.success());
+    assert!(String::from_utf8_lossy(&result.stderr).contains("acquisition is disabled"));
+    assert!(!output.exists());
 }

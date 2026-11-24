@@ -1,0 +1,26 @@
+{
+  "amendment.json": {
+    "sha256": "f0546881fc14d48d912674d6648727b1a287aa9544bedf4c8f5570b8cb8a1723",
+    "bytes": 1531
+  },
+  "commands.json": {
+    "sha256": "56886f570eea2faeddd5e60fb493bfbc8dbde6f495a33b4d9df7d833df77373b",
+    "bytes": 869
+  },
+  "compile.stdout": {
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "bytes": 0
+  },
+  "compile.stderr": {
+    "sha256": "458d2d4d5476f5a641d970700fd345d3bc91fa610de721ba46b648fc359b4f96",
+    "bytes": 316
+  },
+  "candidate.stdout": {
+    "sha256": "512142bdecd4b541b254a930fa4126ea515b8d435ad825158f923252d2c605f3",
+    "bytes": 246
+  },
+  "candidate.stderr": {
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "bytes": 0
+  }
+}
