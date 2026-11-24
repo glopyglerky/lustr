@@ -2775,6 +2775,58 @@ fn native_value_in_the_rust_test_harness() {
     assert!(before.contains("\"entry\":\"retained-rust-link-captured\""),
         "ordinary release did not capture Rust link inputs: {before}");
     let edited = source.replace("input ^ 19", "input ^ 18");
+    for (name, optimized) in [("default", false), ("optimized-debug", true)] {
+        let run = || {
+            let mut command = cargo(name, false, false);
+            command.args(["run", "--frozen"]);
+            if optimized {
+                command.env("CARGO_PROFILE_RELEASE_DEBUG", "2").arg("--release");
+            }
+            command
+        };
+        f.source("src/main.rs", source);
+        assert_eq!(f.succeeds(&format!("{name}-before-debug-edit"), &mut run()).stdout, b"42\n");
+        let start = std::fs::metadata(&trace_path).unwrap().len() as usize;
+        f.source("src/main.rs", &edited);
+        assert_eq!(f.succeeds(&format!("{name}-debug-edit"), &mut run()).stdout, b"43\n");
+        let after = std::fs::read_to_string(&trace_path).unwrap();
+        assert!(after[start..].contains("\"entry\":\"retained-rust-link\""), "{name}: {}", &after[start..]);
+    }
+
+    for (name, flags, optimized) in [
+        ("dwarf5", "-Zdwarf-version=5", false),
+        ("checksum-dep-info", "-Zchecksum-hash-algorithm=blake3", true),
+    ] {
+        let run = || {
+            let mut command = cargo(name, false, false);
+            command.env_remove("CARGO_ENCODED_RUSTFLAGS").env("RUSTFLAGS", flags).args(["run", "--frozen"]);
+            if optimized {
+                command.arg("--release");
+            }
+            command
+        };
+        let deps = || {
+            let root = f.root.join(name).join("release/build/async_program");
+            std::fs::read_dir(root).unwrap().find_map(|unit| {
+                let dep_info = std::fs::read_to_string(unit.ok()?.path().join("out/async_program.d")).ok()?;
+                dep_info.lines().find(|line| line.starts_with("# checksum:") && line.ends_with("src/main.rs")).map(str::to_owned)
+            }).expect("Rust recorded the requested source checksum")
+        };
+        let start = std::fs::metadata(&trace_path).unwrap().len() as usize;
+        f.source("src/main.rs", source);
+        assert_eq!(f.succeeds(&format!("{name}-before-edit"), &mut run()).stdout, b"42\n");
+        let original_checksum = optimized.then(deps);
+        f.source("src/main.rs", &edited);
+        assert_eq!(f.succeeds(&format!("{name}-edit"), &mut run()).stdout, b"43\n");
+        if let Some(original_checksum) = original_checksum {
+            assert_ne!(deps(), original_checksum);
+        }
+        let after = std::fs::read_to_string(&trace_path).unwrap();
+        assert!(!after[start..].contains("\"entry\":\"retained-rust-link\""), "{name}: {}", &after[start..]);
+    }
+
+    f.source("src/main.rs", source);
+    let before = std::fs::read_to_string(&trace_path).unwrap();
     f.source("src/main.rs", &edited);
     let release = || {
         let mut command = cargo("release", false, false);

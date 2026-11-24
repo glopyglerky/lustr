@@ -381,32 +381,27 @@ impl Callbacks for Composition<'_> {
                 .unwrap_or_else(|error| sess.dcx().span_fatal(first.span, error));
             if let Some(object) = object {
                 self.object.set(object).expect("one native object per invocation");
-                if !rust_debug {
-                    let file = sess.source_map().lookup_source_file(first.span.lo());
-                    let bodies = items.iter().map(|item| {
-                        let span = native_function(item).unwrap().body.as_ref().unwrap().span;
-                        file.relative_position(span.lo()).0..file.relative_position(span.hi()).0
-                    }).collect::<Vec<_>>();
-                    // The retained Rust link context still uses raw source
-                    // coordinates for the persisted artifacts.
-                    if file.normalized_pos.is_empty()
-                        && let Some(cache) = file.src.as_ref().and_then(|source|
-                            host_retained_link::Cache::open(sess, self.artifact, self.output.as_deref().unwrap(), self.args, source, &bodies, &symbols))
+                let file = sess.source_map().lookup_source_file(first.span.lo());
+                let bodies = items.iter().map(|item| {
+                    let span = native_function(item).unwrap().body.as_ref().unwrap().span;
+                    file.relative_position(span.lo()).0..file.relative_position(span.hi()).0
+                }).collect::<Vec<_>>();
+                if let Some(cache) = host_retained_link::Cache::open(
+                    sess, self.artifact, self.output.as_deref().unwrap(), self.args, &file, &bodies, &symbols,
+                ) {
+                    let outputs = rustc_interface::util::build_output_filenames(&krate.attrs, sess);
+                    if let OutFileName::Real(deps) = outputs.path(OutputType::DepInfo)
+                        && let Some(saved) = cache.load(sess, &outputs, &directory.0)
                     {
-                        let outputs = rustc_interface::util::build_output_filenames(&krate.attrs, sess);
-                        if let OutFileName::Real(deps) = outputs.path(OutputType::DepInfo)
-                            && let Some(saved) = cache.load(sess, &outputs, &directory.0)
-                        {
-                            if sess.opts.json_artifact_notifications {
-                                sess.dcx().emit_artifact_notification(&deps, "dep-info");
-                            }
-                            compiler.codegen_backend.link(sess, saved.modules, saved.info, saved.metadata, &outputs);
-                            self.reused_link = true;
-                            return Compilation::Stop;
+                        if sess.opts.json_artifact_notifications {
+                            sess.dcx().emit_artifact_notification(&deps, "dep-info");
                         }
-                        cache.track_diagnostics();
-                        let _ = self.retained_link.set(cache);
+                        compiler.codegen_backend.link(sess, saved.modules, saved.info, saved.metadata, &outputs);
+                        self.reused_link = true;
+                        return Compilation::Stop;
                     }
+                    cache.track_diagnostics();
+                    let _ = self.retained_link.set(cache);
                 }
             }
             let indices: Vec<_> = selected.into_iter().map(|(index, _)| index).collect();

@@ -346,6 +346,8 @@
         "compiler/rustc_interface/src/callbacks.rs": "535bbcb8285b434a21cc5ed25c2bda3d3638161e1bc9e780b6dac4b7f270923d",
         "compiler/rustc_interface/src/queries.rs": "895925b776a1d68985faaf77f335e6956f0d4dc09c9d39332351da5bc7bdb8eb",
         "compiler/rustc_interface/src/util.rs": "a72d09c63337f969f489d5ef4f8ac4266c0516c6126603b34be05500dbf6f90e",
+        "compiler/rustc_interface/src/passes.rs": "8ee543fb7a03b80cbd95a58c57a134215d97218afa6551ecc0bd70f02fe75fbc",
+        "compiler/rustc_session/src/config.rs": "20518f46c9a57d05f1353c1fcc2b3f8108b09c99efd87d6f009b71254441dcaf",
         "compiler/rustc_builtin_macros/src/source_util.rs": "800e0f9277ade2a55cf35bae7b42276d4ea5e8d1e33da9b94064ace8586f2b48",
         "compiler/rustc_span/src/lib.rs": "9682c3b7d227039f040afff82aae4d2fd8133692bc9ef84f0974323f8a0acca0",
         "compiler/rustc_builtin_macros/src/test.rs": "f26f895561f7143380c03bd3ca58bf7688963b1c0eb79318974ccee75aa64549",
@@ -368,7 +370,7 @@
       "adapter": "tools/host-freestanding.rs",
       "licenses": ["MIT", "Apache-2.0"],
       "excluded_duplicate_phases": ["Rust analysis and code generation of selected native bodies", "Rust expansion, semantic analysis and emission on verified closed freestanding body edits"],
-      "qualification": "Installed Cargo tests compare compiler status, generated ELF, original-source diagnostics and actual program exit with pinned Rust. The retained freestanding test exercises successful reuse, signature invalidation, native rejection, diagnostics, corrupt snapshots and reads of root source bytes. Ordinary host requests preserve full Rust debug information, release optimization, and the existing Rust test harness in the mixed path. Their tests require actual native symbols and Rust debug addresses, including release with full debug information. Retained Rust link inputs cover freestanding O0 and closed ordinary executables without debug information. The mixed release test checks a native body edit, a changed Rust input and native rejection. Lust checks and emits the selected bodies on each request and the original linker still runs."
+      "qualification": "Installed Cargo tests compare compiler status, generated ELF, original-source diagnostics and actual program exit with pinned Rust. The retained freestanding test exercises successful reuse, signature invalidation, native rejection, diagnostics, corrupt snapshots and reads of root source bytes. Ordinary host requests preserve full Rust debug information, release optimization, and the existing Rust test harness in the mixed path. Their tests require actual native symbols and Rust debug addresses, including release with full debug information. Retained Rust link inputs cover freestanding O0 and closed ordinary executables with stable source coordinates and no embedded source or stale source checksums. Lust checks and emits the selected bodies on each request and the original linker still runs."
     },
     {
       "id": "proc-macro-expansion",

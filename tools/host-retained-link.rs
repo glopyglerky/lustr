@@ -6,9 +6,9 @@ use rustc_errors::{DiagInner, ErrorGuaranteed, TRACK_DIAGNOSTIC};
 use rustc_metadata::EncodedMetadata;
 use rustc_session::{
     Session,
-    config::{OutFileName, OutputFilenames, OutputType},
+    config::{DebugInfo, OutFileName, OutputFilenames, OutputType},
 };
-use rustc_span::{SourceFileHash, SourceFileHashAlgorithm};
+use rustc_span::{SourceFile, SourceFileHash, SourceFileHashAlgorithm};
 use rustc_structures::CrateType;
 use std::{
     fs::{self, File, OpenOptions},
@@ -173,19 +173,25 @@ impl Cache {
         artifact: Artifact,
         output: &Path,
         args: &[String],
-        source: &str,
+        source: &SourceFile,
         bodies: &[Range<u32>],
         symbols: &[String],
     ) -> Option<Self> {
-        // Extra Rust externs and library search paths need their own
-        // resolved-input records. Debug objects can carry the original file
-        // checksum even when a changed body keeps its coordinates.
+        // DWARF 4 line tables have no source checksum. Pinned Rust's
+        // file_metadata also omits the checksum for Blake3. A source checksum
+        // or embedded source text would become stale despite fixed coordinates.
+        let debug_has_source_contents = sess.opts.debuginfo != DebugInfo::None
+            && (sess.opts.unstable_opts.embed_source
+                || sess.dwarf_version() >= 5 && source.src_hash.kind != SourceFileHashAlgorithm::Blake3);
         let link_args_match = match artifact {
             Artifact::Freestanding => sess.opts.cg.link_args == ["-nostdlib", "-static"],
             Artifact::CargoUnit => sess.opts.crate_types == [CrateType::Executable]
                 && !sess.opts.test && sess.opts.cg.link_args.is_empty(),
         };
-        if sess.opts.externs.iter().next().is_some()
+        if debug_has_source_contents
+            || sess.opts.unstable_opts.checksum_hash_algorithm().is_some()
+            || !source.normalized_pos.is_empty()
+            || sess.opts.externs.iter().next().is_some()
             || !sess.opts.search_paths.is_empty()
             || sess.io.output_file.is_some()
             || !link_args_match
@@ -242,7 +248,7 @@ impl Cache {
             add(&mut identity, symbol.as_bytes());
         }
         add(&mut identity, b"source");
-        source_context(source, bodies, &mut identity)?;
+        source_context(source.src.as_deref()?, bodies, &mut identity)?;
         trace("retained-rust-link-eligible");
         Some(Self { output, directory, context: hash(identity), _lock: lock })
     }
