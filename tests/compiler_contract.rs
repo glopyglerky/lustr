@@ -2854,6 +2854,73 @@ fn native_value_in_the_rust_test_harness() {
 #[cfg(all(target_os = "linux", target_arch = "x86_64", target_env = "gnu"))]
 #[test]
 #[ignore = "requires LUSTR_TEST_PACKAGE, LUSTR_TEST_OUTPUT, LUSTR_TEST_ORACLE and binutils"]
+fn mixed_cargo_keeps_native_integer_signatures_across_rust_async_calls() {
+    let f = Fixture::new("mixed-integer-abi");
+    f.source("Cargo.toml", "[package]\nname='mixed_integer'\nversion='0.1.0'\nedition='2024'\n");
+    let source = r#"
+use std::future::Future;
+use std::pin::pin;
+use std::task::{Context, Poll, Waker};
+
+fn signed8(a: i8, b: i8) -> i8 { a ^ b }
+fn narrow8(a: u8, b: u8) -> u8 { a ^ b }
+fn signed16(a: i16, b: i16) -> i16 { a ^ b }
+fn narrow16(a: u16, b: u16) -> u16 { a ^ b }
+fn signed_word(a: isize, b: isize) -> isize { a ^ b }
+fn unsigned_word(a: usize, b: usize) -> usize { a ^ b }
+
+async fn calculate() {
+    let a = std::future::ready(core::hint::black_box(-128i8)).await;
+    println!("{} {} {} {} {} {}",
+        signed8(a, 15), narrow8(129, 63),
+        signed16(-32768, 15), narrow16(32769, 65535),
+        signed_word(42, 58), unsigned_word(29, 58));
+}
+
+fn main() {
+    let mut task = pin!(calculate());
+    let mut cx = Context::from_waker(Waker::noop());
+    assert!(matches!(task.as_mut().poll(&mut cx), Poll::Ready(())));
+}
+"#;
+    f.source("src/main.rs", source);
+    f.succeeds("lockfile", f.command("cargo").args(["generate-lockfile", "--offline"]));
+    let rust = std::env::var_os("LUSTR_TEST_ORACLE").expect("independent LUSTR_TEST_ORACLE");
+    let assert_run = |label: &str, release: bool, oracle: bool, wanted: &[u8], expected_symbols: usize| {
+        let mut cargo = f.command("cargo");
+        cargo.env("CARGO_TARGET_DIR", f.root.join(label)).env("CARGO_PROFILE_DEV_DEBUG", "0");
+        if oracle { cargo.env("RUSTC", &rust); }
+        cargo.args(["run", "--frozen"]);
+        let profile = if release {
+            cargo.env("CARGO_PROFILE_RELEASE_DEBUG", "2").arg("--release");
+            "release"
+        } else {
+            "debug"
+        };
+        assert_eq!(f.succeeds(label, &mut cargo).stdout, wanted);
+        let exe = f.root.join(label).join(profile).join("mixed_integer");
+        let symbols = f.succeeds(&format!("{label}-symbols"), Command::new("nm").arg(exe));
+        let native = String::from_utf8_lossy(&symbols.stdout).lines().filter(|line|
+            line.split_whitespace().last().and_then(|name| name.strip_prefix("f_"))
+                .is_some_and(|suffix| suffix.len() == 16 && suffix.bytes().all(|byte| byte.is_ascii_hexdigit()))
+        ).count();
+        assert_eq!(native, expected_symbols, "{label}");
+    };
+    let expected = b"-113 190 -32753 32766 16 39\n";
+    for (label, release, oracle, symbols) in [
+        ("debug-off", false, false, 6), ("optimized-debug", true, false, 6), ("original", true, true, 0),
+    ] {
+        assert_run(label, release, oracle, expected, symbols);
+    }
+    let shadowed = format!("#[allow(non_camel_case_types)]\ntype u8 = u16;\n{}", source.replace("narrow8(129", "narrow8(512"));
+    f.source("src/main.rs", &shadowed);
+    assert_run("shadowed", true, false, b"-113 575 -32753 32766 16 39\n", 5);
+    assert_run("original-shadowed", true, true, b"-113 575 -32753 32766 16 39\n", 0);
+}
+
+#[cfg(all(target_os = "linux", target_arch = "x86_64", target_env = "gnu"))]
+#[test]
+#[ignore = "requires LUSTR_TEST_PACKAGE, LUSTR_TEST_OUTPUT, LUSTR_TEST_ORACLE and binutils"]
 fn rust_attribute_named_test_can_change_the_mixed_crate_namespace() {
     let f = Fixture::new("mixed-test-macro-shadow");
     f.source("Cargo.toml", r#"

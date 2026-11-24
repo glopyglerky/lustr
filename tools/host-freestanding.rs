@@ -1,6 +1,7 @@
 //! Compose Lust objects with the pinned Rust compiler for host artifacts.
 //! The original Rust driver validates and emits the rest of the original crate.
 use crate::host_retained_link;
+use rustc_abi::CanonAbi;
 use rustc_ast::{
     AttrStyle, BinOpKind, BindingMode, BlockCheckMode, Expr, ExprKind, FnRetTy,
     ForeignItemKind, ForeignMod, Item, ItemKind, PatKind, Safety, Stmt, StmtKind, StrLit,
@@ -10,6 +11,7 @@ use rustc_codegen_ssa::{
     CompiledModule, CompiledModules, CrateInfo, ModuleKind, TargetConfig, traits::CodegenBackend,
 };
 use rustc_driver::{Callbacks, Compilation};
+use rustc_hir::PrimTy;
 use rustc_interface::interface::{Compiler, Config};
 use rustc_metadata::EncodedMetadata;
 use rustc_middle::{dep_graph::WorkProductMap, ty::{self, Instance, TyCtxt, TypingEnv}, util::Providers};
@@ -19,9 +21,10 @@ use rustc_session::{
 };
 use rustc_span::{Ident, SourceFileHash, SourceFileHashAlgorithm, Span, Symbol, edition::Edition, kw, sym};
 use rustc_structures::CrateType;
-use rustc_target::callconv::{ArgAbi, PassMode};
+use rustc_target::callconv::{ArgAbi, ArgExtension, PassMode};
 use std::{
     any::Any,
+    collections::HashMap,
     fs,
     io,
     os::unix::fs::DirBuilderExt,
@@ -65,14 +68,38 @@ struct Composition<'a> {
     retained_link: Arc<OnceLock<host_retained_link::Cache>>,
     pending_link: Arc<OnceLock<host_retained_link::Pending>>,
     reused_link: bool,
-    bindings: Vec<(Symbol, String)>,
+    bindings: Vec<(Symbol, String, IntegerSignature)>,
     scratch: Option<Scratch>,
 }
 
-fn unqualified_u64(ty: &Ty) -> bool {
-    matches!(&ty.kind, TyKind::Path(None, path)
-        if matches!(path.segments.as_slice(), [segment]
-            if segment.ident.name == sym::u64 && segment.args.is_none()))
+fn primitive_integer(ty: &Ty) -> Option<PrimTy> {
+    let TyKind::Path(None, path) = &ty.kind else { return None };
+    let [segment] = path.segments.as_slice() else { return None };
+    if segment.args.is_some() { return None; }
+    match PrimTy::from_name(segment.ident.name)? {
+        PrimTy::Int(ty::IntTy::I128) | PrimTy::Uint(ty::UintTy::U128) => None,
+        primitive @ (PrimTy::Int(_) | PrimTy::Uint(_)) => Some(primitive),
+        _ => None,
+    }
+}
+
+struct IntegerSignature {
+    args: Vec<PrimTy>,
+    result: PrimTy,
+}
+
+impl IntegerSignature {
+    fn types(&self) -> impl Iterator<Item = PrimTy> + '_ {
+        self.args.iter().copied().chain(std::iter::once(self.result))
+    }
+}
+
+fn integer_bits(ty: PrimTy) -> u64 {
+    match ty {
+        PrimTy::Int(ty) => ty.bit_width().unwrap_or(64),
+        PrimTy::Uint(ty) => ty.bit_width().unwrap_or(64),
+        _ => unreachable!("a native integer signature contains only integers"),
+    }
 }
 
 fn imports_name(tree: &UseTree, parent: Option<Symbol>, expected: Symbol) -> bool {
@@ -99,45 +126,45 @@ fn may_expand(attr: &rustc_ast::Attribute, prelude_test: bool) -> bool {
     })
 }
 
-fn may_shadow_u64(item: &Item, prelude_test: bool) -> bool {
+fn may_shadow_primitive(item: &Item, primitive: Symbol, prelude_test: bool) -> bool {
     if item.attrs.iter().any(|attr| may_expand(attr, prelude_test)) {
         return true;
     }
     match &item.kind {
-        ItemKind::Use(tree) => imports_name(tree, None, sym::u64),
+        ItemKind::Use(tree) => imports_name(tree, None, primitive),
         ItemKind::MacCall(_) | ItemKind::DelegationMac(_) => true,
         ItemKind::ForeignMod(module) => module.items.iter().any(|item| {
             matches!(item.kind, ForeignItemKind::MacCall(_))
-                || item.kind.ident().is_some_and(|ident| ident.name == sym::u64)
+                || item.kind.ident().is_some_and(|ident| ident.name == primitive)
                 || item.attrs.iter().any(|attr| may_expand(attr, false))
         }),
-        kind => kind.ident().is_some_and(|ident| ident.name == sym::u64),
+        kind => kind.ident().is_some_and(|ident| ident.name == primitive),
     }
 }
 
 /// Select only a closed expression in the currently shared value domain.
 /// A path must be the parameter. Operations that need names, macro
 /// expansion, implicit dereferencing or a runtime remain with pinned Rust.
-fn closed_expression(expression: &Expr, parameter: Symbol) -> Option<bool> {
+fn closed_expression(expression: &Expr, parameters: &[Ident]) -> Option<bool> {
     if !expression.attrs.is_empty() {
         return None;
     }
     match &expression.kind {
         ExprKind::Path(None, path)
             if matches!(path.segments.as_slice(), [segment]
-                if segment.ident.name == parameter && segment.args.is_none()) => Some(true),
+                if segment.args.is_none() && parameters.iter().any(|ident| ident.name == segment.ident.name)) => Some(true),
         ExprKind::Lit(literal) if matches!(literal.kind, LitKind::Integer | LitKind::Bool) => Some(false),
-        ExprKind::Paren(expression) => closed_expression(expression, parameter),
+        ExprKind::Paren(expression) => closed_expression(expression, parameters),
         ExprKind::Binary(op, lhs, rhs)
             if matches!(op.node, BinOpKind::BitXor | BinOpKind::BitAnd | BinOpKind::BitOr) =>
         {
-            Some(closed_expression(lhs, parameter)? | closed_expression(rhs, parameter)?)
+            Some(closed_expression(lhs, parameters)? | closed_expression(rhs, parameters)?)
         }
         _ => None,
     }
 }
 
-fn native_function(item: &Item) -> Option<&rustc_ast::Fn> {
+fn native_function(item: &Item) -> Option<IntegerSignature> {
     let ItemKind::Fn(function) = &item.kind else { return None };
     if !item.attrs.is_empty() || function.sig.header.has_qualifiers()
         || !matches!(item.vis.kind, VisibilityKind::Public | VisibilityKind::Inherited)
@@ -146,17 +173,21 @@ fn native_function(item: &Item) -> Option<&rustc_ast::Fn> {
     {
         return None;
     }
-    let [parameter] = function.sig.decl.inputs.as_slice() else { return None };
     let FnRetTy::Ty(result) = &function.sig.decl.output else { return None };
-    let PatKind::Ident(BindingMode::NONE, name, None) = parameter.pat.kind else { return None };
-    if !parameter.attrs.is_empty() || !unqualified_u64(&parameter.ty) || !unqualified_u64(result) {
-        return None;
+    let mut parameters = Vec::with_capacity(function.sig.decl.inputs.len());
+    let mut args = Vec::with_capacity(function.sig.decl.inputs.len());
+    for parameter in &function.sig.decl.inputs {
+        let PatKind::Ident(BindingMode::NONE, name, None) = parameter.pat.kind else { return None };
+        if !parameter.attrs.is_empty() { return None; }
+        parameters.push(name);
+        args.push(primitive_integer(&parameter.ty)?);
     }
+    let signature = IntegerSignature { args, result: primitive_integer(result)? };
     let body = function.body.as_ref()?;
     let [statement] = body.stmts.as_slice() else { return None };
     let StmtKind::Expr(expression) = &statement.kind else { return None };
-    (body.rules == BlockCheckMode::Default && closed_expression(expression, name.name) == Some(true))
-        .then_some(function)
+    (body.rules == BlockCheckMode::Default && closed_expression(expression, &parameters) == Some(true))
+        .then_some(signature)
 }
 
 impl Composition<'_> {
@@ -222,14 +253,16 @@ impl Composition<'_> {
 
 // Preserve Rust's function-item identity. Rust lowers only the forwarding
 // call and keeps its ordinary function values, coercions and symbol rules.
-fn bind(sess: &Session, item: &mut Item, symbol: &str, artifact: Artifact) -> Symbol {
+fn bind(sess: &Session, item: &mut Item, symbol: &str) -> Symbol {
     let span = item.span;
     let ItemKind::Fn(function) = &mut item.kind else { unreachable!() };
-    let PatKind::Ident(_, parameter, None) = function.sig.decl.inputs[0].pat.kind
-        else { unreachable!() };
+    let parameters: Vec<_> = function.sig.decl.inputs.iter().map(|parameter| {
+        let PatKind::Ident(_, name, None) = parameter.pat.kind else { unreachable!() };
+        name
+    }).collect();
     let mut local = Symbol::intern(symbol);
-    if local == parameter.name {
-        local = Symbol::intern(&format!("_{symbol}"));
+    while parameters.iter().any(|parameter| local == parameter.name) {
+        local = Symbol::intern(&format!("_{local}"));
     }
     let id = Ident::new(local, span);
     let private = Visibility { kind: VisibilityKind::Inherited, span };
@@ -244,10 +277,7 @@ fn bind(sess: &Session, item: &mut Item, symbol: &str, artifact: Artifact) -> Sy
         attrs: [link_name].into_iter().collect(), id: rustc_ast::DUMMY_NODE_ID,
         span, vis: private.clone(), kind: ForeignItemKind::Fn(declaration), tokens: None,
     });
-    let abi = Symbol::intern(match artifact {
-        Artifact::Freestanding => "Rust",
-        Artifact::CargoUnit => "C",
-    });
+    let abi = Symbol::intern("Rust");
     let foreign = ItemKind::ForeignMod(ForeignMod {
         extern_span: span, safety: Safety::Unsafe(span),
         abi: Some(StrLit { symbol: abi, suffix: None, symbol_unescaped: abi, style: StrStyle::Cooked, span }),
@@ -261,7 +291,7 @@ fn bind(sess: &Session, item: &mut Item, symbol: &str, artifact: Artifact) -> Sy
         id: rustc_ast::DUMMY_NODE_ID, kind, span, attrs: Default::default(), tokens: None,
     });
     let path = |ident| expr(ExprKind::Path(None, rustc_ast::Path::from_ident(ident)));
-    let call = expr(ExprKind::Call(path(id), [path(parameter)].into_iter().collect()));
+    let call = expr(ExprKind::Call(path(id), parameters.into_iter().map(path).collect()));
     function.body.as_mut().unwrap().stmts = [
         Stmt { id: rustc_ast::DUMMY_NODE_ID, kind: StmtKind::Item(import), span },
         Stmt { id: rustc_ast::DUMMY_NODE_ID, kind: StmtKind::Expr(call), span },
@@ -348,9 +378,6 @@ impl Callbacks for Composition<'_> {
             OptLevel::Size => crate::protocol::OptLevel::Size,
             OptLevel::SizeMin => crate::protocol::OptLevel::MinSize,
         };
-        let codegen = crate::native_object::ItemCodegen {
-            optimization, rust_debug, unwind_tables: sess.must_emit_unwind_tables(),
-        };
         // The native body uses the primitive ABI. Keep the original Rust
         // body if expansion or resolution could rebind the unqualified type.
         // The pinned prelude's test attribute removes the function outside
@@ -364,26 +391,40 @@ impl Callbacks for Composition<'_> {
                         kind => kind.ident().is_some_and(|ident| matches!(ident.name, sym::test | sym::std | sym::core)),
                     }
             });
-        if sess.opts.externs.get("u64").is_some_and(|external| external.add_prelude)
-            || krate.items.iter().any(|item| may_shadow_u64(item, prelude_test))
-        {
-            return Compilation::Continue;
-        }
-        let selected: Vec<_> = krate.items.iter().enumerate().filter(|(_, item)| {
-            native_function(item).is_some()
-        }).map(|(index, item)| (index, item.as_ref())).collect();
-        if let Some((_, first)) = selected.first() {
+        let mut primitive_bindings = HashMap::new();
+        let selected: Vec<_> = krate.items.iter().enumerate().filter_map(|(index, item)| {
+            let signature = native_function(item)?;
+            if matches!(self.artifact, Artifact::Freestanding) {
+                let word = PrimTy::Uint(ty::UintTy::U64);
+                if signature.args != [word] || signature.result != word { return None; }
+            }
+            signature.types().all(|ty| {
+                let name = ty.name();
+                *primitive_bindings.entry(name).or_insert_with(|| {
+                    sess.opts.externs.get(name.as_str()).is_none_or(|external| !external.add_prelude)
+                        && !krate.items.iter().any(|item| may_shadow_primitive(item, name, prelude_test))
+                })
+            }).then_some((index, item.as_ref(), signature))
+        }).collect();
+        if let Some((_, first, _)) = selected.first() {
+            let codegen = crate::native_object::ItemCodegen {
+                optimization, rust_debug, unwind_tables: sess.must_emit_unwind_tables(),
+                // Like native Rust libraries, narrow integer objects use the
+                // export path that leaves argument extension to the Rust ABI.
+                narrow_rust_abi: selected.iter().any(|(_, _, signature)| signature.types().any(|ty| integer_bits(ty) < 32)),
+            };
             let directory = Scratch::create(self.output.as_deref().unwrap())
                 .unwrap_or_else(|error| sess.dcx().fatal(format!("cannot create native item work directory: {error}")));
             let input = self.input.as_deref().unwrap();
-            let items: Vec<_> = selected.iter().map(|(_, item)| *item).collect();
+            let items: Vec<_> = selected.iter().map(|(_, item, _)| *item).collect();
             let (object, symbols) = self.complete_items(sess, input, &items, &directory.0, no_std_attr.map(|attr| attr.span), codegen)
                 .unwrap_or_else(|error| sess.dcx().span_fatal(first.span, error));
             if let Some(object) = object {
                 self.object.set(object).expect("one native object per invocation");
                 let file = sess.source_map().lookup_source_file(first.span.lo());
                 let bodies = items.iter().map(|item| {
-                    let span = native_function(item).unwrap().body.as_ref().unwrap().span;
+                    let ItemKind::Fn(function) = &item.kind else { unreachable!() };
+                    let span = function.body.as_ref().unwrap().span;
                     file.relative_position(span.lo()).0..file.relative_position(span.hi()).0
                 }).collect::<Vec<_>>();
                 if let Some(cache) = host_retained_link::Cache::open(
@@ -404,10 +445,10 @@ impl Callbacks for Composition<'_> {
                     let _ = self.retained_link.set(cache);
                 }
             }
-            let indices: Vec<_> = selected.into_iter().map(|(index, _)| index).collect();
-            for (index, symbol) in indices.into_iter().zip(symbols) {
-                let name = bind(sess, &mut krate.items[index], &symbol, self.artifact);
-                self.bindings.push((name, symbol));
+            let signatures: Vec<_> = selected.into_iter().map(|(index, _, signature)| (index, signature)).collect();
+            for ((index, signature), symbol) in signatures.into_iter().zip(symbols) {
+                let name = bind(sess, &mut krate.items[index], &symbol);
+                self.bindings.push((name, symbol, signature));
             }
             self.scratch = Some(directory);
         }
@@ -415,7 +456,7 @@ impl Callbacks for Composition<'_> {
     }
 
     fn after_expansion(&mut self, _: &Compiler, tcx: TyCtxt<'_>) -> Compilation {
-        for (name, symbol) in &self.bindings {
+        for (name, symbol, signature) in &self.bindings {
             let foreign = tcx.hir_crate_items(()).foreign_items().find_map(|id| {
                 let item = tcx.hir_foreign_item(id);
                 if item.ident.name != *name {
@@ -426,12 +467,20 @@ impl Callbacks for Composition<'_> {
             }).unwrap_or_else(|| tcx.dcx().fatal("the native declaration did not resolve to its object symbol"));
             let abi = tcx.fn_abi_of_instance(TypingEnv::fully_monomorphized().as_query_input((foreign, ty::List::empty())))
                 .unwrap_or_else(|error| tcx.dcx().fatal(format!("cannot read the original call ABI: {error:?}")));
-            let scalar = |arg: &ArgAbi<'_, ty::Ty<'_>>| {
-                matches!(arg.layout.ty.kind(), ty::Uint(ty::UintTy::U64))
-                    && arg.layout.size.bits() == 64 && arg.layout.align.bytes() == 8
-                    && matches!(arg.mode, PassMode::Direct(_))
+            let scalar = |arg: &ArgAbi<'_, ty::Ty<'_>>, expected: PrimTy| {
+                let actual = match *arg.layout.ty.kind() {
+                    ty::Int(int) => PrimTy::Int(int),
+                    ty::Uint(uint) => PrimTy::Uint(uint),
+                    _ => return false,
+                };
+                let width = integer_bits(expected);
+                actual == expected && arg.layout.size.bits() == width && arg.layout.align.bytes() == width / 8
+                    && matches!(arg.mode, PassMode::Direct(attrs) if attrs.arg_ext == ArgExtension::None)
             };
-            if abi.can_unwind || abi.args.len() != 1 || !scalar(&abi.args[0]) || !scalar(&abi.ret) {
+            if abi.conv != CanonAbi::Rust
+                || abi.args.len() != signature.args.len() || !scalar(&abi.ret, signature.result)
+                || !abi.args.iter().zip(&signature.args).all(|(arg, &expected)| scalar(arg, expected))
+            {
                 tcx.dcx().fatal("the original call ABI differs from the native object");
             }
         }

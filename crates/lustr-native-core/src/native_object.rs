@@ -171,11 +171,12 @@ pub(crate) struct ItemCodegen {
     pub(crate) optimization: crate::protocol::OptLevel,
     pub(crate) rust_debug: bool,
     pub(crate) unwind_tables: bool,
+    pub(crate) narrow_rust_abi: bool,
 }
 
 impl ItemCodegen {
     fn uses_llvm(self) -> bool {
-        self.rust_debug || self.optimization != crate::protocol::OptLevel::None
+        self.narrow_rust_abi || self.rust_debug || self.optimization != crate::protocol::OptLevel::None
     }
 }
 
