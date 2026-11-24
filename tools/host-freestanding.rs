@@ -58,6 +58,12 @@ pub(crate) enum Artifact {
     CargoUnit,
 }
 
+struct CompletedItems {
+    object: Option<PathBuf>,
+    functions: Vec<(String, String)>,
+    pending_native: Option<host_retained_link::NativeObjectPending>,
+}
+
 struct Composition<'a> {
     artifact: Artifact,
     args: &'a [String],
@@ -67,6 +73,7 @@ struct Composition<'a> {
     object: Arc<OnceLock<PathBuf>>,
     retained_link: Arc<OnceLock<host_retained_link::Cache>>,
     pending_link: Arc<OnceLock<host_retained_link::Pending>>,
+    pending_native: Option<host_retained_link::NativeObjectPending>,
     reused_link: bool,
     bindings: Vec<(Symbol, String, IntegerSignature)>,
     scratch: Option<Scratch>,
@@ -221,7 +228,7 @@ impl Composition<'_> {
     fn complete_items(
         &self, sess: &Session, input: &Path, items: &[&Item], directory: &Path, no_std: Option<Span>,
         codegen: crate::native_object::ItemCodegen,
-    ) -> Result<(Option<PathBuf>, Vec<(String, String)>), String> {
+    ) -> Result<CompletedItems, String> {
         let file = sess.source_map().lookup_source_file(items[0].span.lo());
         let source = file.src.as_ref().ok_or("missing original source snapshot")?;
         let verify_original = |text: &str| {
@@ -260,13 +267,20 @@ impl Composition<'_> {
             input.to_str().ok_or("native item source path must be UTF-8")?.to_owned(), "-o".into(),
             object.to_str().ok_or("native item output path must be UTF-8")?.to_owned(),
         ];
-        let report = sess.time("lustr_native_items", || {
-            crate::native_object::complete_items(&args, source, &selected, link, policy_span, codegen, original_matches)
+        let cache_directory = self.output.as_deref().and_then(host_retained_link::cargo_unit_dir);
+        let mut pending_native = None;
+        let functions = sess.time("lustr_native_items", || {
+            crate::native_object::complete_items(
+                &args, source, &selected, link, policy_span, codegen, original_matches,
+                |output, text, options| host_retained_link::emit_native_object(
+                    output, text, options, cache_directory, &mut pending_native,
+                ),
+            )
         })?;
         if object.is_file() != link {
             return Err("native compiler produced the wrong artifact for this request".into());
         }
-        Ok((link.then_some(object), report))
+        Ok(CompletedItems { object: link.then_some(object), functions, pending_native })
     }
 
 }
@@ -448,13 +462,13 @@ impl Callbacks for Composition<'_> {
             let context: BTreeSet<_> = selected.iter().flat_map(|(index, _, signature)|
                 std::iter::once(*index).chain(signature.declarations.iter().copied())).collect();
             let items: Vec<_> = context.into_iter().map(|index| krate.items[index].as_ref()).collect();
-            let (object, report) = self.complete_items(sess, input, &items, &directory.0, no_std_attr.map(|attr| attr.span), codegen)
+            let completed = self.complete_items(sess, input, &items, &directory.0, no_std_attr.map(|attr| attr.span), codegen)
                 .unwrap_or_else(|error| sess.dcx().span_fatal(first.span, error));
-            if report.len() != selected.len() {
+            if completed.functions.len() != selected.len() {
                 sess.dcx().span_fatal(first.span, "native object does not cover every selected definition");
             }
             let mut symbols = Vec::with_capacity(selected.len());
-            for ((_, item, _), (name, symbol)) in selected.iter().zip(report) {
+            for ((_, item, _), (name, symbol)) in selected.iter().zip(completed.functions) {
                 let ItemKind::Fn(function) = &item.kind else { unreachable!() };
                 if name != function.ident.name.as_str()
                     || !symbol.starts_with("f_")
@@ -465,7 +479,8 @@ impl Callbacks for Composition<'_> {
                 }
                 symbols.push(symbol);
             }
-            if let Some(object) = object {
+            self.pending_native = completed.pending_native;
+            if let Some(object) = completed.object {
                 self.object.set(object).expect("one native object per invocation");
                 let file = sess.source_map().lookup_source_file(first.span.lo());
                 let bodies = selected.iter().map(|(_, item, _)| {
@@ -485,6 +500,7 @@ impl Callbacks for Composition<'_> {
                         }
                         compiler.codegen_backend.link(sess, saved.modules, saved.info, saved.metadata, &outputs);
                         self.reused_link = true;
+                        self.scratch = Some(directory);
                         return Compilation::Stop;
                     }
                     cache.track_diagnostics();
@@ -592,9 +608,13 @@ pub(crate) fn run(artifact: Artifact, program: &str, args: &[String]) -> ExitCod
             artifact, args, native_codegen: represents_native_codegen(args),
             input: None, output: None,
             object: Arc::default(), retained_link: Arc::default(), pending_link: Arc::default(),
+            pending_native: None,
             reused_link: false, bindings: Vec::new(), scratch: None,
         };
         rustc_driver::compiler_entrypoint(&driver, &mut callbacks);
+        if let Some(pending) = callbacks.pending_native.take() {
+            pending.publish();
+        }
         // Only retain successful Rust analysis and code generation. The
         // original linker runs on every request, including its diagnostics.
         if let Some(pending) = Arc::get_mut(&mut callbacks.pending_link).and_then(OnceLock::take) {

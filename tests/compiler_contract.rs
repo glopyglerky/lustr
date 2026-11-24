@@ -2840,6 +2840,18 @@ fn native_value_in_the_rust_test_harness() {
     assert_eq!(f.succeeds("release-rust-edit", &mut release()).stdout, b"40\n");
     let changed = std::fs::read_to_string(&trace_path).unwrap();
     assert!(!changed[after.len()..].contains("\"entry\":\"retained-rust-link\""), "{changed}");
+    assert!(changed[after.len()..].contains("\"entry\":\"retained-native-object\""), "{changed}");
+
+    let native_record = std::fs::read_dir(f.root.join("release/release/build/async_program")).unwrap()
+        .filter_map(Result::ok).map(|unit| unit.path().join(".lustr-native-object"))
+        .find(|record| record.is_file()).expect("Cargo unit retained the native LLVM object");
+    let mut corrupt = std::fs::read(&native_record).unwrap();
+    corrupt.push(0);
+    std::fs::write(&native_record, corrupt).unwrap();
+    f.source("src/main.rs", &edited.replace("compute(57)", "compute(59)"));
+    assert_eq!(f.succeeds("release-native-record-repair", &mut release()).stdout, b"41\n");
+    let repaired = std::fs::read_to_string(&trace_path).unwrap();
+    assert!(!repaired[changed.len()..].contains("\"entry\":\"retained-native-object\""), "{repaired}");
 
     let release_artifact = f.root.join("release/release/async_program");
     let existing = std::fs::read(&release_artifact).unwrap();

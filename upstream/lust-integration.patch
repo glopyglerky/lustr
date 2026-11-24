@@ -3188,7 +3188,7 @@ index 019e079ad31611c7eba4ad0fe3a7a4d60b71cc17..155b2a5ce50e86f428703c7ae797c73b
              match fit {
                  Fit::Yes => {
 diff --git a/src/cc.rs b/src/cc.rs
-index 0bf5ac8cc5817fbcf014e6eb16c98bbc5eb32e85..9d88cb0dec84dda477058853ef85c073e93d3bb3 100644
+index 0bf5ac8cc5817fbcf014e6eb16c98bbc5eb32e85..6782ac3fe4d641af78eea60adb12506edc1c1407 100644
 --- a/src/cc.rs
 +++ b/src/cc.rs
 @@ -19,6 +19,7 @@
@@ -3231,7 +3231,7 @@ index 0bf5ac8cc5817fbcf014e6eb16c98bbc5eb32e85..9d88cb0dec84dda477058853ef85c073
      }
      let (arch, os) = (triple.split('-').next().unwrap_or(""), triple);
      let host_like = arch == std::env::consts::ARCH
-@@ -179,13 +190,146 @@ pub fn spec_for(triple: &str) -> Result<CcSpec, String> {
+@@ -179,13 +190,153 @@ pub fn spec_for(triple: &str) -> Result<CcSpec, String> {
          // musl toolchain, which the link error will name).
          let cmd = vec!["cc".to_string()];
          let cxx = cxx_for(&cmd);
@@ -3271,6 +3271,19 @@ index 0bf5ac8cc5817fbcf014e6eb16c98bbc5eb32e85..9d88cb0dec84dda477058853ef85c073
 +        .map_err(|error| format!("stage native scalar object input: {error}"))?;
 +    source.write_all(text.as_bytes()).map_err(|error| format!("write native scalar object input: {error}"))?;
 +    drop(source);
++    let built = scalar_cargo_object_command(uses_llvm, unwind, optimization)
++        .arg("-c").arg(&input).arg("-o").arg(path).output();
++    std::fs::remove_file(&input).map_err(|error| format!("remove native scalar object input: {error}"))?;
++    let result = built.map_err(|error| format!("run Clang for a native scalar object: {error}"))?;
++    if !result.status.success() {
++        return Err(format!("Clang rejected native scalar object input ({}): {}", result.status, String::from_utf8_lossy(&result.stderr)));
++    }
++    Ok(())
++}
++
++pub(crate) fn scalar_cargo_object_command(
++    uses_llvm: bool, unwind: bool, optimization: crate::protocol::OptLevel,
++) -> Command {
 +    let mut command = cc_command("clang");
 +    command.arg("--target=x86_64-unknown-linux-gnu");
 +    let level = format!("-O{}", optimization.value());
@@ -3281,13 +3294,7 @@ index 0bf5ac8cc5817fbcf014e6eb16c98bbc5eb32e85..9d88cb0dec84dda477058853ef85c073
 +        command.args(flags.split_whitespace()).args(["-x", "c"]);
 +        if unwind { command.arg("-funwind-tables"); }
 +    }
-+    let built = command.arg("-c").arg(&input).arg("-o").arg(path).output();
-+    std::fs::remove_file(&input).map_err(|error| format!("remove native scalar object input: {error}"))?;
-+    let result = built.map_err(|error| format!("run Clang for a native scalar object: {error}"))?;
-+    if !result.status.success() {
-+        return Err(format!("Clang rejected native scalar object input ({}): {}", result.status, String::from_utf8_lossy(&result.stderr)));
-+    }
-+    Ok(())
++    command
 +}
 +
 +#[cfg(feature = "exclusive-native")]
@@ -3379,7 +3386,7 @@ index 0bf5ac8cc5817fbcf014e6eb16c98bbc5eb32e85..9d88cb0dec84dda477058853ef85c073
  /// The C flags of every unit, one string so the cache key and the command
  /// line can never disagree.
  pub fn cflags(debug: bool) -> String {
-@@ -237,7 +381,13 @@ fn ldflags(spec: &CcSpec, debug: bool) -> Vec<String> {
+@@ -237,7 +388,13 @@ fn ldflags(spec: &CcSpec, debug: bool) -> Vec<String> {
      if spec.statik {
          v.push("-static".into());
      }
@@ -3394,7 +3401,16 @@ index 0bf5ac8cc5817fbcf014e6eb16c98bbc5eb32e85..9d88cb0dec84dda477058853ef85c073
          v.push("-s".into());
      } else {
          v.push("-g".into());
-@@ -297,6 +447,7 @@ fn resolve_bin(prog: &str) -> PathBuf {
+@@ -281,7 +438,7 @@ fn compiler_id(cmd: &[String]) -> String {
+ 
+ /// The file a command name runs: the first PATH entry that has it, links resolved (the name
+ /// as given when none does).
+-fn resolve_bin(prog: &str) -> PathBuf {
++pub(crate) fn resolve_bin(prog: &str) -> PathBuf {
+     let bin = std::env::var_os("PATH")
+         .and_then(|path| std::env::split_paths(&path).map(|d| d.join(prog)).find(|p| p.is_file()))
+         .unwrap_or_else(|| PathBuf::from(prog));
+@@ -297,6 +454,7 @@ fn resolve_bin(prog: &str) -> PathBuf {
  pub fn unit_key(c_text: &str, pre: Option<&[u8]>, spec: &CcSpec, debug: bool, profile: Option<&str>, cxx: bool) -> String {
      let sys_headers = pre.is_some() || c_text.contains("#include <");
      let (words, flags) = if cxx { (spec.cxx.as_slice().into(), cxxflags(debug)) } else { (unit_words(spec, debug, sys_headers), cflags(debug)) };
@@ -3402,7 +3418,7 @@ index 0bf5ac8cc5817fbcf014e6eb16c98bbc5eb32e85..9d88cb0dec84dda477058853ef85c073
      let id = compiler_id(&words);
      let own = pre.is_none().then(|| sys_headers.then(|| preprocessed(c_text, &words, &flags, cxx)).flatten()).flatten();
      let text = pre.or(own.as_deref()).unwrap_or(c_text.as_bytes());
-@@ -311,7 +462,7 @@ pub fn unit_key(c_text: &str, pre: Option<&[u8]>, spec: &CcSpec, debug: bool, pr
+@@ -311,7 +469,7 @@ pub fn unit_key(c_text: &str, pre: Option<&[u8]>, spec: &CcSpec, debug: bool, pr
  /// parts, with `extra` (the IR compile's flags, the runtime IR's digest), not copied into one
  /// text first (~1 MB a unit, every unit every build). Its C has no `#include`.
  fn ll_unit_key(c: &str, ll: &str, hc: &str, extra: &str, spec: &CcSpec, debug: bool, profile: Option<&str>) -> String {
@@ -3411,7 +3427,7 @@ index 0bf5ac8cc5817fbcf014e6eb16c98bbc5eb32e85..9d88cb0dec84dda477058853ef85c073
      let (a, b) = crate::driver::cache::hash128(
          &[
              b"cc-v2 llvm-v5",
-@@ -485,6 +636,12 @@ pub fn llflags(debug: bool) -> String {
+@@ -485,6 +643,12 @@ pub fn llflags(debug: bool) -> String {
      if debug { format!("{base} -g") } else { base }
  }
  
@@ -3424,7 +3440,7 @@ index 0bf5ac8cc5817fbcf014e6eb16c98bbc5eb32e85..9d88cb0dec84dda477058853ef85c073
  /// Compiles one LLVM backend unit into `obj`: the C unit `src` and the helpers' C `hc` to
  /// bitcode with the C flags (no LLVM passes yet), then the IR `ll` with both linked in, so
  /// the optimizer sees one module (cgen/ll.rs: the C helpers inline into the LLVM fns). The
-@@ -565,7 +722,7 @@ fn compile_pair(
+@@ -565,7 +729,7 @@ fn compile_pair(
      // A relative compiler path must not resolve against the work dir (PGO compiles there).
      let prog = if words[0].contains('/') { std::fs::canonicalize(&words[0]).unwrap_or_else(|_| PathBuf::from(&words[0])) } else { PathBuf::from(&words[0]) };
      let mut cmd = cc_command(prog);
@@ -3433,7 +3449,7 @@ index 0bf5ac8cc5817fbcf014e6eb16c98bbc5eb32e85..9d88cb0dec84dda477058853ef85c073
      if nopre {
          cmd.args(["-mllvm", "-disable-preinline"]);
      }
-@@ -665,8 +822,8 @@ fn memo_tag(spec: &CcSpec, debug: bool, work: &Path) -> String {
+@@ -665,8 +829,8 @@ fn memo_tag(spec: &CcSpec, debug: bool, work: &Path) -> String {
              env!("LUST_BUILD_HASH").as_bytes(),
              spec.triple.as_bytes(),
              compiler_id(&spec.cmd).as_bytes(),
@@ -3444,7 +3460,7 @@ index 0bf5ac8cc5817fbcf014e6eb16c98bbc5eb32e85..9d88cb0dec84dda477058853ef85c073
              pgo_env.join(" ").as_bytes(),
              profile.as_bytes(),
          ],
-@@ -738,7 +895,7 @@ pub fn memo_misses(units: &[UnitIn], spec: &CcSpec, debug: bool, cache: Option<&
+@@ -738,7 +902,7 @@ pub fn memo_misses(units: &[UnitIn], spec: &CcSpec, debug: bool, cache: Option<&
  /// units to pass again with text (an LLVM unit's three parts come with text or without as
  /// one). Returns a one-line summary, or the compiler's error text.
  pub fn build(units: &[UnitIn], spec: &CcSpec, out: &Path, debug: bool, cache: Option<&crate::driver::cache::Cache>, work: &Path) -> Result<String, CcError> {
@@ -3453,7 +3469,7 @@ index 0bf5ac8cc5817fbcf014e6eb16c98bbc5eb32e85..9d88cb0dec84dda477058853ef85c073
  }
  
  /// `build`, with the units a `Stream` took while they assembled: for each, the stream's key,
-@@ -751,14 +908,15 @@ pub fn build_with(
+@@ -751,14 +915,15 @@ pub fn build_with(
      cache: Option<&crate::driver::cache::Cache>,
      work: &Path,
      stream: Option<Stream>,
@@ -3471,7 +3487,7 @@ index 0bf5ac8cc5817fbcf014e6eb16c98bbc5eb32e85..9d88cb0dec84dda477058853ef85c073
      let is_cxx = |name: &str| name.ends_with(".cc");
      let rt_max: usize = std::env::var("LUST_LL_RTINL").ok().and_then(|v| v.parse().ok()).unwrap_or(0);
      let instrumented = std::env::var_os("LUST_PGO_GEN").is_some_and(|v| v == "1");
-@@ -816,7 +974,9 @@ pub fn build_with(
+@@ -816,7 +981,9 @@ pub fn build_with(
      });
      // The text a unit with system headers keys on (`unit_key`), kept for the next build
      // (`preprocessed_kept`); the C++ unit's with its own driver and flags, as `unit_key` makes it.
@@ -3482,7 +3498,7 @@ index 0bf5ac8cc5817fbcf014e6eb16c98bbc5eb32e85..9d88cb0dec84dda477058853ef85c073
      let pre: Vec<Option<Vec<u8>>> = crate::pool::par_map(&idx, |&i| {
          let (name, cxx) = (&units[i].name, is_cxx(&units[i].name));
          let (words, flags) = if cxx { (&spec.cxx, &cxxflags_text) } else { (&spec.cmd, &cflags_text) };
-@@ -912,7 +1072,7 @@ pub fn build_with(
+@@ -912,7 +1079,7 @@ pub fn build_with(
              keyed.then(|| match ll_of.get(unit.as_str()) {
                  Some(ll) => {
                      let hc = hc_of.get(unit.as_str()).copied().unwrap_or("");
@@ -3491,7 +3507,7 @@ index 0bf5ac8cc5817fbcf014e6eb16c98bbc5eb32e85..9d88cb0dec84dda477058853ef85c073
                  }
                  None => unit_key(c, pre_of(i), spec, debug, part.as_deref(), is_cxx(&names[i])),
              })
-@@ -981,6 +1141,14 @@ pub fn build_with(
+@@ -981,6 +1148,14 @@ pub fn build_with(
      let lost = std::sync::Mutex::new(Vec::new());
      let limit = crate::pool::threads().max(1).min(units.len().max(1));
      let t_compile = std::time::Instant::now();
@@ -3506,7 +3522,7 @@ index 0bf5ac8cc5817fbcf014e6eb16c98bbc5eb32e85..9d88cb0dec84dda477058853ef85c073
      std::thread::scope(|scope| {
          for _ in 0..limit {
              scope.spawn(|| loop {
-@@ -1018,6 +1186,15 @@ pub fn build_with(
+@@ -1018,6 +1193,15 @@ pub fn build_with(
                      hits.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
                      continue;
                  }
@@ -3522,7 +3538,7 @@ index 0bf5ac8cc5817fbcf014e6eb16c98bbc5eb32e85..9d88cb0dec84dda477058853ef85c073
                  if entries[i].is_some() {
                      lost.lock().unwrap_or_else(|e| e.into_inner()).push(units[i].name.clone());
                      continue;
-@@ -1125,7 +1302,12 @@ pub fn build_with(
+@@ -1125,7 +1309,12 @@ pub fn build_with(
          // A build with a C++ unit links with the C++ driver (its runtime and personality).
          let link = if units.iter().any(|u| is_cxx(&u.name)) { &spec.cxx } else { &spec.cmd };
          let mut cmd = cc_command(&link[0]);
@@ -3536,7 +3552,7 @@ index 0bf5ac8cc5817fbcf014e6eb16c98bbc5eb32e85..9d88cb0dec84dda477058853ef85c073
          match cmd.output() {
              Ok(o) if o.status.success() => Ok(format!(
                  "{} units ({} from cache, clang {:.2}s, {}link {:.2}s{}), linked {}",
-@@ -1199,6 +1381,8 @@ mod tests {
+@@ -1199,6 +1388,8 @@ mod tests {
          let units = || vec![UnitIn::text("u0", main.into()), UnitIn::text("u1", f.into()), UnitIn::text("u2", g.into())];
          let plain = crate::driver::cache::Cache::at(&root.join("c1"));
          super::build(&units(), &spec, &root.join("a"), false, Some(&plain), &root.join("w1")).unwrap();
@@ -3545,7 +3561,7 @@ index 0bf5ac8cc5817fbcf014e6eb16c98bbc5eb32e85..9d88cb0dec84dda477058853ef85c073
          // The stream's cache already holds g's object (a build of another main and g): u2 is a
          // hit, u1 a miss the stream compiles, u0 a miss build compiles.
          let streamed = crate::driver::cache::Cache::at(&root.join("c2"));
-@@ -1207,10 +1391,13 @@ mod tests {
+@@ -1207,10 +1398,13 @@ mod tests {
          let Some(stream) = super::Stream::start(&spec.triple, false, Some(crate::driver::cache::Cache::at(&root.join("c2"))), root.join("w2")) else { return };
          stream.add("u1", f);
          stream.add("u2", g);
@@ -3562,7 +3578,7 @@ index 0bf5ac8cc5817fbcf014e6eb16c98bbc5eb32e85..9d88cb0dec84dda477058853ef85c073
          let _ = std::fs::remove_dir_all(&root);
      }
  
-@@ -1305,7 +1492,7 @@ mod tests {
+@@ -1305,7 +1499,7 @@ mod tests {
  
      fn zig_spec(target: &str) -> super::CcSpec {
          let cmd: Vec<String> = ["zig", "cc", "-target", target].into_iter().map(str::to_string).collect();
@@ -3571,7 +3587,7 @@ index 0bf5ac8cc5817fbcf014e6eb16c98bbc5eb32e85..9d88cb0dec84dda477058853ef85c073
      }
  
      #[test]
-@@ -1461,7 +1648,7 @@ mod tests {
+@@ -1461,7 +1655,7 @@ mod tests {
      /// begins (the parts are hashed with their lengths).
      #[test]
      fn an_llvm_unit_key_moves_with_each_text() {
@@ -3580,7 +3596,7 @@ index 0bf5ac8cc5817fbcf014e6eb16c98bbc5eb32e85..9d88cb0dec84dda477058853ef85c073
          let key = |c: &str, ll: &str, hc: &str, extra: &str| super::ll_unit_key(c, ll, hc, extra, &spec, false, None);
          let base = key("c", "ll", "hc", "x");
          for other in [key("c2", "ll", "hc", "x"), key("c", "ll2", "hc", "x"), key("c", "ll", "hc2", "x"), key("c", "ll", "hc", "y"), key("cl", "l", "hc", "x")] {
-@@ -1474,7 +1661,7 @@ mod tests {
+@@ -1474,7 +1668,7 @@ mod tests {
      fn unit_key_moves_with_every_input() {
          let spec = |triple: &str, cmd: &str| {
              let cmd: Vec<String> = cmd.split_whitespace().map(str::to_string).collect();

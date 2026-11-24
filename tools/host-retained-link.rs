@@ -12,10 +12,11 @@ use rustc_span::{SourceFile, SourceFileHash, SourceFileHashAlgorithm};
 use rustc_structures::CrateType;
 use std::{
     fs::{self, File, OpenOptions},
-    io,
+    io::{self, Read, Seek, SeekFrom},
     ops::Range,
     os::unix::fs::{DirBuilderExt, MetadataExt, OpenOptionsExt},
     path::{Path, PathBuf},
+    process::Command,
     sync::{
         OnceLock,
         atomic::{AtomicBool, Ordering},
@@ -140,7 +141,7 @@ fn object_only(module: &CompiledModule) -> bool {
         && module.llvm_ir.is_none()
 }
 
-fn cargo_unit_dir(output: &Path) -> Option<&Path> {
+pub(super) fn cargo_unit_dir(output: &Path) -> Option<&Path> {
     // In Cargo's per-unit layout, out is removed before each compiler
     // invocation. Keep the compiler's snapshot alongside it so Cargo's
     // existing build directory and clean operation still own its lifetime.
@@ -158,6 +159,180 @@ fn cargo_unit_dir(output: &Path) -> Option<&Path> {
         return None;
     }
     Some(unit)
+}
+
+const NATIVE_RECORD: &str = "lustr-mixed-native-object-v1";
+
+pub(super) struct NativeObjectPending {
+    record: PathBuf,
+    destination: PathBuf,
+}
+
+impl NativeObjectPending {
+    pub(super) fn publish(self) {
+        let _ = fs::rename(self.record, self.destination);
+    }
+}
+
+struct NativeToolInputs {
+    clang: PathBuf,
+    paths: Vec<PathBuf>,
+    stamps: Vec<u8>,
+    context: String,
+}
+
+fn stamps(paths: &[PathBuf]) -> io::Result<Vec<u8>> {
+    let mut result = Vec::new();
+    for path in paths {
+        add_stamp(&mut result, path)?;
+    }
+    Ok(result)
+}
+
+fn clang_interpreter(path: &Path) -> Option<PathBuf> {
+    let mut executable = File::open(path).ok()?;
+    let mut header = [0; 64];
+    executable.read_exact(&mut header).ok()?;
+    if &header[..7] != b"\x7fELF\x02\x01\x01" || u16::from_le_bytes(header[54..56].try_into().ok()?) != 56 {
+        return None;
+    }
+    let offset = u64::from_le_bytes(header[32..40].try_into().ok()?);
+    let count = u16::from_le_bytes(header[56..58].try_into().ok()?);
+    executable.seek(SeekFrom::Start(offset)).ok()?;
+    let mut program = [0; 56];
+    for _ in 0..count {
+        executable.read_exact(&mut program).ok()?;
+        // ELF PT_INTERP names the loader that will actually launch Clang.
+        if u32::from_le_bytes(program[..4].try_into().ok()?) != 3 { continue; }
+        let offset = u64::from_le_bytes(program[8..16].try_into().ok()?);
+        let length = u64::from_le_bytes(program[32..40].try_into().ok()?);
+        if !(2..=4096).contains(&length) { return None; }
+        let mut bytes = vec![0; length as usize];
+        executable.seek(SeekFrom::Start(offset)).ok()?;
+        executable.read_exact(&mut bytes).ok()?;
+        let name = std::ffi::CStr::from_bytes_with_nul(&bytes).ok()?.to_str().ok()?;
+        let loader = Path::new(name);
+        return (loader.is_absolute() && loader.file_name().is_some_and(|name| name == "ld-linux-x86-64.so.2"))
+            .then(|| loader.to_owned());
+    }
+    None
+}
+
+impl NativeToolInputs {
+    fn resolve(text: &str, codegen: crate::native_object::ItemCodegen) -> Option<Self> {
+        let mut environment: Vec<_> = std::env::vars_os().collect();
+        if environment.iter().any(|(name, _)| {
+            let bytes = name.as_encoded_bytes();
+            bytes.starts_with(b"CCC_") || bytes.starts_with(b"LD_")
+        }) {
+            return None;
+        }
+        let clang = crate::cc::resolve_bin("clang");
+        if !clang.is_absolute() {
+            return None;
+        }
+        let interpreter = clang_interpreter(&clang)?;
+        // Observe Clang's actual loader dependencies. Virtual mappings have
+        // no file identity. The loader's list operation never runs Clang.
+        let loaded = Command::new(&interpreter).arg("--list").arg(&clang).output().ok()?;
+        if !loaded.status.success() || !loaded.stderr.is_empty() {
+            return None;
+        }
+        let mut paths = vec![clang.clone(), interpreter, std::env::current_exe().ok()?];
+        for line in std::str::from_utf8(&loaded.stdout).ok()?.lines().map(str::trim) {
+            if line.is_empty() || line.starts_with("linux-vdso.so.1 (")
+                || line.starts_with("(0x") && line.ends_with(')')
+            {
+                continue;
+            }
+            let entry = line.split_once(" => ").map_or(line, |(_, entry)| entry);
+            let (path, _) = entry.rsplit_once(" (0x")?;
+            let path = Path::new(path);
+            if !path.is_absolute() {
+                return None;
+            }
+            paths.push(path.to_owned());
+        }
+        if paths.len() < 4 { return None; }
+        paths.sort_unstable();
+        paths.dedup();
+        let tool_stamps = stamps(&paths).ok()?;
+
+        let recipe = crate::cc::scalar_cargo_object_command(true, codegen.unwind_tables, codegen.optimization)
+            .args(["-###", "-fno-color-diagnostics", "-c", "-", "-o", "-"])
+            .env("LC_ALL", "C").stdin(std::process::Stdio::null()).output().ok()?;
+        let diagnostics = std::str::from_utf8(&recipe.stderr).ok()?;
+        if !recipe.status.success() || diagnostics.lines().any(|line| line.starts_with("Configuration file:")) {
+            return None;
+        }
+        let mut key = Vec::new();
+        add(&mut key, NATIVE_RECORD.as_bytes());
+        add(&mut key, &tool_stamps);
+        add(&mut key, std::env::current_dir().ok()?.as_os_str().as_encoded_bytes());
+        add(&mut key, diagnostics.as_bytes());
+        add(&mut key, text.as_bytes());
+        environment.sort_unstable();
+        for (name, value) in environment {
+            if name != "CARGO_MAKEFLAGS" {
+                add(&mut key, name.as_encoded_bytes());
+                add(&mut key, value.as_encoded_bytes());
+            }
+        }
+        Some(Self { clang, paths, stamps: tool_stamps, context: hash(key) })
+    }
+
+    fn is_current(&self) -> bool {
+        crate::cc::resolve_bin("clang") == self.clang
+            && stamps(&self.paths).is_ok_and(|latest| latest == self.stamps)
+    }
+
+    fn cached(&self, path: &Path) -> Option<Vec<u8>> {
+        if !fs::symlink_metadata(path).ok()?.is_file() { return None; }
+        let record = fs::read(path).ok()?;
+        let mut parts = record.splitn(4, |&byte| byte == b'\n');
+        if parts.next()? != NATIVE_RECORD.as_bytes() || parts.next()? != self.context.as_bytes() {
+            return None;
+        }
+        let digest = parts.next()?;
+        let object = parts.next()?;
+        if digest != hash(object).as_bytes() || !self.is_current() {
+            return None;
+        }
+        Some(object.to_vec())
+    }
+}
+
+pub(super) fn emit_native_object(
+    path: &Path,
+    text: &str,
+    codegen: crate::native_object::ItemCodegen,
+    cache_directory: Option<&Path>,
+    pending: &mut Option<NativeObjectPending>,
+) -> Result<(), String> {
+    let cache = cache_directory
+        .and_then(|directory| NativeToolInputs::resolve(text, codegen)
+            .map(|inputs| (directory.join(".lustr-native-object"), inputs)));
+    if let Some((cache_path, inputs)) = &cache
+        && let Some(object) = inputs.cached(cache_path)
+    {
+        fs::write(path, object).map_err(|error| format!("stage retained native object: {error}"))?;
+        trace("retained-native-object");
+        return Ok(());
+    }
+    crate::cc::compile_scalar_cargo_object(path, text, true, codegen.unwind_tables, codegen.optimization)?;
+    if let Some((destination, inputs)) = cache
+        && inputs.is_current()
+        && let Ok(object) = fs::read(path)
+    {
+        let record = path.with_extension("retained");
+        let prefix = format!("{NATIVE_RECORD}\n{}\n{}\n", inputs.context, hash(&object));
+        let header = fs::OpenOptions::new().write(true).create_new(true).mode(0o600).open(&record)
+            .and_then(|mut file| file.write_all(prefix.as_bytes()).and_then(|()| file.write_all(&object)));
+        if header.is_ok() {
+            *pending = Some(NativeObjectPending { record, destination });
+        }
+    }
+    Ok(())
 }
 
 fn is_output_file(path: &Path) -> bool {

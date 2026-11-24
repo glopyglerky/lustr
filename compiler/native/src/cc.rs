@@ -225,6 +225,19 @@ pub(crate) fn compile_scalar_cargo_object(
         .map_err(|error| format!("stage native scalar object input: {error}"))?;
     source.write_all(text.as_bytes()).map_err(|error| format!("write native scalar object input: {error}"))?;
     drop(source);
+    let built = scalar_cargo_object_command(uses_llvm, unwind, optimization)
+        .arg("-c").arg(&input).arg("-o").arg(path).output();
+    std::fs::remove_file(&input).map_err(|error| format!("remove native scalar object input: {error}"))?;
+    let result = built.map_err(|error| format!("run Clang for a native scalar object: {error}"))?;
+    if !result.status.success() {
+        return Err(format!("Clang rejected native scalar object input ({}): {}", result.status, String::from_utf8_lossy(&result.stderr)));
+    }
+    Ok(())
+}
+
+pub(crate) fn scalar_cargo_object_command(
+    uses_llvm: bool, unwind: bool, optimization: crate::protocol::OptLevel,
+) -> Command {
     let mut command = cc_command("clang");
     command.arg("--target=x86_64-unknown-linux-gnu");
     let level = format!("-O{}", optimization.value());
@@ -235,13 +248,7 @@ pub(crate) fn compile_scalar_cargo_object(
         command.args(flags.split_whitespace()).args(["-x", "c"]);
         if unwind { command.arg("-funwind-tables"); }
     }
-    let built = command.arg("-c").arg(&input).arg("-o").arg(path).output();
-    std::fs::remove_file(&input).map_err(|error| format!("remove native scalar object input: {error}"))?;
-    let result = built.map_err(|error| format!("run Clang for a native scalar object: {error}"))?;
-    if !result.status.success() {
-        return Err(format!("Clang rejected native scalar object input ({}): {}", result.status, String::from_utf8_lossy(&result.stderr)));
-    }
-    Ok(())
+    command
 }
 
 #[cfg(feature = "exclusive-native")]
@@ -431,7 +438,7 @@ fn compiler_id(cmd: &[String]) -> String {
 
 /// The file a command name runs: the first PATH entry that has it, links resolved (the name
 /// as given when none does).
-fn resolve_bin(prog: &str) -> PathBuf {
+pub(crate) fn resolve_bin(prog: &str) -> PathBuf {
     let bin = std::env::var_os("PATH")
         .and_then(|path| std::env::split_paths(&path).map(|d| d.join(prog)).find(|p| p.is_file()))
         .unwrap_or_else(|| PathBuf::from(prog));

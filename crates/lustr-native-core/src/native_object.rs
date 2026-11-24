@@ -194,6 +194,7 @@ impl ItemCodegen {
 pub(crate) fn complete_items(
     args: &[String], source: &str, items: &[SelectedItem], link: bool, policy_span: Option<Range<u32>>,
     codegen: ItemCodegen, original_matches: Option<&dyn Fn(&str) -> bool>,
+    mut emit_llvm: impl FnMut(&Path, &str, ItemCodegen) -> Result<(), String>,
 ) -> Result<Vec<(String, String)>, String> {
     let prepared = prepare_request(request(args)?, false, true, Some(ItemSelection {
         source, original_matches, items, total_scalars: true, policy_span: policy_span.as_ref(), codegen: link.then_some(codegen),
@@ -212,7 +213,7 @@ pub(crate) fn complete_items(
     if !link {
         return Ok(bindings);
     }
-    let backend = if codegen.uses_llvm() { ObjectBackend::Llvm(codegen) } else { ObjectBackend::TinyCc };
+    let backend = if codegen.uses_llvm() { ObjectBackend::Llvm(codegen, &mut emit_llvm) } else { ObjectBackend::TinyCc };
     let emitted = emit_with_backend(prepared, backend)?;
     // The original linker owns the final artifact. Its private input needs a
     // complete file at an exclusive name for this invocation.
@@ -505,7 +506,7 @@ pub(crate) fn emit(prepared: PreparedUnit) -> Result<EmittedUnit, String> {
 enum ObjectBackend<'a> {
     Clang,
     TinyCc,
-    Llvm(ItemCodegen),
+    Llvm(ItemCodegen, &'a mut dyn FnMut(&Path, &str, ItemCodegen) -> Result<(), String>),
     Artifact(&'a crate::native_crate::Generation, &'a crate::native_crate::Backend),
 }
 
@@ -520,7 +521,7 @@ fn emit_with_backend(prepared: PreparedUnit, backend: ObjectBackend<'_>) -> Resu
         ObjectBackend::TinyCc => out.iter().map(|output| cgen::native_scalar_unit(output, false)
             .ok_or("native scalar code needs an unrepresented runtime operation"))
             .collect::<Result<Vec<_>, _>>()?.join("\n"),
-        ObjectBackend::Llvm(codegen) => {
+        ObjectBackend::Llvm(codegen, _) => {
             cgen::native_scalar_llvm_objects(out, "x86_64-unknown-linux-gnu", codegen.rust_debug)
                 .ok_or("native scalar LLVM needs an unrepresented runtime or debug operation")?
         }
@@ -544,8 +545,8 @@ fn emit_with_backend(prepared: PreparedUnit, backend: ObjectBackend<'_>) -> Resu
     // backend. Referenced symbols must pass the independent ELF closure gate.
     if matches!(backend, ObjectBackend::TinyCc) {
         crate::tcc::compile_scalar_object(&object, &text, false)?;
-    } else if let ObjectBackend::Llvm(codegen) = backend {
-        crate::cc::compile_scalar_cargo_object(&object, &text, true, codegen.unwind_tables, codegen.optimization)?;
+    } else if let ObjectBackend::Llvm(codegen, emit) = backend {
+        emit(&object, &text, codegen)?;
     } else {
         let input = scratch.join("unit.c");
         fs::write(&input, &text).map_err(|error| error.to_string())?;
