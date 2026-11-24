@@ -2723,7 +2723,7 @@ mod tests {
 
     for (name, encoded) in [
         ("crlf", source.replace('\n', "\r\n")),
-        ("bom", format!("\u{{feff}}{source}")),
+        ("bom", format!("\u{feff}{source}")),
     ] {
         let path = f.source("src/main.rs", &encoded);
         let result = f.succeeds(name, cargo(name, false, false).args(["run", "--frozen"]));
